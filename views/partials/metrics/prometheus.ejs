@@ -1,0 +1,35 @@
+<section class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-2xl font-bold">Prometheus Export</h2>
+      <p class="text-sm text-gray-500">
+        Directly accessible from
+        <code class="bg-gray-800 px-1.5 py-0.5 rounded">/admin/metrics</code>
+        for Grafana scraping.
+      </p>
+      <% if (!tokenConfigured) { %>
+        <p class="text-xs text-red-400 mt-2">
+          ADMIN_METRICS_TOKEN is not configured. Set this environment variable to secure the metrics endpoint.
+        </p>
+      <% } else { %>
+        <p class="text-xs text-gray-400 mt-2">
+          Remember to include the
+          <code class="bg-gray-800 px-1 py-0.5 rounded">x-admin-token</code>
+          header when scraping.
+        </p>
+      <% } %>
+    </div>
+    <a
+      href="/admin/metrics"
+      class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Open Raw Metrics
+    </a>
+  </div>
+
+  <pre
+    class="bg-gray-950 border border-gray-800 rounded-lg p-4 text-sm text-gray-300 overflow-x-auto whitespace-pre-wrap"
+  >Scrapers: <%= scrapers.length %> · Followers: <%= followers.length %> · API Events: <%= apiEvents.length %></pre>
+</section>

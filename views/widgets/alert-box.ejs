@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Alert Box</title>
+  <style>
+    /* Transparent canvas for OBS */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      pointer-events: none; /* So clicks pass through in OBS */
+    }
+
+    .alert {
+      min-width: 320px;
+      max-width: 70vw;
+      color: #fff;
+      background: rgba(31, 41, 55, 0.85); /* gray-800 w/ alpha */
+      border: 2px solid rgba(99, 102, 241, 0.8); /* indigo */
+      border-radius: 16px;
+      padding: 18px 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      display: none; /* shown when an event fires */
+      transform: translateY(20px);
+      opacity: 0;
+    }
+
+    .alert.show {
+      display: block;
+      animation: slideIn 260ms ease-out forwards;
+    }
+    .alert.hide {
+      animation: slideOut 220ms ease-in forwards;
+    }
+
+    .title {
+      font-size: clamp(18px, 2.6vw, 28px);
+      font-weight: 800;
+      letter-spacing: .3px;
+      margin: 0 0 6px;
+      color: #c7d2fe; /* indigo-200 */
+      text-shadow: 0 1px 2px rgba(0,0,0,.5);
+    }
+    .message {
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.35;
+      margin: 0;
+      color: #e5e7eb; /* gray-200 */
+      text-shadow: 0 1px 1px rgba(0,0,0,.6);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px) scale(.98); opacity: 0; }
+      to   { transform: translateY(0)    scale(1);    opacity: 1; }
+    }
+    @keyframes slideOut {
+      from { transform: translateY(0)    scale(1);    opacity: 1; }
+      to   { transform: translateY(-10px) scale(.98); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div id="alert" class="alert" role="status" aria-live="polite">
+      <div class="title" id="alert-title">New Follower!</div>
+      <p class="message" id="alert-message">Thanks for the support, <span id="alert-user">friend</span> 💜</p>
+    </div>
+  </div>
+
+  <script>
+    // --- Basic config coming from the server (safe defaults) ---
+    // The loader passes { userId, widgetId, config } when you did res.render(...)
+    const SERVER_PROPS = <%- JSON.stringify({ userId, widgetId, config: config || {} }) %>;
+
+    // Client-side overrides via URL params (so creators can tweak in OBS quickly)
+    const params = new URLSearchParams(location.search);
+    const cfg = Object.assign(
+      {
+        title: 'New Follower!',
+        template: 'Thanks for the support, {user} 💜',
+        showMs: 4500
+      },
+      SERVER_PROPS.config || {},
+      {
+        title: params.get('title') || undefined,
+        template: params.get('template') || undefined,
+        showMs: Number(params.get('showMs')) || undefined
+      }
+    );
+
+    const elAlert = document.getElementById('alert');
+    const elTitle = document.getElementById('alert-title');
+    const elMsg   = document.getElementById('alert-message');
+    const elUser  = document.getElementById('alert-user');
+
+    // Simple demo loop to prove the widget works.
+    // Replace this with your real event bus hookup later.
+    function demoSequence() {
+      const names = ['Ava', 'RogueCoder', 'SailingSam', 'PixelFox', 'NeonWave'];
+      let i = 0;
+      setInterval(() => {
+        const name = names[i++ % names.length];
+        showAlert({ title: cfg.title, user: name, template: cfg.template, showMs: cfg.showMs });
+      }, 7000);
+    }
+
+    function showAlert({ title, user, template, showMs }) {
+      elTitle.textContent = title || 'Alert';
+      const msg = (template || 'Welcome, {user}!').replace('{user}', user || 'friend');
+      elMsg.firstChild && elMsg.removeChild(elMsg.firstChild);
+      elMsg.appendChild(document.createTextNode(msg));
+
+      elAlert.classList.remove('hide');
+      elAlert.classList.add('show');
+
+      clearTimeout(window.__alertTimer);
+      window.__alertTimer = setTimeout(() => {
+        elAlert.classList.remove('show');
+        elAlert.classList.add('hide');
+      }, Math.max(1000, Number(showMs) || 4000));
+    }
+
+    // Kick off demo if no live events yet.
+    demoSequence();
+  </script>
+</body>
+</html>

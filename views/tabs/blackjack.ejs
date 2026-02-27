@@ -1,0 +1,132 @@
+<div class="w-full max-w-5xl mx-auto">
+
+  <div class="flex items-start justify-between gap-6 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">🃏 Blackjack</h1>
+      <p class="text-gray-400 mt-1">
+        Configure your chat-side Blackjack game (reward → hand, chat commands → play).
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/dashboard/casino"
+         class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">
+        ← Back to Casino
+      </a>
+      <a href="/dashboard"
+         class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">
+        Dashboard
+      </a>
+    </div>
+  </div>
+
+  <% if (flash?.success) { %>
+    <div class="mb-5 p-3 rounded bg-emerald-900/25 border border-emerald-800 text-emerald-100 text-sm">
+      <%= flash.success %>
+    </div>
+  <% } %>
+
+  <% if (flash?.error) { %>
+    <div class="mb-5 p-3 rounded bg-red-900/25 border border-red-800 text-red-100 text-sm">
+      <%= flash.error %>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- Left: Config -->
+    <div class="xl:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <h2 class="text-xl font-semibold">Settings</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Most creators will toggle narration on/off depending on vibe.
+          </p>
+        </div>
+
+        <span class="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 border border-gray-700">
+          <%= isPro ? 'Pro' : 'Creator' %>
+        </span>
+      </div>
+
+      <form method="POST" action="/dashboard/widgets/blackjack/save" class="space-y-6">
+
+        <!-- Enabled -->
+        <label class="flex items-start gap-3 p-4 rounded border border-gray-800 bg-gray-950/40">
+          <input type="checkbox" name="enabled" value="true" class="mt-1 accent-indigo-500"
+            <%= (cfg?.enabled ?? defaults?.enabled ?? true) ? 'checked' : '' %> />
+          <div>
+            <div class="font-medium">Enable Blackjack</div>
+            <div class="text-xs text-gray-400 mt-1">
+              If off, reward redemptions should be ignored and no hands start.
+            </div>
+          </div>
+        </label>
+
+        <!-- Narration -->
+        <label class="flex items-start gap-3 p-4 rounded border border-gray-800 bg-gray-950/40">
+          <input type="checkbox" name="narrationEnabled" value="true" class="mt-1 accent-indigo-500"
+            <%= (cfg?.narrationEnabled ?? defaults?.narrationEnabled ?? true) ? 'checked' : '' %> />
+          <div>
+            <div class="font-medium">Narration in chat</div>
+            <div class="text-xs text-gray-400 mt-1">
+              Flavor text for actions/results. Toggle off if it gets annoying.
+            </div>
+          </div>
+        </label>
+
+        <!-- Verbosity -->
+        <div>
+          <label class="block text-sm font-medium mb-2">Narration verbosity</label>
+          <% const v = Number(cfg?.narrationVerbosity ?? defaults?.narrationVerbosity ?? 2); %>
+          <select name="narrationVerbosity"
+                  class="w-full md:w-72 bg-gray-950 border border-gray-800 rounded px-3 py-2">
+            <option value="1" <%= v === 1 ? 'selected' : '' %>>Low</option>
+            <option value="2" <%= v === 2 ? 'selected' : '' %>>Medium</option>
+            <option value="3" <%= v === 3 ? 'selected' : '' %>>High</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-2">
+            Low = minimal lines. High = more reactions per hand.
+          </p>
+        </div>
+
+        <!-- Save -->
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button type="submit"
+                  class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
+            Save
+          </button>
+
+          <button type="submit" name="_action" value="reset"
+                  class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-100">
+            Reset defaults
+          </button>
+
+          <a href="/dashboard/casino"
+             class="px-4 py-2 rounded bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-200">
+            Done
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Info -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <h3 class="text-lg font-semibold mb-2">How it works</h3>
+
+      <ul class="text-sm text-gray-400 space-y-2">
+        <li>• Viewer redeems your “Blackjack Hand” reward.</li>
+        <li>• Scraplet starts a hand and announces it in chat (optional narration).</li>
+        <li>• Player types commands: <span class="font-mono text-gray-200">hit</span>, <span class="font-mono text-gray-200">stand</span>, <span class="font-mono text-gray-200">double</span>.</li>
+      </ul>
+
+      <div class="mt-5 pt-5 border-t border-gray-800">
+        <div class="text-xs text-gray-500">Widget ID</div>
+        <div class="text-sm text-gray-200 font-mono break-all">
+          <%= widget?.public_id || '—' %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

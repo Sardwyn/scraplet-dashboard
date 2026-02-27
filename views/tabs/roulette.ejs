@@ -1,0 +1,73 @@
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">🎡 Roulette</h1>
+      <p class="text-gray-400 mt-1">Server-authoritative roulette spins for OBS.</p>
+    </div>
+    <a href="/dashboard/casino" class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+      ← Back to Casino
+    </a>
+  </div>
+
+  <% const publicId=widget?.public_id; %>
+    <% const ingestKey=widget?.ingest_key; %>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-xl font-semibold">Config</h2>
+              <p class="text-gray-400 text-sm mt-1">Edit the widget config JSON directly.</p>
+            </div>
+          </div>
+
+          <% if (flash?.success) { %>
+            <div class="mb-4 p-3 rounded border border-green-800 bg-green-900/20 text-green-200 text-sm">
+              <%= flash.success %>
+            </div>
+            <% } %>
+              <% if (flash?.error) { %>
+                <div class="mb-4 p-3 rounded border border-red-800 bg-red-900/20 text-red-200 text-sm">
+                  <%= flash.error %>
+                </div>
+                <% } %>
+
+                  <form method="POST" action="/dashboard/widgets/roulette/save" class="space-y-4">
+                    <label class="block text-sm font-medium">config_json</label>
+                    <textarea name="config_json" rows="18"
+                      class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 font-mono text-xs"><%= JSON.stringify(cfg || defaults || {}, null, 2) %></textarea>
+
+                    <div class="flex items-center gap-3">
+                      <button type="submit"
+                        class="text-sm px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white">Save</button>
+                      <button type="submit" name="_action" value="reset"
+                        class="text-sm px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">Reset</button>
+                    </div>
+                  </form>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+          <h3 class="text-lg font-semibold mb-3">OBS</h3>
+
+          <div class="text-xs text-gray-400 mb-2">Widget ID</div>
+          <div class="p-2 rounded bg-gray-950 border border-gray-800 font-mono text-xs break-all">
+            <%= publicId %>
+          </div>
+
+          <div class="text-xs text-gray-400 mt-4 mb-2">OBS Browser Source URL</div>
+          <input readonly class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 font-mono text-xs"
+            value="https://scraplet.store/obs/roulette/<%= publicId %>" onclick="this.select()" />
+
+          <button type="button"
+            class="mt-3 w-full text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700"
+            onclick="navigator.clipboard.writeText('https://scraplet.store/obs/roulette/<%= publicId %>')">
+            Copy OBS URL
+          </button>
+
+          <div class="text-xs text-gray-400 mt-6 mb-2">Ingest Key</div>
+          <div class="p-2 rounded bg-gray-950 border border-gray-800 font-mono text-xs break-all">
+            <%= ingestKey %>
+          </div>
+        </div>
+      </div>
+</div>

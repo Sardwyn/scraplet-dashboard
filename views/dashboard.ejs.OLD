@@ -1,0 +1,397 @@
+<div class="w-full">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-6 mb-10">
+    <div>
+      <h1 class="text-4xl font-bold">Welcome, <%= user.username %></h1>
+      <p class="text-gray-400 mt-2">Your creator mission-control.</p>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="<%= profileUrl %>" target="_blank" rel="noopener"
+         class="bg-gray-800 hover:bg-gray-700 text-white text-sm px-4 py-2 rounded shadow transition border border-gray-700">
+        View public profile →
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+    <!-- Overlays -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Overlays</h2>
+      <p class="text-gray-400 mb-3">
+        You have <%= overlays.filter(o => o.status === 'installed').length %> overlays installed.
+      </p>
+      <a href="/dashboard/overlays" class="text-blue-400 hover:underline">Manage Overlays →</a>
+    </div>
+
+    <!-- Widgets -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Widgets</h2>
+      <p class="text-gray-400 mb-3">
+        <%= widgets.filter(w => w.status === 'unlocked').length %> unlocked,
+        <%= widgets.filter(w => w.status === 'locked').length %> pending purchase.
+      </p>
+      <a href="/dashboard/widgets" class="text-blue-400 hover:underline">Manage Widgets →</a>
+    </div>
+
+    <!-- Scrapbot Casino -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold mb-2">🎰 Scrapbot Casino</h2>
+          <p class="text-gray-400 text-sm mb-3">
+            Side games for chat. Blackjack today — more coming soon.
+          </p>
+
+          <% const bjEnabled = (casino?.blackjack?.enabled !== false); %>
+          <span class="text-xs px-3 py-1 rounded-full border
+            <%= bjEnabled ? 'border-emerald-600/40 bg-emerald-600/15 text-emerald-200' : 'border-gray-700 bg-gray-800 text-gray-300' %>">
+            Blackjack: <%= bjEnabled ? 'Enabled' : 'Disabled' %>
+          </span>
+        </div>
+
+        <span class="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 border border-gray-700">
+          <%= isPro ? 'Pro' : 'Upgrade' %>
+        </span>
+      </div>
+
+      <div class="mt-4">
+        <a href="/dashboard/casino" class="text-blue-400 hover:underline">Open Casino →</a>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-lg transition border border-gray-800">
+      <h2 class="text-xl font-semibold mb-2">Account</h2>
+      <p class="text-gray-400 text-sm mb-3">Subscription: <%= isPro ? 'Pro' : 'Creator' %></p>
+      <a href="/account" class="text-blue-400 hover:underline">View Account →</a>
+    </div>
+  </div>
+
+  <!-- Platform Connections -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-10">
+    <!-- Kick -->
+    <div class="bg-gray-900 p-5 rounded-xl shadow-md border border-gray-800">
+      <h2 class="text-lg font-semibold mb-1">Kick</h2>
+
+      <% if (kick?.connected) { %>
+        <p class="text-green-400 text-sm mb-3">
+          Connected <%= kick.username ? `as @${kick.username}` : '' %>
+        </p>
+
+        <p class="text-gray-400 text-xs mb-4">
+          Make sure <span class="font-mono">Scrapbot</span> is added as a moderator in your Kick channel settings.
+        </p>
+
+        <form method="POST" action="/api/integrations/kick/disconnect">
+          <button class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded">
+            Disconnect
+          </button>
+        </form>
+      <% } else { %>
+        <p class="text-gray-400 text-sm mb-4">
+          <% if (kick?.needsReauth) { %>
+            Kick connection expired. Reconnect to restore events and widgets.
+          <% } else { %>
+            Connect your Kick channel to unlock chat widgets and analytics.
+          <% } %>
+        </p>
+
+        <div class="flex gap-2">
+          <a href="/auth/kick/start"
+             class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded">
+            <%= kick?.needsReauth ? 'Reconnect Kick' : 'Connect Kick' %>
+          </a>
+
+          <form method="POST" action="/api/integrations/kick/disconnect">
+            <button class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded">
+              Disconnect
+            </button>
+          </form>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Stubs -->
+    <div class="bg-gray-900 p-5 rounded-xl shadow-md border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">Twitch</h2>
+      <p class="text-gray-500 text-sm">Coming soon.</p>
+    </div>
+
+    <div class="bg-gray-900 p-5 rounded-xl shadow-md border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">YouTube</h2>
+      <p class="text-gray-500 text-sm">Coming soon.</p>
+    </div>
+
+    <div class="bg-gray-900 p-5 rounded-xl shadow-md border border-gray-800 opacity-60">
+      <h2 class="text-lg font-semibold mb-1">TikTok</h2>
+      <p class="text-gray-500 text-sm">Coming soon.</p>
+    </div>
+  </div>
+
+  <!-- Studio / Scrapbot / Public Profile -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-12">
+
+    <!-- Studio -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 flex flex-col justify-between">
+      <div>
+        <h2 class="text-xl font-semibold mb-2">Studio Controller</h2>
+        <p class="text-gray-400 text-sm mb-4">
+          Launch the live production controller for your channel.
+        </p>
+      </div>
+
+      <a href="/studio"
+         class="inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow transition text-sm font-medium">
+        Launch Studio
+      </a>
+    </div>
+
+    <!-- Scrapbot -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 flex flex-col justify-between">
+      <div>
+        <div class="flex items-start justify-between gap-3">
+          <h2 class="text-xl font-semibold mb-2">Scrapbot</h2>
+
+          <%
+// scrapbotStatus expected shape:
+// {
+//   ok: true/false,
+//   channel_slug: 'scraplet',
+//   watching: true/false,
+//   mod_status: 'ok'|'forbidden'|'unknown'|'error',
+//   mod_checked_at: ISO string|null
+// }
+const ss =
+  (typeof scrapbotStatus !== 'undefined' && scrapbotStatus)
+    ? scrapbotStatus
+    : (Array.isArray(scrapbotChannels) ? (scrapbotChannels[0] || null) : null);
+
+
+let pillText = 'Unknown';
+let pillClass = 'border-gray-700 bg-gray-800 text-gray-300';
+
+if (!kick?.connected) {
+  pillText = 'Kick not connected';
+  pillClass = 'border-yellow-600/40 bg-yellow-600/15 text-yellow-200';
+} else if (ss?.watching && ss?.mod_status === 'ok') {
+  pillText = 'Scrapbot connected';
+  pillClass = 'border-emerald-600/40 bg-emerald-600/15 text-emerald-200';
+} else if (ss?.watching && (ss?.mod_status === 'forbidden' || ss?.mod_status === 'error')) {
+  pillText = 'Watching, not mod';
+  pillClass = 'border-orange-600/40 bg-orange-600/15 text-orange-200';
+} else if (ss?.watching && (ss?.mod_status === 'unknown' || !ss?.mod_status)) {
+  pillText = 'Watching, mod unknown';
+  pillClass = 'border-blue-600/40 bg-blue-600/15 text-blue-200';
+} else if (!ss?.watching && ss?.mod_status === 'ok') {
+  pillText = 'Mod ok, not watching';
+  pillClass = 'border-orange-600/40 bg-orange-600/15 text-orange-200';
+} else if (kick?.connected) {
+  pillText = 'Not watching';
+  pillClass = 'border-gray-700 bg-gray-800 text-gray-300';
+}
+          %>
+
+          <span class="text-xs px-3 py-1 rounded-full border <%= pillClass %>">
+            <%= pillText %>
+          </span>
+        </div>
+
+        <% if (kick?.connected) { %>
+          <p class="text-gray-400 text-sm mb-3">
+            Chat automation and moderation for your Kick channel.
+          </p>
+          <p class="text-xs text-gray-500 mb-2">
+            Kick connected <%= kick.username ? `as @${kick.username}` : '' %>.
+            <% if (ss?.mod_checked_at) { %>
+              <span class="ml-2">Last check: <span class="font-mono"><%= ss.mod_checked_at %></span></span>
+            <% } %>
+          </p>
+
+          <% if (ss?.watching && (ss?.mod_status === 'forbidden' || ss?.mod_status === 'error')) { %>
+            <p class="text-xs text-orange-300 mb-2">
+              Add <span class="font-mono">Scrapbot</span> as a moderator in your Kick channel, then retry.
+            </p>
+          <% } else if (ss?.watching && (ss?.mod_status === 'unknown' || !ss?.mod_status)) { %>
+            <p class="text-xs text-blue-300 mb-2">
+              Scrapbot is watching your channel, but mod status hasn’t been verified yet.
+            </p>
+          <% } %>
+
+        <% } else { %>
+          <p class="text-gray-400 text-sm mb-4">
+            Configure chat automation, custom commands, and moderation rules.
+          </p>
+          <p class="text-xs text-yellow-400 mb-2">
+            Connect Kick first to activate Scrapbot.
+          </p>
+        <% } %>
+      </div>
+
+      <div class="flex items-center gap-2 mt-2">
+        <% if (!kick?.connected) { %>
+          <a href="/auth/kick/start"
+             class="inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded shadow transition text-xs font-medium">
+            Connect Kick
+          </a>
+        <% } %>
+
+        <a href="/dashboard/scrapbot"
+           class="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition text-sm font-medium">
+          Open Scrapbot
+        </a>
+      </div>
+    </div>
+
+
+    <!-- Public Profile (col-span-2) -->
+    <div class="bg-gray-900 p-6 rounded-xl shadow-md border border-gray-800 xl:col-span-2">
+      <h2 class="text-xl font-semibold mb-2">Your Public Profile</h2>
+      <p class="text-gray-400 mb-3">
+        Share your creator page with fans, sponsors, and collaborators.
+      </p>
+
+      <div class="flex flex-col xl:flex-row xl:items-center gap-3">
+        <input id="profileUrl" type="text" readonly value="<%= profileUrl %>"
+          class="bg-gray-800 text-blue-300 px-3 py-2 rounded w-full cursor-pointer border border-gray-700"
+          onclick="copyProfileUrl()" />
+
+        <div class="flex flex-wrap items-center gap-2">
+          <a href="/profile/editor" class="btn btn-secondary">New profile editor (beta)</a>
+          <a href="/profile/configure" class="btn btn-ghost text-xs">Legacy editor</a>
+
+          <a href="/profile/email"
+             class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow transition text-sm">
+            Email List
+          </a>
+
+          <button onclick="copyProfileUrl()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition">
+            Copy
+          </button>
+
+          <button onclick="toggleQR()"
+            class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded shadow transition">
+            QR
+          </button>
+        </div>
+      </div>
+
+      <div id="qrContainer" class="mt-4 hidden">
+        <img id="qrCode" alt="QR Code for profile" class="w-32 h-32 border border-gray-700 rounded" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Widgets & Overlays -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-10 mt-10">
+
+    <!-- Widgets Section -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2">
+        Your Widgets
+      </h2>
+
+      <ul class="space-y-4">
+        <% widgets.forEach(item => { %>
+          <li class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-xl transition border border-gray-800 group">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full text-2xl group-hover:scale-110 transition">
+                  <%= item.icon %>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+                    <%= item.name %>
+                  </h3>
+                  <p class="text-sm text-gray-400">
+                    <%= item.description %>
+                  </p>
+                </div>
+              </div>
+
+              <% if (item.status === 'locked') { %>
+                <span class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">Locked</span>
+              <% } else if (item.status === 'installed') { %>
+                <a href="/dashboard/widgets/<%= item.id %>"
+                   class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-4 py-1 rounded transition">
+                  Configure
+                </a>
+              <% } else { %>
+                <a href="/dashboard/widgets/<%= item.id %>"
+                   class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1 rounded transition">
+                  Install
+                </a>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+
+    <!-- Overlays Section -->
+    <div>
+      <h2 class="text-2xl font-bold mb-6 border-b border-gray-800 pb-2">
+        Your Overlays
+      </h2>
+
+      <ul class="space-y-4">
+        <% overlays.forEach(item => { %>
+          <li class="bg-gray-900 p-6 rounded-xl shadow-md hover:shadow-xl transition border border-gray-800 group">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full text-2xl group-hover:scale-110 transition">
+                  <%= item.icon %>
+                </div>
+                <div>
+                  <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+                    <%= item.name %>
+                  </h3>
+                  <p class="text-sm text-gray-400">
+                    <%= item.description %>
+                  </p>
+                </div>
+              </div>
+
+              <% if (item.status === 'locked') { %>
+                <span class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">Locked</span>
+              <% } else if (item.status === 'installed') { %>
+                <span class="bg-green-600 text-white text-xs px-3 py-1 rounded-full">Installed</span>
+              <% } else { %>
+                <button disabled
+                  class="bg-gray-700 text-gray-300 text-sm px-4 py-1 rounded opacity-60 cursor-not-allowed">
+                  Install
+                </button>
+              <% } %>
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    function copyProfileUrl() {
+      const input = document.getElementById('profileUrl');
+      if (!input) return;
+      navigator.clipboard.writeText(input.value);
+    }
+
+    function toggleQR() {
+      const container = document.getElementById('qrContainer');
+      const img = document.getElementById('qrCode');
+      const input = document.getElementById('profileUrl');
+      if (!container || !img || !input) return;
+
+      container.classList.toggle('hidden');
+
+      if (!img.src) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(input.value)}`;
+      }
+    }
+  </script>
+
+</div>

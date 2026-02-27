@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Configure <%= widget.name %>
+  </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Archivo:wght@400;600;700&family=Barlow:wght@400;600;700&family=Bebas+Neue&family=Press+Start+2P&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=1">
+</head>
+
+<body class="np text-white min-h-screen flex flex-col">
+
+  <%- include('partials/dashboard-header', { user }) %>
+
+    <main class="flex-1 px-6 md:px-10 py-8 w-full max-w-6xl mx-auto">
+
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+          <h1 class="text-3xl font-bold font-display tracking-tight text-white">Configure Widget</h1>
+          <p class="pc-text-muted mt-1">
+            <strong class="text-white">
+              <%= widget.name %>
+            </strong> properties and live preview.
+          </p>
+        </div>
+        <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost">
+          ← Back to Widgets
+        </a>
+      </div>
+
+      <% if (widget && widget.id==='chat' ) { %>
+        <div class="pc-panel mb-8">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Developer Info</div>
+              <div class="pc-panel-sub">Ingest endpoints for custom chat events</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd space-y-4">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div class="pc-text-muted text-xs mb-1">OBS Browser Source URL</div>
+                <div class="pc-input font-mono text-[11px] truncate select-all">
+                  <%= obsUrl %>
+                </div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Poll URL</div>
+                <div class="pc-input font-mono text-[11px] truncate select-all">
+                  <%= pollUrl %>
+                </div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Ingest URL</div>
+                <div class="pc-input font-mono text-[11px] truncate select-all">
+                  <%= ingestUrl %>
+                </div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Ingest Key</div>
+                <div class="pc-input font-mono text-[11px] truncate select-all">
+                  <%= ingestKey %>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Test Ingest (cURL)</div>
+              <pre
+                class="pc-oled p-3 text-[10px] whitespace-pre-wrap break-all text-green-400">curl -sS -X POST "<%= ingestUrl %>" -H "Content-Type: application/json" -H "x-ingest-key: <%= ingestKey %>" --data-raw '{"platform":"kick","user":{"name":"Rizler","avatar":""},"text":"HELLO FROM INGEST ✅"}'</pre>
+            </div>
+
+          </div>
+        </div>
+        <% } %>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+            <!-- CONFIG FORM -->
+            <div class="pc-panel h-fit">
+              <div class="pc-panel-hd">
+                <div>
+                  <div class="pc-panel-title">Configuration</div>
+                  <div class="pc-panel-sub">Customize behavior and appearance</div>
+                </div>
+              </div>
+              <div class="pc-panel-bd">
+                <form method="POST" action="/dashboard/widgets/<%= widget.id %>/save" class="space-y-4">
+                  <% widget.configSchema.fields.forEach(field=> { %>
+                    <div>
+                      <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">
+                        <%= field.label %>
+                      </label>
+
+                      <% if (field.type==='text' ) { %>
+                        <input type="text" name="<%= field.name %>" class="pc-input" />
+                        <% } else if (field.type==='select' ) { %>
+                          <select name="<%= field.name %>" class="pc-select">
+                            <% field.options.forEach(opt=> { %>
+                              <option value="<%= opt %>">
+                                <%= opt %>
+                              </option>
+                              <% }) %>
+                          </select>
+                          <% } %>
+                    </div>
+                    <% }) %>
+
+                      <div class="pt-4 border-t border-white/5 flex justify-end">
+                        <button type="submit" class="pc-btn pc-btn--primary">
+                          Save & Install
+                        </button>
+                      </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- PREVIEW -->
+            <div class="pc-panel">
+              <div class="pc-panel-hd">
+                <div>
+                  <div class="pc-panel-title">Live Preview</div>
+                  <div class="pc-panel-sub">Real-time render of the widget</div>
+                </div>
+              </div>
+              <div class="pc-panel-bd p-0 overflow-hidden bg-black relative">
+                <div class="absolute inset-0 bg-[url('/dashboard/img/grid-bg.png')] opacity-20 pointer-events-none">
+                </div>
+                <iframe src="/dashboard/widgets/preview/<%= widget.id %>?t=<%= Date.now() %>"
+                  class="w-full h-[500px] border-none"></iframe>
+              </div>
+            </div>
+
+          </div>
+
+    </main>
+
+    <%- include('partials/dashboard-footer') %>
+
+</body>
+
+</html>

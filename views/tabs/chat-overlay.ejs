@@ -1,0 +1,1218 @@
+<!-- /views/chat-overlay.ejs -->
+<div class="w-full" style="padding: 28px 0;">
+
+  <!-- Header -->
+  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px;">
+    <div style="min-width:0;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <h1 style="margin:0; font-size:30px; font-weight:800; letter-spacing:-0.02em; font-family: Space Grotesk, Inter, system-ui;">
+          Chat Overlay
+        </h1>
+        <span class="pc-chip is-on"><span class="pc-dot"></span>Widget</span>
+      </div>
+      <div class="pc-muted" style="margin-top:8px; font-size:13px;">
+        Pick a preset, tweak the look, and add it to OBS as a Browser Source.
+      </div>
+    </div>
+
+    <a href="/dashboard" class="pc-btn pc-btn-ghost" style="white-space:nowrap;">← Back</a>
+  </div>
+
+  <% if (flash && flash.error) { %>
+    <div class="mt-6 pc-panel">
+      <div class="pc-panel-hd">
+        <div class="relative z-10" style="font-weight:600; color: var(--pc-err);">Error</div>
+      </div>
+      <div class="pc-panel-bd">
+        <div class="relative z-10" style="color: rgba(255, 180, 180, 0.92); font-size:13px;">
+          <%= flash.error %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (flash && flash.success) { %>
+    <div class="mt-6 pc-panel">
+      <div class="pc-panel-hd">
+        <div class="relative z-10" style="font-weight:600; color: rgba(57,255,182,0.90);">Saved</div>
+      </div>
+      <div class="pc-panel-bd">
+        <div class="relative z-10" style="color: rgba(210,255,240,0.92); font-size:13px;">
+          <%= flash.success %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Two column layout -->
+  <div class="mt-8" style="display:grid; grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr); gap:22px; align-items:start;">
+
+    <!-- LEFT: Editor -->
+    <div style="min-width:0;">
+
+      <form id="chatConfigForm" action="/dashboard/widgets/chat/save" method="post" style="display:flex; flex-direction:column; gap:16px;">
+        <input type="hidden" name="_action" value="save" />
+
+        <!-- Top: Presets + Layout -->
+        <section class="pc-panel">
+          <div class="pc-panel-hd">
+            <div class="relative z-10" style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px;">
+              <div>
+                <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:16px; color:rgba(255,255,255,0.92);">
+                  Presets & Layout
+                </div>
+                <div class="pc-muted" style="margin-top:4px; font-size:13px;">
+                  Start with a preset, then tweak. Changes auto-save.
+                </div>
+              </div>
+              <div class="pc-muted" id="autosaveStatus" style="font-size:12px; white-space:nowrap;"></div>
+            </div>
+          </div>
+
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:14px;">
+
+              <!-- Preset chips -->
+              <div>
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:8px;">
+                  Presets
+                </div>
+                <div id="presetChips" style="display:flex; flex-wrap:wrap; gap:8px;">
+                  <% (presets || []).forEach(p => { %>
+                    <button
+                      type="button"
+                      class="pc-btn pc-btn-ghost preset-chip"
+                      data-preset-id="<%= p.id %>"
+                      title="<%= p.name %>"
+                      style="padding:8px 10px;"
+                    ><%= p.name %></button>
+                  <% }); %>
+                </div>
+              </div>
+
+              <!-- Layout controls -->
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                    Orientation
+                  </div>
+                  <select name="layoutOrientation" class="pc-input" style="margin-top:6px;">
+                    <% const lo = (cfg && cfg.layoutOrientation) ? String(cfg.layoutOrientation) : "vertical"; %>
+                    <option value="vertical" <%= lo === "vertical" ? "selected" : "" %>>Vertical (stack)</option>
+                    <option value="horizontal" <%= lo === "horizontal" ? "selected" : "" %>>Horizontal (strip)</option>
+                  </select>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                    Horizontal mode
+                  </div>
+                  <select name="horizontalMode" class="pc-input" style="margin-top:6px;">
+                    <% const hm = (cfg && cfg.horizontalMode) ? String(cfg.horizontalMode) : "ticker"; %>
+                    <option value="ticker" <%= hm === "ticker" ? "selected" : "" %>>Ticker</option>
+                    <option value="carousel" <%= hm === "carousel" ? "selected" : "" %>>Carousel</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="horizontalOptions" style="display:none; gap:12px;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                      Strip height (px)
+                    </div>
+                    <input class="pc-input" style="margin-top:6px;" type="number" name="stripHeightPx" min="80" max="800"
+                      value="<%= (cfg && cfg.stripHeightPx != null) ? cfg.stripHeightPx : 240 %>" />
+                  </label>
+
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                      Gap (px)
+                    </div>
+                    <input class="pc-input" style="margin-top:6px;" type="number" name="tickerGapPx" min="0" max="64"
+                      value="<%= (cfg && cfg.tickerGapPx != null) ? cfg.tickerGapPx : 12 %>" />
+                  </label>
+
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                      Ticker speed (px/s)
+                    </div>
+                    <input class="pc-input" style="margin-top:6px;" type="number" name="tickerPps" min="30" max="500"
+                      value="<%= (cfg && cfg.tickerPps != null) ? cfg.tickerPps : 140 %>" />
+                  </label>
+
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                      Carousel hold (ms)
+                    </div>
+                    <input class="pc-input" style="margin-top:6px;" type="number" name="carouselHoldMs" min="800" max="20000"
+                      value="<%= (cfg && cfg.carouselHoldMs != null) ? cfg.carouselHoldMs : 3500 %>" />
+                  </label>
+                </div>
+
+                <div class="pc-muted" style="font-size:12px;">
+                  Tip: Carousel ignores speed and shows one message at a time with a hold duration.
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- Typography -->
+        <details class="pc-panel" open>
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Typography
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:12px;">
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Font</div>
+                <% const currentFont = (cfg && cfg.fontFamily) ? cfg.fontFamily : "Inter, system-ui, sans-serif"; %>
+                <select name="fontFamily" class="pc-input" style="margin-top:6px;">
+                  <option value="Inter, system-ui, sans-serif" <%= currentFont === "Inter, system-ui, sans-serif" ? "selected" : "" %>>Inter (Clean)</option>
+                  <option value="Space Grotesk, Inter, system-ui" <%= currentFont === "Space Grotesk, Inter, system-ui" ? "selected" : "" %>>Space Grotesk (Modern)</option>
+                  <option value="Archivo, Inter, system-ui" <%= currentFont === "Archivo, Inter, system-ui" ? "selected" : "" %>>Archivo (Readable)</option>
+                  <option value="Barlow, Inter, system-ui" <%= currentFont === "Barlow, Inter, system-ui" ? "selected" : "" %>>Barlow (Compact)</option>
+                  <option value="Bebas Neue, Inter, system-ui" <%= currentFont === "Bebas Neue, Inter, system-ui" ? "selected" : "" %>>Bebas Neue (Pulp)</option>
+                  <option value="Press Start 2P, Inter, system-ui" <%= currentFont === "Press Start 2P, Inter, system-ui" ? "selected" : "" %>>Press Start 2P (Retro)</option>
+                </select>
+                <div class="pc-muted" style="margin-top:8px; font-size:12px;">
+                  Preview: <span id="fontPreview" style="margin-left:6px;">Aa — The quick brown fox</span>
+                </div>
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Size (px)</div>
+                <input class="pc-input" style="margin-top:6px;" type="number" name="fontSizePx" min="10" max="64"
+                  value="<%= (cfg && cfg.fontSizePx != null) ? cfg.fontSizePx : 28 %>" />
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Line height</div>
+                <input class="pc-input" style="margin-top:6px;" type="number" name="lineHeight" min="0.9" max="2" step="0.01"
+                  value="<%= (cfg && cfg.lineHeight != null) ? cfg.lineHeight : 1.25 %>" />
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Message gap (px)</div>
+                <input class="pc-input" style="margin-top:6px;" type="number" name="messageGapPx" min="0" max="48"
+                  value="<%= (cfg && cfg.messageGapPx != null) ? cfg.messageGapPx : 10 %>" />
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Max bubble width (px)</div>
+                <input class="pc-input" style="margin-top:6px;" type="number" name="maxMessageWidthPx" min="0" max="1200"
+                  value="<%= (cfg && cfg.maxMessageWidthPx != null) ? cfg.maxMessageWidthPx : 0 %>" />
+                <div class="pc-muted" style="margin-top:6px; font-size:12px;">0 = no clamp</div>
+              </label>
+
+              <div></div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Colors & Icons -->
+        <details class="pc-panel" open>
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Colors & Identity
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Username color mode</div>
+                <% const ucm = (cfg && cfg.usernameColorMode) ? String(cfg.usernameColorMode) : "fixed"; %>
+                <select class="pc-input" style="margin-top:6px;" name="usernameColorMode">
+                  <option value="fixed" <%= ucm === "fixed" ? "selected" : "" %>>Fixed</option>
+                  <option value="hash" <%= ucm === "hash" ? "selected" : "" %>>Hashed (auto)</option>
+                </select>
+              </label>
+
+              <div style="display:grid; grid-template-columns: 1fr 70px; gap:10px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Name color</div>
+                  <input class="pc-input" style="margin-top:6px;" type="text" name="nameColor"
+                    value="<%= (cfg && cfg.nameColor) ? cfg.nameColor : '#ffffff' %>"/>
+                </label>
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">&nbsp;</div>
+                  <input class="pc-input" style="margin-top:6px; padding:0; height:42px;" type="color" data-sync-color="nameColor"
+                    value="<%= (cfg && cfg.nameColor && String(cfg.nameColor).startsWith('#')) ? cfg.nameColor : '#ffffff' %>"/>
+                </label>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 70px; gap:10px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Message color</div>
+                  <input class="pc-input" style="margin-top:6px;" type="text" name="messageColor"
+                    value="<%= (cfg && cfg.messageColor) ? cfg.messageColor : '#e8e8e8' %>"/>
+                </label>
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">&nbsp;</div>
+                  <input class="pc-input" style="margin-top:6px; padding:0; height:42px;" type="color" data-sync-color="messageColor"
+                    value="<%= (cfg && cfg.messageColor && String(cfg.messageColor).startsWith('#')) ? cfg.messageColor : '#e8e8e8' %>"/>
+                </label>
+              </div>
+
+              <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
+                <input type="hidden" name="showAvatars" value="0" />
+                <input type="checkbox" name="showAvatars" value="1" <%= (cfg && cfg.showAvatars === false) ? "" : "checked" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Show avatars</span>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
+                <input type="hidden" name="showPlatformIcon" value="0" />
+                <input type="checkbox" name="showPlatformIcon" value="1" <%= (cfg && cfg.showPlatformIcon === false) ? "" : "checked" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Show platform icon</span>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
+                <input type="hidden" name="shadow" value="0" />
+                <input type="checkbox" name="shadow" value="1" <%= (cfg && cfg.shadow === false) ? "" : "checked" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Drop shadow</span>
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Platform accent</div>
+                <% const pam = (cfg && cfg.platformAccentMode) ? String(cfg.platformAccentMode) : "bar"; %>
+                <select class="pc-input" style="margin-top:6px;" name="platformAccentMode">
+                  <option value="off" <%= pam === "off" ? "selected" : "" %>>Off</option>
+                  <option value="bar" <%= pam === "bar" ? "selected" : "" %>>Bar</option>
+                  <option value="dot" <%= pam === "dot" ? "selected" : "" %>>Dot</option>
+                </select>
+              </label>
+
+            </div>
+          </div>
+        </details>
+
+        <!-- Bubble -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Bubble
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+              <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
+                <input type="hidden" name="bubbleEnabled" value="0" />
+                <input type="checkbox" name="bubbleEnabled" value="1" <%= (cfg && cfg.bubble && cfg.bubble.enabled === false) ? "" : "checked" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable bubble</span>
+              </label>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Radius (px)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="bubbleRadiusPx" min="0" max="48"
+                    value="<%= (cfg && cfg.bubble && cfg.bubble.radiusPx != null) ? cfg.bubble.radiusPx : 14 %>"/>
+                </label>
+
+                <div style="display:grid; grid-template-columns: 1fr 70px; gap:10px;">
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Background</div>
+                    <input class="pc-input" style="margin-top:6px;" type="text" name="bubbleBg"
+                      value="<%= (cfg && cfg.bubble && cfg.bubble.bg) ? cfg.bubble.bg : 'rgba(0,0,0,0.55)' %>"/>
+                  </label>
+                  <div></div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 70px; gap:10px;">
+                  <label style="display:block;">
+                    <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Border</div>
+                    <input class="pc-input" style="margin-top:6px;" type="text" name="bubbleBorder"
+                      value="<%= (cfg && cfg.bubble && cfg.bubble.border) ? cfg.bubble.border : 'rgba(255,255,255,0.12)' %>"/>
+                  </label>
+                  <div></div>
+                </div>
+
+                <div></div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Outline -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Outline (stroke)
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+              <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
+                <input type="hidden" name="outlineEnabled" value="0" />
+                <input type="checkbox" name="outlineEnabled" value="1" <%= (cfg && cfg.outline && cfg.outline.enabled) ? "checked" : "" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable outline</span>
+              </label>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Thickness (px)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="outlinePx" min="0" max="8"
+                    value="<%= (cfg && cfg.outline && cfg.outline.px != null) ? cfg.outline.px : 3 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Color</div>
+                  <input class="pc-input" style="margin-top:6px;" type="text" name="outlineColor"
+                    value="<%= (cfg && cfg.outline && cfg.outline.color) ? cfg.outline.color : 'rgba(0,0,0,0.85)' %>"/>
+                </label>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Behaviour -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Behaviour
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Animation</div>
+                  <% const anim = (cfg && cfg.animation) ? String(cfg.animation) : "fade"; %>
+                  <select class="pc-input" style="margin-top:6px;" name="animation">
+                    <option value="fade" <%= anim === "fade" ? "selected" : "" %>>Fade</option>
+                    <option value="slide" <%= anim === "slide" ? "selected" : "" %>>Slide</option>
+                    <option value="none" <%= anim === "none" ? "selected" : "" %>>None</option>
+                  </select>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Hide commands (!)</div>
+                  <div style="margin-top:6px;">
+                    <label class="pc-btn pc-btn-ghost" style="display:flex; align-items:center; gap:10px; justify-content:flex-start;">
+                      <input type="hidden" name="hideCommands" value="0" />
+                      <input type="checkbox" name="hideCommands" value="1" <%= (cfg && cfg.hideCommands === false) ? "" : "checked" %> />
+                      <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enabled</span>
+                    </label>
+                  </div>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Max messages</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="maxMessages" min="1" max="30"
+                    value="<%= (cfg && cfg.limits && cfg.limits.maxMessages != null) ? cfg.limits.maxMessages : 6 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Fade after (ms)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="fadeMs" min="1500" max="60000"
+                    value="<%= (cfg && cfg.limits && cfg.limits.fadeMs != null) ? cfg.limits.fadeMs : 9000 %>"/>
+                </label>
+              </div>
+
+              <div style="height:1px; background: rgba(255,255,255,0.08);"></div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label class="pc-btn pc-btn-ghost" style="display:flex; align-items:center; gap:10px; justify-content:flex-start;">
+                  <input type="hidden" name="smoothingEnabled" value="0" />
+                  <input type="checkbox" name="smoothingEnabled" value="1" <%= (cfg && cfg.smoothing && cfg.smoothing.enabled === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Smoothing enabled</span>
+                </label>
+
+                <label class="pc-btn pc-btn-ghost" style="display:flex; align-items:center; gap:10px; justify-content:flex-start;">
+                  <input type="hidden" name="smoothingDedupeEnabled" value="0" />
+                  <input type="checkbox" name="smoothingDedupeEnabled" value="1" <%= (cfg && cfg.smoothing && cfg.smoothing.dedupeEnabled === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Dedupe repeats</span>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Rate limit (msg/s)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="smoothingRateLimitPerSec" min="1" max="60"
+                    value="<%= (cfg && cfg.smoothing && cfg.smoothing.rateLimitPerSec != null) ? cfg.smoothing.rateLimitPerSec : 12 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Dedupe window (ms)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="smoothingDedupeWindowMs" min="250" max="20000"
+                    value="<%= (cfg && cfg.smoothing && cfg.smoothing.dedupeWindowMs != null) ? cfg.smoothing.dedupeWindowMs : 2500 %>"/>
+                </label>
+              </div>
+
+            </div>
+          </div>
+        </details>
+
+        <!-- Emotes -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Emotes
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Emote size (px)</div>
+                <input class="pc-input" style="margin-top:6px;" type="number" name="emoteSizePx" min="16" max="64"
+                  value="<%= (cfg && cfg.emoteSizePx != null) ? cfg.emoteSizePx : 28 %>"/>
+              </label>
+              <div class="pc-muted" style="font-size:12px; align-self:end;">
+                Use tokens like <span class="pc-kbd">:Kek:</span> if you’ve set up emote assets.
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Pinned -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Pinned message
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+              <label class="pc-btn pc-btn-ghost" style="display:flex; align-items:center; gap:10px; justify-content:flex-start;">
+                <input type="hidden" name="pinnedEnabled" value="0" />
+                <input type="checkbox" name="pinnedEnabled" value="1" <%= (cfg && cfg.pinned && cfg.pinned.enabled) ? "checked" : "" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable pinned message</span>
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Text</div>
+                <input class="pc-input" style="margin-top:6px;" type="text" name="pinnedText"
+                  value="<%= (cfg && cfg.pinned && cfg.pinned.text) ? cfg.pinned.text : '' %>" />
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Style</div>
+                <% const ps = (cfg && cfg.pinned && cfg.pinned.style) ? String(cfg.pinned.style) : "bubble"; %>
+                <select class="pc-input" style="margin-top:6px;" name="pinnedStyle">
+                  <option value="bubble" <%= ps === "bubble" ? "selected" : "" %>>Bubble</option>
+                  <option value="plain" <%= ps === "plain" ? "selected" : "" %>>Plain</option>
+                </select>
+              </label>
+            </div>
+          </div>
+        </details>
+
+        <!-- Transform -->
+        <details class="pc-panel">
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Transform (preview mapping)
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+                <label class="pc-btn pc-btn-ghost" style="display:flex; align-items:center; gap:10px; justify-content:flex-start;">
+                  <input type="hidden" name="transformEnabled" value="0" />
+                  <input type="checkbox" name="transformEnabled" value="1" <%= (cfg && cfg.transform && cfg.transform.enabled) ? "checked" : "" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable transform</span>
+                </label>
+
+                <div style="display:flex; gap:8px;">
+                  <button type="button" class="pc-btn pc-btn-ghost" id="transformEditBtn">Edit in preview</button>
+                  <button type="button" class="pc-btn pc-btn-ghost" id="transformResetBtn">Reset</button>
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Perspective (px)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="transformPerspectivePx" min="200" max="4000"
+                    value="<%= (cfg && cfg.transform && cfg.transform.perspectivePx != null) ? cfg.transform.perspectivePx : 1000 %>"/>
+                </label>
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Scale</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="transformScale" min="0.1" max="3" step="0.01"
+                    value="<%= (cfg && cfg.transform && cfg.transform.scale != null) ? cfg.transform.scale : 1 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">X (px)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="transformX" min="-4000" max="4000"
+                    value="<%= (cfg && cfg.transform && cfg.transform.x != null) ? cfg.transform.x : 0 %>"/>
+                </label>
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Y (px)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="transformY" min="-4000" max="4000"
+                    value="<%= (cfg && cfg.transform && cfg.transform.y != null) ? cfg.transform.y : 0 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Rotate Z (deg)</div>
+                  <input class="pc-input" style="margin-top:6px;" type="number" name="transformRotateZ" min="-180" max="180" step="0.1"
+                    value="<%= (cfg && cfg.transform && cfg.transform.rotateZ != null) ? cfg.transform.rotateZ : 0 %>"/>
+                </label>
+
+                <label style="display:block;">
+                  <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Tilt X/Y (deg)</div>
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:6px;">
+                    <input class="pc-input" type="number" name="transformTiltX" min="-45" max="45" step="0.1"
+                      value="<%= (cfg && cfg.transform && cfg.transform.tiltX != null) ? cfg.transform.tiltX : 0 %>"/>
+                    <input class="pc-input" type="number" name="transformTiltY" min="-45" max="45" step="0.1"
+                      value="<%= (cfg && cfg.transform && cfg.transform.tiltY != null) ? cfg.transform.tiltY : 0 %>"/>
+                  </div>
+                </label>
+              </div>
+
+              <div class="pc-muted" style="font-size:12px;">
+                Preview editor: drag to move • corners to scale • top handle to rotate • hold <span class="pc-kbd">Shift</span> and drag to tilt.
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Actions -->
+        <section class="pc-panel">
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+              <button type="submit" class="pc-btn pc-btn-primary" name="_action" value="save">Save (manual)</button>
+              <button type="submit" class="pc-btn pc-btn-danger" name="_action" value="reset">Reset to defaults</button>
+            </div>
+          </div>
+        </section>
+
+      </form>
+    </div>
+
+    <!-- RIGHT: Sticky Preview Column -->
+    <div style="position:sticky; top:18px; align-self:start; display:flex; flex-direction:column; gap:16px;">
+
+      <!-- OBS URL (moved above preview) -->
+      <section class="pc-panel">
+        <div class="pc-panel-hd">
+          <div class="relative z-10" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+            <div style="min-width:0;">
+              <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">
+                OBS Browser Source URL
+              </div>
+              <div style="margin-top:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px; color:rgba(255,255,255,0.92); word-break:break-all;">
+                <%= obsUrl %>
+              </div>
+              <div class="pc-muted" style="margin-top:8px; font-size:12px;">
+                Add as a Browser Source. Background is transparent.
+              </div>
+            </div>
+
+            <button type="button" class="pc-btn pc-btn-primary" data-copy="<%= obsUrl %>" style="white-space:nowrap;">
+              Copy URL
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section class="pc-panel">
+        <div class="pc-panel-hd">
+          <div class="relative z-10" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+            <div>
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:16px; color:rgba(255,255,255,0.92);">
+                Preview
+              </div>
+              <div class="pc-muted" style="margin-top:4px; font-size:12px;">
+                Runtime overlay (<span class="pc-kbd"><%= obsPathOnly %></span>)
+              </div>
+            </div>
+            <button type="button" class="pc-btn pc-btn-ghost" id="reloadPreview">Reload</button>
+          </div>
+        </div>
+
+        <div class="pc-panel-bd">
+          <div class="relative z-10">
+            <div id="previewStage"
+              style="
+                position:relative;
+                width:100%;
+                aspect-ratio: 16 / 9;
+                border-radius:16px;
+                overflow:hidden;
+                border:1px solid rgba(255,255,255,0.10);
+                background:#000;
+              ">
+              <div id="previewTransformBox" style="width:100%; height:100%; transform:none; transform-origin: 0 0;">
+                <iframe
+                  id="previewFrame"
+                  src="<%= obsPathOnly %>?t=<%= Date.now() %>"
+                  style="width:100%; height:100%; border:0;"
+                ></iframe>
+              </div>
+
+              <!-- interactive overlay (preview only) -->
+              <div id="transformOverlay" style="position:absolute; inset:0; display:none; pointer-events:none;">
+                <div id="transformRect" style="position:absolute; inset:10px; border: 1px dashed rgba(255,255,255,0.55); border-radius: 14px; pointer-events:none;"></div>
+
+                <div data-handle="tl" style="position:absolute; left:10px; top:10px; width:14px; height:14px; border-radius:999px; background:rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:nwse-resize; pointer-events:auto;"></div>
+                <div data-handle="tr" style="position:absolute; right:10px; top:10px; width:14px; height:14px; border-radius:999px; background:rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:nesw-resize; pointer-events:auto;"></div>
+                <div data-handle="bl" style="position:absolute; left:10px; bottom:10px; width:14px; height:14px; border-radius:999px; background:rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:nesw-resize; pointer-events:auto;"></div>
+                <div data-handle="br" style="position:absolute; right:10px; bottom:10px; width:14px; height:14px; border-radius:999px; background:rgba(255,255,255,0.85); box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:nwse-resize; pointer-events:auto;"></div>
+                <div data-handle="rot" style="position:absolute; left:50%; top:-9px; transform:translateX(-50%); width:18px; height:18px; border-radius:999px; background:rgba(120,190,255,0.95); box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:grab; pointer-events:auto;"></div>
+
+                <div id="transformOverlayBg" style="position:absolute; inset:0; pointer-events:auto; cursor:move; background:rgba(0,0,0,0.0);"></div>
+              </div>
+            </div>
+
+            <div class="pc-muted" style="margin-top:10px; font-size:12px;">
+              OBS tip: set Browser Source size to your scene resolution.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Test message (moved below preview) -->
+      <section class="pc-panel">
+        <div class="pc-panel-hd">
+          <div class="relative z-10">
+            <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:16px; color:rgba(255,255,255,0.92);">
+              Test message
+            </div>
+            <div class="pc-muted" style="margin-top:4px; font-size:12px;">
+              Push a message straight into your overlay for testing.
+            </div>
+          </div>
+        </div>
+
+        <div class="pc-panel-bd">
+          <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+
+            <label style="display:block;">
+              <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Platform</div>
+              <select id="testPlatform" class="pc-input" style="margin-top:6px;">
+                <option value="kick">kick</option>
+                <option value="youtube">youtube</option>
+                <option value="twitch">twitch</option>
+                <option value="tiktok">tiktok</option>
+                <option value="rumble">rumble</option>
+                <option value="discord">discord</option>
+              </select>
+            </label>
+
+            <label style="display:block;">
+              <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Name</div>
+              <input id="testName" class="pc-input" style="margin-top:6px;" type="text"
+                value="<%= (user && user.username) ? user.username : 'Scraplet' %>"/>
+            </label>
+
+            <label style="display:block;">
+              <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Avatar URL (optional)</div>
+              <input id="testAvatar" class="pc-input" style="margin-top:6px;" type="text" placeholder="https://..."/>
+            </label>
+
+            <label style="display:block;">
+              <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Message</div>
+              <input id="testText" class="pc-input" style="margin-top:6px;" type="text" value="HELLO FROM TEST ✅"/>
+            </label>
+
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="pc-btn pc-btn-primary" id="sendTest">Send</button>
+              <span class="pc-muted" id="testStatus" style="font-size:12px;"></span>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- helpers ----------
+  function isHexColor(s){ return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(s||"").trim()); }
+
+  // Font picker preview
+  (function(){
+    const sel = document.querySelector('select[name="fontFamily"]');
+    const prev = document.getElementById("fontPreview");
+    if(!sel || !prev) return;
+    function apply(){ prev.style.fontFamily = sel.value || "Inter, system-ui, sans-serif"; }
+    sel.addEventListener("change", apply);
+    apply();
+  })();
+
+  // Horizontal options show/hide
+  (function(){
+    const sel = document.querySelector('select[name="layoutOrientation"]');
+    const wrap = document.getElementById("horizontalOptions");
+    function sync(){
+      const v = sel ? String(sel.value || "") : "vertical";
+      if(!wrap) return;
+      wrap.style.display = (v === "horizontal") ? "flex" : "none";
+    }
+    if(sel) sel.addEventListener("change", sync);
+    sync();
+  })();
+
+  // Sync hex picker <-> text input (only when value is #hex)
+  document.querySelectorAll("[data-sync-color]").forEach(picker => {
+    const name = picker.getAttribute("data-sync-color");
+    const textInput = document.querySelector('input[name="'+ name +'"]');
+    if(!textInput) return;
+
+    picker.addEventListener("input", () => {
+      textInput.value = picker.value;
+      textInput.dispatchEvent(new Event("input", { bubbles:true }));
+      textInput.dispatchEvent(new Event("change", { bubbles:true }));
+    });
+
+    function syncBack(){
+      const v = String(textInput.value || "").trim();
+      if(isHexColor(v)) picker.value = v;
+    }
+    textInput.addEventListener("input", syncBack);
+    textInput.addEventListener("blur", syncBack);
+  });
+
+  // Presets
+  const PRESETS = <%- JSON.stringify(presets || []) %>;
+
+  function normBool(v){ return v === true || v === "true" || v === 1 || v === "1"; }
+
+  function getControl(name){
+    const els = Array.from(document.querySelectorAll('[name="'+ CSS.escape(name) +'"]'));
+    if(!els.length) return null;
+    return (
+      els.find(el => el.type === "checkbox" || el.type === "radio") ||
+      els.find(el => el.tagName === "SELECT") ||
+      els.find(el => el.tagName === "TEXTAREA") ||
+      els.find(el => el.type !== "hidden") ||
+      els[0]
+    );
+  }
+
+  function setField(name, value){
+    const el = getControl(name);
+    if(!el) return;
+    if(el.type === "checkbox"){
+      el.checked = !!value;
+      el.dispatchEvent(new Event("change", { bubbles:true }));
+      el.dispatchEvent(new Event("input", { bubbles:true }));
+      return;
+    }
+    el.value = (value == null) ? "" : String(value);
+    el.dispatchEvent(new Event("input", { bubbles:true }));
+    el.dispatchEvent(new Event("change", { bubbles:true }));
+  }
+
+  function applyPresetConfig(presetCfg){
+    if(!presetCfg) return;
+
+    // flat
+    setField("layoutOrientation", presetCfg.layoutOrientation);
+    setField("horizontalMode", presetCfg.horizontalMode);
+    setField("stripHeightPx", presetCfg.stripHeightPx);
+    setField("tickerPps", presetCfg.tickerPps);
+    setField("tickerGapPx", presetCfg.tickerGapPx);
+    setField("carouselHoldMs", presetCfg.carouselHoldMs);
+
+    setField("fontFamily", presetCfg.fontFamily);
+    setField("fontSizePx", presetCfg.fontSizePx);
+    setField("lineHeight", presetCfg.lineHeight);
+    setField("messageGapPx", presetCfg.messageGapPx);
+    setField("maxMessageWidthPx", presetCfg.maxMessageWidthPx);
+
+    setField("showAvatars", presetCfg.showAvatars);
+    setField("showPlatformIcon", presetCfg.showPlatformIcon);
+    setField("shadow", presetCfg.shadow);
+
+    setField("usernameColorMode", presetCfg.usernameColorMode);
+    setField("nameColor", presetCfg.nameColor);
+    setField("messageColor", presetCfg.messageColor);
+
+    setField("emoteSizePx", presetCfg.emoteSizePx);
+    setField("hideCommands", presetCfg.hideCommands);
+
+    setField("animation", presetCfg.animation);
+    setField("platformAccentMode", presetCfg.platformAccentMode);
+
+    // nested
+    if(presetCfg.bubble){
+      setField("bubbleEnabled", presetCfg.bubble.enabled);
+      setField("bubbleRadiusPx", presetCfg.bubble.radiusPx);
+      setField("bubbleBg", presetCfg.bubble.bg);
+      setField("bubbleBorder", presetCfg.bubble.border);
+    }
+
+    if(presetCfg.outline){
+      setField("outlineEnabled", presetCfg.outline.enabled);
+      setField("outlinePx", presetCfg.outline.px);
+      setField("outlineColor", presetCfg.outline.color);
+    }
+
+    if(presetCfg.limits){
+      setField("maxMessages", presetCfg.limits.maxMessages);
+      setField("fadeMs", presetCfg.limits.fadeMs);
+    }
+
+    if(presetCfg.smoothing){
+      setField("smoothingEnabled", presetCfg.smoothing.enabled);
+      setField("smoothingRateLimitPerSec", presetCfg.smoothing.rateLimitPerSec);
+      setField("smoothingDedupeEnabled", presetCfg.smoothing.dedupeEnabled);
+      setField("smoothingDedupeWindowMs", presetCfg.smoothing.dedupeWindowMs);
+    }
+
+    if(presetCfg.pinned){
+      setField("pinnedEnabled", presetCfg.pinned.enabled);
+      setField("pinnedText", presetCfg.pinned.text);
+      setField("pinnedStyle", presetCfg.pinned.style);
+    }
+  }
+
+  document.querySelectorAll("#presetChips [data-preset-id]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-preset-id");
+      const p = PRESETS.find(x => String(x.id) === String(id));
+      if(!p) return;
+      applyPresetConfig(p.config || p);
+      if(typeof autosaveNow === "function") autosaveNow();
+
+      document.querySelectorAll("#presetChips .preset-chip").forEach(b => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+    });
+  });
+
+  // Copy URL
+  document.querySelectorAll("[data-copy]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const val = btn.getAttribute("data-copy") || "";
+      try{
+        await navigator.clipboard.writeText(val);
+        const old = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(()=> btn.textContent = old, 900);
+      }catch{
+        const old = btn.textContent;
+        btn.textContent = "Copy failed";
+        setTimeout(()=> btn.textContent = old, 900);
+      }
+    });
+  });
+
+  // Auto-save + preview bump
+  const form = document.getElementById("chatConfigForm");
+  const autosaveStatus = document.getElementById("autosaveStatus");
+  const previewFrame = document.getElementById("previewFrame");
+
+  function setStatus(msg){
+    if(autosaveStatus) autosaveStatus.textContent = msg || "";
+  }
+
+  function bumpPreview(){
+    if(!previewFrame) return;
+    try{
+      const u = new URL(previewFrame.src, window.location.origin);
+      u.searchParams.set("t", String(Date.now()));
+      previewFrame.src = u.toString();
+    }catch{
+      previewFrame.src = previewFrame.src.split("?")[0] + "?t=" + Date.now();
+    }
+  }
+
+  function buildUrlEncodedBody(){
+    const fd = new FormData(form);
+    fd.set("_action", "save");
+    const params = new URLSearchParams();
+    for(const [k,v] of fd.entries()){
+      if(v instanceof File) continue;
+      params.append(k, String(v));
+    }
+    return params.toString();
+  }
+
+  let saveTimer = null;
+  let inFlight = false;
+  let dirtyQueued = false;
+
+  async function autosaveNow(){
+    if(!form) return;
+    if(inFlight){ dirtyQueued = true; return; }
+    inFlight = true; dirtyQueued = false;
+    setStatus("Saving…");
+
+    try{
+      const body = buildUrlEncodedBody();
+      const res = await fetch(form.action, {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/x-www-form-urlencoded; charset=UTF-8",
+          "Accept":"application/json, text/html;q=0.9, */*;q=0.8",
+          "X-Requested-With":"fetch"
+        },
+        body
+      });
+      if(!res.ok) throw new Error("save failed");
+      setStatus("Saved");
+      bumpPreview();
+      setTimeout(()=> setStatus(""), 900);
+    }catch{
+      setStatus("Save failed");
+      setTimeout(()=> setStatus(""), 1400);
+    }finally{
+      inFlight = false;
+      if(dirtyQueued) autosaveNow();
+    }
+  }
+
+  function scheduleAutosave(){
+    if(!form) return;
+    clearTimeout(saveTimer);
+    setStatus("Unsaved changes…");
+    saveTimer = setTimeout(autosaveNow, 350);
+  }
+
+  if(form){
+    form.addEventListener("input", scheduleAutosave);
+    form.addEventListener("change", scheduleAutosave);
+  }
+
+  window.autosaveNow = autosaveNow;
+  window.bumpPreview = bumpPreview;
+
+  // Reload preview
+  const reloadBtn = document.getElementById("reloadPreview");
+  if(reloadBtn) reloadBtn.addEventListener("click", bumpPreview);
+
+  // Test message
+  const sendBtn = document.getElementById("sendTest");
+  const testStatus = document.getElementById("testStatus");
+  const reloadPreviewBtn = document.getElementById("reloadPreview");
+
+  async function sendTest(){
+    const platform = (document.getElementById("testPlatform")?.value || "kick").trim();
+    const name = (document.getElementById("testName")?.value || "Scraplet").trim();
+    const avatar = (document.getElementById("testAvatar")?.value || "").trim();
+    const text = (document.getElementById("testText")?.value || "HELLO FROM TEST ✅").trim();
+
+    if(testStatus) testStatus.textContent = "Sending…";
+    try{
+      const res = await fetch("/dashboard/widgets/chat/test", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "Accept":"application/json" },
+        body: JSON.stringify({ platform, name, avatar, text }),
+      });
+      const json = await res.json().catch(()=> ({}));
+      if(!res.ok || !json.ok) throw new Error("send failed");
+      if(testStatus) testStatus.textContent = "Sent ✅";
+      bumpPreview();
+      setTimeout(()=> { if(testStatus) testStatus.textContent = ""; }, 1200);
+    }catch{
+      if(testStatus) testStatus.textContent = "Failed";
+      setTimeout(()=> { if(testStatus) testStatus.textContent = ""; }, 1500);
+    }
+  }
+
+  if(sendBtn) sendBtn.addEventListener("click", sendTest);
+
+  // Transform editor
+  (function(){
+    const stage = document.getElementById("previewStage");
+    const box = document.getElementById("previewTransformBox");
+    const overlay = document.getElementById("transformOverlay");
+    const overlayBg = document.getElementById("transformOverlayBg");
+    const btnEdit = document.getElementById("transformEditBtn");
+    const btnReset = document.getElementById("transformResetBtn");
+    if(!stage || !box || !overlay || !overlayBg) return;
+
+    const $ = (name) => document.querySelector('[name="'+ CSS.escape(name) +'"]');
+    const readNum = (el, fallback) => {
+      const x = Number.parseFloat(String(el && el.value != null ? el.value : ""));
+      return Number.isFinite(x) ? x : fallback;
+    };
+
+    function getState(){
+      return {
+        enabled: !!($("transformEnabled") && $("transformEnabled").checked),
+        perspectivePx: readNum($("transformPerspectivePx"), 1000),
+        x: readNum($("transformX"), 0),
+        y: readNum($("transformY"), 0),
+        scale: readNum($("transformScale"), 1),
+        rotateZ: readNum($("transformRotateZ"), 0),
+        tiltX: readNum($("transformTiltX"), 0),
+        tiltY: readNum($("transformTiltY"), 0),
+      };
+    }
+
+    function applyToPreview(st){
+      if(!st.enabled){
+        box.style.transform = "none";
+        box.style.transformOrigin = "0 0";
+        return;
+      }
+      box.style.transformOrigin = "0 0";
+      box.style.transform =
+        "perspective(" + st.perspectivePx + "px) " +
+        "translate3d(" + st.x + "px," + st.y + "px,0) " +
+        "rotateZ(" + st.rotateZ + "deg) " +
+        "rotateX(" + st.tiltX + "deg) " +
+        "rotateY(" + st.tiltY + "deg) " +
+        "scale(" + st.scale + ")";
+    }
+
+    function setInputs(st, dispatch){
+      const set = (name, v) => {
+        const el = $(name);
+        if(!el) return;
+        if(el.type === "checkbox"){
+          el.checked = !!v;
+          if(dispatch) el.dispatchEvent(new Event("change", { bubbles:true }));
+          return;
+        }
+        el.value = String(v);
+        if(dispatch){
+          el.dispatchEvent(new Event("input", { bubbles:true }));
+          el.dispatchEvent(new Event("change", { bubbles:true }));
+        }
+      };
+
+      set("transformEnabled", st.enabled);
+      set("transformPerspectivePx", Math.round(st.perspectivePx));
+      set("transformX", Math.round(st.x));
+      set("transformY", Math.round(st.y));
+      set("transformScale", Math.round(st.scale * 1000) / 1000);
+      set("transformRotateZ", Math.round(st.rotateZ * 10) / 10);
+      set("transformTiltX", Math.round(st.tiltX * 10) / 10);
+      set("transformTiltY", Math.round(st.tiltY * 10) / 10);
+    }
+
+    ["transformEnabled","transformPerspectivePx","transformX","transformY","transformScale","transformRotateZ","transformTiltX","transformTiltY"].forEach(name=>{
+      const el = $(name);
+      if(!el) return;
+      el.addEventListener("input", ()=> applyToPreview(getState()));
+      el.addEventListener("change", ()=> applyToPreview(getState()));
+    });
+
+    applyToPreview(getState());
+
+    let editing = false;
+    function setEditing(on){
+      editing = !!on;
+      overlay.style.display = editing ? "block" : "none";
+      stage.style.outline = editing ? "2px solid rgba(120,190,255,0.55)" : "none";
+      stage.style.outlineOffset = editing ? "2px" : "0px";
+    }
+
+    if(btnEdit) btnEdit.addEventListener("click", ()=> setEditing(!editing));
+
+    if(btnReset){
+      btnReset.addEventListener("click", ()=>{
+        const st = getState();
+        st.enabled = false;
+        st.perspectivePx = 1000;
+        st.x = 0; st.y = 0;
+        st.scale = 1;
+        st.rotateZ = 0;
+        st.tiltX = 0;
+        st.tiltY = 0;
+        applyToPreview(st);
+        setInputs(st, true);
+      });
+    }
+
+    let drag = null;
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+    function onDown(ev, mode){
+      if(!editing) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const st0 = getState();
+      const r = stage.getBoundingClientRect();
+      drag = { mode, st0, startX: ev.clientX, startY: ev.clientY, rect: r };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp, { once:true });
+    }
+
+    function onMove(ev){
+      if(!drag) return;
+      const dx = ev.clientX - drag.startX;
+      const dy = ev.clientY - drag.startY;
+      const st = { ...drag.st0 };
+
+      if(drag.mode === "move" && ev.shiftKey){
+        st.enabled = true;
+        st.tiltY = clamp(drag.st0.tiltY + (dx * 0.08), -45, 45);
+        st.tiltX = clamp(drag.st0.tiltX + (-dy * 0.08), -45, 45);
+        applyToPreview(st);
+        setInputs(st, false);
+        return;
+      }
+
+      if(drag.mode === "move"){
+        st.enabled = true;
+        st.x = drag.st0.x + dx;
+        st.y = drag.st0.y + dy;
+        applyToPreview(st);
+        setInputs(st, false);
+        return;
+      }
+
+      if(drag.mode === "scale"){
+        st.enabled = true;
+        const base = Math.max(10, Math.min(drag.rect.width, drag.rect.height));
+        const delta = (dx - dy) / base;
+        st.scale = clamp(drag.st0.scale * (1 + delta), 0.1, 3);
+        applyToPreview(st);
+        setInputs(st, false);
+        return;
+      }
+
+      if(drag.mode === "rot"){
+        st.enabled = true;
+        st.rotateZ = clamp(drag.st0.rotateZ + (dx * 0.2), -180, 180);
+        applyToPreview(st);
+        setInputs(st, false);
+        return;
+      }
+    }
+
+    function onUp(){
+      if(!drag) return;
+      const st = getState();
+      setInputs(st, true);
+      window.removeEventListener("mousemove", onMove);
+      drag = null;
+    }
+
+    overlayBg.addEventListener("mousedown", (e)=> onDown(e, "move"));
+    overlay.querySelectorAll("[data-handle='tl'],[data-handle='tr'],[data-handle='bl'],[data-handle='br']").forEach(h=>{
+      h.addEventListener("mousedown", (e)=> onDown(e, "scale"));
+    });
+    const rot = overlay.querySelector("[data-handle='rot']");
+    if(rot) rot.addEventListener("mousedown", (e)=> onDown(e, "rot"));
+  })();
+</script>
+
+<style>
+  /* Make <summary> not show default marker in some browsers */
+  details > summary::-webkit-details-marker { display:none; }
+  details > summary { user-select:none; }
+</style>

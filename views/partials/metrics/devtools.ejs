@@ -1,0 +1,49 @@
+<div class="mt-12 bg-gray-900 border border-gray-800 rounded-xl p-6">
+  <h2 class="text-xl font-semibold mb-2">Developer Tools</h2>
+  <p class="text-gray-400 mb-4">
+    Generate a temporary OBS Browser Source URL to view the live event firehose.
+  </p>
+
+  <button
+    id="gen-firehose"
+    class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded font-medium"
+  >
+    Generate OBS Firehose URL
+  </button>
+
+  <pre
+    id="firehose-out"
+    class="hidden mt-4 bg-black/60 p-3 rounded text-sm text-green-400 overflow-x-auto"
+  ></pre>
+</div>
+
+<script>
+  const btn = document.getElementById("gen-firehose");
+  const out = document.getElementById("firehose-out");
+
+  btn?.addEventListener("click", async () => {
+    out.classList.add("hidden");
+    out.textContent = "";
+
+    const res = await fetch(
+      "/dashboard/metrics/tools/event-console",
+      { method: "POST" }
+    );
+
+    if (!res.ok) {
+      out.textContent = `Error: ${res.status}`;
+      out.classList.remove("hidden");
+      return;
+    }
+
+    const data = await res.json();
+    if (!data.ok) {
+      out.textContent = data.error || "Failed";
+      out.classList.remove("hidden");
+      return;
+    }
+
+    out.textContent = data.obsUrl;
+    out.classList.remove("hidden");
+  });
+</script>

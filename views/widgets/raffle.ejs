@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scraplet — Raffle</title>
+
+  <style>
+    :root{
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --muted: rgba(190,205,235,0.72);
+    }
+    html, body { background: transparent; margin: 0; padding: 0; overflow: hidden; }
+    .wrap { width: 100vw; height: 100vh; display: grid; place-items: center; padding: 18px; }
+
+    .frame{
+      width: min(980px, 96vw);
+      border-radius: 18px;
+      border: 1px solid rgba(200,215,235,0.18);
+      background: rgba(10,12,18,0.55);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+      overflow: hidden;
+    }
+
+    .hdr{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(200,215,235,0.12);
+    }
+    .left{ display:flex; align-items:center; gap:10px; }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(148,163,184,0.9);
+      box-shadow: 0 0 18px rgba(148,163,184,0.25);
+    }
+    .dot.ok{ background:#22c55e; box-shadow: 0 0 18px rgba(34,197,94,0.35); }
+    .dot.warn{ background:#facc15; box-shadow: 0 0 18px rgba(250,204,21,0.28); }
+    .dot.bad{ background:#ef4444; box-shadow: 0 0 18px rgba(239,68,68,0.28); }
+
+    .title{
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(210,220,245,0.85);
+    }
+    .chip{
+      display:flex; align-items:center; gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(200,215,235,0.18);
+      background: rgba(0,0,0,0.22);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(210,220,245,0.9);
+      letter-spacing:.12em;
+      text-transform: uppercase;
+    }
+
+    .bd{ padding: 16px; }
+    .stage{
+      border-radius: 16px;
+      border: 1px solid rgba(200,215,235,0.14);
+      background: rgba(0,0,0,0.20);
+      padding: 18px 16px;
+      min-height: 180px;
+      display:grid;
+      place-items:center;
+      position: relative;
+      overflow:hidden;
+    }
+    .label{
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(190,205,235,0.75);
+      margin-bottom: 10px;
+      text-align:center;
+    }
+    .name{
+      font-size: clamp(32px, 5.2vw, 62px);
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-align:center;
+      line-height: 1.05;
+      text-shadow: 0 20px 60px rgba(0,0,0,0.55);
+      padding: 0 12px;
+      word-break: break-word;
+      color: rgba(245,248,255,0.92);
+    }
+    .name.winner{
+      color: rgba(240,255,245,0.97);
+      text-shadow:
+        0 18px 60px rgba(0,0,0,0.55),
+        0 0 34px rgba(34,197,94,0.35);
+    }
+    .hint{
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align:center;
+      font-family: var(--mono);
+      opacity: .92;
+      white-space: nowrap;
+    }
+
+    /* Wheel (vertical list + center needle) */
+    .wheelBox{
+      width: min(620px, 92vw);
+      height: 170px;
+      border-radius: 16px;
+      border: 1px solid rgba(200,215,235,0.14);
+      background: rgba(0,0,0,0.22);
+      overflow: hidden;
+      position: relative;
+      display: none;
+      margin-top: 10px;
+    }
+    .wheelBox::before{
+      content:"";
+      position:absolute; left: 0; right: 0; top: 50%;
+      height: 2px;
+      background: rgba(110,231,255,0.75);
+      box-shadow: 0 0 18px rgba(110,231,255,0.25);
+      opacity: .55;
+      pointer-events:none;
+      z-index: 3;
+    }
+    .wheelList{
+      list-style:none;
+      margin:0; padding: 16px 0;
+      position:absolute; left:0; right:0; top:0;
+      transform: translateY(0px);
+      will-change: transform;
+    }
+    .wheelItem{
+      margin: 10px auto;
+      width: fit-content;
+      max-width: 92%;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(200,215,235,0.16);
+      background: rgba(0,0,0,0.22);
+      color: rgba(230,238,255,0.9);
+      font-size: 14px;
+      white-space: nowrap;
+      font-family: var(--mono);
+    }
+    .wheelItem.winner{
+      border-color: rgba(110,231,255,0.55);
+      box-shadow: 0 0 22px rgba(110,231,255,0.18);
+    }
+
+    /* Slot / scramble */
+    .slotBox{
+      width: min(520px, 86vw);
+      height: 120px;
+      display: none;
+      place-items:center;
+      margin-top: 10px;
+    }
+    .slot{
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(200,215,235,0.16);
+      background: rgba(0,0,0,0.24);
+      display:grid; place-items:center;
+      overflow:hidden;
+    }
+    .slotTxt{
+      font-size: clamp(28px, 4.6vw, 52px);
+      font-weight: 800;
+      font-family: var(--mono);
+      color: rgba(245,248,255,0.92);
+      padding: 0 12px;
+      text-align:center;
+      word-break: break-word;
+    }
+    .slotTxt.scramble{ letter-spacing: 0.12em; }
+
+    /* Confetti (tiny) */
+    .confetti{
+      position:absolute; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      display:none;
+    }
+    .confetti i{
+      position:absolute;
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      opacity: .9;
+      filter: blur(.1px);
+      animation: fall 1.6s linear forwards;
+    }
+    @keyframes fall{
+      from { transform: translateY(-40px) scale(1); opacity: .95; }
+      to   { transform: translateY(420px) scale(.8); opacity: 0; }
+    }
+
+    .ft{
+      border-top: 1px solid rgba(200,215,235,0.12);
+      background: rgba(0,0,0,0.14);
+      padding: 12px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(190,205,235,0.75);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .ft b{ color: rgba(230,235,255,0.90); font-weight: 700; }
+    .debug{ opacity:.7; letter-spacing:.08em; text-transform:none; font-size: 11px; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="frame">
+      <div class="hdr">
+        <div class="left">
+          <span id="statusDot" class="dot"></span>
+          <div class="title">RAFFLE</div>
+        </div>
+        <div class="chip">
+          <span>SCRAPLET</span>
+          <span id="animChip">WHEEL</span>
+        </div>
+      </div>
+
+      <div class="bd">
+        <div class="stage">
+          <div class="confetti" id="confetti"></div>
+
+          <div id="slotArea">
+            <div class="label" id="labelText">Waiting</div>
+            <div class="name" id="nameText">—</div>
+            <div class="hint" id="hintText">Start the raffle from the dashboard.</div>
+          </div>
+
+          <div class="wheelBox" id="wheelBox">
+            <ul class="wheelList" id="wheelList"></ul>
+          </div>
+
+          <div class="slotBox" id="slotBox">
+            <div class="slot">
+              <div class="slotTxt" id="slotTxt">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ft">
+        <span>Entries: <b id="countText">0</b></span>
+        <span>Join: <b id="joinText">!join</b></span>
+        <span id="topicText">Topic: <b>—</b></span>
+        <span class="debug" id="debugText"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Provided by widget loader (/w/:token)
+    window.__WIDGET = {
+      userId: "<%= userId %>",
+      widgetId: "<%= widgetId %>"
+    };
+  </script>
+
+  <!-- cache-bust so you stop seeing old JS -->
+  <script src="/widgets/raffle.js?v=20260103_2"></script>
+</body>
+</html>

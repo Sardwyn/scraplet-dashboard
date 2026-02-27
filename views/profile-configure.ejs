@@ -1,0 +1,102 @@
+
+  <meta charset="UTF-8" />
+  <title>Configure Profile Layout</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<body class="<%= layout.theme.color === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900' %>">
+
+<%
+  const visibilityMap = (sectionVisibility && typeof sectionVisibility === 'object')
+    ? sectionVisibility
+    : Array.isArray(layout?.sections)
+      ? layout.sections.reduce((acc, section) => {
+          if (section?.type) acc[section.type] = section.visible === true;
+          return acc;
+        }, {})
+      : {};
+%>
+
+<div class="max-w-4xl mx-auto py-10 px-6">
+  <h1 class="text-3xl font-bold mb-8">Configure Profile Layout</h1>
+
+  <form method="POST" action="/profile/configure" class="space-y-8">
+
+    <!-- Section Toggles -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Profile Sections</h2>
+      <div class="space-y-2">
+        <% ['avatar', 'bio', 'socialLinks', 'stats'].forEach(type => { %>
+          <label class="flex items-center space-x-3">
+            <input type="checkbox" name="<%= type %>" <%= visibilityMap[type] ? 'checked' : '' %> class="accent-indigo-500" />
+            <span class="text-sm font-medium capitalize">Show <%= type %></span>
+          </label>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Icon Toggle -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Button Appearance</h2>
+      <label class="flex items-center space-x-3">
+        <input type="checkbox" name="showButtonIcons" class="accent-indigo-500" <%= layout.showButtonIcons ? 'checked' : '' %> />
+        <span class="text-sm font-medium">Show icons on profile buttons</span>
+      </label>
+    </div>
+
+    <!-- Custom Buttons -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Custom Buttons</h2>
+      <ul id="button-list" class="space-y-3">
+        <% customButtons.forEach(button => { %>
+          <li
+            class="<%= layout.theme.color === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900' %> p-4 rounded-md shadow flex items-center justify-between hover:ring-2 hover:ring-indigo-500 transition"
+            data-id="<%= button.id %>"
+          >
+            <div class="flex items-center gap-3">
+              <div class="cursor-move text-xl">☰</div>
+              <div>
+                <div class="font-semibold text-base"><%= button.label %></div>
+                <div class="text-sm opacity-70"><%= button.url %></div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center text-sm">
+                <input type="checkbox" name="buttonVisible[<%= button.id %>]" <%= button.visible ? 'checked' : '' %> class="mr-2 accent-indigo-500" />
+                Visible
+              </label>
+              <input type="hidden" name="buttonOrder[]" value="<%= button.id %>" />
+            </div>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+
+    <!-- Save Button -->
+    <div>
+      <button
+        type="submit"
+        class="inline-flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold px-6 py-2 rounded-md shadow hover:from-purple-700 hover:to-indigo-700 transition"
+      >
+        💾 Save Layout
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const list = document.getElementById('button-list');
+  Sortable.create(list, {
+    animation: 150,
+    handle: '.cursor-move',
+    onEnd: () => {
+      const orderInputs = list.querySelectorAll('input[name="buttonOrder[]"]');
+      orderInputs.forEach((input, index) => {
+        input.setAttribute('name', 'buttonOrder[]');
+      });
+    }
+  });
+</script>
+
+</body>
+

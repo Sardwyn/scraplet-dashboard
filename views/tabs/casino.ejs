@@ -1,0 +1,222 @@
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-center justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">🎰 Scrapbot Casino</h1>
+      <p class="text-gray-400 mt-1">
+        Side games that run directly in your chat. Keep it fun. Keep it clean.
+      </p>
+    </div>
+
+    <a href="/dashboard" class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+      ← Back to Dashboard
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Blackjack -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold">🃏 Blackjack</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Reward-triggered hands, chat commands, optional narration.
+          </p>
+
+          <% const bjEnabled=casino?.blackjack?.enabled !==false; %>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                class="text-xs px-2 py-1 rounded border <%= bjEnabled ? 'border-green-700 text-green-300 bg-green-600/10' : 'border-gray-700 text-gray-400 bg-gray-800' %>">
+                <%= bjEnabled ? 'Enabled' : 'Disabled' %>
+              </span>
+
+              <% if (casino?.blackjack?.publicId) { %>
+                <span
+                  class="text-xs px-2 py-1 rounded border border-gray-700 text-gray-300 bg-gray-800 font-mono break-all">
+                  <%= casino.blackjack.publicId %>
+                </span>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (isPro) { %>
+          <span class="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-700">PRO</span>
+          <% } %>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="/dashboard/widgets/blackjack/configure"
+          class="text-sm px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white">
+          Configure
+        </a>
+
+        <% if (casino?.blackjack?.publicId) { %>
+          <button type="button" class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700"
+            onclick="navigator.clipboard.writeText('https://scraplet.store/obs/blackjack/<%= casino.blackjack.publicId %>')">
+            Copy OBS URL
+          </button>
+          <% } %>
+
+            <a href="/dashboard/widgets"
+              class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+              View all widgets
+            </a>
+      </div>
+    </div>
+
+    <!-- Plinko -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold">🎯 Plinko</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Reward-triggered ball drops, queue + multi-ball, configurable multipliers.
+          </p>
+
+          <% const plEnabled=casino?.plinko?.enabled !==false; %>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                class="text-xs px-2 py-1 rounded border <%= plEnabled ? 'border-green-700 text-green-300 bg-green-600/10' : 'border-gray-700 text-gray-400 bg-gray-800' %>">
+                <%= plEnabled ? 'Enabled' : 'Disabled' %>
+              </span>
+
+              <% if (casino?.plinko?.publicId) { %>
+                <span
+                  class="text-xs px-2 py-1 rounded border border-gray-700 text-gray-300 bg-gray-800 font-mono break-all">
+                  <%= casino.plinko.publicId %>
+                </span>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (isPro) { %>
+          <span class="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-700">PRO</span>
+          <% } %>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="/dashboard/widgets/plinko/configure"
+          class="text-sm px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white">
+          Configure
+        </a>
+
+        <% if (casino?.plinko?.publicId) { %>
+          <button type="button" class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700"
+            onclick="navigator.clipboard.writeText('https://scraplet.store/obs/plinko/<%= casino.plinko.publicId %>')">
+            Copy OBS URL
+          </button>
+          <% } %>
+
+            <a href="/dashboard/widgets"
+              class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+              View all widgets
+            </a>
+      </div>
+    </div>
+
+    <!-- Crash (NEW) -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold">🚀 Crash</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Server-truth crash rounds with deterministic OBS animation (renderer is read-only).
+          </p>
+
+          <% const crEnabled=casino?.crash?.enabled !==false; %>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                class="text-xs px-2 py-1 rounded border <%= crEnabled ? 'border-green-700 text-green-300 bg-green-600/10' : 'border-gray-700 text-gray-400 bg-gray-800' %>">
+                <%= crEnabled ? 'Enabled' : 'Disabled' %>
+              </span>
+
+              <% if (casino?.crash?.publicId) { %>
+                <span
+                  class="text-xs px-2 py-1 rounded border border-gray-700 text-gray-300 bg-gray-800 font-mono break-all">
+                  <%= casino.crash.publicId %>
+                </span>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (isPro) { %>
+          <span class="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-700">PRO</span>
+          <% } %>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="/dashboard/widgets/crash/configure"
+          class="text-sm px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white">
+          Configure
+        </a>
+
+        <a href="/dashboard/widgets"
+          class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+          View all widgets
+        </a>
+      </div>
+    </div>
+
+    <!-- Roulette -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-semibold">🎡 Roulette</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Reward-triggered spins (server-authoritative outcome, OBS animation).
+          </p>
+
+          <% const roEnabled=casino?.roulette?.enabled !==false; %>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                class="text-xs px-2 py-1 rounded border <%= roEnabled ? 'border-green-700 text-green-300 bg-green-600/10' : 'border-gray-700 text-gray-400 bg-gray-800' %>">
+                <%= roEnabled ? 'Enabled' : 'Disabled' %>
+              </span>
+
+              <% if (casino?.roulette?.publicId) { %>
+                <span
+                  class="text-xs px-2 py-1 rounded border border-gray-700 text-gray-300 bg-gray-800 font-mono break-all">
+                  <%= casino.roulette.publicId %>
+                </span>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (isPro) { %>
+          <span class="text-xs px-2 py-1 rounded bg-amber-600/20 text-amber-300 border border-amber-700">PRO</span>
+          <% } %>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="/dashboard/widgets/roulette/configure"
+          class="text-sm px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white">
+          Configure
+        </a>
+
+        <% if (casino?.roulette?.publicId) { %>
+          <button type="button" class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700"
+            onclick="navigator.clipboard.writeText('https://scraplet.store/obs/roulette/<%= casino.roulette.publicId %>')">
+            Copy OBS URL
+          </button>
+          <% } %>
+
+            <a href="/dashboard/widgets"
+              class="text-sm px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700">
+              View all widgets
+            </a>
+      </div>
+    </div>
+
+    <!-- Coming soon -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow opacity-70 md:col-span-2">
+      <h2 class="text-xl font-semibold">🎲 More games</h2>
+      <p class="text-gray-400 text-sm mt-1">
+        Slots and mini-bets are on the roadmap. This page is the home for all of it.
+      </p>
+      <div class="mt-6 text-xs text-gray-500">
+        (Not in nav — you get here via the premium button.)
+      </div>
+    </div>
+
+  </div>
+</div>

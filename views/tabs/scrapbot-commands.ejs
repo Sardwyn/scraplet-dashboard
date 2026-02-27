@@ -1,0 +1,758 @@
+<%
+  const account=scrapbotAccount || null;
+  const channelName=account?.channel_name || account?.channel_slug || null;
+  const channelSlug=(account?.channel_slug || account?.channel_name || "" ).toString().trim().toLowerCase();
+  const enabled=freeTTSEnabled===true;
+  const confirmations=freeTTSChatConfirmations===true;
+  const obsUrl=ttsObsUrl || "";
+  const key=ttsOverlayKey || "";
+  const cmds=Array.isArray(commands) ? commands : [];
+  const tts=ttsSettings || {};
+  const sanitize=(tts && tts.sanitize) ? tts.sanitize : {};
+  const voiceOptions=[
+    { v: "uk_male", label: "UK Male" },
+    { v: "uk_female", label: "UK Female" },
+    { v: "us_male", label: "US Male" },
+    { v: "us_female", label: "US Female" },
+    { v: "robot", label: "Robot" },
+    { v: "scraplet", label: "Scraplet Voice" },
+  ];
+  const roleOptions=[
+    { v: "everyone", label: "Everyone" },
+    { v: "subscriber", label: "Subscriber" },
+    { v: "moderator", label: "Moderator" },
+    { v: "broadcaster", label: "Broadcaster" },
+  ];
+  const blacklist=Array.isArray(ttsBlacklist) ? ttsBlacklist : [];
+  // Command variable teaching (UI only)
+  const cmdVarChips = [
+    { k: "user", label: "User", desc: "The person who triggered the command" },
+    { k: "channel", label: "Channel", desc: "The channel slug" },
+    { k: "random", label: "Random", desc: "Random 0–100 each time" },
+    { k: "count", label: "Count", desc: "Times this command has been used (needs tracking)", needsTracking: true },
+    { k: "last_user", label: "Last user", desc: "Last user who triggered it (needs tracking)", needsTracking: true },
+    { k: "last_used", label: "Last used", desc: "When it was last used (needs tracking)", needsTracking: true },
+  ];
+  const CMD_SAFE_MAX = 400; // keep under Kick-safe caps
+%>
+
+<div class="pc-page">
+
+  <!-- New top header with tabs -->
+  <div class="pc-panel mb-6">
+    <div class="pc-panel-bd">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Scrapbot</h2>
+          <p class="pc-text-muted text-sm mt-1">
+            Shape how your chat behaves.
+            <% if (channelName) { %>
+              <span class="text-white/50 ml-2">Channel: <strong class="text-white"><%= channelName %></strong></span>
+            <% } %>
+          </p>
+        </div>
+
+        <div class="flex gap-2">
+          <button class="pc-btn pc-btn--primary px-4"
+            data-tab="commands"
+            onclick="window.__sbSwitchTab('commands')"
+            id="tabBtnCommands">
+            Chat Commands
+          </button>
+
+          <button class="pc-btn pc-btn--ghost px-4"
+            data-tab="tts"
+            onclick="window.__sbSwitchTab('tts')"
+            id="tabBtnTTS">
+            Free TTS
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================= -->
+  <!-- TAB: CHAT COMMANDS       -->
+  <!-- ========================= -->
+  <div id="tabCommands">
+
+    <!-- Commands list -->
+    <div class="pc-panel mb-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Chat Commands</div>
+          <div class="pc-panel-sub">Custom responses to !commands</div>
+        </div>
+      </div>
+      <div class="pc-panel-bd">
+
+        <!-- Search bar + tip -->
+        <div class="flex items-center justify-between gap-3 mb-3">
+          <div class="flex-1">
+            <div class="pc-text-muted text-[10px] mb-1">Search commands</div>
+            <input id="cmdSearch" class="pc-input" placeholder="Search by name, trigger, role…" />
+          </div>
+          <div class="text-xs text-white/40 whitespace-nowrap">
+            Tip: type <span class="font-mono text-white/70">!trigger</span> in chat to test.
+          </div>
+        </div>
+
+        <% if (!account) { %>
+          <div class="pc-text-muted text-sm italic">No Scrapbot account found for this user yet.</div>
+        <% } else if (cmds.length) { %>
+          <div class="pc-oled overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="bg-white/5 text-white/40 border-b border-white/5">
+                    <th class="p-3">Name</th>
+                    <th class="p-3">Trigger</th>
+                    <th class="p-3">Role</th>
+                    <th class="p-3">Cooldown</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <% cmds.forEach(function(c){ %>
+                    <tr class="hover:bg-white/5">
+                      <td class="p-3 font-bold text-white"><%= c.name %></td>
+                      <td class="p-3 font-mono text-cyan-300"><%= c.triggerPattern %></td>
+                      <td class="p-3 text-white/70"><%= c.role %></td>
+                      <td class="p-3 text-white/50"><%= c.cooldownSeconds || 0 %>s</td>
+                      <td class="p-3">
+                        <% if (c.enabled) { %>
+                          <span class="text-green-400 font-bold text-[10px] uppercase tracking-wider">Enabled</span>
+                        <% } else { %>
+                          <span class="text-white/30 font-bold text-[10px] uppercase tracking-wider">Disabled</span>
+                        <% } %>
+                      </td>
+                      <td class="p-3 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                          <form method="POST" action="/dashboard/scrapbot/commands/toggle">
+                            <input type="hidden" name="id" value="<%= c.id %>" />
+                            <input type="hidden" name="enabled" value="<%= c.enabled ? 'false' : 'true' %>" />
+                            <button class="pc-btn pc-btn--ghost px-2 h-7 text-[10px]" type="submit">
+                              <%= c.enabled ? 'DISABLE' : 'ENABLE' %>
+                            </button>
+                          </form>
+                          <form method="POST" action="/dashboard/scrapbot/commands/delete">
+                            <input type="hidden" name="id" value="<%= c.id %>" />
+                            <button class="pc-btn pc-btn--ghost text-red-300 hover:text-red-200 px-2 h-7 text-[10px]"
+                              type="submit" onclick="return confirm('Delete this command?');">
+                              Delete
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% } else { %>
+          <!-- Improved empty state with CTA -->
+          <div class="text-center py-10">
+            <div class="text-white/70 text-sm font-semibold">Create your first command</div>
+            <div class="pc-text-muted text-xs mt-1">Start with a template, then tweak it.</div>
+
+            <div class="mt-4 flex flex-wrap gap-2 justify-center">
+              <button type="button" class="pc-btn pc-btn--ghost" onclick="window.__sbPrefill('socials'); document.getElementById('cmdCreateForm')?.scrollIntoView({behavior:'smooth'});">
+                ➕ Socials
+              </button>
+              <button type="button" class="pc-btn pc-btn--ghost" onclick="window.__sbPrefill('discord'); document.getElementById('cmdCreateForm')?.scrollIntoView({behavior:'smooth'});">
+                ➕ Discord
+              </button>
+              <button type="button" class="pc-btn pc-btn--ghost" onclick="window.__sbPrefill('rules'); document.getElementById('cmdCreateForm')?.scrollIntoView({behavior:'smooth'});">
+                ➕ Rules
+              </button>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Quick Start Templates -->
+    <div class="pc-panel mb-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Quick Start</div>
+          <div class="pc-panel-sub">Add common commands instantly</div>
+        </div>
+      </div>
+      <div class="pc-panel-bd flex flex-wrap gap-3">
+        <button type="button" class="pc-btn pc-btn--ghost"
+          onclick="window.__sbPrefill('socials')">
+          ➕ Socials
+        </button>
+        <button type="button" class="pc-btn pc-btn--ghost"
+          onclick="window.__sbPrefill('discord')">
+          ➕ Discord
+        </button>
+        <button type="button" class="pc-btn pc-btn--ghost"
+          onclick="window.__sbPrefill('rules')">
+          ➕ Rules
+        </button>
+        <button type="button" class="pc-btn pc-btn--ghost"
+          onclick="window.__sbPrefill('shoutout')">
+          ➕ Shoutout
+        </button>
+      </div>
+    </div>
+
+    <!-- Create command -->
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Create Command</div>
+          <div class="pc-panel-sub">Add a new text response</div>
+        </div>
+      </div>
+      <div class="pc-panel-bd">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- LEFT: form -->
+          <div>
+            <form method="POST" action="/dashboard/scrapbot/commands" class="grid grid-cols-1 md:grid-cols-2 gap-4" id="cmdCreateForm">
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Name</div>
+                <input class="pc-input" name="name" placeholder="e.g. socials" required />
+                <div class="pc-text-muted text-[10px] mt-1">Friendly label (dashboard only)</div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Trigger Pattern</div>
+                <input class="pc-input" name="trigger_pattern" placeholder="e.g. !socials" required id="cmdTrigger" />
+                <div class="pc-text-muted text-[10px] mt-1">Must start with <code>!</code></div>
+              </div>
+              <div class="md:col-span-2">
+                <div class="flex items-center justify-between">
+                  <div class="pc-text-muted text-xs mb-1">Response Text</div>
+                  <div class="text-[10px] text-white/40">
+                    <span id="cmdLen">0</span>/<%= CMD_SAFE_MAX %>
+                  </div>
+                </div>
+                <textarea class="pc-input" name="response_text" rows="4"
+                  placeholder="What should Scrapbot say?"
+                  required id="cmdResponse"></textarea>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                  <div class="text-[10px] text-white/40 mr-1">Insert:</div>
+                  <% cmdVarChips.forEach(function(v){ %>
+                    <button
+                      type="button"
+                      class="pc-btn pc-btn--ghost px-2 h-7 text-[10px] <%= v.needsTracking ? 'text-amber-200/90 hover:text-amber-200' : '' %>"
+                      data-insert="${<%= v.k %>}"
+                      title="<%= v.desc %><%= v.needsTracking ? ' (tracking required)' : '' %>"
+                      onclick="window.__sbCmdInsertVar && window.__sbCmdInsertVar(this)">
+                      <%= v.label %><% if (v.needsTracking) { %><span class="ml-1 opacity-60">*</span><% } %>
+                    </button>
+                  <% }) %>
+                </div>
+                <div class="pc-text-muted text-[10px] mt-2">
+                  Variables use <code>${...}</code>. Example: <code>Hello ${user} 👋</code>
+                  <span class="ml-2 text-amber-200/70">* requires usage tracking (we can add this later)</span>
+                </div>
+                <div class="mt-2 hidden" id="cmdVarWarn">
+                  <div class="p-3 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs">
+                    Unknown variable(s): <span class="font-mono" id="cmdVarWarnList"></span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Role</div>
+                <select class="pc-select" name="role" id="cmdRole">
+                  <option value="everyone" selected>everyone</option>
+                  <option value="subscriber">subscriber</option>
+                  <option value="moderator">moderator</option>
+                  <option value="broadcaster">broadcaster</option>
+                </select>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Cooldown Seconds</div>
+                <input class="pc-input" name="cooldown_seconds" type="number" min="0" step="1" value="0" id="cmdCooldown" />
+              </div>
+              <div class="md:col-span-2 flex justify-end">
+                <button class="pc-btn pc-btn--primary" type="submit">Create Command</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- RIGHT: teaching + preview -->
+          <div class="space-y-4">
+            <div class="p-4 rounded bg-white/5 border border-white/5">
+              <div class="text-sm font-semibold text-white">How variables work</div>
+              <div class="text-xs text-white/60 mt-1">
+                Variables are placeholders that Scrapbot fills in at runtime.
+                Click a chip to insert one.
+              </div>
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="pc-oled p-3">
+                  <div class="text-[10px] text-white/40 mb-1 uppercase tracking-wider">Example</div>
+                  <div class="font-mono text-xs text-white/90">Hello ${user} — welcome to ${channel}!</div>
+                </div>
+                <div class="pc-oled p-3">
+                  <div class="text-[10px] text-white/40 mb-1 uppercase tracking-wider">Becomes</div>
+                  <div class="font-mono text-xs text-white/90">Hello TabLord — welcome to scraplet!</div>
+                </div>
+              </div>
+              <div class="text-[10px] text-white/40 mt-3">
+                Tip: keep responses short. Long blocks get ignored in fast chat.
+              </div>
+            </div>
+
+            <div class="p-4 rounded bg-white/5 border border-white/5">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-sm font-semibold text-white">Live preview</div>
+                  <div class="text-xs text-white/50 mt-1">Adjust sample data to see how it renders.</div>
+                </div>
+                <button class="pc-btn pc-btn--ghost px-2 h-7 text-[10px]" type="button" onclick="window.__sbCmdRandomize && window.__sbCmdRandomize()">
+                  Randomize
+                </button>
+              </div>
+              <div class="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <div class="pc-text-muted text-[10px] mb-1">Sample user</div>
+                  <input class="pc-input" id="cmdSampleUser" value="TabLord" />
+                </div>
+                <div>
+                  <div class="pc-text-muted text-[10px] mb-1">Sample channel</div>
+                  <input class="pc-input" id="cmdSampleChannel" value="<%= channelSlug || 'scraplet' %>" />
+                </div>
+                <div>
+                  <div class="pc-text-muted text-[10px] mb-1">Sample count*</div>
+                  <input class="pc-input" id="cmdSampleCount" type="number" min="0" step="1" value="42" />
+                </div>
+                <div>
+                  <div class="pc-text-muted text-[10px] mb-1">Sample last user*</div>
+                  <input class="pc-input" id="cmdSampleLastUser" value="YourBudde" />
+                </div>
+                <div class="col-span-2">
+                  <div class="pc-text-muted text-[10px] mb-1">Sample last used*</div>
+                  <input class="pc-input" id="cmdSampleLastUsed" value="2026-02-21T00:00:00Z" />
+                </div>
+              </div>
+              <div class="mt-3">
+                <div class="pc-text-muted text-[10px] mb-1">Output</div>
+                <div class="pc-oled p-3">
+                  <div class="font-mono text-xs text-white/90 whitespace-pre-wrap" id="cmdPreviewOut">—</div>
+                </div>
+                <div class="text-[10px] text-white/40 mt-2">
+                  * Count / last-used variables will work once usage tracking is enabled in the backend.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================= -->
+  <!-- TAB: FREE TTS            -->
+  <!-- ========================= -->
+  <div id="tabTTS" class="hidden">
+
+    <div class="pc-panel mb-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Free TTS</div>
+          <div class="pc-panel-sub">
+            Command: <code class="text-white/70"><%= (tts.command || "!tts") %></code> • Viewers can trigger TTS via chat.
+          </div>
+        </div>
+        <form method="POST" action="/dashboard/scrapbot/commands/free-tts-toggle">
+          <input type="hidden" name="enabled" value="<%= enabled ? 'false' : 'true' %>" />
+          <button class="pc-btn <%= enabled ? 'pc-btn--danger' : 'pc-btn--primary' %>" type="submit">
+            <%= enabled ? 'Disable' : 'Enable' %>
+          </button>
+        </form>
+      </div>
+
+      <div class="pc-panel-bd space-y-6">
+        <% if (enabled) { %>
+
+          <!-- Chat confirmation toggle -->
+          <div class="flex items-center justify-between p-4 rounded bg-white/5 border border-white/5">
+            <div>
+              <div class="text-sm font-semibold text-white">Chat confirmations</div>
+              <div class="text-xs text-white/50 mt-1">
+                If enabled, Scrapbot posts "Queued ✅" and "Free TTS is ON/OFF" messages.
+              </div>
+            </div>
+            <form method="POST" action="/dashboard/scrapbot/commands/free-tts-confirmations-toggle">
+              <input type="hidden" name="enabled" value="<%= confirmations ? 'false' : 'true' %>" />
+              <button class="pc-btn <%= confirmations ? 'pc-btn--danger' : 'pc-btn--ghost' %>" type="submit">
+                <%= confirmations ? 'Disable' : 'Enable' %>
+              </button>
+            </form>
+          </div>
+
+          <!-- OBS URL -->
+          <div>
+            <div class="pc-text-muted text-xs mb-1">OBS Browser Source URL</div>
+            <div class="flex gap-2 items-center">
+              <input id="ttsObsUrl" type="text" value="<%= obsUrl %>" readonly class="pc-input flex-1" onclick="this.select()" />
+              <button class="pc-btn pc-btn--ghost" type="button"
+                onclick="(function(){ const el=document.getElementById('ttsObsUrl'); el.select(); document.execCommand('copy'); })();">
+                Copy
+              </button>
+              <form method="POST" action="/dashboard/scrapbot/commands/tts-overlay-rotate">
+                <button class="pc-btn pc-btn--ghost text-red-300 hover:text-red-200" type="submit"
+                  onclick="return confirm('Rotate your TTS overlay key? OBS URLs using the old key will stop working.');">
+                  Rotate Key
+                </button>
+              </form>
+            </div>
+            <div class="text-xs text-white/30 mt-2 font-mono ml-1">
+              Key: <%= key %>
+            </div>
+          </div>
+
+          <div class="pc-divider"></div>
+
+          <!-- TTS Settings -->
+          <div>
+            <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wide opacity-80">Settings</h3>
+            <p class="pc-text-muted text-xs mb-4">Competitive MVP parity overlay settings.</p>
+            <form method="POST" action="/dashboard/scrapbot/commands/tts-settings"
+              class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Command</div>
+                <input class="pc-input" name="tts_command" value="<%= tts.command || '!tts' %>" />
+                <div class="pc-text-muted text-[10px] mt-1">Must start with <code>!</code></div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Voice preset</div>
+                <select class="pc-select" name="tts_voice_preset">
+                  <% voiceOptions.forEach(function(o){ %>
+                    <option value="<%= o.v %>" <%=(tts.voice_preset===o.v) ? 'selected' : '' %>><%= o.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Minimum role (Kick)</div>
+                <select class="pc-select" name="tts_min_role_kick">
+                  <% roleOptions.forEach(function(o){ %>
+                    <option value="<%= o.v %>" <%=(tts.min_role_kick===o.v) ? 'selected' : '' %>><%= o.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Max characters</div>
+                <input class="pc-input" type="number" min="20" max="500" step="1" name="tts_max_chars"
+                  value="<%= tts.max_chars || 144 %>" />
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Cooldown (per user ms)</div>
+                <input class="pc-input" type="number" min="0" max="300000" step="1000" name="tts_cooldown_user_ms"
+                  value="<%= tts.cooldown_user_ms || 30000 %>" />
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Cooldown (per channel ms)</div>
+                <input class="pc-input" type="number" min="0" max="300000" step="1000" name="tts_cooldown_channel_ms"
+                  value="<%= tts.cooldown_channel_ms || 7000 %>" />
+              </div>
+              <div class="md:col-span-2">
+                <div class="pc-text-muted text-xs mb-1">Reading template</div>
+                <input class="pc-input" name="tts_template" value="<%= tts.template || '${sender} says ${text}' %>" />
+                <div class="pc-text-muted text-[10px] mt-1">Variables: <code>${sender}</code>, <code>${text}</code></div>
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Volume (0.0 – 1.0)</div>
+                <input class="pc-input" type="number" min="0" max="1" step="0.05" name="tts_volume"
+                  value="<%= (typeof tts.volume === 'number') ? tts.volume : 1.0 %>" />
+              </div>
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Sanitization</div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-300 select-none">
+                    <input type="checkbox" name="sanitize_strip_links" <%=sanitize.strip_links ? 'checked' : '' %> class="accent-cyan-500 bg-black" />
+                    strip links
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-300 select-none">
+                    <input type="checkbox" name="sanitize_strip_numbers" <%=sanitize.strip_numbers ? 'checked' : '' %> class="accent-cyan-500 bg-black" />
+                    strip numbers
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-300 select-none">
+                    <input type="checkbox" name="sanitize_strip_symbols" <%=sanitize.strip_symbols ? 'checked' : '' %> class="accent-cyan-500 bg-black" />
+                    strip symbols
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-300 select-none">
+                    <input type="checkbox" name="sanitize_strip_emojis" <%=sanitize.strip_emojis ? 'checked' : '' %> class="accent-cyan-500 bg-black" />
+                    strip emojis
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer text-xs text-gray-300 select-none">
+                    <input type="checkbox" name="sanitize_collapse_repeats" <%=sanitize.collapse_repeats ? 'checked' : '' %> class="accent-cyan-500 bg-black" />
+                    collapse repeats
+                  </label>
+                </div>
+              </div>
+              <div class="md:col-span-2 flex justify-end mt-2">
+                <button class="pc-btn pc-btn--primary" type="submit">Save TTS settings</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="pc-divider"></div>
+
+          <!-- Blacklist -->
+          <div>
+            <h3 class="text-sm font-bold text-white mb-2 uppercase tracking-wide opacity-80">Blacklist</h3>
+            <p class="pc-text-muted text-xs mb-4">Block specific usernames from using Free TTS.</p>
+            <% if (!channelSlug) { %>
+              <div class="pc-text-muted text-sm italic">No channel slug found yet (link your Scrapbot channel).</div>
+            <% } else { %>
+              <form method="POST" action="/dashboard/scrapbot/commands/tts-blacklist/add"
+                class="flex flex-wrap gap-2 items-end mb-4">
+                <input type="hidden" name="channel_slug" value="<%= channelSlug %>" />
+                <div class="flex-1 min-w-[200px]">
+                  <input class="pc-input" name="blacklist_username" placeholder="Username to block..." />
+                </div>
+                <button class="pc-btn pc-btn--ghost" type="submit">Block User</button>
+              </form>
+
+              <% if (!blacklist.length) { %>
+                <div class="pc-text-muted text-sm italic">No blacklisted users.</div>
+              <% } else { %>
+                <div class="pc-oled max-h-48 overflow-auto p-2">
+                  <table class="w-full text-left text-xs">
+                    <thead>
+                      <tr class="text-white/30 border-b border-white/5">
+                        <th class="pb-2 pl-2">Username</th>
+                        <th class="pb-2">Added</th>
+                        <th class="pb-2 text-right pr-2">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% blacklist.forEach(function(b){ %>
+                        <tr class="hover:bg-white/5 group">
+                          <td class="py-2 pl-2 font-mono text-white/90"><%= b.username %></td>
+                          <td class="py-2 text-white/50"><%= b.created_at %></td>
+                          <td class="py-2 text-right pr-2">
+                            <form method="POST" action="/dashboard/scrapbot/commands/tts-blacklist/remove" class="inline">
+                              <input type="hidden" name="blacklist_id" value="<%= b.id %>" />
+                              <button class="text-red-400 hover:text-red-300 underline" type="submit"
+                                onclick="return confirm('Remove from blacklist?');">Remove</button>
+                            </form>
+                          </td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            <% } %>
+          </div>
+
+        <% } else { %>
+          <div class="text-center py-8">
+            <div class="text-white/30 text-sm">Free TTS is disabled.</div>
+            <div class="text-white/20 text-xs mt-1">Enable it above to see additional settings.</div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Tab switching + prefill + preview + new search logic -->
+<script>
+(function(){
+
+  // Tab switching
+  const tabCommands = document.getElementById("tabCommands");
+  const tabTTS = document.getElementById("tabTTS");
+  const btnCommands = document.getElementById("tabBtnCommands");
+  const btnTTS = document.getElementById("tabBtnTTS");
+
+  window.__sbSwitchTab = function(name){
+    if (name === "commands") {
+      tabCommands.classList.remove("hidden");
+      tabTTS.classList.add("hidden");
+
+      btnCommands.classList.add("pc-btn--primary");
+      btnCommands.classList.remove("pc-btn--ghost");
+
+      btnTTS.classList.remove("pc-btn--primary");
+      btnTTS.classList.add("pc-btn--ghost");
+    } else {
+      tabTTS.classList.remove("hidden");
+      tabCommands.classList.add("hidden");
+
+      btnTTS.classList.add("pc-btn--primary");
+      btnTTS.classList.remove("pc-btn--ghost");
+
+      btnCommands.classList.remove("pc-btn--primary");
+      btnCommands.classList.add("pc-btn--ghost");
+    }
+  };
+
+  // Default to Commands tab
+  window.__sbSwitchTab("commands");
+
+  // Quick start prefills
+  window.__sbPrefill = function(type){
+    const name = document.querySelector('input[name="name"]');
+    const trigger = document.querySelector('input[name="trigger_pattern"]');
+    const response = document.querySelector('textarea[name="response_text"]');
+
+    if (!name || !trigger || !response) return;
+
+    if (type === "socials") {
+      name.value = "Socials";
+      trigger.value = "!socials";
+      response.value = "Follow the channel on socials here 👉 https://...";
+    }
+
+    if (type === "discord") {
+      name.value = "Discord";
+      trigger.value = "!discord";
+      response.value = "Join our Discord here 👉 https://...";
+    }
+
+    if (type === "rules") {
+      name.value = "Rules";
+      trigger.value = "!rules";
+      response.value = "Be respectful. No spam. Have fun.";
+    }
+
+    if (type === "shoutout") {
+      name.value = "Shoutout";
+      trigger.value = "!so";
+      response.value = "Go follow ${user} — awesome creator 👏";
+    }
+
+    response.focus();
+  };
+
+  // ────────────────────────────────────────────────
+  // Command preview / variable insert logic
+  // ────────────────────────────────────────────────
+  const MAX = <%- JSON.stringify(CMD_SAFE_MAX) %>;
+  const KNOWN = new Set(["user","channel","random","count","last_user","last_used"]);
+
+  function $(id){ return document.getElementById(id); }
+
+  function insertAtCursor(el, text){
+    if (!el) return;
+    el.focus();
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const v = el.value || "";
+    el.value = v.slice(0,start) + text + v.slice(end);
+    const next = start + text.length;
+    el.selectionStart = el.selectionEnd = next;
+    el.dispatchEvent(new Event("input", { bubbles:true }));
+  }
+
+  function collectUnknownVars(s){
+    const str = String(s || "");
+    const re = /\$\{([a-zA-Z0-9_]+)\}/g;
+    const bad = new Set();
+    let m;
+    while ((m = re.exec(str)) !== null) {
+      const key = String(m[1] || "").toLowerCase();
+      if (!KNOWN.has(key)) bad.add(key);
+    }
+    return Array.from(bad);
+  }
+
+  function renderPreview(){
+    const src = String($("cmdResponse")?.value || "");
+    const user = String($("cmdSampleUser")?.value || "someone");
+    const channel = String($("cmdSampleChannel")?.value || "");
+    const count = String($("cmdSampleCount")?.value || "0");
+    const lastUser = String($("cmdSampleLastUser")?.value || "");
+    const lastUsed = String($("cmdSampleLastUsed")?.value || "");
+    const rand = Math.floor(Math.random() * 101);
+
+    // unknown var warning
+    const unknown = collectUnknownVars(src);
+    const warn = $("cmdVarWarn");
+    const warnList = $("cmdVarWarnList");
+    if (warn && warnList) {
+      if (unknown.length) {
+        warn.classList.remove("hidden");
+        warnList.textContent = unknown.map(x => "${" + x + "}").join(" ");
+      } else {
+        warn.classList.add("hidden");
+        warnList.textContent = "";
+      }
+    }
+
+    // length counter
+    const len = src.length;
+    const lenEl = $("cmdLen");
+    if (lenEl) lenEl.textContent = String(len);
+
+    // expand variables
+    const out = src.replace(/\$\{([a-zA-Z0-9_]+)\}/g, function(_, key){
+      const k = String(key || "").toLowerCase();
+      if (k === "user") return user;
+      if (k === "channel") return channel;
+      if (k === "random") return String(rand);
+      if (k === "count") return count;
+      if (k === "last_user") return lastUser;
+      if (k === "last_used") return lastUsed;
+      return "${" + key + "}";
+    });
+
+    const final = out.length > MAX ? out.slice(0, Math.max(0, MAX - 1)) + "…" : out;
+    const outEl = $("cmdPreviewOut");
+    if (outEl) outEl.textContent = final || "—";
+  }
+
+  window.__sbCmdInsertVar = function(btn){
+    const ta = $("cmdResponse");
+    const v = btn?.getAttribute("data-insert") || "";
+    if (!v) return;
+    insertAtCursor(ta, v);
+  };
+
+  window.__sbCmdRandomize = function(){
+    const u = $("cmdSampleUser");
+    const c = $("cmdSampleChannel");
+    const cnt = $("cmdSampleCount");
+    const lu = $("cmdSampleLastUser");
+    const lused = $("cmdSampleLastUsed");
+    if (u) u.value = ["TabLord","YourBudde","ScrapletFan","CaptainChat","NeonPilot"][Math.floor(Math.random()*5)];
+    if (c) c.value = (c.value || "scraplet");
+    if (cnt) cnt.value = String(Math.floor(Math.random()*250));
+    if (lu) lu.value = ["TabLord","YourBudde","ModSquad","SpaceCadet","LuckyViewer"][Math.floor(Math.random()*5)];
+    if (lused) lused.value = new Date(Date.now() - Math.floor(Math.random()*72)*3600*1000).toISOString();
+    renderPreview();
+  };
+
+  // Bind preview events
+  const bindIds = [
+    "cmdResponse",
+    "cmdSampleUser","cmdSampleChannel","cmdSampleCount","cmdSampleLastUser","cmdSampleLastUsed"
+  ];
+  bindIds.forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener("input", renderPreview);
+  });
+
+  // Client-side command search filter
+  (function bindCmdSearch(){
+    const input = document.getElementById("cmdSearch");
+    if (!input) return;
+
+    input.addEventListener("input", function(){
+      const q = String(input.value || "").trim().toLowerCase();
+      const rows = document.querySelectorAll("#tabCommands tbody tr");
+      rows.forEach(tr => {
+        const hay = (tr.textContent || "").toLowerCase();
+        tr.style.display = (!q || hay.includes(q)) ? "" : "none";
+      });
+    });
+  })();
+
+  // Initial preview render
+  renderPreview();
+
+})();
+</script>

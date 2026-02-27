@@ -1,0 +1,63 @@
+<!-- views/casino/configureCrash.ejs -->
+<div class="pulp-wrap" style="padding: 18px 0;">
+  <div class="pulpCard" style="padding: 18px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <div>
+        <div class="pulpH" style="font-size: 20px; font-weight: 900;">Crash — Renderer Config</div>
+        <div class="pulpP" style="opacity: .8; margin-top: 4px;">
+          Toggle layout variants + generate OBS URL. Renderer remains read-only and replays DB truth.
+        </div>
+      </div>
+      <a class="pulpNavItem pulpNavItem--ghost" href="/dashboard/casino">Back to Casino</a>
+    </div>
+
+    <hr style="opacity:.15; margin: 14px 0;" />
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+      <div class="pulpCard" style="padding: 14px;">
+        <div class="pulpLabel" style="opacity:.85; margin-bottom:6px;">Layout Variant</div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <label class="pulpChip" style="cursor:pointer;">
+            <input type="radio" name="variant" value="horizontal" style="margin-right:8px;">
+            Horizontal (16:9)
+          </label>
+
+          <label class="pulpChip" style="cursor:pointer;">
+            <input type="radio" name="variant" value="vertical" style="margin-right:8px;">
+            Vertical (9:16)
+          </label>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div class="pulpLabel" style="opacity:.85; margin-bottom:6px;">Skin</div>
+          <input id="skin_key" class="pulpInput" value="neon-v1" style="width:100%;" />
+          <div class="pulpP" style="opacity:.7; margin-top:6px;">Skins live under <code>src/skins/&lt;skin_key&gt;/</code></div>
+        </div>
+
+        <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
+          <button id="btnSave" class="pulpNavItem pulpNavItem--gold">Save</button>
+          <span id="saveStatus" class="pulpP" style="opacity:.75;"></span>
+        </div>
+      </div>
+
+      <div class="pulpCard" style="padding: 14px;">
+        <div class="pulpLabel" style="opacity:.85; margin-bottom:6px;">OBS / Browser Source URL</div>
+        <input id="obsUrl" class="pulpInput" readonly style="width:100%; font-family: ui-monospace, monospace;" />
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <button id="btnCopy" class="pulpNavItem">Copy</button>
+          <a id="btnPreview" class="pulpNavItem pulpNavItem--ghost" target="_blank" rel="noreferrer">Preview</a>
+        </div>
+
+        <hr style="opacity:.15; margin: 14px 0;" />
+
+        <div class="pulpP" style="opacity:.75;">
+          Uses your broadcaster <code>channel_id</code> (Kick user id) and reads snapshot from
+          <code>/api/obs/casino/crash/state</code>.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/dashboard/js/crash-config.js"></script>

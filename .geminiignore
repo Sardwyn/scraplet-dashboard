@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+
+# Generated / build output
+public/static/
+public/widgets/
+dist/
+build/
+
+# Runtime junk
+.run/
+logs/
+*.log
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Git / tooling
+.git/
+.vscode/
+.idea/
+
+# OS / backups
+.DS_Store
+Thumbs.db
+
+# WSL / Windows mounts (DO NOT INDEX)
+mnt/
+mnt/**
+/mnt/**

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Onboarding | Scraplet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-950 text-white">
+  <div class="max-w-3xl mx-auto px-6 py-10">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold">Finish setup</h1>
+        <p class="text-sm text-gray-400 mt-1">
+          This sets up your creator profile. You can change everything later.
+        </p>
+      </div>
+      <div class="text-xs text-gray-500 text-right">
+        <div>Logged in as</div>
+        <div class="text-gray-200 font-semibold"><%= user?.username || '—' %></div>
+      </div>
+    </div>
+
+    <div class="mt-6 border border-gray-800 rounded-2xl bg-gray-900 shadow p-6">
+      <form method="POST" action="/auth/onboard<%= embed ? '?embed=1' : '' %>" enctype="multipart/form-data" class="space-y-6">
+        <% if (embed) { %>
+          <!-- Belt & braces: embed flag can get lost on POST -->
+          <input type="hidden" name="embed" value="1" />
+        <% } %>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1" for="display_name">
+              Display name
+            </label>
+            <input
+              id="display_name"
+              name="display_name"
+              type="text"
+              placeholder="e.g. Brad / Scraplet / Your Creator Name"
+              class="w-full border border-gray-800 bg-gray-950 rounded px-3 py-2 text-sm text-white placeholder:text-gray-600"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              This is what viewers see. Your username stays <span class="text-gray-300">@<%= user?.username || '—' %></span>.
+            </p>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1" for="avatar">
+              Avatar (optional)
+            </label>
+            <input
+              id="avatar"
+              type="file"
+              name="avatar"
+              accept="image/*"
+              class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4
+                     file:rounded file:border-0 file:text-sm file:font-semibold
+                     file:bg-gray-950 file:text-white hover:file:bg-gray-800
+                     border border-gray-800 bg-gray-950 rounded"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Use a square image for best results.
+            </p>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1" for="bio">
+              Bio
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              rows="4"
+              placeholder="What do you stream? What should people expect?"
+              class="w-full border border-gray-800 bg-gray-950 rounded px-3 py-2 text-sm text-white placeholder:text-gray-600"
+            ></textarea>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1" for="tags">
+              Tags (comma separated)
+            </label>
+            <input
+              id="tags"
+              type="text"
+              name="tags"
+              placeholder="gaming, fps, variety, coding..."
+              class="w-full border border-gray-800 bg-gray-950 rounded px-3 py-2 text-sm text-white placeholder:text-gray-600"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              Used for discovery and future smart suggestions.
+            </p>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-between gap-3">
+          <div class="text-xs text-gray-500">
+            You can edit these anytime in the profile editor.
+          </div>
+          <button
+            type="submit"
+            class="bg-blue-600 hover:bg-blue-700 text-white rounded px-5 py-2 text-sm shadow"
+          >
+            Finish &amp; go to dashboard
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="mt-6 text-xs text-gray-600">
+      Tip: If you started sign-in from an embedded flow, we’ll send you to the dashboard automatically after you finish setup.
+    </div>
+  </div>
+</body>
+</html>

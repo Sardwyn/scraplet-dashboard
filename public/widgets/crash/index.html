@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Crash (Renderer)</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+      /* Browser preview bg. OBS will still be transparent if you want it that way later. */
+      body { background: #0b0f19; }
+      #host { width: 100vw; height: 100vh; }
+
+      #debug {
+        position: fixed;
+        left: 10px;
+        top: 10px;
+        z-index: 9999;
+        font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        color: #e6edf3;
+        background: rgba(0,0,0,0.55);
+        padding: 8px 10px;
+        border-radius: 10px;
+        max-width: 560px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="host"></div>
+    <div id="debug">booting…</div>
+
+    <!-- Pixi via CDN (OBS-safe) -->
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@8/dist/pixi.min.js"></script>
+
+    <!-- Our renderer -->
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

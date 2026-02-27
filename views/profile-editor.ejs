@@ -1,0 +1,457 @@
+<!-- Page-specific styles (loaded in body is fine for now) -->
+<link rel="stylesheet" href="/dashboard/profile-assets/css/profile-editor.css" />
+<link rel="stylesheet" href="/dashboard/profile-assets/css/profile-card.css?v=1" />
+
+
+<!-- SortableJS (global for buttons list) -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<!-- =============================================== -->
+<!-- PAGE WRAPPER -->
+<!-- =============================================== -->
+<div class="pe-page-root min-h-[70vh] flex bg-slate-900 text-white rounded-2xl border border-slate-800 overflow-hidden">
+
+  <!-- ===================================================== -->
+  <!-- LEFT SIDE: PREVIEW PANE -->
+  <!-- ===================================================== -->
+  <div class="pe-preview-side w-1/2 min-h-[70vh] flex justify-center items-start p-10 overflow-y-auto bg-slate-950">
+    <!-- Server-rendered card will be injected here -->
+    <div id="preview-root" class="pe-preview-root"></div>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- RIGHT SIDE: EDITOR UI -->
+  <!-- ===================================================== -->
+  <div class="pe-editor-side w-1/2 bg-slate-800 border-l border-slate-700 p-8 overflow-y-auto">
+    <h1 class="text-2xl font-bold mb-6">Profile Editor</h1>
+
+    <!-- ====================== -->
+    <!-- BASIC INFO SECTION -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Basic Information</h2>
+
+      <!-- Avatar upload (replaces /account avatar field) -->
+      <form
+        class="mb-6 p-4 rounded-lg bg-slate-900 border border-slate-700"
+        method="POST"
+        action="/dashboard/api/profile/avatar"
+        enctype="multipart/form-data"
+      >
+        <div class="flex items-start gap-4">
+          <div class="w-16 h-16 rounded-full overflow-hidden border border-slate-600 bg-slate-950 flex items-center justify-center">
+            <% if (profile && profile.avatar_url) { %>
+              <img src="<%= profile.avatar_url %>" alt="Avatar" class="w-full h-full object-cover" />
+            <% } else { %>
+              <span class="text-xs text-slate-500">No avatar</span>
+            <% } %>
+          </div>
+
+          <div class="flex-1">
+            <div class="text-sm font-semibold mb-1">Avatar</div>
+            <div class="text-xs text-slate-400 mb-2">Upload a square image. Max 8MB.</div>
+
+            <div class="flex items-center gap-3">
+              <input
+                type="file"
+                name="avatar"
+                accept="image/*"
+                class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4
+                       file:rounded file:border-0 file:text-sm file:font-semibold
+                       file:bg-slate-700 file:text-white hover:file:bg-slate-600
+                       border border-slate-600 bg-slate-700 rounded"
+              />
+              <button
+                type="submit"
+                class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+              >
+                Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <!-- Basic fields save (HTML submit works even if JS changes) -->
+      <form id="pe-basic-form" method="POST" action="/dashboard/api/profile/basic" class="space-y-3">
+
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">Display Name</span>
+        <input
+          id="pe-display-name"
+          name="display_name"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= profile.display_name || '' %>"
+        >
+      </label>
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">Bio</span>
+        <textarea
+          id="pe-bio"
+          rows="3"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"><%= profile.bio || '' %></textarea>
+      </label>
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">Tags (comma separated)</span>
+        <input
+          id="pe-tags"
+          name="tags"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= Array.isArray(profile.tags) ? profile.tags.join(', ') : (profile.tags || '') %>"
+          placeholder="gaming, variety, coding..."
+        >
+      </label>
+
+
+      <label class="block">
+        <span class="text-sm text-slate-300">Cover Image URL</span>
+        <input
+          id="pe-cover-image"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= profile.cover_image_url || '' %>"
+        >
+      </label>
+    </div>
+
+      <div class="pt-2 flex items-center justify-end">
+        <button
+          type="submit"
+          class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+        >
+          Save Basic Info
+        </button>
+      </div>
+      </form>
+
+    <!-- ====================== -->
+    <!-- SOCIAL LINKS -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Social Links</h2>
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">X (handle or URL)</span>
+        <input
+          id="pe-x"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= (profile && profile.x) || '' %>"
+        >
+      </label>
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">YouTube URL</span>
+        <input
+          id="pe-youtube"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= (profile && profile.youtube) || '' %>"
+        >
+      </label>
+
+      <label class="block mb-3">
+        <span class="text-sm text-slate-300">Twitch URL</span>
+        <input
+          id="pe-twitch"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= (profile && profile.twitch) || '' %>"
+        >
+      </label>
+
+      <label class="block">
+        <span class="text-sm text-slate-300">Kick URL</span>
+        <input
+          id="pe-kick"
+          type="text"
+          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
+          value="<%= (profile && profile.kick) || '' %>"
+        >
+      </label>
+    </div>
+
+    <!-- ====================== -->
+    <!-- THEME / APPEARANCE -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Appearance & Theme</h2>
+
+      <div class="flex flex-wrap gap-3">
+        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="midnight">
+          Midnight
+        </button>
+
+        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="kick">
+          Kick
+        </button>
+
+        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="neon">
+          Neon
+        </button>
+
+        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="soft">
+          Soft
+        </button>
+
+        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="pixel">
+          Pixel
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================== -->
+    <!-- CUSTOM BUTTONS -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Custom Buttons</h2>
+
+      <div id="pe-buttons-list" class="flex flex-col gap-3">
+        <!-- JS populates -->
+      </div>
+
+      <button
+        id="pe-add-button"
+        class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded"
+      >
+        Add New Button
+      </button>
+    </div>
+
+    <!-- ====================== -->
+    <!-- SPONSORS -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Sponsors</h2>
+
+      <p class="text-xs text-slate-400 mb-3">
+        Add sponsor logos and links. These appear in the Sponsors block on your card.
+      </p>
+
+      <div id="pe-sponsors-list" class="flex flex-col gap-3">
+        <!-- JS populates -->
+      </div>
+
+      <button
+        id="pe-add-sponsor"
+        class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded"
+      >
+        Add Sponsor
+      </button>
+    </div>
+
+
+
+    <!-- ====================== -->
+    <!-- SECTIONS / ORDER -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-2">Sections &amp; Order</h2>
+      <p class="text-xs text-slate-400 mb-3">
+        Drag to reorder the sections on your card.
+      </p>
+      <div id="pe-blocks-list" class="pe-blocks-list">
+        <!-- JS populates -->
+      </div>
+
+      <div id="pe-block-settings" class="pe-block-settings hidden">
+        <h3 class="pe-block-settings-title text-sm font-semibold mb-2">
+          Block Settings
+        </h3>
+        <div
+          id="pe-block-settings-body"
+          class="pe-block-settings-body text-xs text-slate-200">
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ====================== -->
+    <!-- LAYOUT SETTINGS -->
+    <!-- ====================== -->
+    <div class="pe-section mb-10">
+      <h2 class="text-xl font-semibold mb-4">Layout Options</h2>
+
+      <div class="pe-layout-options-list space-y-2">
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="avatar"
+            <%= sectionVisibility.avatar !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Avatar</span>
+        </label>
+
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="socialLinks"
+            <%= sectionVisibility.socialLinks !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Social Links</span>
+        </label>
+
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="stats"
+            <%= sectionVisibility.stats !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Stats</span>
+        </label>
+
+        <!-- Toggle for stats flip/breakdown -->
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="statsBreakdown"
+            <%= sectionVisibility.statsBreakdown !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Enable stats breakdown flip</span>
+        </label>
+
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="marketability"
+            <%= sectionVisibility.marketability !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Marketability Score</span>
+        </label>
+
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="bio"
+            <%= sectionVisibility.bio !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Bio</span>
+        </label>
+
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="buttons"
+            <%= sectionVisibility.buttons !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Buttons</span>
+        </label>
+
+        <!-- Sponsors toggle -->
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="sponsors"
+            <%= sectionVisibility.sponsors !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show Sponsors</span>
+        </label>
+
+        <!-- NEW: TTS toggle -->
+        <label class="pe-layout-options-item flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="pe-section-toggle"
+            data-section="tts"
+            <%= sectionVisibility.tts !== false ? 'checked' : '' %>
+          />
+          <span class="pe-layout-options-label">Show TTS Button</span>
+        </label>
+      </div>
+    </div>
+
+
+  </div> <!-- END EDITOR SIDE -->
+
+</div> <!-- END PAGE ROOT -->
+
+<!-- =============================================== -->
+<!-- Inject initial profile bundle -->
+<!-- =============================================== -->
+ <% const safeBlocks = (typeof blocks !== 'undefined' && Array.isArray(blocks)) ? blocks : []; %>
+
+<script id="initialProfileData" type="application/json">
+  <%- JSON.stringify({
+    profile,
+    appearance,
+    customButtons,
+    layout,
+    sectionVisibility,
+    stats,
+    marketability,
+    blocks,
+    sponsors
+  }) %>
+</script>
+
+<!-- =============================================== -->
+<!-- Load JS modules (ES6) -->
+<!-- =============================================== -->
+<script type="module" src="/dashboard/profile-assets/js/profile-preview-renderer.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-core.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-buttons.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-theme.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-layout.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-blocks.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-card-dnd.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-card-sections-dnd.js"></script>
+<script type="module" src="/dashboard/profile-assets/js/profile-editor-sponsors.js"></script>
+
+
+
+<!-- =============================================== -->
+<!-- Initialise preview + state on load -->
+<!-- =============================================== -->
+<script type="module">
+  import { updateRendererState, renderPreview } from "/dashboard/profile-assets/js/profile-preview-renderer.js";
+  import { editorInitState, editorState } from "/dashboard/profile-assets/js/profile-editor-core.js";
+  import { setupButtonsModule } from "/dashboard/profile-assets/js/profile-editor-buttons.js";
+  import { setupSponsorsModule } from "/dashboard/profile-assets/js/profile-editor-sponsors.js";
+  import { setupBlocksModule } from "/dashboard/profile-assets/js/profile-editor-blocks.js";
+
+  const initialEl = document.getElementById("initialProfileData");
+
+  if (!initialEl) {
+    console.error("[profile-editor] initialProfileData script tag missing");
+  } else {
+    const initial = JSON.parse(initialEl.textContent);
+
+    // Seed editorState with server data
+    editorInitState(initial);
+
+    // Optional: expose current state for debugging
+    window.editorState = editorState;
+
+    // Seed renderer state + draw card
+    updateRendererState(editorState);
+    renderPreview();
+
+    // Custom Buttons UI
+    setupButtonsModule();
+
+    // Sponsors UI
+    setupSponsorsModule();
+
+    // Sections / Blocks UI
+    setupBlocksModule();
+
+    // Global hook for other modules to refresh the preview
+    window.updatePreview = () => {
+      updateRendererState(editorState);
+      renderPreview();
+    };
+  }
+</script>

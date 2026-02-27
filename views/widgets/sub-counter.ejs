@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sub Counter</title>
+  <style>
+    html, body { margin:0; padding:0; background:transparent; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    .wrap { width: 100vw; height: 100vh; display:flex; align-items:center; justify-content:center; }
+    .card {
+      width: min(900px, 92vw);
+      padding: 18px 18px 16px;
+      border-radius: 16px;
+      background: rgba(10,10,14,0.55);
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      backdrop-filter: blur(10px);
+    }
+    .top { display:flex; align-items:baseline; justify-content:space-between; gap: 10px; }
+    .label { font-weight: 800; letter-spacing: 0.12em; font-size: 14px; opacity: 0.95; }
+    .nums { font-weight: 700; font-size: 14px; opacity: 0.95; }
+    .bar {
+      margin-top: 12px;
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      overflow:hidden;
+      position: relative;
+    }
+    .fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(34,197,94,0.95), rgba(16,185,129,0.95));
+      box-shadow: 0 0 18px rgba(34,197,94,0.35);
+      transition: width 420ms ease;
+    }
+    .hint { margin-top: 10px; font-size: 12px; opacity: 0.65; display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div class="label" id="label">SUB GOAL</div>
+        <div class="nums" id="nums"></div>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </div>
+
+  <script>
+    window.__WIDGET_TOKEN__ = "<%= token %>";
+    window.__WIDGET_CONFIG__ = <%- JSON.stringify(config || {}) %>;
+  </script>
+  <script src="/widgets/sub-counter.js"></script>
+</body>
+</html>

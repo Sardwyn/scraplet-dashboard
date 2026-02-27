@@ -1,0 +1,401 @@
+<div class="max-w-6xl mx-auto">
+  <div class="flex items-start justify-between gap-6 mb-6">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-black tracking-tight">Plinko • Configure</h1>
+      <p class="text-sm text-white/70 mt-1">
+        Saved via <code class="px-1.5 py-0.5 rounded bg-white/10 border border-white/10">/dashboard/api/widgets/plinko/config</code>
+      </p>
+    </div>
+
+    <div id="statusPill"
+      class="shrink-0 px-3 py-1.5 rounded-full text-xs font-black border border-white/15 bg-white/10 text-white/80">
+      Loading…
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Left: Controls -->
+    <div class="lg:col-span-2">
+      <div class="rounded-2xl border border-white/10 bg-white/5 shadow-xl shadow-black/20 overflow-hidden">
+        <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+          <div class="font-black">Game + Theme</div>
+          <div class="text-xs text-white/60">Tip: OBS cache-bust with <code class="px-1 py-0.5 rounded bg-white/10">?v=123</code></div>
+        </div>
+
+        <div class="p-5 space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Theme preset</div>
+              <select id="themeSelect"
+                class="w-full rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40">
+                <option value="casino">casino</option>
+                <option value="neon-arcade">neon-arcade</option>
+                <option value="scraplet-pulp">scraplet-pulp</option>
+              </select>
+              <div class="text-xs text-white/60 mt-1">Sets <code class="px-1 py-0.5 rounded bg-white/10">visuals.theme</code></div>
+            </label>
+
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Rows</div>
+              <input id="rows" type="number" min="6" max="16" step="1"
+                class="w-full rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              <div class="text-xs text-white/60 mt-1">Sets <code class="px-1 py-0.5 rounded bg-white/10">gameplay.rows</code></div>
+            </label>
+
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Per row (ms)</div>
+              <input id="perRowMs" type="number" min="80" max="800" step="10"
+                class="w-full rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              <div class="text-xs text-white/60 mt-1">Sets <code class="px-1 py-0.5 rounded bg-white/10">gameplay.perRowMs</code></div>
+            </label>
+
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Pad (ms)</div>
+              <input id="padMs" type="number" min="0" max="2000" step="10"
+                class="w-full rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40" />
+              <div class="text-xs text-white/60 mt-1">Sets <code class="px-1 py-0.5 rounded bg-white/10">gameplay.padMs</code></div>
+            </label>
+          </div>
+
+          <label class="block">
+            <div class="text-xs font-black text-white/80 mb-1">Multipliers (comma-separated)</div>
+            <input id="multipliers" type="text" placeholder="0.2,0.5,1,2,5,2,1,0.5,0.2"
+              class="w-full rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            <div class="text-xs text-white/60 mt-1">
+              If provided, sets <code class="px-1 py-0.5 rounded bg-white/10">gameplay.multipliers</code>
+            </div>
+          </label>
+
+          <!-- FX toggles -->
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="font-black">FX toggles</div>
+              <div class="text-xs text-white/60">Stored at <code class="px-1 py-0.5 rounded bg-white/10">visuals.fx</code></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label class="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-gray-900/30">
+                <input id="fxPegKick" type="checkbox" class="mt-1">
+                <div>
+                  <div class="text-sm font-black">Peg kick</div>
+                  <div class="text-xs text-white/60">Micro-jitter synced to “peg ticks” so it feels physical.</div>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-gray-900/30">
+                <input id="fxBallTrail" type="checkbox" class="mt-1">
+                <div>
+                  <div class="text-sm font-black">Ball trail</div>
+                  <div class="text-xs text-white/60">Subtle trail behind the ball (looks great in OBS).</div>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-gray-900/30">
+                <input id="fxSlotBurst" type="checkbox" class="mt-1">
+                <div>
+                  <div class="text-sm font-black">Slot burst</div>
+                  <div class="text-xs text-white/60">Little particle burst on settle. Big win feels “hit”.</div>
+                </div>
+              </label>
+
+              <label class="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-gray-900/30">
+                <input id="fxBigWinSlowMo" type="checkbox" class="mt-1">
+                <div>
+                  <div class="text-sm font-black">Big win slow-mo</div>
+                  <div class="text-xs text-white/60">Slow-mo only on big wins (instead of always).</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Skin overrides (JSON)</div>
+              <textarea id="skinJson" spellcheck="false"
+                class="w-full min-h-[170px] rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/40"
+                placeholder='{"frameColor":"#FFE08A","pegAlpha":0.45,"pattern":"hazard","boardBgImage":"/uploads/plinko/texture.png"}'></textarea>
+              <div class="text-xs text-white/60 mt-1">
+                Stored at <code class="px-1 py-0.5 rounded bg-white/10">visuals.skin</code>
+              </div>
+            </label>
+
+            <label class="block">
+              <div class="text-xs font-black text-white/80 mb-1">Ball overrides (JSON)</div>
+              <textarea id="ballJson" spellcheck="false"
+                class="w-full min-h-[170px] rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-xs font-mono outline-none focus:ring-2 focus:ring-indigo-500/40"
+                placeholder='{"imageUrl":"/uploads/items/coin.png","size":18,"fit":"contain","mask":"circle","pad":0.10}'></textarea>
+              <div class="text-xs text-white/60 mt-1">
+                Stored at <code class="px-1 py-0.5 rounded bg-white/10">visuals.ball</code>
+              </div>
+            </label>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end pt-2">
+            <button id="resetBtn" type="button"
+              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm font-black">
+              Reset UI to defaults
+            </button>
+            <button id="saveBtn" type="button"
+              class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/40 text-sm font-black">
+              Save
+            </button>
+          </div>
+
+          <div id="msg" class="text-sm"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Links + Preview -->
+    <div class="lg:col-span-1">
+      <div class="rounded-2xl border border-white/10 bg-white/5 shadow-xl shadow-black/20 overflow-hidden">
+        <div class="px-5 py-4 border-b border-white/10">
+          <div class="font-black">Links</div>
+          <div class="text-xs text-white/60 mt-1">Open overlay + debug quickly.</div>
+        </div>
+
+        <div class="p-5 space-y-4">
+          <div>
+            <div class="text-xs font-black text-white/80 mb-1">Overlay URL (OBS)</div>
+            <a id="obsUrl" href="#" target="_blank" rel="noreferrer"
+              class="block text-xs break-all text-indigo-200 hover:text-indigo-100 underline underline-offset-2">
+              Loading…
+            </a>
+          </div>
+
+          <div>
+            <div class="text-xs font-black text-white/80 mb-1">Debug overlay</div>
+            <a id="dbgUrl" href="#" target="_blank" rel="noreferrer"
+              class="block text-xs break-all text-indigo-200 hover:text-indigo-100 underline underline-offset-2">
+              Loading…
+            </a>
+          </div>
+
+          <div class="pt-2">
+            <div class="text-xs font-black text-white/80 mb-2">Current config preview</div>
+            <textarea id="configPreview" spellcheck="false" readonly
+              class="w-full min-h-[340px] rounded-xl bg-gray-900/60 border border-white/10 px-3 py-2 text-xs font-mono"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var statusPill = document.getElementById("statusPill");
+  var msg = document.getElementById("msg");
+  var configPreview = document.getElementById("configPreview");
+
+  var themeSelect = document.getElementById("themeSelect");
+  var rowsEl = document.getElementById("rows");
+  var perRowMsEl = document.getElementById("perRowMs");
+  var padMsEl = document.getElementById("padMs");
+  var multipliersEl = document.getElementById("multipliers");
+  var skinJsonEl = document.getElementById("skinJson");
+  var ballJsonEl = document.getElementById("ballJson");
+
+  var fxPegKickEl = document.getElementById("fxPegKick");
+  var fxBallTrailEl = document.getElementById("fxBallTrail");
+  var fxSlotBurstEl = document.getElementById("fxSlotBurst");
+  var fxBigWinSlowMoEl = document.getElementById("fxBigWinSlowMo");
+
+  var obsUrl = document.getElementById("obsUrl");
+  var dbgUrl = document.getElementById("dbgUrl");
+
+  var DEFAULTS = <%- JSON.stringify(defaults || {}) %>;
+
+  function deepMerge(a,b){
+    var out = {};
+    a = a || {}; b = b || {};
+    Object.keys(a).forEach(function(k){ out[k]=a[k]; });
+    Object.keys(b).forEach(function(k){
+      var av = out[k], bv = b[k];
+      var ao = av && typeof av==="object" && !Array.isArray(av);
+      var bo = bv && typeof bv==="object" && !Array.isArray(bv);
+      out[k] = (ao && bo) ? deepMerge(av,bv) : bv;
+    });
+    return out;
+  }
+
+  function setStatus(text, ok){
+    statusPill.textContent = text;
+    statusPill.className =
+      "shrink-0 px-3 py-1.5 rounded-full text-xs font-black border " +
+      (ok ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-50"
+          : "border-rose-300/30 bg-rose-300/10 text-rose-50");
+  }
+
+  function showMsg(text, ok){
+    msg.className = ok ? "text-emerald-200 font-black" : "text-rose-200 font-black whitespace-pre-wrap";
+    msg.textContent = text;
+  }
+
+  async function safeJsonFetch(url, options){
+    var res = await fetch(url, options);
+    var ct = String(res.headers.get("content-type") || "").toLowerCase();
+
+    if (!ct.includes("application/json")) {
+      var txt = await res.text();
+      var head = txt.slice(0, 240).replace(/\s+/g, " ");
+      throw new Error("Expected JSON but got " + (ct || "unknown content-type") +
+        " (HTTP " + res.status + "). First bytes: " + head);
+    }
+
+    var j = await res.json();
+
+    if (!res.ok || !j || j.ok === false) {
+      throw new Error((j && (j.error || j.message)) ? (j.error || j.message)
+        : ("Request failed (HTTP " + res.status + ")"));
+    }
+    return j;
+  }
+
+  function parseJsonOrEmpty(el){
+    var raw = String(el.value||"").trim();
+    if (!raw) return {};
+    try { return JSON.parse(raw); }
+    catch(e){ throw new Error("Invalid JSON in " + el.id + ": " + e.message); }
+  }
+
+  function parseMultipliers(str){
+    var raw = String(str||"").trim();
+    if (!raw) return null;
+    var parts = raw.split(",").map(function(x){ return x.trim(); }).filter(Boolean);
+    var nums = parts.map(function(x){
+      var n = Number(x);
+      if (!isFinite(n)) throw new Error("Bad multiplier: " + x);
+      return n;
+    });
+    return nums;
+  }
+
+  function renderForm(conf){
+    var merged = deepMerge(DEFAULTS, conf || {});
+
+    var th = (((merged.visuals||{}).theme)||"casino");
+    themeSelect.value = th;
+
+    var gp = merged.gameplay || {};
+    rowsEl.value = Number(gp.rows||10);
+    perRowMsEl.value = Number(gp.perRowMs||260);
+    padMsEl.value = Number(gp.padMs||900);
+
+    var mul = gp.multipliers;
+    multipliersEl.value = Array.isArray(mul) ? mul.join(",") : "";
+
+    var skin = (conf && conf.visuals && conf.visuals.skin) ? conf.visuals.skin : {};
+    var ball = (conf && conf.visuals && conf.visuals.ball) ? conf.visuals.ball : {};
+    skinJsonEl.value = Object.keys(skin||{}).length ? JSON.stringify(skin, null, 2) : "";
+    ballJsonEl.value = Object.keys(ball||{}).length ? JSON.stringify(ball, null, 2) : "";
+
+    var fx = ((merged.visuals||{}).fx) || {};
+    fxPegKickEl.checked = fx.pegKick !== false;
+    fxBallTrailEl.checked = fx.ballTrail !== false;
+    fxSlotBurstEl.checked = fx.slotBurst !== false;
+    fxBigWinSlowMoEl.checked = fx.bigWinSlowMo !== false;
+
+    configPreview.value = JSON.stringify(merged, null, 2);
+  }
+
+  function refreshLinks(widget){
+    if (!widget) return;
+    var pid = widget.public_id || widget.publicId || "";
+    if (!pid) return;
+
+    var base = window.location.origin.replace("/dashboard","");
+    var url = base + "/obs/plinko/" + encodeURIComponent(pid);
+    obsUrl.textContent = url;
+    obsUrl.href = url;
+
+    dbgUrl.textContent = url + "?debug=1";
+    dbgUrl.href = url + "?debug=1";
+  }
+
+  function load(){
+    setStatus("Loading…", true);
+    safeJsonFetch("/dashboard/api/widgets/plinko/config", { cache:"no-store", headers: { "accept":"application/json" } })
+      .then(function(j){
+        refreshLinks(j.widget || null);
+        renderForm(j.config || {});
+        setStatus("Loaded", true);
+        showMsg("Loaded config.", true);
+      })
+      .catch(function(e){
+        setStatus("Load failed", false);
+        showMsg(String(e && e.message ? e.message : e), false);
+      });
+  }
+
+  function save(){
+    try {
+      var skinOverrides = parseJsonOrEmpty(skinJsonEl);
+      var ballOverrides = parseJsonOrEmpty(ballJsonEl);
+
+      var rows = Number(rowsEl.value || 10);
+      var perRowMs = Number(perRowMsEl.value || 260);
+      var padMs = Number(padMsEl.value || 900);
+
+      var mults = parseMultipliers(multipliersEl.value);
+
+      var fx = {
+        pegKick: !!fxPegKickEl.checked,
+        ballTrail: !!fxBallTrailEl.checked,
+        slotBurst: !!fxSlotBurstEl.checked,
+        bigWinSlowMo: !!fxBigWinSlowMoEl.checked
+      };
+
+      var patch = {
+        visuals: {
+          theme: String(themeSelect.value || "casino"),
+          skin: skinOverrides,
+          ball: ballOverrides,
+          fx: fx
+        },
+        gameplay: {
+          rows: rows,
+          perRowMs: perRowMs,
+          padMs: padMs
+        }
+      };
+      if (mults) patch.gameplay.multipliers = mults;
+
+      setStatus("Saving…", true);
+      safeJsonFetch("/dashboard/api/widgets/plinko/config", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "accept": "application/json"
+        },
+        body: JSON.stringify({ patch: patch }),
+        cache: "no-store"
+      })
+      .then(function(){
+        setStatus("Saved", true);
+        showMsg("Saved. OBS: add ?v=123 to cache-bust.", true);
+        load();
+      })
+      .catch(function(e){
+        setStatus("Save failed", false);
+        showMsg(String(e && e.message ? e.message : e), false);
+      });
+
+    } catch (e) {
+      setStatus("Validation failed", false);
+      showMsg(String(e && e.message ? e.message : e), false);
+    }
+  }
+
+  function resetUi(){
+    renderForm({});
+    setStatus("UI reset", true);
+    showMsg("UI reset to defaults (not saved yet).", true);
+  }
+
+  document.getElementById("saveBtn").addEventListener("click", save);
+  document.getElementById("resetBtn").addEventListener("click", resetUi);
+
+  load();
+})();
+</script>

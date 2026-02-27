@@ -1,0 +1,179 @@
+qq// /root/scrapletdashboard/src/tts/routes.js
+import express from "express";
+import db from "../../db.js";
+
+const router = express.Router();
+
+function requireOptionalKey(req, res) {
+  const configured = (process.env.TTS_OVERLAY_KEY || "").trim();
+  if (!configured) return true;
+
+  const provided = (req.query.key || "").toString().trim();
+  if (provided && provided === configured) return true;
+
+  res.status(403).json({ error: "forbidden" });
+  return false;
+}
+
+function noStore(res) {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+}
+
+/**
+ * POST /api/tts/claim?platform=kick&channel=scraplet&consumer=overlay:tts&key=...
+ * Atomically claim next unplayed done job for channel. Marks played immediately.
+ *
+ * Note: The router is mounted at /api/tts in index.js, so this route is "/claim".
+ */
+router.post("/claim", async (req, res) => {
+  if (!requireOptionalKey(req, res)) return;
+
+  const platform = (req.query.platform || "kick").toString().trim();
+  const channel = (req.query.channel || "").toString().trim();
+  const consumer = (req.query.consumer || "overlay:tts").toString().trim();
+
+  if (!channel) return res.status(400).json({ error: "missing channel" });
+
+  try {
+    const sql = `
+      UPDATE tts_jobs
+      SET
+        played_at = NOW(),
+        played_by = $3
+      WHERE id = (
+        SELECT id
+        FROM tts_jobs
+        WHERE
+          platform = $1
+          AND channel_slug = $2
+          AND status = 'done'
+          AND played_at IS NULL
+          AND audio_url IS NOT NULL
+        ORDER BY created_at ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING
+        id, created_at, status, platform, channel_slug,
+        source, engine, voice_id,
+        text_sanitized, char_count,
+        audio_url, audio_mime, audio_hash,
+        played_at, played_by
+    `;
+
+    const result = await db.query(sql, [platform, channel, consumer]);
+
+    if (!result.rows.length) return res.status(204).end();
+
+    noStore(res);
+    return res.json({ job: result.rows[0] });
+  } catch (err) {
+    console.error("[tts] claim error:", err);
+    return res.status(500).json({ error: "tts_claim_failed" });
+  }
+});
+
+/**
+ * GET /api/tts/stream?platform=kick&channel=scraplet&consumer=overlay:tts&key=...
+ * SSE notifier: emits events inserted into tts_channel_events.
+ *
+ * Note: The router is mounted at /api/tts in index.js, so this route is "/stream".
+ */
+router.get("/stream", async (req, res) => {
+  if (!requireOptionalKey(req, res)) return;
+
+  const platform = (req.query.platform || "kick").toString().trim();
+  const channel = (req.query.channel || "").toString().trim();
+
+  if (!channel) return res.status(400).send("Missing channel");
+
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+  });
+  res.flushHeaders?.();
+
+  let closed = false;
+  req.on("close", () => { closed = true; });
+
+  const ka = setInterval(() => {
+    if (closed) return;
+    res.write(`: keepalive ${Date.now()}\n\n`);
+  }, 15000);
+
+  let lastId = Number(req.headers["last-event-id"] || 0) || 0;
+
+  async function tick() {
+    if (closed) return;
+
+    try {
+      const { rows } = await db.query(
+        `
+        SELECT id, event_type, payload
+        FROM tts_channel_events
+        WHERE platform = $1
+          AND channel_slug = $2
+          AND id > $3
+        ORDER BY id ASC
+        LIMIT 50
+        `,
+        [platform, channel, lastId]
+      );
+
+      for (const ev of rows) {
+        lastId = Number(ev.id);
+        res.write(`id: ${ev.id}\n`);
+        res.write(`event: ${ev.event_type || "tts_ready"}\n`);
+        res.write(`data: ${JSON.stringify(ev.payload || {})}\n\n`);
+      }
+    } catch (err) {
+      console.warn("[tts] sse tick error:", err?.message || err);
+    }
+
+    setTimeout(tick, 1000);
+  }
+
+  tick();
+
+  req.on("close", () => {
+    clearInterval(ka);
+  });
+});
+
+/**
+ * GET /overlays/tts?platform=kick&channel=scraplet&consumer=overlay:tts&key=...
+ * OBS browser source page
+ *
+ * This route is absolute (not under /api/tts), so it lives here and is mounted at "/".
+ * BUT we are NOT mounting this router at "/" anymore, so we also need to mount this
+ * specific route elsewhere OR keep a tiny dedicated overlay router.
+ *
+ * Easiest: keep this route here AND mount this router ONCE at "/"? No.
+ * Better: keep this route in the main overlays router, or mount this router at "/" ONLY for overlays.
+ *
+ * For now: we will mount a second router instance just for /overlays/tts in index.js (see below).
+ */
+router.get("/overlays/tts", (req, res) => {
+  const platform = (req.query.platform || "kick").toString().trim();
+  const channel = (req.query.channel || "").toString().trim();
+  const consumer = (req.query.consumer || "overlay:tts").toString().trim();
+  const key = (req.query.key || "").toString().trim();
+
+  const configured = (process.env.TTS_OVERLAY_KEY || "").trim();
+  if (configured && key !== configured) return res.status(403).send("Forbidden");
+  if (!channel) return res.status(400).send("Missing channel");
+
+  noStore(res);
+
+  return res.render("overlays/tts-player", {
+    platform,
+    channel,
+    consumer,
+    key: key || null,
+  });
+});
+
+export default router;

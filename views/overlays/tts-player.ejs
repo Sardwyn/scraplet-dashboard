@@ -1,0 +1,312 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Scraplet TTS Player</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        overflow: hidden;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      }
+      .hud {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        background: rgba(0,0,0,0.55);
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.25;
+        backdrop-filter: blur(6px);
+        display: none;
+        max-width: 75vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .hud b { font-weight: 700; }
+      .hud .ok { color: #6ee7b7; }
+      .hud .err { color: #fca5a5; }
+    </style>
+  </head>
+  <body>
+    <audio id="tts_audio" preload="auto" playsinline></audio>
+
+    <div class="hud" id="hud">
+      <div><b>TTS</b> <span id="hudStatus" class="ok">boot</span></div>
+      <div id="hudMeta"></div>
+    </div>
+
+    <script>
+      const platform = <%- JSON.stringify(platform) %>;
+      const channel  = <%- JSON.stringify(channel) %>;
+      const consumer = <%- JSON.stringify(consumer) %>;
+      const key      = <%- JSON.stringify(key) %>;
+
+      const audioEl = document.getElementById("tts_audio");
+
+      const hud = document.getElementById("hud");
+      const hudStatus = document.getElementById("hudStatus");
+      const hudMeta = document.getElementById("hudMeta");
+
+      const qs = new URLSearchParams(location.search);
+      const DEBUG_HUD = qs.get("debug") === "1" || qs.get("obs") === "1";
+      if (DEBUG_HUD) hud.style.display = "block";
+
+      function setHud(status, isErr, meta) {
+        if (!DEBUG_HUD) return;
+        hudStatus.textContent = status;
+        hudStatus.className = isErr ? "err" : "ok";
+        hudMeta.textContent = meta || "";
+      }
+
+      function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+      // 🔓 OBS audio unlock hack
+      async function unlockAudio() {
+        try {
+          audioEl.muted = true;
+          audioEl.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+          await audioEl.play();
+          audioEl.pause();
+          audioEl.muted = false;
+          audioEl.src = "";
+          console.log("[tts] audio unlocked");
+          return true;
+        } catch (e) {
+          console.warn("[tts] audio unlock failed", e);
+          return false;
+        }
+      }
+
+      function isNotAllowed(err) {
+        const name = String(err && err.name ? err.name : "");
+        const msg = String(err && err.message ? err.message : err);
+        return (
+          name.includes("NotAllowedError") ||
+          msg.includes("NotAllowedError") ||
+          msg.includes("user didn't interact") ||
+          /play\(\) failed/i.test(msg)
+        );
+      }
+
+      async function claimNext() {
+        const qp = new URLSearchParams({ platform, channel, consumer });
+        if (key) qp.set("key", key);
+
+        const url = location.origin + "/api/tts/claim?" + qp.toString();
+        const resp = await fetch(url, { method: "POST", credentials: "omit", cache: "no-store" });
+
+        if (resp.status === 204) return null;
+        if (!resp.ok) throw new Error("claim failed: HTTP " + resp.status);
+
+        const json = await resp.json();
+        return json.job || null;
+      }
+
+      async function playUrl(url) {
+        return new Promise((resolve, reject) => {
+          let done = false;
+          let watchdog = null;
+          let startTime = 0;
+
+          const cleanup = () => {
+            audioEl.onended = null;
+            audioEl.onerror = null;
+            audioEl.onplaying = null;
+            if (watchdog) clearTimeout(watchdog);
+          };
+
+          const finishResolve = () => {
+            if (done) return;
+            done = true;
+            cleanup();
+            resolve();
+          };
+
+          const finishReject = (err) => {
+            if (done) return;
+            done = true;
+            cleanup();
+            reject(err);
+          };
+
+          audioEl.onended = finishResolve;
+          audioEl.onerror = () => finishReject(new Error("audio error"));
+          audioEl.onplaying = () => { startTime = audioEl.currentTime || 0; };
+
+          audioEl.src = url;
+          audioEl.load();
+
+          // watchdog: if time doesn't advance, treat as stalled/autoplay blocked
+          watchdog = setTimeout(() => {
+            const ct = audioEl.currentTime || 0;
+            if (ct <= startTime + 0.01) {
+              console.warn("[tts] playback stalled", {
+                currentTime: audioEl.currentTime,
+                paused: audioEl.paused,
+                readyState: audioEl.readyState,
+                networkState: audioEl.networkState
+              });
+              try { audioEl.pause(); } catch (_) {}
+              finishReject(new Error("audio stalled"));
+            }
+          }, 1500);
+
+          const p = audioEl.play();
+          if (p && typeof p.catch === "function") {
+            p.catch(finishReject);
+          }
+        });
+      }
+
+      async function safePlayWithUnlock(url) {
+        const tries = 3;
+
+        for (let i = 1; i <= tries; i++) {
+          try {
+            await playUrl(url);
+            return;
+          } catch (err) {
+            if (isNotAllowed(err)) {
+              console.warn(`[tts] autoplay blocked (try ${i}/${tries})`, err);
+              setHud("autoplay blocked", true, "re-unlocking audio…");
+              await unlockAudio();
+              await sleep(250);
+              continue;
+            }
+            throw err;
+          }
+        }
+
+        throw new Error("autoplay_blocked_persisted");
+      }
+
+      function absolutize(url) {
+        if (!url) return "";
+        return url.startsWith("http") ? url : (location.origin + url);
+      }
+
+      // Single-flight guard so we never overlap claim/play
+      let busy = false;
+
+      async function tryClaimAndPlay(reason) {
+        if (busy) return;
+        busy = true;
+
+        try {
+          setHud("claiming", false, reason || "");
+          const job = await claimNext();
+          if (!job) {
+            setHud("idle", false, "no job");
+            return;
+          }
+
+          const audioUrl = absolutize(job.audio_url);
+
+          setHud("playing", false, `#${job.id} ${job.voice_id} ${job.audio_mime || ""}`);
+
+          await safePlayWithUnlock(audioUrl);
+
+          setHud("done", false, `#${job.id}`);
+        } finally {
+          busy = false;
+        }
+      }
+
+      // Kick unlock once on load
+      setHud("boot", false, `${platform}/${channel}`);
+      unlockAudio();
+
+      function buildSseUrl() {
+        const qp = new URLSearchParams({ platform, channel, consumer });
+        if (key) qp.set("key", key);
+        return location.origin + "/api/tts/stream?" + qp.toString();
+      }
+
+      async function pollLoop() {
+        const idleMs = 750;
+        while (true) {
+          try {
+            await tryClaimAndPlay("poll");
+            await sleep(idleMs);
+          } catch (err) {
+            const msg = String(err && err.message ? err.message : err);
+            console.error("[tts overlay] poll error", err);
+
+            if (msg.includes("autoplay_blocked_persisted")) {
+              setHud("autoplay blocked", true, "waiting… (interact / refresh source)");
+              await sleep(5000);
+              continue;
+            }
+
+            setHud("error", true, msg);
+            await sleep(1000);
+          }
+        }
+      }
+
+      function startSseThenFallback() {
+        try {
+          const url = buildSseUrl();
+          setHud("sse", false, url);
+
+          const es = new EventSource(url);
+
+          es.addEventListener("hello", (evt) => {
+            try {
+              const d = JSON.parse(evt.data || "{}");
+              setHud("sse hello", false, `${d.platform || platform}/${d.channel || channel}`);
+            } catch (_) {
+              setHud("sse hello", false, "");
+            }
+          });
+
+          es.addEventListener("tts_ready", async (evt) => {
+            // IMPORTANT: server sends named event "tts_ready", not default "message"
+            try {
+              let payload = null;
+              try { payload = JSON.parse(evt.data || "{}"); } catch (_) {}
+              await tryClaimAndPlay(payload ? `sse tts_ready #${payload.job_id || ""}` : "sse tts_ready");
+            } catch (err) {
+              const msg = String(err && err.message ? err.message : err);
+              console.error("[tts] play after SSE notify failed", err);
+
+              if (msg.includes("autoplay_blocked_persisted")) {
+                setHud("autoplay blocked", true, "waiting… (interact / refresh source)");
+                return;
+              }
+
+              setHud("error", true, msg);
+            }
+          });
+
+          es.onerror = (e) => {
+            console.warn("[tts] SSE error; falling back to polling", e);
+            setHud("sse error", true, "fallback to polling");
+            try { es.close(); } catch (_) {}
+            pollLoop();
+          };
+
+          es.onopen = () => {
+            console.log("[tts] SSE connected");
+            setHud("sse connected", false, `${platform}/${channel}`);
+            // On connect, try to drain one in case events were missed
+            tryClaimAndPlay("sse open");
+          };
+        } catch (err) {
+          console.warn("[tts] SSE init failed; polling", err);
+          setHud("sse init failed", true, "polling");
+          pollLoop();
+        }
+      }
+
+      startSseThenFallback();
+    </script>
+  </body>
+</html>

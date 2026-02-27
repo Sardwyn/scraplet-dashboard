@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Unsubscribed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 40px auto;
+      max-width: 480px;
+      padding: 0 20px;
+      line-height: 1.5;
+      color: #111;
+    }
+    .card {
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      padding: 24px;
+    }
+    h1 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>You’re unsubscribed</h1>
+    <p><strong><%= email %></strong> will no longer receive emails from <%= username %>.</p>
+    <p>If this was a mistake, you can subscribe again from their Scraplet profile.</p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,906 @@
+<div class="w-full px-6 py-8">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-bold font-display tracking-tight">Scrapbot Moderation</h1>
+      <p class="pc-text-muted mt-1 text-sm">
+        Rules, flood protection, testing — plus Shield Guard for swarm spam.
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label class="text-sm pc-text-muted">Platform</label>
+      <select id="m_platform" class="pc-select text-sm" style="width:auto;">
+        <option value="kick">Kick</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- SHIELD GUARD -->
+  <div class="pc-panel mb-8">
+    <div class="pc-panel-hd">
+      <div>
+        <div class="pc-panel-title flex items-center gap-2">
+          <span>🛡 Shield Guard</span>
+          <span id="m_shield_status_badge" class="pc-chip">Loading…</span>
+        </div>
+        <div class="pc-panel-sub">
+          Summarizes swarm spam incidents & hot signatures without streaming chat logs.
+        </div>
+      </div>
+      <div>
+        <button id="m_shield_refresh" class="pc-btn pc-btn--ghost">
+          Refresh
+        </button>
+      </div>
+    </div>
+
+    <div class="pc-panel-bd">
+      <!-- Signals row -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="pc-panel">
+          <div class="pc-panel-bd">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-bold text-white">Recent incidents</div>
+              <div class="text-xs text-white/50">Low-volume snapshots</div>
+            </div>
+
+            <div id="m_incidents_empty" class="text-sm pc-text-muted hidden">No incidents yet.</div>
+            <div id="m_incidents_list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="pc-panel">
+          <div class="pc-panel-bd">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-bold text-white">Hot signatures (global)</div>
+              <div class="text-xs text-white/50">Trending spam patterns</div>
+            </div>
+
+            <div id="m_hot_empty" class="text-sm pc-text-muted hidden">No hot signatures right now.</div>
+            <div id="m_hot_list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 text-xs text-white/40" id="m_shield_status_line"></div>
+      </div>
+
+      <!-- Intensity -->
+      <div class="pc-panel mt-6">
+        <div class="pc-panel-bd">
+          <div class="flex items-center justify-between">
+            <div class="font-semibold">Intensity</div>
+            <div class="text-sm">
+              <span class="pc-text-muted">Preset:</span>
+              <span id="m_guard_intensity_label" class="font-semibold">Balanced</span>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <input id="m_guard_intensity" type="range" min="0" max="4" step="1" value="1" class="guard-slider w-full">
+            <div class="mt-2 grid grid-cols-5 gap-2 text-xs pc-text-muted">
+              <span class="text-left">Lite</span>
+              <span class="text-center">Balanced</span>
+              <span class="text-center">Strong</span>
+              <span class="text-center">Heavy</span>
+              <span class="text-right">Nuclear</span>
+            </div>
+
+            <div class="mt-3 text-xs pc-text-muted">
+              Automatically tunes Shield Guard + Flood protection. Changes apply instantly and are saved.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="mt-6 border-b border-white/10 flex items-center gap-6">
+    <button
+      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
+      data-tab="rules" data-active="true">Rules</button>
+    <button
+      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
+      data-tab="settings">Settings</button>
+    <button
+      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
+      data-tab="test">Test</button>
+    <button
+      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
+      data-tab="incidents">Incidents</button>
+  </div>
+
+  <!-- RULES -->
+  <section class="mt-6" data-pane="rules">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-bold">Rules</h2>
+        <p class="text-sm pc-text-muted mt-1">Use presets. Keep it simple — no SQL vibes.</p>
+        <p class="text-xs text-white/40 mt-1">
+          Rules run top → bottom. Put <span class="text-white font-semibold">Exception (ignore)</span> rules first.
+        </p>
+      </div>
+      <button id="m_open_add_rule" class="pc-btn pc-btn--primary">
+        Add rule
+      </button>
+    </div>
+
+    <!-- QUICK TOGGLES -->
+    <div class="pc-panel mb-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Common protections</div>
+          <div class="pc-panel-sub">
+            One switch = one rule behind the scenes. Keep these on unless you’re deliberately allowing something.
+          </div>
+        </div>
+        <div class="text-xs text-white/40">Rules-backed</div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label
+            class="flex items-center justify-between gap-3 p-4 rounded bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+            <div>
+              <div class="font-bold text-white">Block links</div>
+              <div class="text-xs text-white/50 mt-1">Blocks http/https/www + common obfuscations.</div>
+            </div>
+            <input id="m_quick_linkblock" type="checkbox" class="pc-toggle h-5 w-5">
+          </label>
+
+          <label
+            class="flex items-center justify-between gap-3 p-4 rounded bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+            <div>
+              <div class="font-bold text-white">Caps spam</div>
+              <div class="text-xs text-white/50 mt-1">Triggers when caps ratio is high on longer messages.</div>
+            </div>
+            <input id="m_quick_caps" type="checkbox" class="pc-toggle h-5 w-5">
+          </label>
+        </div>
+
+        <div class="mt-4 text-xs text-white/40">
+          Tip: Use <span class="text-white font-semibold">exception (ignore)</span> rules above punish rules to create safe exceptions.
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5 h-px w-full bg-white/10"></div>
+
+    <div class="pc-panel">
+      <div class="pc-panel-bd p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-white/5 border-b border-white/5">
+              <tr class="text-white/60">
+                <th class="p-3 text-left">On</th>
+                <th class="p-3 text-left">Preset</th>
+                <th class="p-3 text-left">Match</th>
+                <th class="p-3 text-left">
+                  <div>Action</div>
+                  <div class="text-[11px] text-white/40 font-normal mt-1">“ignore” = exception</div>
+                </th>
+                <th class="p-3 text-left"></th>
+              </tr>
+            </thead>
+            <tbody id="m_rules_tbody" class="text-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between">
+      <button id="m_toggle_advanced"
+        class="text-xs pc-text-muted hover:text-white underline decoration-white/20 hover:decoration-white/50">
+        Show advanced fields
+      </button>
+
+      <a href="#" id="m_jump_incidents"
+        class="text-xs pc-text-muted hover:text-white underline decoration-white/20 hover:decoration-white/50">
+        View outcomes →
+      </a>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="mt-6 hidden" data-pane="settings">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-bold">Protections</h2>
+        <p class="text-sm pc-text-muted mt-1">Slider-first controls. Advanced knobs are optional.</p>
+      </div>
+
+      <button id="m_save_settings" class="pc-btn pc-btn--primary">
+        Save settings
+      </button>
+    </div>
+
+    <!-- Two-column layout on xl: Shield tuning + Flood -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <!-- Shield Guard tuning -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">🛡 Shield Guard tuning</div>
+            <div class="pc-panel-sub">
+              Detect “same message from many users” and react fast. Incidents are snapshots, not chat logs.
+            </div>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm text-white">
+            <input id="m_swarm_enabled" type="checkbox" checked class="pc-toggle">
+            Enabled
+          </label>
+        </div>
+
+        <div class="pc-panel-bd space-y-5">
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm pc-text-muted">Window</label>
+              <div class="text-xs pc-text-muted"><span id="m_swarm_window_seconds_label">10</span>s</div>
+            </div>
+            <input id="m_swarm_window_seconds" type="range" min="3" max="60" step="1" value="10" class="w-full mt-2">
+            <div class="text-xs pc-text-muted mt-1">How far back we look when grouping matching messages.</div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm pc-text-muted">Min unique users</label>
+              <div class="text-xs pc-text-muted"><span id="m_swarm_min_unique_users_label">6</span></div>
+            </div>
+            <input id="m_swarm_min_unique_users" type="range" min="3" max="30" step="1" value="6" class="w-full mt-2">
+            <div class="text-xs pc-text-muted mt-1">How many different accounts must post the same thing.</div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm pc-text-muted">Min repeats per signature</label>
+              <div class="text-xs pc-text-muted"><span id="m_swarm_min_repeats_label">8</span></div>
+            </div>
+            <input id="m_swarm_min_repeats" type="range" min="3" max="60" step="1" value="8" class="w-full mt-2">
+            <div class="text-xs pc-text-muted mt-1">Total number of matching messages required to trigger.</div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-sm pc-text-muted">Cooldown</label>
+              <div class="text-xs pc-text-muted"><span id="m_swarm_cooldown_seconds_label">120</span>s</div>
+            </div>
+            <input id="m_swarm_cooldown_seconds" type="range" min="0" max="1800" step="30" value="120" class="w-full mt-2">
+            <div class="text-xs pc-text-muted mt-1">Prevents repeated triggers on the same signature.</div>
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Default action</label>
+            <select id="m_swarm_action" class="pc-select mt-2 w-full text-sm">
+              <option value="ban">ban</option>
+              <option value="timeout">timeout</option>
+              <option value="none">none</option>
+            </select>
+            <div class="text-xs pc-text-muted mt-1">Recommended for bot swarms: ban.</div>
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Timeout duration (seconds)</label>
+            <input id="m_swarm_duration_seconds" type="number" min="0" class="pc-input mt-2 w-full text-sm" value="30">
+            <div class="text-xs pc-text-muted mt-1">Only used if action = timeout.</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+            <label class="flex items-center gap-2 text-sm text-white">
+              <input id="m_swarm_promote_global" type="checkbox" checked class="pc-toggle">
+              Promote triggered signatures to global intel
+            </label>
+
+            <div class="flex items-center gap-3">
+              <label class="text-sm text-white whitespace-nowrap">Promotion confidence</label>
+              <input id="m_swarm_promote_confidence" type="range" min="0.2" max="1" step="0.05" value="0.75" class="w-full">
+              <div class="text-xs pc-text-muted w-16 text-right">
+                <span id="m_swarm_promote_confidence_label">0.75</span>
+              </div>
+            </div>
+          </div>
+
+          <button id="m_toggle_shield_advanced" class="text-xs pc-text-muted hover:text-white underline">
+            Show advanced Shield knobs
+          </button>
+
+          <div id="m_shield_advanced_wrap" class="hidden p-4 rounded bg-white/5 border border-white/5">
+            <div class="font-semibold">Advanced knobs</div>
+            <div class="text-xs pc-text-muted mt-1">These increase detection quality. Defaults are safe.</div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="pc-panel">
+                <div class="pc-panel-bd">
+                  <div class="font-semibold text-sm">Signature normalization</div>
+                  <div class="text-xs pc-text-muted mt-1">Helps catch CAPs / punctuation variants without regex.</div>
+
+                  <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
+                    <input id="m_sig_lowercase" type="checkbox" checked class="pc-toggle">
+                    Lowercase
+                  </label>
+                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                    <input id="m_sig_strip_punct" type="checkbox" checked class="pc-toggle">
+                    Strip punctuation
+                  </label>
+                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                    <input id="m_sig_collapse_ws" type="checkbox" checked class="pc-toggle">
+                    Collapse whitespace
+                  </label>
+                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                    <input id="m_sig_strip_emojis" type="checkbox" class="pc-toggle">
+                    Strip emojis
+                  </label>
+                </div>
+              </div>
+
+              <div class="pc-panel">
+                <div class="pc-panel-bd">
+                  <div class="font-semibold text-sm">Escalation</div>
+                  <div class="text-xs pc-text-muted mt-1">If the same signature keeps coming back, go harder.</div>
+
+                  <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
+                    <input id="m_swarm_escalate" type="checkbox" checked class="pc-toggle">
+                    Escalate repeat offenders
+                  </label>
+
+                  <div class="mt-3">
+                    <div class="flex items-center justify-between">
+                      <label class="text-sm pc-text-muted">Repeat threshold</label>
+                      <div class="text-xs pc-text-muted"><span id="m_swarm_escalate_repeat_threshold_label">2</span></div>
+                    </div>
+                    <input id="m_swarm_escalate_repeat_threshold" type="range" min="1" max="10" step="1" value="2" class="w-full mt-2">
+                    <div class="text-xs pc-text-muted mt-1">Number of incidents before escalating.</div>
+                  </div>
+
+                  <div class="mt-3">
+                    <label class="text-sm pc-text-muted">Escalate action</label>
+                    <select id="m_swarm_escalate_action" class="pc-select mt-2 w-full text-sm">
+                      <option value="ban">ban</option>
+                      <option value="timeout">timeout</option>
+                      <option value="none">none</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-xs pc-text-muted" id="m_settings_status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flood protection -->
+    <div class="pc-panel mt-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Flood protection (single user)</div>
+          <div class="pc-panel-sub">Stops one user spamming many messages fast.</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <div class="text-xs text-white/40 mb-4">These controls generate internal rules automatically.</div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <label class="flex items-center gap-2 text-sm text-white">
+            <input id="m_flood_enabled" type="checkbox" checked class="pc-toggle">
+            Enable flood protection
+          </label>
+          <div></div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Window (seconds)</label>
+            <input id="m_flood_window_seconds" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="10">
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Max messages (per user)</label>
+            <input id="m_flood_max_messages" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="5">
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Action</label>
+            <select id="m_flood_action" class="pc-select mt-1 w-full text-sm">
+              <option value="timeout">timeout</option>
+              <option value="ban">ban</option>
+              <option value="delete">delete</option>
+              <option value="ignore">ignore</option>
+              <option value="none">none</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Duration (seconds)</label>
+            <input id="m_flood_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="30">
+          </div>
+
+          <label class="flex items-center gap-2 text-sm pc-text-muted">
+            <input id="m_flood_escalate" type="checkbox" checked class="pc-toggle">
+            Escalate on repeat spam
+          </label>
+
+          <div>
+            <label class="text-sm pc-text-muted">Escalate multiplier</label>
+            <input id="m_flood_escalate_multiplier" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="2">
+          </div>
+
+          <div>
+            <label class="text-sm pc-text-muted">Max duration (seconds)</label>
+            <input id="m_flood_max_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="600">
+          </div>
+
+          <div>
+            <label class="text-sm text-white">Cooldown (seconds)</label>
+            <input id="m_flood_cooldown_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="120">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST -->
+  <section class="mt-6 hidden" data-pane="test">
+    <h2 class="text-xl font-bold">Test</h2>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="md:col-span-2">
+        <label class="text-sm pc-text-muted">Message text</label>
+        <textarea id="m_test_text" class="pc-input w-full mt-1 text-sm" rows="6" placeholder="Paste a message here...">TEST TEST TEST</textarea>
+      </div>
+
+      <div>
+        <label class="text-sm pc-text-muted">Role</label>
+        <select id="m_test_role" class="pc-select w-full mt-1 text-sm">
+          <option value="everyone">everyone</option>
+          <option value="mod">mod</option>
+          <option value="broadcaster">broadcaster</option>
+        </select>
+
+        <div class="mt-3">
+          <input id="m_test_sender" class="pc-input w-full text-sm" value="Tester">
+        </div>
+
+        <button id="m_run_test" class="pc-btn pc-btn--primary mt-4 w-full">
+          Run test
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="text-sm pc-text-muted">Result</label>
+      <pre id="m_test_out" class="mt-2 pc-panel pc-panel-bd text-xs overflow-auto"></pre>
+    </div>
+  </section>
+
+  <!-- INCIDENTS -->
+  <section class="mt-6 hidden" data-pane="incidents">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-xl font-bold">Incidents</h2>
+        <p class="text-sm pc-text-muted mt-1">Outcome snapshots. Raw logs are advanced/manual.</p>
+      </div>
+
+      <button id="m_refresh_incidents" class="pc-btn pc-btn--ghost">
+        Refresh
+      </button>
+    </div>
+
+    <div class="pc-panel mb-4">
+      <div class="pc-panel-bd p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-white/5 border-b border-white/5">
+              <tr class="text-white/60">
+                <th class="p-3 text-left">Time</th>
+                <th class="p-3 text-left">Signature</th>
+                <th class="p-3 text-left">Users</th>
+                <th class="p-3 text-left">Window</th>
+                <th class="p-3 text-left">
+                  <div>Action</div>
+                  <div class="text-[11px] text-white/40 font-normal mt-1">“ignore” = exception</div>
+                </th>
+                <th class="p-3 text-left"></th>
+              </tr>
+            </thead>
+            <tbody id="m_incidents_tbody" class="text-white"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between">
+      <div class="text-xs pc-text-muted" id="m_incidents_status"></div>
+
+      <button id="m_toggle_activity_advanced"
+        class="text-xs pc-text-muted hover:text-white underline decoration-white/20 hover:decoration-white/50">
+        Show advanced raw activity
+      </button>
+    </div>
+
+    <div id="m_activity_advanced_wrap" class="mt-4 hidden pc-panel">
+      <div class="pc-panel-bd">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold">Advanced: Raw activity</div>
+            <div class="text-xs pc-text-muted mt-1">Manual load. Not intended for day-to-day use.</div>
+          </div>
+
+          <div class="flex items-center gap-3 text-sm">
+            <label class="flex items-center gap-2 pc-text-muted">
+              <input type="checkbox" id="m_only_matched" class="pc-toggle">
+              Only matches
+            </label>
+            <button id="m_refresh_activity" class="pc-btn pc-btn--ghost">
+              Load activity
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-3 pc-panel">
+          <div class="pc-panel-bd p-0 overflow-hidden">
+            <table class="w-full text-sm">
+              <thead class="bg-white/5 border-b border-white/10">
+                <tr class="text-white/60">
+                  <th class="p-3 text-left">Time</th>
+                  <th class="p-3 text-left">Sender</th>
+                  <th class="p-3 text-left">Role</th>
+                  <th class="p-3 text-left">Text</th>
+                  <th class="p-3 text-left">Match</th>
+                  <th class="p-3 text-left">
+                    <div>Action</div>
+                    <div class="text-[11px] text-white/40 font-normal mt-1">“ignore” = exception</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="m_activity_tbody" class="text-white"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="text-xs pc-text-muted mt-3" id="m_activity_status"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ADD RULE MODAL -->
+<div id="m_add_rule_modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 p-4">
+  <div class="w-full max-w-xl pc-panel shadow-2xl">
+    <div class="pc-panel-hd">
+      <div>
+        <div class="pc-panel-title">Add rule</div>
+        <div class="pc-panel-sub">Pick a preset. Keep it simple.</div>
+      </div>
+      <button id="m_close_add_rule" class="text-white/50 hover:text-white" type="button">✕</button>
+    </div>
+
+    <div class="pc-panel-bd space-y-4">
+      <div>
+        <label class="text-sm pc-text-muted">Preset</label>
+        <select id="m_new_rule_preset" class="pc-select mt-1 w-full text-sm">
+          <option value="contains">Block phrase</option>
+          <option value="blacklist_word">Block word</option>
+          <option value="link_posting">Block links</option>
+          <option value="caps_ratio">Caps spam</option>
+          <option value="equals">Exact match (advanced)</option>
+        </select>
+      </div>
+
+      <div id="m_new_rule_value_wrap">
+        <label class="text-sm pc-text-muted" id="m_new_rule_value_label">Phrase to match</label>
+        <input id="m_new_rule_value" class="pc-input mt-1 w-full text-sm" placeholder="e.g. free followers">
+        <p class="text-xs text-white/40 mt-1" id="m_new_rule_value_hint">Matches anywhere in the message.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm pc-text-muted">Action</label>
+          <select id="m_new_rule_action" class="pc-select mt-1 w-full text-sm">
+            <option value="timeout">timeout</option>
+            <option value="ban">ban</option>
+            <option value="delete">delete</option>
+            <option value="ignore">ignore</option>
+            <option value="none">none</option>
+          </select>
+        </div>
+
+        <div id="m_ignore_hint"
+          class="hidden md:col-span-2 -mt-2 text-xs text-emerald-300/80 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-3 py-2">
+          <span class="font-semibold text-emerald-200">Exception:</span> “ignore” bypasses actions below. Put these rules at the top.
+        </div>
+
+        <div>
+          <label class="text-sm pc-text-muted">Duration (seconds)</label>
+          <input id="m_new_rule_duration" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="30">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="text-sm pc-text-muted">Channel (optional)</label>
+          <input id="m_new_rule_channel" class="pc-input mt-1 w-full text-sm" placeholder="leave blank for all channels">
+          <div class="flex items-center gap-2 mt-3">
+            <input id="m_new_rule_ignore_mods" type="checkbox" checked class="pc-toggle">
+            <label for="m_new_rule_ignore_mods" class="text-sm text-white/70">Ignore mods</label>
+          </div>
+        </div>
+
+        <div class="flex flex-col justify-between">
+          <label class="flex items-center gap-2 text-sm text-white/70">
+            <input id="m_new_rule_enabled" type="checkbox" checked class="pc-toggle">
+            Enabled
+          </label>
+
+          <button id="m_create_rule" type="button" data-default-text="Create rule" class="pc-btn pc-btn--primary text-sm shadow">
+            Create rule
+          </button>
+
+          <div class="mt-2 text-[11px] text-white/40">
+            Tip: choose <span class="text-white font-semibold">ignore</span> to create safe exceptions.
+          </div>
+        </div>
+      </div>
+
+      <div class="text-xs pc-text-muted" id="m_add_rule_status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Nuclear Easter Egg Flash (safe: single slow flash, no clicks blocked) -->
+<div id="m_nuclear_flash" class="nuclear-flash-overlay" aria-hidden="true"></div>
+
+<style>
+  /* Guard slider styling */
+  .guard-slider {
+    --track-h: 10px;
+    --thumb: 26px;
+    --glow: rgba(34, 197, 94, 0.45);
+  }
+
+  .guard-slider::-webkit-slider-runnable-track {
+    height: var(--track-h);
+    background: linear-gradient(90deg, #22c55e 0%, #facc15 60%, #ef4444 100%);
+    border-radius: 999px;
+    box-shadow: 0 0 12px var(--glow);
+  }
+
+  .guard-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: var(--thumb);
+    height: var(--thumb);
+    margin-top: calc((var(--track-h) - var(--thumb)) / 2 + 2px);
+    border-radius: 999px;
+    background: #0f172a;
+    border: 2px solid #e5e7eb;
+    box-shadow:
+      0 0 0 4px rgba(255, 255, 255, 0.08),
+      0 0 18px var(--glow);
+    cursor: pointer;
+  }
+
+  .guard-slider::-moz-range-track {
+    height: var(--track-h);
+    background: linear-gradient(90deg, #22c55e 0%, #facc15 60%, #ef4444 100%);
+    border-radius: 999px;
+  }
+
+  .guard-slider::-moz-range-thumb {
+    width: var(--thumb);
+    height: var(--thumb);
+    border-radius: 999px;
+    background: #0f172a;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 0 18px var(--glow);
+    cursor: pointer;
+  }
+
+  .guard-slider::-webkit-slider-thumb:active {
+    transform: scale(1.08);
+  }
+
+  /* Nuclear flash overlay */
+  .nuclear-flash-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0;
+    background: #fff;
+  }
+
+  .nuclear-flash-overlay.is-flashing {
+    animation: nuclearFlash 1.8s ease-in-out forwards;
+  }
+
+  @keyframes nuclearFlash {
+    0% { opacity: 0; }
+    35% { opacity: 0.92; }
+    55% { opacity: 0.92; }
+    100% { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nuclear-flash-overlay.is-flashing {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+  }
+
+  /* Action badges */
+  .m-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(15, 23, 42, 0.55);
+    color: rgba(226, 232, 240, 0.92);
+    white-space: nowrap;
+  }
+
+  .m-badge--ignore {
+    border-style: dashed;
+    border-color: rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.08);
+    color: rgba(167, 243, 208, 0.95);
+  }
+
+  .m-badge--timeout {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.10);
+  }
+
+  .m-badge--ban {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.10);
+  }
+
+  .m-badge--delete {
+    border-color: rgba(234, 179, 8, 0.35);
+    background: rgba(234, 179, 8, 0.10);
+  }
+
+  .m-badge--none {
+    border-color: rgba(148, 163, 184, 0.22);
+    background: rgba(148, 163, 184, 0.06);
+    color: rgba(203, 213, 225, 0.85);
+  }
+</style>
+
+<script src="/js/moderation.js?v=7"></script>
+
+<!-- Fallback binder -->
+<script>
+  (() => {
+    const openBtn = document.getElementById("m_open_add_rule");
+    const modal = document.getElementById("m_add_rule_modal");
+    const closeBtn = document.getElementById("m_close_add_rule");
+
+    if (!openBtn || !modal) return;
+
+    const open = () => {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      document.body.style.overflow = "hidden";
+    };
+
+    const close = () => {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      document.body.style.overflow = "";
+    };
+
+    if (!openBtn.dataset.bound) {
+      openBtn.addEventListener("click", (e) => { e.preventDefault(); open(); });
+      openBtn.dataset.bound = "1";
+    }
+
+    if (closeBtn && !closeBtn.dataset.bound) {
+      closeBtn.addEventListener("click", (e) => { e.preventDefault(); close(); });
+      closeBtn.dataset.bound = "1";
+    }
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) close();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !modal.classList.contains("hidden")) close();
+    });
+  })();
+</script>
+
+<script>
+  (() => {
+    // --- Modal guardrails ---
+    const actionSel = document.getElementById("m_new_rule_action");
+    const durInput = document.getElementById("m_new_rule_duration");
+    const createBtn = document.getElementById("m_create_rule");
+    const ignoreHint = document.getElementById("m_ignore_hint");
+
+    const syncModalUI = () => {
+      if (!actionSel) return;
+      const action = (actionSel.value || "").toLowerCase();
+
+      const durationRelevant = (action === "timeout");
+      if (durInput) {
+        durInput.disabled = !durationRelevant;
+        durInput.classList.toggle("opacity-50", !durationRelevant);
+        durInput.classList.toggle("cursor-not-allowed", !durationRelevant);
+      }
+
+      if (ignoreHint) {
+        ignoreHint.classList.toggle("hidden", action !== "ignore");
+      }
+
+      if (createBtn) {
+        const base = createBtn.getAttribute("data-default-text") || "Create rule";
+        if (action === "ignore") createBtn.textContent = "Create exception rule";
+        else if (action === "timeout") createBtn.textContent = "Create timeout rule";
+        else if (action === "ban") createBtn.textContent = "Create ban rule";
+        else if (action === "delete") createBtn.textContent = "Create delete rule";
+        else if (action === "none") createBtn.textContent = "Create “none” rule";
+        else createBtn.textContent = base;
+      }
+    };
+
+    if (actionSel && !actionSel.dataset.boundPolish) {
+      actionSel.addEventListener("change", syncModalUI);
+      actionSel.dataset.boundPolish = "1";
+      syncModalUI();
+    }
+
+    // --- Action badge styling ---
+    const badgeFor = (actionText) => {
+      const a = (actionText || "").trim().toLowerCase();
+      const span = document.createElement("span");
+      span.className = "m-badge";
+      span.textContent = a;
+
+      if (a === "ignore") { span.classList.add("m-badge--ignore"); span.textContent = "exception"; }
+      else if (a === "timeout") span.classList.add("m-badge--timeout");
+      else if (a === "ban") span.classList.add("m-badge--ban");
+      else if (a === "delete") span.classList.add("m-badge--delete");
+      else if (a === "none") span.classList.add("m-badge--none");
+
+      return span;
+    };
+
+    const wrapActionCells = (tbodyId) => {
+      const tb = document.getElementById(tbodyId);
+      if (!tb) return;
+
+      const apply = () => {
+        const rows = tb.querySelectorAll("tr");
+        rows.forEach((tr) => {
+          const tds = Array.from(tr.querySelectorAll("td"));
+          tds.forEach((td) => {
+            if (td.dataset.badged) return;
+            const raw = (td.textContent || "").trim().toLowerCase();
+            if (!raw) return;
+
+            const isAction = ["ignore", "timeout", "ban", "delete", "none"].includes(raw);
+            if (!isAction) return;
+
+            td.textContent = "";
+            td.appendChild(badgeFor(raw));
+            td.dataset.badged = "1";
+          });
+        });
+      };
+
+      apply();
+      const mo = new MutationObserver(() => apply());
+      mo.observe(tb, { childList: true, subtree: true });
+    };
+
+    wrapActionCells("m_rules_tbody");
+    wrapActionCells("m_incidents_tbody");
+    wrapActionCells("m_activity_tbody");
+  })();
+</script>

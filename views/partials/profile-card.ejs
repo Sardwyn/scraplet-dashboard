@@ -1,0 +1,579 @@
+<%
+  // -------- Layout / visibility helpers (sections-aware) --------
+  const layoutConfig = layout || {};
+  const visibilityConfig = sectionVisibility || {};
+
+  function canonicalSectionType(raw) {
+    const t = String(raw || '').trim();
+    const low = t.toLowerCase();
+
+    if (low === 'avatar') return 'avatar';
+    if (low === 'bio') return 'bio';
+    if (low === 'sociallinks' || low === 'social_links' || low === 'social') return 'socialLinks';
+    if (low === 'stats') return 'stats';
+    if (low === 'statsbreakdown' || low === 'stats_breakdown') return 'statsBreakdown';
+    if (low === 'buttons' || low === 'custombuttons' || low === 'custom_buttons') return 'buttons';
+    if (low === 'sponsors') return 'sponsors';
+    if (low === 'tipjar' || low === 'tip_jar') return 'tipJar';
+    if (low === 'tts') return 'tts';
+    if (low === 'contact') return 'contact';
+    if (low === 'featuredwidget' || low === 'featured_widget') return 'featuredWidget';
+    if (low === 'sponsorbanner' || low === 'sponsor_banner') return 'sponsorBanner';
+    if (low === 'customhtml' || low === 'custom_html') return 'customHtml';
+
+    return t;
+  }
+
+  function sectionEntry(type) {
+    const want = canonicalSectionType(type);
+    const sections = Array.isArray(layoutConfig.sections) ? layoutConfig.sections : [];
+    for (var i = 0; i < sections.length; i++) {
+      var s = sections[i];
+      if (!s || !s.type) continue;
+      if (canonicalSectionType(s.type) === want) return s;
+    }
+    return null;
+  }
+
+  function visible(sectionKey) {
+    const key = canonicalSectionType(sectionKey);
+
+    // 1) New: layout.sections[].visible
+    var entry = sectionEntry(key);
+    if (entry && typeof entry.visible === "boolean") return entry.visible;
+
+    // 2) Legacy: sectionVisibility map
+    if (Object.prototype.hasOwnProperty.call(visibilityConfig, key)) {
+      return visibilityConfig[key] !== false;
+    }
+    if (Object.prototype.hasOwnProperty.call(visibilityConfig, sectionKey)) {
+      return visibilityConfig[sectionKey] !== false;
+    }
+
+    return true;
+  }
+
+  function orderedSections() {
+    const sectionsArr = Array.isArray(layoutConfig.sections) ? layoutConfig.sections : null;
+    var types = [];
+
+    if (sectionsArr && sectionsArr.length) {
+      types = sectionsArr
+        .map(function (s) { return canonicalSectionType(s && s.type); })
+        .filter(function (t) { return !!t; });
+    } else {
+      // Legacy order fallback — include common blocks so they can render
+      types = Array.isArray(layoutConfig.order)
+        ? layoutConfig.order.map(canonicalSectionType)
+        : ['avatar','bio','socialLinks','stats','statsBreakdown','buttons','sponsors','tipJar','tts','contact'];
+    }
+
+    // Ensure core sections exist
+    if (types.indexOf('buttons') === -1) types.push('buttons');
+
+    // Dedupe
+    var seen = {};
+    var out = [];
+    types.forEach(function (t) {
+      if (!t) return;
+      if (seen[t]) return;
+      seen[t] = true;
+      out.push(t);
+    });
+    return out;
+  }
+
+  // -------- Sponsors normalisation --------
+  const sponsorsRaw = Array.isArray(sponsors) ? sponsors : (sponsors ? [sponsors] : []);
+  const sponsorsList = sponsorsRaw
+    .filter(function (sp) { return !!sp; })
+    .map(function (sp) {
+      var active =
+        sp.is_active === true ||
+        sp.is_active === 'true' ||
+        sp.is_active === 1 ||
+        sp.is_active === '1' ||
+        sp.isActive === true ||
+        sp.isActive === 'true' ||
+        sp.isActive === 1 ||
+        typeof sp.is_active === 'undefined' ||
+        sp.is_active === null;
+
+      var logoUrl =
+        sp.logoUrl ||
+        sp.banner_url ||
+        sp.bannerUrl ||
+        sp.logo_url ||
+        null;
+
+      return {
+        id: sp.id,
+        name: sp.name || '',
+        url: sp.url || null,
+        is_active: active,
+        logoUrl: logoUrl,
+        size: (sp.size || 'sm')
+      };
+    });
+
+  // -------- Appearance from users.appearance --------
+  const themeName = ((appearance && appearance.theme) || 'midnight').toLowerCase();
+  const bgName    = ((appearance && appearance.background) || 'hero-dark').toLowerCase();
+  const btnStyle  = ((appearance && appearance.buttonStyle) || 'solid').toLowerCase();
+  const cardStyle = ((appearance && appearance.cardStyle) || 'glass').toLowerCase();
+
+  const classNames = [
+    `pc-theme-${themeName}`,
+    `pc-bg-${bgName}`,
+    `pc-btn-${btnStyle}`,
+    `pc-card-${cardStyle}`,
+  ].join(' ');
+
+  // -------- Stats --------
+  let followerCount = null;
+  if (stats && typeof stats.totalFollowers === 'number') {
+    followerCount = stats.totalFollowers;
+  } else if (typeof followers === 'number') {
+    followerCount = followers;
+  } else if (stats && stats.followers) {
+    const vals = Object.values(stats.followers).filter(v => typeof v === 'number');
+    if (vals.length) followerCount = vals.reduce((a, b) => a + b, 0);
+  }
+
+  const followersByPlatform =
+    stats && stats.followers && typeof stats.followers === 'object'
+      ? stats.followers
+      : null;
+
+  const statsFlipEnabled = visible('statsBreakdown');
+
+  // -------- Social links --------
+  const xHandle    = profile && (profile.x_username || profile.x) || null;
+  const youtubeUrl = profile && (profile.youtube_url || profile.youtube) || null;
+  const twitchUrl  = profile && (profile.twitch_url || profile.twitch) || null;
+  const kickUrl    = profile && (profile.kick_url || profile.kick) || null;
+
+  // -------- Buttons --------
+  const customButtonsSafe = Array.isArray(customButtons) ? customButtons : [];
+  function isVisibleButton(b) {
+    if (!b) return false;
+    if (b.visible === false) return false;
+    if (b.is_visible === false) return false;
+    if (!b.url || !b.label) return false;
+    return true;
+  }
+
+  const sections = orderedSections();
+%>
+
+<article class="pc-card-root <%= classNames %>">
+  <!-- HERO -->
+  <header class="pc-hero">
+    <% if (profile && profile.cover_image_url) { %>
+      <img src="<%= profile.cover_image_url %>" alt="" class="pc-hero-media" />
+    <% } %>
+    <div class="pc-hero-fade"></div>
+  </header>
+
+  <!-- MAIN -->
+  <section class="pc-main">
+
+    <% sections.forEach(function (sectionType) { %>
+
+      <% if (sectionType === 'avatar' && visible('avatar')) { %>
+        <div class="pc-identity">
+          <div class="pc-avatar-shell">
+            <% if (profile && profile.avatar_url) { %>
+              <img src="<%= profile.avatar_url %>" class="pc-avatar" alt="" />
+            <% } else { %>
+              <div class="pc-avatar pc-avatar-placeholder"></div>
+            <% } %>
+          </div>
+
+          <div>
+            <div class="pc-display-name">
+              <%= (profile && (profile.display_name || profile.username)) || 'Your name' %>
+            </div>
+            <% if (profile && profile.username) { %>
+              <div class="pc-username">@<%= profile.username %></div>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (sectionType === 'socialLinks' && visible('socialLinks')) { %>
+        <div class="pc-social-row">
+          <% if (xHandle) { %>
+            <a class="pc-social-pill" href="https://x.com/<%= xHandle %>" target="_blank" rel="noopener noreferrer">X</a>
+          <% } %>
+          <% if (youtubeUrl) { %>
+            <a class="pc-social-pill" href="<%= youtubeUrl %>" target="_blank" rel="noopener noreferrer">YT</a>
+          <% } %>
+          <% if (twitchUrl) { %>
+            <a class="pc-social-pill" href="<%= twitchUrl %>" target="_blank" rel="noopener noreferrer">Tw</a>
+          <% } %>
+          <% if (kickUrl) { %>
+            <a class="pc-social-pill" href="<%= kickUrl %>" target="_blank" rel="noopener noreferrer">K</a>
+          <% } %>
+        </div>
+      <% } %>
+
+      <% if (sectionType === 'stats' && visible('stats')) { %>
+        <%
+          const hasBreakdown =
+            statsFlipEnabled &&
+            followersByPlatform &&
+            Object.keys(followersByPlatform).some(function (key) {
+              const val = Number(followersByPlatform[key]);
+              return Number.isFinite(val) && val > 0;
+            });
+
+          const breakdownRows = [];
+          if (hasBreakdown) {
+            const total = (typeof followerCount === 'number' && followerCount > 0)
+              ? followerCount
+              : Object.keys(followersByPlatform).reduce(function (acc, key) {
+                  const v = Number(followersByPlatform[key]);
+                  return acc + (Number.isFinite(v) ? v : 0);
+                }, 0);
+
+            Object.keys(followersByPlatform).forEach(function (key) {
+              const val = Number(followersByPlatform[key]);
+              if (!Number.isFinite(val) || val <= 0) return;
+              const pct = (total > 0) ? Math.round((val / total) * 100) : null;
+              var label = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+              breakdownRows.push({ label: label, value: val, pct: pct });
+            });
+          }
+
+          const statsLabel =
+            (typeof followerCount === 'number' && followerCount > 0)
+              ? followerCount.toLocaleString() + ' Total Followers'
+              : 'Total Followers';
+        %>
+
+        <% if (hasBreakdown && breakdownRows.length) { %>
+          <div class="pc-stats-row pc-stats-row--has-breakdown">
+            <button type="button" class="pc-stats-pill pc-stats-pill-toggle">
+              <span class="pc-stats-dot"></span>
+              <span class="pc-stats-label"><%= statsLabel %></span>
+            </button>
+
+            <div class="pc-stats-breakdown">
+              <% breakdownRows.forEach(function (row) { %>
+                <div class="pc-stats-breakdown-row">
+                  <span class="pc-stats-breakdown-label"><%= row.label %></span>
+                  <span class="pc-stats-breakdown-value">
+                    <%= row.value.toLocaleString() %>
+                    <% if (row.pct !== null) { %>
+                      <span class="pc-stats-breakdown-pct">(<%= row.pct %>%)</span>
+                    <% } %>
+                  </span>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="pc-stats-row">
+            <div class="pc-stats-pill">
+              <span class="pc-stats-dot"></span>
+              <span class="pc-stats-label"><%= statsLabel %></span>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+
+      <% if (sectionType === 'bio' && visible('bio')) { %>
+        <% if (profile && profile.bio) { %>
+          <div class="pc-bio"><%= profile.bio %></div>
+        <% } %>
+      <% } %>
+
+      <% if (sectionType === 'buttons' && visible('buttons')) { %>
+        <div class="pc-buttons">
+          <%
+            function accentMeta(btn) {
+              var color = (btn && btn.accent_color) ? btn.accent_color : '';
+              var target = ((btn && btn.accent_target) ? btn.accent_target : 'button').toLowerCase();
+              if (target === 'title') target = 'label';
+              if (target !== 'label' && target !== 'button') target = 'button';
+              var style = color ? ('--accent-color:' + color + ';') : '';
+              return { style: style, target: target };
+            }
+
+            var visibleButtons = customButtonsSafe.filter(isVisibleButton);
+
+            var i = 0;
+            while (i < visibleButtons.length) {
+              var btn = visibleButtons[i];
+              if (!btn) { i++; continue; }
+
+              var size = String(btn.size || 'sm').toLowerCase();
+              var featuredUrl = btn.featured_image_url || '';
+              var hasImage = !!featuredUrl;
+              var accent = accentMeta(btn);
+
+              if (size === 'lg' && hasImage) {
+          %>
+                <a href="<%- btn.url || '#' %>" target="_blank"
+                   class="pc-button-tile pc-button-tile--lg"
+                   style="background-image:url('<%- featuredUrl %>');<%- accent.style %>"
+                   data-accent-target="<%- accent.target %>">
+                  <div class="pc-button-overlay">
+                    <span class="pc-button-label"><%- btn.label || 'Link' %></span>
+                  </div>
+                </a>
+          <%
+                i++; continue;
+              }
+
+              if (size === 'md' && hasImage) {
+                var next = visibleButtons[i + 1];
+                var nextSize = next ? String(next.size || 'sm').toLowerCase() : 'sm';
+                var nextFeatured = next ? (next.featured_image_url || '') : '';
+                var pairMd = !!next && nextSize === 'md' && !!nextFeatured;
+
+                if (pairMd) {
+          %>
+                  <div class="pc-buttons-row pc-buttons-row-md">
+                    <%
+                      var pair = [btn, next];
+                      for (var pi = 0; pi < pair.length; pi++) {
+                        var b2 = pair[pi];
+                        var a2 = accentMeta(b2);
+                        var fu2 = b2.featured_image_url || '';
+                    %>
+                      <a href="<%- b2.url || '#' %>" target="_blank"
+                         class="pc-button-tile pc-button-tile--md"
+                         style="background-image:url('<%- fu2 %>');<%- a2.style %>"
+                         data-accent-target="<%- a2.target %>">
+                        <div class="pc-button-overlay">
+                          <span class="pc-button-label"><%- b2.label || 'Link' %></span>
+                        </div>
+                      </a>
+                    <% } %>
+                  </div>
+          <%
+                  i += 2; continue;
+                } else {
+          %>
+                  <a href="<%- btn.url || '#' %>" target="_blank"
+                     class="pc-button-tile pc-button-tile--md"
+                     style="background-image:url('<%- featuredUrl %>');<%- accent.style %>"
+                     data-accent-target="<%- accent.target %>">
+                    <div class="pc-button-overlay">
+                      <span class="pc-button-label"><%- btn.label || 'Link' %></span>
+                    </div>
+                  </a>
+          <%
+                  i++; continue;
+                }
+              }
+
+              if (size === 'md' && !hasImage) {
+                var next2 = visibleButtons[i + 1];
+                var next2Size = next2 ? String(next2.size || 'sm').toLowerCase() : 'sm';
+                var next2Featured = next2 ? (next2.featured_image_url || '') : '';
+                var pairMdNoImg = !!next2 && next2Size === 'md' && !next2Featured;
+
+                if (pairMdNoImg) {
+          %>
+                  <div class="pc-buttons-row pc-buttons-row-md">
+                    <%
+                      var pair2 = [btn, next2];
+                      for (var pj = 0; pj < pair2.length; pj++) {
+                        var b3 = pair2[pj];
+                        var a3 = accentMeta(b3);
+                    %>
+                      <a href="<%- b3.url || '#' %>" target="_blank"
+                         class="pc-button pc-button--shape-pill pc-button--size-md"
+                         <% if (a3.style) { %>style="<%- a3.style %>"<% } %>
+                         data-accent-target="<%- a3.target %>">
+                        <span class="pc-button-label"><%- b3.label || 'Link' %></span>
+                      </a>
+                    <% } %>
+                  </div>
+          <%
+                  i += 2; continue;
+                }
+              }
+          %>
+              <a href="<%- btn.url || '#' %>" target="_blank"
+                 class="pc-button pc-button--shape-pill pc-button--size-sm"
+                 <% if (accent.style) { %>style="<%- accent.style %>"<% } %>
+                 data-accent-target="<%- accent.target %>">
+                <span class="pc-button-label"><%- btn.label || 'Link' %></span>
+              </a>
+          <%
+              i++;
+            }
+          %>
+        </div>
+      <% } %>
+
+      <% if (sectionType === 'sponsors' && visible('sponsors')) { %>
+        <%
+          var sponsorsSection = sectionEntry('sponsors') || {};
+          var ss = sponsorsSection.settings || {};
+          var sHeadline = (ss.headline || 'Sponsors');
+
+          var activeSponsors = sponsorsList.filter(function (s) { return s && s.is_active; });
+        %>
+
+        <% if (activeSponsors.length) { %>
+          <section class="pc-sponsors">
+            <div class="pc-sponsors-title"><%= sHeadline %></div>
+
+            <div class="pc-sponsors-strip">
+              <% activeSponsors.forEach(function (sp) {
+                   var size = String(sp.size || 'sm').toLowerCase();
+                   var finalSize = (size === 'md' || size === 'lg') ? size : 'sm';
+                   var pillClasses = 'pc-sponsor-pill pc-sponsor-pill--' + finalSize;
+              %>
+                <a
+                  class="<%= pillClasses %>"
+                  href="<%= sp.url || '#' %>"
+                  target="<%= sp.url ? '_blank' : '_self' %>"
+                  rel="<%= sp.url ? 'noopener noreferrer' : '' %>"
+                >
+                  <% if (sp.logoUrl) { %>
+                    <img class="pc-sponsor-logo" src="<%= sp.logoUrl %>" alt="" loading="lazy" />
+                  <% } %>
+                  <% if (sp.name) { %>
+                    <span class="pc-sponsor-name"><%= sp.name %></span>
+                  <% } %>
+                </a>
+              <% }) %>
+            </div>
+          </section>
+        <% } %>
+      <% } %>
+
+      <% if (sectionType === 'tipJar' && visible('tipJar')) { %>
+        <%
+          var tipSection = sectionEntry('tipJar') || {};
+          var ts = tipSection.settings || {};
+
+          var pLabel = ts.primaryLabel || '';
+          var pUrl   = ts.primaryUrl || '';
+          var sLabel = ts.secondaryLabel || '';
+          var sUrl   = ts.secondaryUrl || '';
+
+          var hasP = (pLabel && pUrl);
+          var hasS = (sLabel && sUrl);
+
+          // TTS (integrated under TipJar)
+          var renderTtsHere = visible('tts');
+          var ttsHeadline = 'Send TTS';
+          var ttsSubtext  = 'Max 250 chars • Plays in queue';
+          var ttsBadge    = 'SOON';
+          var ttsProductId = 'default';
+          var ttsUsername = (profile && (profile.username || profile.slug)) ? String(profile.username || profile.slug) : '';
+
+          if (renderTtsHere) {
+            var ttsSection = sectionEntry('tts') || {};
+            var tts = ttsSection.settings || {};
+            ttsHeadline = (tts.headline || ttsHeadline).trim() || 'Send TTS';
+            ttsSubtext  = (tts.subtext || ttsSubtext).trim();
+            ttsBadge    = String(tts.badge || tts.priceLabel || ttsBadge).trim();
+            ttsProductId = String(tts.productId || tts.product_id || ttsProductId).trim() || 'default';
+          }
+        %>
+
+        <% if (hasP || hasS || renderTtsHere) { %>
+          <section class="pc-tipjar">
+            <div class="pc-tipjar-title"><%= ts.headline || 'Tip Jar' %></div>
+
+            <% if (hasP || hasS) { %>
+              <div class="pc-tipjar-buttons">
+                <% if (hasP) { %>
+                  <a href="<%= pUrl %>" target="_blank" rel="noopener noreferrer"
+                     class="pc-button pc-button--shape-pill pc-button--size-md">
+                    <span class="pc-button-label"><%= pLabel %></span>
+                  </a>
+                <% } %>
+
+                <% if (hasS) { %>
+                  <a href="<%= sUrl %>" target="_blank" rel="noopener noreferrer"
+                     class="pc-button pc-button--shape-pill pc-button--size-md">
+                    <span class="pc-button-label"><%= sLabel %></span>
+                  </a>
+                <% } %>
+              </div>
+            <% } %>
+
+            <% if (renderTtsHere) { %>
+              <!-- Same container rules as Tip Jar buttons, so width/size match -->
+              <div class="pc-tipjar-buttons" style="<%= (hasP || hasS) ? 'margin-top:12px;' : '' %>">
+                <button
+                  type="button"
+                  class="pc-button pc-button--shape-pill pc-button--size-md"
+                  data-tts-open="true"
+                  data-tts-creator="<%- ttsUsername %>"
+                  data-tts-product="<%- ttsProductId %>"
+                  aria-label="<%= ttsHeadline %>"
+                >
+                  <span class="pc-button-label">🎙️ <%= ttsHeadline %><%= ttsBadge ? (' ' + ttsBadge) : '' %></span>
+                </button>
+              </div>
+
+              <% if (ttsSubtext) { %>
+                <div class="pc-contact-text"><%= ttsSubtext %></div>
+              <% } %>
+            <% } %>
+          </section>
+        <% } %>
+      <% } %>
+
+      <% if (sectionType === 'contact' && visible('contact')) { %>
+        <%
+          var contactSection = sectionEntry('contact') || {};
+          var cs = contactSection.settings || {};
+
+          var cHeadline = cs.headline || 'Stay in touch';
+          var cDescription = cs.description || '';
+          var cPlaceholder = cs.placeholder || 'you@example.com';
+          var cButtonLabel = cs.buttonLabel || 'Notify me';
+        %>
+
+        <section class="pc-contact">
+          <div class="pc-contact-title"><%= cHeadline %></div>
+
+          <% if (cDescription) { %>
+            <p class="pc-contact-text"><%= cDescription %></p>
+          <% } %>
+
+          <form class="pc-contact-form" data-contact-form="true">
+            <input type="email" name="email" class="pc-contact-input" placeholder="<%= cPlaceholder %>" required />
+            <button type="button" class="pc-contact-button"><%= cButtonLabel %></button>
+          </form>
+
+          <div class="pc-contact-feedback" hidden>Thanks — you’re on the list.</div>
+        </section>
+      <% } %>
+
+      <% /* NOTE: Standalone "tts" renderer intentionally removed.
+            TTS is now integrated into Tip Jar for consistent sizing/spacing. */ %>
+
+    <% }); %>
+
+  </section>
+</article>
+
+<script>
+  // Stats breakdown flip: click pill toggles pc-stats-row--open
+  (function () {
+    var root = document.querySelector('.pc-card-root');
+    if (!root) return;
+
+    var statsRow = root.querySelector('.pc-stats-row--has-breakdown');
+    if (!statsRow) return;
+
+    var toggle = statsRow.querySelector('.pc-stats-pill-toggle');
+    if (!toggle) return;
+
+    toggle.addEventListener('click', function () {
+      statsRow.classList.toggle('pc-stats-row--open');
+    });
+  })();
+</script>

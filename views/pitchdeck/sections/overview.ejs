@@ -1,0 +1,14 @@
+<section>
+  <h2>Overview</h2>
+  <p>
+    <%= user.username %> is a creator on the Scraplet platform.
+    This deck summarises their current digital presence, audience reach,
+    and engagement performance across connected platforms.
+  </p>
+
+  <ul style="list-style:none;padding:0;margin-top:1em;">
+    <li><strong>Joined:</strong> <%= user.created_at ? new Date(user.created_at).toLocaleDateString() : "—" %></li>
+    <li><strong>Subscription Tier:</strong> <%= user.plan || "Standard" %></li>
+    <li><strong>Report Generated:</strong> <%= date %></li>
+  </ul>
+</section>

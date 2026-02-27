@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= title %></title>
+  <style>
+    /* ==== BRAND CORE ==== */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      color: #1f2937;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+    }
+
+    h1, h2 {
+      font-weight: 700;
+      margin: 0 0 0.4em 0;
+    }
+
+    h2 {
+      font-size: 1.3rem;
+      border-left: 5px solid <%= theme.accent %>;
+      padding-left: 0.5rem;
+      margin-bottom: 0.6rem;
+      color: #111827;
+    }
+
+    p, li {
+      line-height: 1.45;
+      font-size: 0.95rem;
+      margin: 0.2rem 0;
+    }
+
+    section {
+      margin-bottom: 1.6cm;
+      page-break-inside: avoid;
+    }
+
+    /* ==== HEADER ==== */
+    .header {
+      background: linear-gradient(90deg, <%= theme.primary %>, <%= theme.accent %>);
+      color: #fff;
+      padding: 1.2rem 1.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .header img.logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 6px;
+      background: #fff;
+      padding: 4px;
+    }
+
+    .header .title-block h1 {
+      font-size: 1.6rem;
+      margin: 0;
+    }
+
+    .meta {
+      text-align: right;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* ==== ACCENT BAR ==== */
+    .accent {
+      height: 4px;
+      background: <%= theme.accent %>;
+      border: none;
+      margin: 0;
+    }
+
+    /* ==== GRID / CARD SYSTEM ==== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.8rem;
+    }
+
+    .stat {
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      padding: 1rem;
+      border-radius: 6px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.1rem;
+      color: <%= theme.primary %>;
+      margin-bottom: 0.4rem;
+    }
+
+    /* ==== GRADE BADGE ==== */
+    .grade-badge {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #fff;
+      background: <%= theme.primary %>;
+    }
+
+    .grade-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-left: 6px solid <%= theme.accent %>;
+      border-radius: 6px;
+      padding: 1rem 1.2rem;
+    }
+
+    /* ==== FOOTER ==== */
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6b7280;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 0.5cm;
+      margin-top: 1cm;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="brand">
+      <img src="https://scraplet.store/assets/logo.svg" alt="Scraplet Logo" class="logo">
+      <div class="title-block">
+        <h1>Scraplet Creator Report</h1>
+        <p style="margin:0;font-size:0.9rem;opacity:0.9;">Generated for <%= user.username %></p>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div><strong><%= user.plan ? user.plan.toUpperCase() : 'STANDARD' %></strong></div>
+      <div><%= date %></div>
+    </div>
+  </header>
+
+  <hr class="accent" />
+
+  <main style="padding:2cm;">
+    <% for (const s of sections) { %>
+      <%- include(`sections/${s}.ejs`) %>
+    <% } %>
+  </main>
+
+  <footer>
+    Powered by <strong>Scraplet</strong> — scraplet.store<br>
+    © <%= new Date().getFullYear() %> Scraplet Ltd. All rights reserved.
+  </footer>
+
+</body>
+</html>

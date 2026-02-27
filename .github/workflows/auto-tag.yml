@@ -1,0 +1,24 @@
+name Auto-tag main pushes
+
+on
+  push
+    branches
+      - main
+
+jobs
+  tag
+    runs-on ubuntu-latest
+    steps
+      - name Checkout code
+        uses actionscheckout@v3
+
+      - name Set up Git
+        run 
+          git config user.name Auto Tagger
+          git config user.email tagger@scraplet.local
+
+      - name Create timestamped tag
+        run 
+          TAG=v$(date +'%Y.%m.%d-%H%M')
+          git tag $TAG
+          git push origin $TAG

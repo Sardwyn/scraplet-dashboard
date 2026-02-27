@@ -1,0 +1,25 @@
+<li class="bg-gray-900 p-5 rounded-xl shadow-md hover:shadow-xl transition border border-gray-800 group">
+  <div class="flex justify-between items-center mb-3">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 flex items-center justify-center bg-gray-800 rounded-full text-2xl group-hover:scale-110 transition">
+        <%= item.icon %>
+      </div>
+      <div>
+        <h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+          <%= item.name %>
+        </h3>
+        <p class="text-sm text-gray-400"><%= item.description %></p>
+      </div>
+    </div>
+
+    <% if (item.status === 'locked') { %>
+      <span class="bg-red-600 text-white text-xs px-3 py-1 rounded-full">Locked</span>
+    <% } else if (item.status === 'installed') { %>
+      <span class="bg-green-600 text-white text-xs px-3 py-1 rounded-full">Installed</span>
+    <% } else { %>
+      <button class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-1 rounded transition">
+        Install
+      </button>
+    <% } %>
+  </div>
+</li>

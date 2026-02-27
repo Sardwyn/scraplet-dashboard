@@ -1,0 +1,447 @@
+<!-- /views/tabs/dashboard-metrics.ejs -->
+
+<style>
+  /* Layout-only. No typography here — neo-pulp owns that. */
+  .mc-grid{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items:start;
+  }
+  @media (min-width: 1200px){
+    .mc-grid{
+      grid-template-columns: minmax(340px, 420px) 1fr minmax(320px, 380px);
+      column-gap: 14px;
+    }
+  }
+  .mc-col{ min-width:0; }
+  .mc-stack{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-width:0;
+  }
+  .mc-stream-wrap{
+    height: min(66vh, 760px);
+    overflow:auto;
+    border-radius: var(--pc-radius, 10px);
+  }
+  .mc-right{ text-align:right; }
+  .mc-click{
+    cursor:pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,0.18);
+  }
+  .mc-click:hover{ text-decoration-color: rgba(255,255,255,0.42); }
+
+  /* Inputs: keep minimal. If you have a pc-input skin (you do), use it. */
+  .mc-input, .mc-select{
+    width: 100%;
+    max-width: 220px;
+  }
+  .mc-filters{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .mc-toolbar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+  .mc-pill{
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+  }
+  .mc-small{ font-size: 12px; color: rgba(255,255,255,0.60); }
+</style>
+
+<div class="pc-panel">
+  <div class="pc-panel-hd">
+    <div>
+      <div class="pc-panel-title">Mission Control</div>
+      <div class="pc-panel-sub">Scrapbot health + dashboard ingest stream</div>
+    </div>
+
+    <div class="mc-toolbar">
+      <span class="pc-chip mc-pill" title="Messages observed in last 60 seconds">
+        <span class="pc-dot" style="border-radius:999px;"></span>
+        LIVE
+        <span class="pc-badge" id="mpmBadge"><%= typeof chatMpm === "number" ? chatMpm : 0 %>/min</span>
+      </span>
+
+      <span class="pc-chip mc-pill" title="Outbox status">
+        <span class="pc-muted">pending</span> <span class="pc-badge" id="statPending"><%= chatStats?.pending ?? 0 %></span>
+        <span class="pc-muted">retry</span> <span class="pc-badge" id="statRetrying"><%= chatStats?.retrying ?? 0 %></span>
+        <span class="pc-muted">delivered</span> <span class="pc-badge" id="statDelivered1h"><%= chatStats?.delivered_1h ?? 0 %>/h</span>
+      </span>
+
+      <span class="pc-chip mc-pill" title="Last poll time">
+        <span class="pc-muted">sync</span>
+        <span class="pc-kbd" id="lastSync"><%= nowIso ? new Date(nowIso).toISOString().slice(11,19) : "--:--:--" %></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="pc-panel-bd">
+    <div class="mc-grid">
+
+      <!-- LEFT -->
+      <div class="mc-col">
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">System</div>
+              <div class="pc-panel-sub">Reachability, flags, operator controls</div>
+            </div>
+          </div>
+
+          <div class="pc-panel-bd">
+            <div class="mc-stack">
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Scrapbot Status</div>
+                    <div class="pc-panel-sub">Live reachability + core flags</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd">
+                  <% if (scrapbotStatus?.ok) { %>
+                    <div class="mc-small">OK — Scrapbot responding</div>
+                  <% } else { %>
+                    <div class="mc-small">Unavailable: <%= scrapbotStatus?.error || "unknown" %></div>
+                  <% } %>
+
+                  <div class="mc-small" style="margin-top:10px">
+                    <div>status: <span class="pc-badge"><%= scrapbotStatus?.ok ? "ONLINE" : "DOWN" %></span></div>
+                    <div>metrics: <span class="pc-badge"><%= scrapbotMetrics?.ok === false ? "ERR" : "OK" %></span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Operator Filters</div>
+                    <div class="pc-panel-sub">Channel + user + sort</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd">
+                  <div class="mc-filters">
+                    <input class="pc-input mc-input" id="filterChannel" placeholder="filter channel (e.g. scraplet)" />
+                    <input class="pc-input mc-input" id="filterUser" placeholder="filter user (e.g. botrix)" />
+
+                    <select class="pc-input mc-select" id="sortMode">
+                      <option value="newest">Newest first</option>
+                      <option value="oldest">Oldest first</option>
+                      <option value="channel">Channel A→Z</option>
+                      <option value="user">User A→Z</option>
+                    </select>
+
+                    <label class="mc-small" style="display:flex; gap:8px; align-items:center;">
+                      <input type="checkbox" id="autoScroll" checked />
+                      auto-scroll
+                    </label>
+                  </div>
+
+                  <div class="mc-small" style="margin-top:10px;">
+                    Tip: click a channel/user in the table to snap-filter.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER -->
+      <div class="mc-col">
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Ingest</div>
+              <div class="pc-panel-sub">public.chat_outbox (dashboard → scrapbot)</div>
+            </div>
+
+            <div class="mc-small">
+              showing <span class="pc-badge" id="shownCount">0</span> / <span class="pc-badge" id="totalCount">0</span>
+            </div>
+          </div>
+
+          <div class="pc-panel-bd">
+            <div class="mc-stream-wrap pc-oled">
+              <table class="pc-table" id="streamTable">
+                <thead>
+                  <tr>
+                    <th style="width:88px">Time</th>
+                    <th style="width:120px">Channel</th>
+                    <th style="width:140px">User</th>
+                    <th>Message</th>
+                    <th style="width:80px" class="is-right">State</th>
+                  </tr>
+                </thead>
+                <tbody id="streamBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="mc-col">
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Ops Notes</div>
+              <div class="pc-panel-sub">Command activity + quick signals</div>
+            </div>
+          </div>
+
+          <div class="pc-panel-bd">
+            <div class="mc-stack">
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Command Log</div>
+                    <div class="pc-panel-sub">Recent command executions (scrapbot recent)</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd">
+                  <div class="mc-small" id="cmdEmpty">No command data yet.</div>
+                  <div id="cmdList"></div>
+                </div>
+              </div>
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Top Talkers</div>
+                    <div class="pc-panel-sub">From the currently loaded stream window</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd" id="topTalkers"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const initial = {
+    latestChat: <%- JSON.stringify(latestChat || []) %>,
+    chatMpm: <%- JSON.stringify(typeof chatMpm === "number" ? chatMpm : 0) %>,
+    chatStats: <%- JSON.stringify(chatStats || {}) %>,
+    scrapbotRecent: <%- JSON.stringify(scrapbotRecent || null) %>,
+  };
+
+  const els = {
+    body: document.getElementById("streamBody"),
+    shownCount: document.getElementById("shownCount"),
+    totalCount: document.getElementById("totalCount"),
+    filterChannel: document.getElementById("filterChannel"),
+    filterUser: document.getElementById("filterUser"),
+    sortMode: document.getElementById("sortMode"),
+    autoScroll: document.getElementById("autoScroll"),
+    mpmBadge: document.getElementById("mpmBadge"),
+    lastSync: document.getElementById("lastSync"),
+    statPending: document.getElementById("statPending"),
+    statRetrying: document.getElementById("statRetrying"),
+    statDelivered1h: document.getElementById("statDelivered1h"),
+    cmdEmpty: document.getElementById("cmdEmpty"),
+    cmdList: document.getElementById("cmdList"),
+    topTalkers: document.getElementById("topTalkers"),
+  };
+
+  let state = {
+    items: Array.isArray(initial.latestChat) ? initial.latestChat : [],
+    chatMpm: initial.chatMpm || 0,
+    chatStats: initial.chatStats || {},
+    scrapbotRecent: initial.scrapbotRecent || null,
+  };
+
+  function fmtTime(v){
+    try {
+      const d = new Date(v);
+      if (isNaN(d.getTime())) return "--:--:--";
+      return d.toISOString().slice(11,19);
+    } catch { return "--:--:--"; }
+  }
+
+  function esc(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function applyFiltersAndSort(items){
+    const fc = (els.filterChannel.value || "").trim().toLowerCase();
+    const fu = (els.filterUser.value || "").trim().toLowerCase();
+    const mode = els.sortMode.value;
+
+    let out = (items || []).slice();
+    if (fc) out = out.filter(x => String(x.channel || "").toLowerCase().includes(fc));
+    if (fu) out = out.filter(x => String(x.user || "").toLowerCase().includes(fu));
+
+    if (mode === "oldest") out.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+    else if (mode === "channel") out.sort((a,b)=> String(a.channel||"").localeCompare(String(b.channel||"")));
+    else if (mode === "user") out.sort((a,b)=> String(a.user||"").localeCompare(String(b.user||"")));
+    else out.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+
+    return out;
+  }
+
+  function renderMeta(){
+    els.mpmBadge.textContent = `${state.chatMpm || 0}/min`;
+    els.statPending.textContent = state.chatStats?.pending ?? 0;
+    els.statRetrying.textContent = state.chatStats?.retrying ?? 0;
+    els.statDelivered1h.textContent = `${state.chatStats?.delivered_1h ?? 0}/h`;
+  }
+
+  function renderStream(){
+    const items = Array.isArray(state.items) ? state.items : [];
+    const view = applyFiltersAndSort(items);
+
+    els.totalCount.textContent = items.length;
+    els.shownCount.textContent = view.length;
+
+    els.body.innerHTML = view.length ? view.map(x => {
+      const t = fmtTime(x.created_at || x.ts || null);
+      const ch = esc(x.channel || "?");
+      const u  = esc(x.user || "?");
+      const msg = esc(x.text || "");
+      const ok  = x.delivered_at ? "DELIV" : "PEND";
+
+      return `
+        <tr>
+          <td class="is-muted">${t}</td>
+          <td><span class="mc-click" data-click="channel" data-val="${ch}">${ch}</span></td>
+          <td><span class="mc-click" data-click="user" data-val="${u}">${u}</span></td>
+          <td style="white-space:pre-wrap">${msg}</td>
+          <td class="is-right"><span class="pc-badge">${ok}</span></td>
+        </tr>
+      `;
+    }).join("") : `<tr><td colspan="5" class="is-muted">No messages (or filters excluded everything).</td></tr>`;
+
+    if (els.autoScroll.checked){
+      const wrap = els.body.closest(".mc-stream-wrap");
+      if (wrap) wrap.scrollTop = 0;
+    }
+
+    els.body.querySelectorAll("[data-click]").forEach(el => {
+      el.addEventListener("click", () => {
+        const type = el.getAttribute("data-click");
+        const val  = el.getAttribute("data-val") || "";
+        if (type === "channel") els.filterChannel.value = val;
+        if (type === "user") els.filterUser.value = val;
+        renderAll();
+      });
+    });
+  }
+
+  function renderTopTalkers(){
+    const view = applyFiltersAndSort(state.items || []);
+    const counts = new Map();
+    for (const x of view){
+      const k = String(x.user || "?");
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    const top = [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+    els.topTalkers.innerHTML = top.length ? `
+      <table class="pc-table">
+        <thead><tr><th>User</th><th class="is-right">Msgs</th></tr></thead>
+        <tbody>
+          ${top.map(([u,n]) => `
+            <tr>
+              <td><span class="mc-click" data-tt="user" data-val="${esc(u)}">${esc(u)}</span></td>
+              <td class="is-right"><span class="pc-badge">${n}</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    ` : `<div class="pc-empty">No data yet.</div>`;
+
+    els.topTalkers.querySelectorAll("[data-tt='user']").forEach(el => {
+      el.addEventListener("click", () => {
+        els.filterUser.value = el.getAttribute("data-val") || "";
+        renderAll();
+      });
+    });
+  }
+
+  function renderCommands(){
+    const recent = state.scrapbotRecent || {};
+    const cmds = Array.isArray(recent.commands) ? recent.commands :
+                 (Array.isArray(recent.recentCommands) ? recent.recentCommands : []);
+
+    if (!cmds.length){
+      els.cmdEmpty.style.display = "";
+      els.cmdList.innerHTML = "";
+      return;
+    }
+    els.cmdEmpty.style.display = "none";
+
+    els.cmdList.innerHTML = `
+      <table class="pc-table">
+        <thead><tr><th>Time</th><th>Command</th><th>User</th><th class="is-right">Result</th></tr></thead>
+        <tbody>
+          ${cmds.slice(0,12).map(c => {
+            const t = fmtTime(c.ts || c.at || c.created_at || null);
+            const name = esc(c.command || c.name || c.cmd || "?");
+            const u = esc(c.user || c.username || c.sender || "?");
+            const r = esc(c.result || c.status || "ok");
+            return `<tr><td class="is-muted">${t}</td><td>${name}</td><td>${u}</td><td class="is-right"><span class="pc-badge">${r}</span></td></tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderAll(){
+    renderMeta();
+    renderStream();
+    renderTopTalkers();
+    renderCommands();
+  }
+
+  async function poll(){
+    try{
+      const r = await fetch("/dashboard/metrics/data", { headers: { "Accept":"application/json" }});
+      const j = await r.json();
+      if (j && j.ok){
+        state.items = Array.isArray(j.latestChat) ? j.latestChat : state.items;
+        state.chatMpm = typeof j.chatMpm === "number" ? j.chatMpm : state.chatMpm;
+        state.chatStats = j.chatStats || state.chatStats;
+        state.scrapbotRecent = j.scrapbotRecent || state.scrapbotRecent;
+        els.lastSync.textContent = fmtTime(j.now);
+        renderAll();
+      }
+    } catch(e){
+      // silent
+    } finally {
+      setTimeout(poll, 1000);
+    }
+  }
+
+  els.filterChannel.addEventListener("input", renderAll);
+  els.filterUser.addEventListener("input", renderAll);
+  els.sortMode.addEventListener("change", renderAll);
+
+  renderAll();
+  poll();
+</script>

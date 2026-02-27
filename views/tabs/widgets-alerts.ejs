@@ -1,0 +1,587 @@
+<% const rulesArr=Array.isArray(rules) ? rules : []; const selectedRule=rule || rulesArr[0] || {}; const r=selectedRule
+  || {}; const v=visual || (r.visual_json || {}) || {}; const a=audio || (r.audio_json || {}) || {}; const c=(typeof
+  conditions !=='undefined' && conditions) ? conditions : (r.conditions_json || {}) || {}; const act=(typeof actions
+  !=='undefined' && actions) ? actions : (r.actions_json || {}) || {}; const currentTypes=Array.isArray(r.event_types) ?
+  r.event_types : []; const
+  types=['follow','subscription','gifted_subscription','raid','host','tip','cheer','custom','test']; const
+  ruleName=(r.name || 'Rule' ); const enabled=(r.enabled !==false); const priority=(r.priority ?? 50); const
+  durationMs=(r.duration_ms ?? 6500); const cooldownSeconds=(r.cooldown_seconds ?? 0); const
+  dedupeWindowSeconds=(r.dedupe_window_seconds ?? 60); const textTemplate=(r.text_template
+  || '{actor.display} triggered an alert!' ); const theme=(v.theme || 'scraplet_neo' ); const layout=(v.layout || 'card'
+  ); const accent=(v.accent || 'kick_green' ); const showAvatar=(v.show_avatar !==false); const imageUrl=(v.image_url
+  || '' ); const visualPosition=(v.position || 'bottom' ); const visualSafePadding=(v.safe_padding ?? 48); const
+  visualScale=(v.scale ?? 1); const audioEnabled=!!a.enabled; const audioUrl=(a.url || '' ); const audioVolume=(a.volume
+  ?? 0.6); const platforms=Array.isArray(c.platforms) ? c.platforms : ['kick']; const actorMode=(c.actor &&
+  c.actor.mode) ? c.actor.mode : 'any' ; const actorValue=(c.actor && c.actor.value) ? c.actor.value : '' ; const
+  amountMin=(c.amount && c.amount.min !==null && c.amount.min !==undefined) ? c.amount.min : '' ; const
+  amountMax=(c.amount && c.amount.max !==null && c.amount.max !==undefined) ? c.amount.max : '' ; const
+  amountCurrency=(c.amount && c.amount.currency) ? c.amount.currency : 'USD' ; const countMin=(c.count && c.count.min
+  !==null && c.count.min !==undefined) ? c.count.min : '' ; const countMax=(c.count && c.count.max !==null &&
+  c.count.max !==undefined) ? c.count.max : '' ; const queueMode=(act.queue && act.queue.mode) ? act.queue.mode
+  : 'stack' ; const burstMax=(act.queue && act.queue.burst_max) ? act.queue.burst_max : 5; const burstWindow=(act.queue
+  && act.queue.burst_window_s) ? act.queue.burst_window_s : 10; const globalCooldown=(act.cooldowns &&
+  act.cooldowns.global_s) ? act.cooldowns.global_s : 0; const conditionsAdvanced=c.advanced_json ?
+  JSON.stringify(c.advanced_json, null, 2) : '' ; const actionsAdvanced=act.advanced_json ?
+  JSON.stringify(act.advanced_json, null, 2) : '' ; function pillOn(on) { return on ? '1' : '0' ; } %>
+
+  <div class="px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- LEFT COLUMN -->
+      <div class="space-y-6">
+
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Alerts</div>
+              <div class="pc-panel-sub">Widget • V2 (config + enforcement)</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">OBS URL</div>
+              <input class="pc-input" readonly value="<%= overlayUrl %>" onclick="this.select()" />
+            </div>
+
+            <div class="flex flex-wrap gap-2 mt-4">
+              <a class="pc-btn pc-btn--primary" href="/a/<%= encodeURIComponent(publicId) %>" target="_blank">Open
+                Overlay</a>
+              <form method="POST" action="/dashboard/widgets/alerts/regenerate">
+                <button class="pc-btn pc-btn--ghost" type="submit">Regenerate URL</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- RULES LIST -->
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Rules</div>
+              <div class="pc-panel-sub">First match wins (priority desc).</div>
+            </div>
+            <form method="POST" action="/dashboard/widgets/alerts/rules/create">
+              <button class="pc-btn pc-btn--primary" type="submit">+ New Rule</button>
+            </form>
+          </div>
+
+          <div class="pc-panel-bd space-y-2">
+            <% if (!rulesArr.length) { %>
+              <div class="pc-text-muted text-sm italic">No rules found. Create your first rule.</div>
+              <% } %>
+
+                <% rulesArr.forEach((rr, idx)=> {
+                  const isSel = String(rr.id) === String(r.id);
+                  const isOn = rr.enabled !== false;
+                  const typesPreview = (Array.isArray(rr.event_types) ? rr.event_types : []).slice(0, 3).join(', ') ||
+                  '—';
+                  const more = (Array.isArray(rr.event_types) && rr.event_types.length > 3) ? `
+                  +${rr.event_types.length-3}` : '';
+                  %>
+
+                  <div
+                    class="flex items-center gap-2 p-2 rounded border border-white/5 bg-white/5 <%= isSel ? 'ring-1 ring-green-500/30 bg-green-500/5' : '' %>">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <a href="/dashboard/widgets/alerts/configure?<%= encodeURIComponent('rule_id') %>=<%= encodeURIComponent(rr.id) %>"
+                          class="font-bold text-white hover:text-green-400 truncate max-w-full" title="<%= rr.name %>">
+                          <%= rr.name %>
+                        </a>
+
+                        <span
+                          class="text-xs px-2 py-0.5 rounded-full border border-white/10 <%= isOn ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-gray-400' %>">
+                          <%= isOn ? 'enabled' : 'disabled' %>
+                        </span>
+
+                        <span class="text-xs text-gray-500 ml-auto font-mono">P<%= rr.priority %></span>
+                      </div>
+
+                      <div class="text-xs text-gray-400 mt-1 truncate">
+                        <span class="font-mono text-white/50">
+                          <%= typesPreview %>
+                            <%= more %>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Move controls -->
+                    <div class="flex gap-1">
+                      <form method="POST" action="/dashboard/widgets/alerts/rules/move">
+                        <input type="hidden" name="rule_id" value="<%= rr.id %>" />
+                        <input type="hidden" name="dir" value="up" />
+                        <button class="pc-btn pc-btn--ghost px-2" type="submit" <%=idx===0 ? 'disabled' : '' %>
+                          title="Move up">↑</button>
+                      </form>
+
+                      <form method="POST" action="/dashboard/widgets/alerts/rules/move">
+                        <input type="hidden" name="rule_id" value="<%= rr.id %>" />
+                        <input type="hidden" name="dir" value="down" />
+                        <button class="pc-btn pc-btn--ghost px-2" type="submit" <%=idx===rulesArr.length-1 ? 'disabled'
+                          : '' %> title="Move down">↓</button>
+                      </form>
+                    </div>
+
+                    <!-- Action controls -->
+                    <div class="flex gap-1">
+                      <a class="pc-btn pc-btn--ghost px-2"
+                        href="/dashboard/widgets/alerts/configure?<%= encodeURIComponent('rule_id') %>=<%= encodeURIComponent(rr.id) %>">Edit</a>
+
+                      <form method="POST" action="/dashboard/widgets/alerts/rules/duplicate">
+                        <input type="hidden" name="rule_id" value="<%= rr.id %>" />
+                        <button class="pc-btn pc-btn--ghost px-2" type="submit">Dup</button>
+                      </form>
+
+                      <form method="POST" action="/dashboard/widgets/alerts/rules/delete"
+                        onsubmit="return confirm('Delete rule: <%= (rr.name||'Rule').replace(/'/g,'\\\'') %> ?');">
+                        <input type="hidden" name="rule_id" value="<%= rr.id %>" />
+                        <button class="pc-btn pc-btn--ghost px-2 text-red-300 hover:text-red-200"
+                          type="submit">Del</button>
+                      </form>
+                    </div>
+                  </div>
+
+                  <% }) %>
+          </div>
+        </div>
+
+        <!-- TEST / SIMULATE (AJAX) -->
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Test / Simulate</div>
+              <div class="pc-panel-sub">Uses /dashboard/widgets/alerts/test (AJAX). No redirect.</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Platform</div>
+                <select class="pc-select" id="alertsTestPlatform">
+                  <option value="kick">kick</option>
+                  <option value="twitch">twitch</option>
+                  <option value="youtube">youtube</option>
+                  <option value="scraplet">scraplet</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Type</div>
+                <select class="pc-select" id="alertsTestType">
+                  <%
+                    ['follow','subscription','gifted_subscription','raid','host','tip','cheer','custom','test'].forEach(t=>
+                    { %>
+                    <option value="<%= t %>">
+                      <%= t.replace(/_/g,' ') %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Count</div>
+              <input class="pc-input" id="alertsTestCount" type="number" step="1" min="0" placeholder="(optional)" />
+            </div>
+
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Amount</div>
+              <input class="pc-input" id="alertsTestAmount" type="number" step="0.01" min="0" placeholder="(optional)" />
+            </div>
+          </div>
+
+          <div class="mt-4 space-y-4">
+            <div>
+              <label class="pc-text-muted text-xs mb-1 block">Actor</label>
+              <input class="pc-input" id="alertsTestActor" value="Scraplet" />
+            </div>
+
+            <div>
+              <label class="pc-text-muted text-xs mb-1 block">Text</label>
+              <input class="pc-input" id="alertsTestText" value="Scraplet Alerts are live." />
+            </div>
+
+            <div>
+              <button class="pc-btn pc-btn--primary w-full" id="alertsTestBtn" type="button">Send Test Alert</button>
+              <div class="text-xs text-gray-500 mt-2 text-center" id="alertsTestStatus"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="space-y-6">
+
+      <form method="POST" action="/dashboard/widgets/alerts/save">
+        <input type="hidden" name="rule_id" value="<%= r.id || '' %>" />
+
+        <!-- RULE META -->
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Rule Configuration</div>
+              <div class="pc-panel-sub">Applies when it matches. First match wins.</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd">
+            <div class="grid grid-cols-[1fr_auto] gap-4 items-end">
+              <div>
+                <div class="pc-text-muted text-xs mb-1">Name</div>
+                <input class="pc-input" name="name" value="<%= ruleName %>" maxlength="140" />
+              </div>
+
+              <div class="flex items-center h-[36px]">
+                <label class="pc-toggle flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" name="enabled" value="1" <%= enabled ? ' checked' : '' %> />
+                        <div class="slider"></div>
+                        <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Enabled</span>
+                        </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TRIGGERS -->
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Triggers</div>
+              <div class="pc-panel-sub">What events can fire alerts.</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd">
+            <div class="flex flex-wrap gap-2">
+              <% types.forEach(t=> { const on = currentTypes.includes(t); %>
+                <label class="pc-chip cursor-pointer <%= on ? 'is-active' : '' %>">
+                  <input type="checkbox" class="hidden" name="event_types[]" value="<%= t %>" <%=on ? 'checked' : '' %>
+                  onchange="this.parentElement.classList.toggle('is-active', this.checked)" />
+                  <span>
+                    <%= t.replace(/_/g,' ') %></span>
+                </label>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONDITIONS -->
+        <div class="pc-panel">
+          <div class="pc-panel-hd">
+            <div>
+              <div class="pc-panel-title">Conditions</div>
+              <div class="pc-panel-sub">Enforced now. Keep it simple in V2.</div>
+            </div>
+          </div>
+          <div class="pc-panel-bd space-y-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-2">Platforms</div>
+              <div class="flex flex-wrap gap-2">
+                <% [' kick','twitch','youtube','scraplet'].forEach(p=> { const on = platforms.includes(p); %>
+                      <label class="pc-chip cursor-pointer <%= on ? 'is-active' : '' %>">
+                        <input type="checkbox" class="hidden" name="platforms[]" value="<%= p %>" <%=on ? 'checked' : ''
+                          %>
+                        onchange="this.parentElement.classList.toggle('is-active', this.checked)" />
+                        <span>
+                          <%= p %>
+                        </span>
+                      </label>
+                      <% }) %>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Actor filter</div>
+              <select class="pc-select" name="actor_mode">
+                <option value="any" <%=actorMode==='any' ?'selected':'' %>>any</option>
+                <option value="equals" <%=actorMode==='equals' ?'selected':'' %>>equals</option>
+                <option value="contains" <%=actorMode==='contains' ?'selected':'' %>>contains</option>
+              </select>
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Actor value</div>
+              <input class="pc-input" name="actor_value" value="<%= actorValue %>" placeholder="username..." />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Amount min</div>
+              <input class="pc-input" type="number" step="0.01" name="amount_min" value="<%= amountMin %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Amount max</div>
+              <input class="pc-input" type="number" step="0.01" name="amount_max" value="<%= amountMax %>" />
+            </div>
+            <input type="hidden" name="amount_currency" value="<%= amountCurrency %>" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Count min</div>
+              <input class="pc-input" type="number" step="1" name="count_min" value="<%= countMin %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Count max</div>
+              <input class="pc-input" type="number" step="1" name="count_max" value="<%= countMax %>" />
+            </div>
+          </div>
+
+          <div>
+            <div class="pc-text-muted text-xs mb-1">Advanced conditions JSON (optional)</div>
+            <textarea class="pc-input font-mono text-xs" name="conditions_advanced_json"
+              rows="4"><%= conditionsAdvanced %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMING + TEXT -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Timing & Text</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Priority</div>
+              <input class="pc-input" type="number" min="1" max="100" name="priority" value="<%= priority %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Duration (ms)</div>
+              <input class="pc-input" type="number" min="500" step="100" name="duration_ms" value="<%= durationMs %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Cooldown (s)</div>
+              <input class="pc-input" type="number" min="0" name="cooldown_seconds" value="<%= cooldownSeconds %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Dedupe window (s)</div>
+              <input class="pc-input" type="number" min="0" name="dedupe_window_seconds"
+                value="<%= dedupeWindowSeconds %>" />
+            </div>
+          </div>
+
+          <div>
+            <div class="pc-text-muted text-xs mb-1">Text template</div>
+            <input class="pc-input" name="text_template" value="<%= textTemplate %>" />
+          </div>
+        </div>
+      </div>
+
+      <!-- QUEUE BEHAVIOR -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Queue Behavior</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Mode</div>
+              <select class="pc-select" name="queue_mode">
+                <option value="stack" <%=queueMode==='stack' ?'selected':'' %>>stack</option>
+                <option value="drop" <%=queueMode==='drop' ?'selected':'' %>>drop</option>
+                <option value="merge" <%=queueMode==='merge' ?'selected':'' %>>merge</option>
+              </select>
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Burst max</div>
+              <input class="pc-input" type="number" min="1" name="burst_max" value="<%= burstMax %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Burst window (s)</div>
+              <input class="pc-input" type="number" min="1" name="burst_window_s" value="<%= burstWindow %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Global cooldown (s)</div>
+              <input class="pc-input" type="number" min="0" name="global_cooldown_s" value="<%= globalCooldown %>" />
+            </div>
+          </div>
+
+          <div>
+            <div class="pc-text-muted text-xs mb-1">Advanced actions JSON (optional)</div>
+            <textarea class="pc-input font-mono text-xs" name="actions_advanced_json"
+              rows="4"><%= actionsAdvanced %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISUALS -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Visuals</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Theme</div>
+              <select class="pc-select" name="visual_theme">
+                <option value="scraplet_neo" <%=theme==='scraplet_neo' ?'selected':'' %>>scraplet_neo</option>
+                <option value="minimal" <%=theme==='minimal' ?'selected':'' %>>minimal</option>
+              </select>
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Layout</div>
+              <select class="pc-select" name="visual_layout">
+                <option value="card" <%=layout==='card' ?'selected':'' %>>card</option>
+                <option value="banner" <%=layout==='banner' ?'selected':'' %>>banner</option>
+              </select>
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Accent</div>
+              <select class="pc-select" name="visual_accent">
+                <option value="kick_green" <%=accent==='kick_green' ?'selected':'' %>>kick_green</option>
+                <option value="twitch_purple" <%=accent==='twitch_purple' ?'selected':'' %>>twitch_purple</option>
+                <option value="youtube_red" <%=accent==='youtube_red' ?'selected':'' %>>youtube_red</option>
+                <option value="scraplet_blue" <%=accent==='scraplet_blue' ?'selected':'' %>>scraplet_blue</option>
+              </select>
+            </div>
+
+            <div class="flex items-end mb-2">
+              <label class="pc-toggle flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="visual_show_avatar" value="1" <%=showAvatar ? 'checked' : '' %> />
+                <div class="slider"></div>
+                <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Show avatar</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Position</div>
+              <select class="pc-select" name="visual_position">
+                <option value="top" <%=visualPosition==='top' ?'selected':'' %>>top</option>
+                <option value="center" <%=visualPosition==='center' ?'selected':'' %>>center</option>
+                <option value="bottom" <%=visualPosition==='bottom' ?'selected':'' %>>bottom</option>
+              </select>
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Safe padding</div>
+              <input class="pc-input" type="number" min="0" name="visual_safe_padding"
+                value="<%= visualSafePadding %>" />
+            </div>
+            <div>
+              <div class="pc-text-muted text-xs mb-1">Scale</div>
+              <input class="pc-input" type="number" step="0.05" min="0.5" max="2" name="visual_scale"
+                value="<%= visualScale %>" />
+            </div>
+          </div>
+
+          <div>
+            <div class="pc-text-muted text-xs mb-1">Image URL (optional)</div>
+            <input class="pc-input" name="visual_image_url" value="<%= imageUrl %>" placeholder="https://..." />
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIO -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Audio</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd space-y-4">
+          <div class="flex items-center gap-4">
+            <label class="pc-toggle flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" name="audio_enabled" value="1" <%=audioEnabled ? 'checked' : '' %> />
+              <div class="slider"></div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-gray-400">Enabled</span>
+            </label>
+
+            <div class="flex-1">
+              <div class="pc-text-muted text-xs mb-1">Volume</div>
+              <input class="pc-input" type="number" min="0" max="1" step="0.05" name="audio_volume"
+                value="<%= audioVolume %>" />
+            </div>
+          </div>
+
+          <div>
+            <div class="pc-text-muted text-xs mb-1">Audio URL</div>
+            <input class="pc-input" name="audio_url" value="<%= audioUrl %>" placeholder="https://.../sound.mp3" />
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="sticky bottom-4 z-10 bg-[#0f1115] border border-white/10 rounded-xl p-4 shadow-xl flex items-center justify-between">
+        <div class="text-xs text-gray-400">Save persists config immediately.</div>
+        <div class="flex gap-2">
+          <button class="pc-btn pc-btn--primary" type="submit">Save</button>
+          <a class="pc-btn pc-btn--ghost"
+            href="/dashboard/widgets/alerts/configure?<%= r.id ? ('rule_id=' + encodeURIComponent(r.id)) : '' %>">Reset</a>
+        </div>
+      </div>
+
+      </form>
+
+    </div>
+
+  </div>
+  </div>
+
+  <script>
+    (() => {
+      const btn = document.getElementById('alertsTestBtn');
+      const status = document.getElementById('alertsTestStatus');
+      if (!btn) return;
+
+      function currencyForPlatform(p) {
+        const platform = String(p || '').toLowerCase();
+        if (platform === 'kick') return 'KICKS';
+        return 'USD';
+      }
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        status.textContent = 'Sending…';
+
+        const platform = document.getElementById('alertsTestPlatform').value;
+        const type = document.getElementById('alertsTestType').value;
+
+        const actor = document.getElementById('alertsTestActor').value;
+        const text = document.getElementById('alertsTestText').value;
+
+        const amountValRaw = document.getElementById('alertsTestAmount').value;
+        const countRaw = document.getElementById('alertsTestCount').value;
+
+        const payload = { platform, type, actor, text };
+
+        if (amountValRaw !== null && String(amountValRaw).trim() !== '') {
+          payload.amount_value = Number(amountValRaw);
+          payload.amount_currency = currencyForPlatform(platform);
+        }
+        if (countRaw !== null && String(countRaw).trim() !== '') {
+          payload.count = Number(countRaw);
+        }
+
+        try {
+          const r = await fetch('/dashboard/widgets/alerts/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const j = await r.json().catch(() => null);
+
+          if (!r.ok || !j) {
+            status.textContent = '❌ Failed to send';
+            return;
+          }
+
+          if (!j.ok) {
+            status.textContent = `⚠️ Not enqueued: ${j.reason || 'unknown'}`;
+            return;
+          }
+
+          status.textContent = '✅ Queued';
+        } catch (e) {
+          status.textContent = '❌ Failed to send';
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    })();
+  </script>

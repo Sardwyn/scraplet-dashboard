@@ -1,0 +1,10 @@
+<section>
+  <h2>👋 Introduction</h2>
+  <% if (user && user.custom_intro) { %>
+    <p><%= user.custom_intro %></p>
+  <% } else { %>
+    <p style="color:#6b7280;font-style:italic;">
+      Add your intro in Dashboard → Account to show it here.
+    </p>
+  <% } %>
+</section>

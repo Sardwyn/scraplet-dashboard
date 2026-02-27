@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "page": "stats",
+  "layout": "grid3",
+  "density": "balanced",
+  "tokens": {
+    "radius": 14,
+    "pad": 16,
+    "gap": 16,
+    "head": 44,
+    "border": 10,
+    "accent": "#7aa2ff"
+  },
+  "panels": [
+    { "id": "stats_audience_growth", "type": "chart", "title": "Audience Growth", "subtitle": "Total followers over time", "span": 2, "variant": "glass" },
+    { "id": "stats_platform_table",  "type": "table", "title": "Platform Performance", "subtitle": "Followers / engagement / CCV", "span": 1, "variant": "glass" },
+    { "id": "stats_engagement",      "type": "chart", "title": "Profile Engagement", "subtitle": "Views + referrers + trend", "span": 2, "variant": "glass" },
+    { "id": "stats_heatmap",         "type": "viz",   "title": "Heatmap", "subtitle": "Click intent", "span": 1, "variant": "solid" },
+    { "id": "stats_click_buckets",   "type": "list",  "title": "Click Buckets", "subtitle": "Action summary", "span": 1, "variant": "solid" },
+    { "id": "stats_clickstream",     "type": "list",  "title": "Clickstream", "subtitle": "Recent actions", "span": 2, "variant": "solid" }
+  ]
+}

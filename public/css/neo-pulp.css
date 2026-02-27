@@ -1,0 +1,1435 @@
+/* public/dashboard/css/neo-pulp.css */
+
+/* ─────────────────────────────────────────────────────────────
+   TOKENS & THEMING
+   ───────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+
+  /* ── Core Palette (System SaaS Default) ── */
+  --np-bg: #05070c;
+  --np-text: rgba(255, 255, 255, 0.88);
+  --np-muted: rgba(255, 255, 255, 0.58);
+
+  /* Brand Accents */
+  --np-amber: #ffb02e;
+  --np-amber-2: #ff8a1f;
+  --np-green: #39ffb6;
+
+  /* Surfaces */
+  --np-surface: rgba(14, 18, 32, 0.78);
+  --np-surface-2: rgba(10, 13, 22, 0.90);
+
+  /* Borders / Depth */
+  --np-border: rgba(255, 255, 255, 0.10);
+  --np-border-2: rgba(255, 255, 255, 0.06);
+  --np-shadow: rgba(0, 0, 0, 0.65);
+
+  /* Radii + Spacing */
+  --np-r-lg: 18px;
+  --np-r-md: 14px;
+  --np-pad: 16px;
+  --np-gap: 16px;
+
+  /* Old "Hardware" Strip (Keeping for back-compat) */
+  --np-rail: rgba(255, 176, 46, 0.18);
+  --np-rail-2: rgba(255, 176, 46, 0.08);
+
+  /* ── pc-* Control Surface Primitives ── */
+  --pc-bg: var(--np-bg);
+  --pc-panel: rgba(10, 14, 20, 0.90);
+  --pc-text: rgba(255, 255, 255, 0.90);
+  --pc-muted: rgba(255, 255, 255, 0.58);
+
+  --pc-accent: #55d6ff;
+  --pc-accent-2: #39ffb6;
+  --pc-warn: #ffc940;
+  --pc-err: #ff5a5a;
+
+  /* Spacing */
+  --pc-gap: 16px;
+  --pc-pad: 16px;
+  --pc-hd-h: 44px;
+
+  /* Radii */
+  --pc-r-md: 8px;
+  --pc-r-sm: 6px;
+
+  /* Borders & Effects */
+  --pc-border-a: 0.12;
+  /* Alpha for borders */
+  --pc-border-hi: 0.20;
+  /* Highlight alpha */
+  --pc-glow-a: 0.0;
+  /* No glow in SaaS mode */
+  --pc-scanlines: 0.18;
+  /* OLED scanline intensity */
+  --pc-grid-a: 0.06;
+  /* Grid opacity */
+  --pc-shadow: rgba(0, 0, 0, 0.65);
+}
+
+
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL & LAYOUT
+   ───────────────────────────────────────────────────────────── */
+
+body.np {
+  /* Default SaaS Gradient Background */
+  background:
+    radial-gradient(circle at 18% 0%, rgba(255, 176, 46, 0.10), transparent 55%),
+    radial-gradient(circle at 75% 12%, rgba(57, 255, 182, 0.07), transparent 52%),
+    radial-gradient(circle at 50% 120%, rgba(122, 162, 255, 0.06), transparent 60%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.0) 35%),
+    var(--pc-bg);
+  color: var(--pc-text);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+
+
+
+
+/* ─────────────────────────────────────────────────────────────
+   LEGACY COMPATIBILITY (np-*)
+   Removed during Control Room refactor.
+   ───────────────────────────────────────────────────────────── */
+
+
+/* ─────────────────────────────────────────────────────────────
+   CORE COMPONENTS (pc-*)
+   Canonical definitions.
+   ───────────────────────────────────────────────────────────── */
+
+/* -- Panel -- */
+.pc-panel {
+  border-radius: var(--pc-r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 26%),
+    var(--pc-panel);
+  border: 1px solid rgba(255, 255, 255, var(--pc-border-a));
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, 0.78),
+    0 24px 70px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.70);
+  overflow: hidden;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+
+
+.pc-panel::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: calc(var(--pc-r-md) - 2px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.pc-panel::after {
+  /* Top Rail Highlight */
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 10px;
+  height: 1px;
+  background: linear-gradient(90deg,
+      rgba(85, 214, 255, 0.00),
+      rgba(85, 214, 255, 0.26),
+      rgba(57, 255, 182, 0.18),
+      rgba(85, 214, 255, 0.00));
+  opacity: 0.80;
+  pointer-events: none;
+}
+
+
+
+.pc-panel-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--pc-hd-h);
+  padding: 10px var(--pc-pad);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.10)),
+    linear-gradient(90deg, rgba(85, 214, 255, 0.10), rgba(0, 0, 0, 0.00) 36%, rgba(0, 0, 0, 0.00) 64%, rgba(57, 255, 182, 0.08));
+}
+
+.pc-panel-bd {
+  padding: var(--pc-pad);
+  position: relative;
+}
+
+/* -- Typography -- */
+.pc-panel-title {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pc-panel-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: var(--pc-muted);
+}
+
+.pc-muted {
+  color: var(--pc-muted);
+}
+
+.pc-kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.34);
+  border-radius: var(--pc-r-sm);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+
+/* -- Buttons (Canonical + Alias) -- */
+.pc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: var(--pc-r-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.pc-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  /* slightly brighter hover */
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.pc-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primary */
+.pc-btn-primary,
+.pc-btn--primary {
+  border-color: rgba(85, 214, 255, 0.42);
+  background: linear-gradient(180deg, rgba(85, 214, 255, 0.18), rgba(0, 0, 0, 0.40));
+  box-shadow: 0 0 0 2px rgba(85, 214, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+
+
+/* Ghost */
+.pc-btn-ghost,
+.pc-btn--ghost {
+  background: rgba(0, 0, 0, 0.32);
+  border-color: transparent;
+}
+
+.pc-btn-ghost:hover,
+.pc-btn--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Danger */
+.pc-btn-danger,
+.pc-btn--danger {
+  border-color: rgba(255, 90, 90, 0.46);
+  background: linear-gradient(180deg, rgba(255, 90, 90, 0.20), rgba(0, 0, 0, 0.42));
+  color: #ffcccc;
+}
+
+
+/* -- Inputs -- */
+.pc-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--pc-r-sm);
+  color: rgba(255, 255, 255, 0.90);
+  padding: 10px 12px;
+  font-size: 12px;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.70);
+}
+
+.pc-input:focus {
+  border-color: rgba(85, 214, 255, 0.40);
+  box-shadow: 0 0 0 2px rgba(85, 214, 255, 0.12);
+}
+
+
+/* -- Chips / Badges -- */
+.pc-chip,
+.pc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.26);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.pc-chip.is-active,
+.pc-badge.is-online {
+  border-color: rgba(57, 255, 182, 0.40);
+  box-shadow: 0 0 10px rgba(57, 255, 182, 0.15);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   OLED & CHARTS
+   ───────────────────────────────────────────────────────────── */
+.pc-oled {
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(85, 214, 255, 0.10), transparent 46%),
+    radial-gradient(circle at 78% 20%, rgba(57, 255, 182, 0.08), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.00) 35%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.56), rgba(0, 0, 0, 0.74));
+  border: 1px solid rgba(85, 214, 255, 0.20);
+  border-radius: var(--pc-r-md);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.70),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.78),
+    inset 0 10px 22px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.pc-oled::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: var(--pc-r-md);
+  opacity: 0.62;
+  background: radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.pc-oled::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: var(--pc-r-md);
+  opacity: var(--pc-scanlines);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.10) 0.6px, transparent 0.7px);
+  background-size: 100% 5px, 12px 12px;
+  mix-blend-mode: overlay;
+}
+
+.pc-chart-viewport {
+  position: relative;
+  border-radius: var(--pc-r-md);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.pc-chart-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, var(--pc-grid-a)) 0, rgba(255, 255, 255, var(--pc-grid-a)) 1px, transparent 1px, transparent 42px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, var(--pc-grid-a)) 0, rgba(255, 255, 255, var(--pc-grid-a)) 1px, transparent 1px, transparent 28px);
+  mix-blend-mode: overlay;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   INTEGRATIONS BAY
+   ───────────────────────────────────────────────────────────── */
+.pc-int {
+  position: relative;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--pc-r-sm);
+  padding: 4px;
+  transition: all 0.2s;
+}
+
+.pc-int:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pc-int--ok {
+  border-color: rgba(57, 255, 182, 0.3);
+}
+
+.pc-int--warn {
+  border-color: rgba(255, 201, 64, 0.5);
+}
+
+.pc-int--bad {
+  border-color: rgba(255, 90, 90, 0.5);
+}
+
+.pc-int--link {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.pc-int-inner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+}
+
+.pc-int-ico {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+}
+
+
+.pc-bay-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PREMIUM PANELS (Studio / Scrapbot)
+   ───────────────────────────────────────────────────────────── */
+.pc-panel--premium {
+  border-color: rgba(85, 214, 255, 0.35);
+  background:
+    radial-gradient(circle at 90% 10%, rgba(85, 214, 255, 0.08), transparent 60%),
+    linear-gradient(180deg, rgba(85, 214, 255, 0.05), transparent 40%),
+    rgba(10, 14, 20, 0.95);
+}
+
+.pc-panel--premium-studio {
+  background:
+    radial-gradient(circle at 80% 0%, rgba(139, 92, 246, 0.15), transparent 50%),
+    rgba(20, 15, 30, 0.95);
+  border-color: rgba(139, 92, 246, 0.35);
+}
+
+/* Premium Mini OLED */
+.pc-mini-oled {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--pc-r-sm);
+  padding: 12px;
+}
+
+/* Scrapbot Visuals */
+.pc-bot-outline {
+  color: #333;
+  transition: all 0.3s;
+}
+
+.pc-bot--red {
+  color: var(--pc-err);
+  filter: drop-shadow(0 0 5px rgba(255, 50, 50, 0.3));
+}
+
+.pc-bot--green {
+  color: var(--pc-accent-2);
+  filter: drop-shadow(0 0 5px rgba(57, 255, 182, 0.3));
+}
+
+.pc-bot--amber {
+  color: var(--pc-warn);
+  filter: drop-shadow(0 0 5px rgba(255, 200, 50, 0.3));
+}
+
+.pc-bot--blue {
+  color: var(--pc-accent);
+  filter: drop-shadow(0 0 5px rgba(85, 214, 255, 0.3));
+}
+
+.pc-bot-pulse {
+  animation: pc-pulse 2s infinite;
+}
+
+@keyframes pc-pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Armed Pips (Grid) */
+.pc-armed-pips {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pc-pip {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.pc-pip .k {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--pc-muted);
+  margin-bottom: 2px;
+}
+
+.pc-pip .v {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--pc-text);
+}
+
+.pc-pip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Profile URL Input */
+.pc-profile-url-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--pc-accent);
+  font-family: monospace;
+  font-size: 13px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.pc-profile-url-input:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   UTILITIES
+   ───────────────────────────────────────────────────────────── */
+.pc-rowlist {
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: var(--pc-r-md);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.pc-rowitem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.pc-rowitem:last-child {
+  border-bottom: none;
+}
+
+.pc-rowitem:hover {
+  background: rgba(85, 214, 255, 0.06);
+}
+
+.pc-loader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  color: rgba(255, 255, 255, 0.70);
+  font-size: 12px;
+}
+
+.pc-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: var(--pc-accent);
+  animation: pcspin 0.9s linear infinite;
+}
+
+@keyframes pcspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Text Utilities */
+.pc-text-main {
+  color: var(--pc-text);
+}
+
+.pc-text-muted {
+  color: var(--pc-muted);
+}
+
+.pc-text-dim {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pc-text-accent {
+  color: var(--pc-accent);
+}
+
+.pc-text-warn {
+  color: var(--pc-warn);
+}
+
+.pc-text-err {
+  color: var(--pc-err);
+}
+
+/* Icon Box (Hardware Style) */
+.pc-icon-box {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--pc-r-md);
+  color: var(--pc-muted);
+  font-size: 24px;
+  transition: all 0.2s;
+}
+
+.group:hover .pc-icon-box {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--pc-text);
+  transform: scale(1.05);
+}
+
+/* Scrollbars */
+.pc-panel *::-webkit-scrollbar,
+.pc-oled::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.pc-panel *::-webkit-scrollbar-track,
+.pc-oled::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.34);
+  border-radius: 999px;
+}
+
+.pc-panel *::-webkit-scrollbar-thumb,
+.pc-oled::-webkit-scrollbar-thumb {
+  background: rgba(85, 214, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   READOUT TUNING (Quick Status, OLED blocks)
+   CSS-only, no markup changes required
+   ───────────────────────────────────────────────────────────── */
+
+.pc-readout {
+  padding: 14px 16px;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Kill “muddy Tailwind gray” inside readouts only */
+.pc-readout .text-gray-500,
+.pc-readout .text-gray-400,
+.pc-readout .text-gray-400\/80,
+.pc-readout .text-gray-500\/80,
+.pc-readout .text-gray-300 {
+  color: var(--pc-muted) !important;
+}
+
+/* The top label line (“WIDGETS / OVERLAYS / PROFILE”) */
+.pc-readout > .text-xs {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  color: var(--pc-muted);
+  opacity: 0.95;
+}
+
+/* Make the primary value actually read like a primary value */
+.pc-readout .text-2xl {
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+/* Your little secondary note lines */
+.pc-readout .text-xs {
+  line-height: 1.2;
+}
+
+/* Chips in readouts: reduce “puffy pill” effect slightly */
+.pc-readout .pc-chip {
+  padding: 4px 9px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  align-self: flex-end;
+}
+
+/* Don’t let the internal flex row squash text */
+.pc-readout .flex.items-end.justify-between {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   CONTROL ROOM — SINGLE SOURCE OF TRUTH
+   (All Control Room overrides live here. No duplicates elsewhere.)
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="control-room"] {
+  /* Tokens: Readable light text, neutral black chassis */
+  --pc-text: rgba(255, 255, 255, 0.92);
+  --pc-muted: rgba(255, 255, 255, 0.60);
+  --pc-panel: #161b24;
+  /* Lighter chassis for pop */
+  --pc-bg: #030303;
+  /* Deep black bg */
+
+  --cr-chassis: #161920;
+  --cr-bolt-inset: 12px;
+  --cr-bolt-head: rgba(255, 255, 255, 0.35);
+  --cr-bolt-shadow: rgba(0, 0, 0, 0.8);
+
+  /* Neon Accents (Cyan/Green) */
+  --pc-accent: #00f3ff;
+  --pc-accent-2: #0aff60;
+  --pc-warn: #ffcc00;
+  --pc-err: #ff3333;
+
+  /* Geometry Overrides */
+  --pc-r-md: 6px;
+  /* Tighter radius for hardware feel */
+  --pc-r-sm: 4px;
+  --pc-border-a: 0.25;
+}
+
+/* Background Override (Flat for now) */
+html[data-theme="control-room"] body.np {
+  background: var(--pc-bg);
+  color: var(--pc-text);
+}
+
+/* ── PANEL CHASSIS (CONTROL ROOM) ───────────────────────────────
+   IMPORTANT RULE:
+   - DO NOT set box-shadow on html[data-theme="control-room"] .pc-panel
+     (let the base .pc-panel hardware shadow win)
+----------------------------------------------------------------- */
+html[data-theme="control-room"] .pc-panel {
+  /* Keep base geometry + depth */
+  border-radius: var(--pc-r-md);
+
+  /* Keep the base "panel sheen" instead of flat fill */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 26%),
+    var(--pc-panel);
+
+  /* Keep a real border so the chassis reads as hardware */
+  border: 1px solid rgba(255, 255, 255, var(--pc-border-a));
+  border-top-color: rgba(255, 255, 255, 0.18); /* stronger highlight */
+  border-bottom-color: rgba(0, 0, 0, 0.85);    /* bottom seam */
+
+  position: relative;
+  overflow: hidden;
+
+  /* Layout */
+  margin-bottom: 20px;
+
+  /* CRITICAL: no box-shadow here */
+}
+
+/* Inner Lip (cavity frame) */
+html[data-theme="control-room"] .pc-panel::before {
+  content: "";
+  position: absolute;
+  inset: 6px;                 /* cavity inset */
+  border-radius: calc(var(--pc-r-md) - 4px);
+
+  /* hard mechanical frame */
+  border: 1px solid rgba(0, 0, 0, 0.65);
+
+  /* cavity depth */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
+    inset 0 8px 18px rgba(0, 0, 0, 0.70);
+
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Bolts on the outer rim (top layer) */
+html[data-theme="control-room"] .pc-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+
+  background-image:
+    radial-gradient(circle at 12px 12px,
+      rgba(255,255,255,0.85) 1px,
+      #bdc3c7 2px,
+      #7f8c8d 3.5px,
+      #000 4.6px,
+      rgba(0,0,0,0.35) 6px,
+      transparent 7px),
+    radial-gradient(circle at calc(100% - 12px) 12px,
+      rgba(255,255,255,0.85) 1px,
+      #bdc3c7 2px,
+      #7f8c8d 3.5px,
+      #000 4.6px,
+      rgba(0,0,0,0.35) 6px,
+      transparent 7px),
+    radial-gradient(circle at 12px calc(100% - 12px),
+      rgba(255,255,255,0.85) 1px,
+      #bdc3c7 2px,
+      #7f8c8d 3.5px,
+      #000 4.6px,
+      rgba(0,0,0,0.35) 6px,
+      transparent 7px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),
+      rgba(255,255,255,0.85) 1px,
+      #bdc3c7 2px,
+      #7f8c8d 3.5px,
+      #000 4.6px,
+      rgba(0,0,0,0.35) 6px,
+      transparent 7px);
+  background-repeat: no-repeat;
+}
+
+/* Panel Header (mounted inside the cavity) */
+html[data-theme="control-room"] .pc-panel-hd {
+  position: relative;
+  z-index: 2;
+
+  margin: 6px 6px 0 6px;
+  padding: 12px 16px;
+
+  border-radius: calc(var(--pc-r-md) - 4px) calc(var(--pc-r-md) - 4px) 0 0;
+
+  background: #22262e;
+  border-bottom: 1px solid #0f1116;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 1px 2px rgba(0, 0, 0, 0.55);
+
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: #efefef;
+  text-transform: uppercase;
+}
+
+/* Panel Body (mounted inside the cavity) */
+html[data-theme="control-room"] .pc-panel-bd {
+  position: relative;
+  z-index: 2;
+
+  margin: 0 6px 6px 6px;
+  padding: 16px;
+
+  border-radius: 0 0 calc(var(--pc-r-md) - 4px) calc(var(--pc-r-md) - 4px);
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   CR COMPONENT 03: CONTROLS (Inputs, Buttons, Toggles)
+   ───────────────────────────────────────────────────────────── */
+
+/* Inputs & Selects: Deep Inset Cavity */
+/* Inputs & Selects: Recessed Control Wells */
+html[data-theme="control-room"] .pc-input,
+html[data-theme="control-room"] .pc-select,
+html[data-theme="control-room"] input[type="text"],
+html[data-theme="control-room"] input[type="number"],
+html[data-theme="control-room"] select,
+html[data-theme="control-room"] textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  outline: none;
+
+  /* 1. Strong Inset Cavity */
+  background: #030303;
+  /* Deepest well */
+  color: #a0a0a0;
+  /* Standard state: dimmed */
+  caret-color: var(--pc-accent);
+
+  /* 2. Sharper Border Geometry */
+  border: 1px solid #1a1a1a;
+  border-top-color: #000;
+  /* Shadow from top overhang */
+  border-bottom-color: #2a2a2a;
+  /* Light hitting bottom edge */
+  border-radius: 2px;
+  /* Tight radius, no soft curves */
+
+  /* Depth Shadows */
+  box-shadow:
+    inset 0 3px 6px rgba(0, 0, 0, 0.9),
+    /* Deep top shadow */
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    /* Inner definition */
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  /* Subtle bottom rim highlight (external) */
+
+  /* 4. Typography */
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.1s ease-out;
+}
+
+html[data-theme="control-room"] textarea {
+  height: auto;
+  padding: 8px 12px;
+}
+
+/* 3. Focus State = Instrument Activation (Channel Armed) */
+html[data-theme="control-room"] .pc-input:focus,
+html[data-theme="control-room"] .pc-select:focus,
+html[data-theme="control-room"] input:focus,
+html[data-theme="control-room"] select:focus,
+html[data-theme="control-room"] textarea:focus {
+  background: #050505;
+  /* Slightly lighter inner */
+  color: #fff;
+  /* Readable bright text */
+
+  /* Precision Rim */
+  border-color: var(--pc-accent);
+  border-top-color: var(--pc-accent);
+  border-bottom-color: var(--pc-accent);
+
+  /* "Armed" Glow - Subtle, internal */
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 0 1px var(--pc-accent),
+    /* Sharp outer ring */
+    inset 0 0 6px rgba(0, 243, 255, 0.1);
+  /* Very faint inner glow */
+}
+
+/* Placeholder styling */
+html[data-theme="control-room"] .pc-input::placeholder,
+html[data-theme="control-room"] input::placeholder,
+html[data-theme="control-room"] textarea::placeholder {
+  color: #333;
+  font-style: italic;
+  font-family: sans-serif;
+  /* Contrast to value */
+}
+
+/* -- Selects -- */
+.pc-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--pc-r-sm);
+  color: rgba(255, 255, 255, 0.90);
+  padding: 10px 12px;
+  font-size: 12px;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.70);
+}
+
+.pc-select:focus {
+  border-color: rgba(85, 214, 255, 0.40);
+  box-shadow: 0 0 0 2px rgba(85, 214, 255, 0.12);
+}
+
+/* -- Toggle (checkbox input variant) -- */
+input.pc-toggle[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.22);
+  background: rgba(0,0,0,0.35);
+  display: inline-grid;
+  place-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  cursor: pointer;
+}
+
+input.pc-toggle[type="checkbox"]::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  transform: scale(0);
+  transition: transform 0.08s ease;
+  background: var(--pc-accent-2);
+  box-shadow: 0 0 10px rgba(57,255,182,0.18);
+}
+
+html[data-theme="control-room"] input.pc-toggle[type="checkbox"] {
+  border-radius: 2px;
+  border: 1px solid #2a2a2a;
+  border-top-color: #000;
+  border-bottom-color: #3a3a3a;
+  background: #050505;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.85);
+}
+
+html[data-theme="control-room"] input.pc-toggle[type="checkbox"]::after {
+  background: var(--pc-accent);
+  box-shadow: 0 0 10px rgba(0,243,255,0.18);
+}
+
+html[data-theme="control-room"] input.pc-toggle[type="checkbox"]:focus {
+  border-color: var(--pc-accent);
+  box-shadow: 0 0 0 1px var(--pc-accent), inset 0 2px 4px rgba(0,0,0,0.85);
+}
+
+
+input.pc-toggle[type="checkbox"]:checked::after {
+  transform: scale(1);
+}
+
+input.pc-toggle[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(85,214,255,0.12);
+  border-color: rgba(85,214,255,0.40);
+}
+
+
+/* Buttons: Seated Keycap (Mechanical) */
+html[data-theme="control-room"] .pc-btn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a0a0a0;
+
+  /* Molded Plastic Body */
+  background: linear-gradient(180deg, #2b303b, #1a1e26);
+  border: 1px solid #111;
+  /* Dark definition */
+
+  /* 2. Stronger top highlight edge (Crisp, no blur) */
+  border-top: 1px solid rgba(255, 255, 255, 0.4);
+
+  /* 3. Harder bottom lip (Clearly darker) */
+  border-bottom: 4px solid #000000;
+
+  /* 1. Remove floaty shadow, add inset mounted look */
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.5),
+    /* Minimal drop shadow */
+    inset 0 0 0 1px rgba(0, 0, 0, 0.3),
+    /* Dark rim inside */
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  /* Inner bevel */
+
+  border-radius: 3px;
+  transition: all 0.05s linear;
+  /* Snap transition */
+  cursor: pointer;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme="control-room"] .pc-btn:hover {
+  background: linear-gradient(180deg, #353b47, #222730);
+  color: #fff;
+  /* Hover doesn't move, just lights up slightly */
+}
+
+/* 4. Press state = mechanical compression */
+html[data-theme="control-room"] .pc-btn:active {
+  border-bottom-width: 1px;
+  /* Collapse foot */
+  border-top-color: rgba(255, 255, 255, 0.1);
+  /* Dim highlight */
+  transform: translateY(3px);
+  /* 4px -> 1px = 3px travel */
+
+  background: #15181f;
+  /* Slight darkening */
+
+  /* Collapse outer shadow, keep inner rim */
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Primary Button: Illuminated Broadcast Key (Seated) */
+html[data-theme="control-room"] .pc-btn-primary,
+html[data-theme="control-room"] .pc-btn--primary {
+  color: #e0ffff;
+  background: linear-gradient(180deg, #162426, #0b1214);
+
+  border-color: #000;
+  border-top-color: rgba(0, 243, 255, 0.6);
+  /* Sharper rim */
+  border-bottom-color: #001a1c;
+  /* Deep Cyan/Black Foot */
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(0, 40, 40, 0.5),
+    /* Darker inner rim */
+    inset 0 0 15px rgba(0, 243, 255, 0.05);
+  /* Faint idle glow */
+
+  text-shadow: 0 0 5px rgba(0, 243, 255, 0.4);
+}
+
+html[data-theme="control-room"] .pc-btn-primary:hover {
+  background: linear-gradient(180deg, #1c2e33, #0e161a);
+  border-top-color: rgba(0, 243, 255, 0.9);
+  /* Hot rim */
+  box-shadow:
+    0 1px 4px rgba(0, 243, 255, 0.1),
+    /* Slight glow spill */
+    inset 0 0 0 1px rgba(0, 60, 60, 0.5),
+    inset 0 0 20px rgba(0, 243, 255, 0.2);
+  color: #fff;
+}
+
+html[data-theme="control-room"] .pc-btn-primary:active {
+  border-bottom-width: 1px;
+  transform: translateY(3px);
+  background: #0e161a;
+  box-shadow:
+    inset 0 0 30px rgba(0, 243, 255, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.8);
+}
+
+/* Danger Button: Red Alert Console Key (Seated) */
+html[data-theme="control-room"] .pc-btn-danger,
+html[data-theme="control-room"] .pc-btn--danger {
+  color: #ffe0e0;
+  background: linear-gradient(180deg, #2e1a1a, #1a0d0d);
+
+  border-color: #000;
+  border-top-color: rgba(255, 70, 70, 0.6);
+  border-bottom-color: #1a0505;
+
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(60, 0, 0, 0.5),
+    inset 0 0 15px rgba(255, 50, 50, 0.05);
+
+  text-shadow: 0 0 5px rgba(255, 50, 50, 0.4);
+}
+
+html[data-theme="control-room"] .pc-btn-danger:hover {
+  background: linear-gradient(180deg, #3d2222, #211111);
+  border-top-color: rgba(255, 100, 100, 0.9);
+  box-shadow:
+    0 1px 4px rgba(255, 50, 50, 0.1),
+    inset 0 0 0 1px rgba(80, 0, 0, 0.5),
+    inset 0 0 20px rgba(255, 50, 50, 0.15);
+  color: #fff;
+}
+
+html[data-theme="control-room"] .pc-btn-danger:active {
+  border-bottom-width: 1px;
+  transform: translateY(3px);
+  background: #1a0d0d;
+  box-shadow:
+    inset 0 0 30px rgba(255, 50, 50, 0.2),
+    0 0 0 1px rgba(0, 0, 0, 0.8);
+}
+
+/* CSS Clean up */
+
+/* Toggles (Checkbox) */
+html[data-theme="control-room"] .pc-toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+html[data-theme="control-room"] .pc-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+html[data-theme="control-room"] .pc-toggle .slider {
+  width: 36px;
+  height: 20px;
+  background: #111;
+  border: 1px solid #444;
+  border-radius: 99px;
+  position: relative;
+  transition: all 0.2s;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+html[data-theme="control-room"] .pc-toggle .slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #666;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+html[data-theme="control-room"] .pc-toggle input:checked+.slider {
+  border-color: var(--pc-accent);
+  box-shadow: 0 0 5px var(--pc-accent), inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+html[data-theme="control-room"] .pc-toggle input:checked+.slider::after {
+  transform: translateX(16px);
+  background: #fff;
+  box-shadow: 0 0 8px #fff;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CR COMPONENT 03: INTEGRATIONS / LISTS (Slots)
+   ───────────────────────────────────────────────────────────── */
+
+html[data-theme="control-room"] .pc-int {
+  background: linear-gradient(90deg, #11141a, #0b0d10);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+  /* Slot spacing handled by .pc-bay-grid gap */
+  margin-top: 0;
+}
+
+html[data-theme="control-room"] .pc-int:first-child {
+  margin-top: 0;
+}
+
+html[data-theme="control-room"] .pc-int:hover {
+  background: linear-gradient(90deg, #1a1e26, #111418);
+  border-color: rgba(255, 255, 255, 0.15);
+  border-left-color: var(--pc-accent);
+  transform: translateX(2px);
+  /* Mechanical engagement feel */
+}
+
+html[data-theme="control-room"] .pc-int-inner {
+  padding: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CR COMPONENT 06: MACHINED SLIDER RAIL
+   ───────────────────────────────────────────────────────────── */
+
+html[data-theme="control-room"] input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  margin: 10px 0;
+}
+
+html[data-theme="control-room"] input[type=range]:focus {
+  outline: none;
+}
+
+/* TRACK */
+html[data-theme="control-room"] input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #000000;
+  border: 1px solid #222;
+  border-bottom-color: #333;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  /* External bottom highlight */
+}
+
+html[data-theme="control-room"] input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  cursor: pointer;
+  background: #000000;
+  border: 1px solid #222;
+  border-bottom-color: #333;
+  border-radius: 2px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.9),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* THUMB */
+html[data-theme="control-room"] input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 10px;
+  margin-top: -7px;
+  /* Center on 8px track */
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 1px;
+  /* Machined corners */
+  cursor: grab;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: border-color 0.1s;
+}
+
+html[data-theme="control-room"] input[type=range]::-moz-range-thumb {
+  height: 20px;
+  width: 10px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 1px;
+  cursor: grab;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: border-color 0.1s;
+}
+
+/* ACTIVE / FOCUS */
+html[data-theme="control-room"] input[type=range]:focus::-webkit-slider-thumb {
+  border-color: var(--pc-accent);
+  background: #333;
+}
+
+html[data-theme="control-room"] input[type=range]:focus::-moz-range-thumb {
+  border-color: var(--pc-accent);
+  background: #333;
+}
+
+/* Control Room: make readouts more “instrument panel” */
+html[data-theme="control-room"] .pc-oled.pc-readout {
+  border-color: rgba(0, 243, 255, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.0) 35%),
+    linear-gradient(180deg, rgba(0,0,0,0.62), rgba(0,0,0,0.82));
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.75),
+    inset 0 0 0 1px rgba(0,0,0,0.85),
+    inset 0 10px 18px rgba(0,0,0,0.72),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+html[data-theme="control-room"] .pc-readout > .text-xs {
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.34em;
+  color: rgba(255,255,255,0.62);
+}
+
+html[data-theme="control-room"] .pc-readout .text-2xl {
+  font-family: 'Share Tech Mono', monospace;
+  color: #eaffff;
+  text-shadow: 0 0 10px rgba(0,243,255,0.10);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CONTROL ROOM: nested panels should NOT look like bolted chassis
+   ───────────────────────────────────────────────────────────── */
+
+html[data-theme="control-room"] .pc-panel .pc-panel {
+  /* behave like an inset module */
+  margin-bottom: 0;
+  border-radius: 3px;
+  background: #0b0d10;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow:
+    inset 0 2px 10px rgba(0,0,0,0.75),
+    0 1px 0 rgba(255,255,255,0.03);
+}
+
+/* kill the lip + bolts on nested panels */
+html[data-theme="control-room"] .pc-panel .pc-panel::before,
+html[data-theme="control-room"] .pc-panel .pc-panel::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* nested headers/bodies should not use the outer “inset 6px” geometry */
+html[data-theme="control-room"] .pc-panel .pc-panel .pc-panel-hd {
+  margin: 0;
+  border-radius: 3px 3px 0 0;
+}
+
+html[data-theme="control-room"] .pc-panel .pc-panel .pc-panel-bd {
+  margin: 0;
+  border-radius: 0 0 3px 3px;
+}
+
+
+
+/* ─────────────────────────────────────────────────────────────
+   END OF FILE
+   ───────────────────────────────────────────────────────────── */

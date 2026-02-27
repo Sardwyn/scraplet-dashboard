@@ -1,0 +1,180 @@
+<!-- views/profile-email.ejs -->
+<div class="px-6 py-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-slate-100">Email List</h1>
+    <p class="mt-1 text-sm text-slate-400">
+      These are contacts collected from your public profile contact block.
+    </p>
+  </div>
+
+  <% const s = emailSummary || {}; %>
+  <% const settings = emailSettings || {}; %>
+
+  <!-- Summary cards -->
+  <div class="grid gap-4 md:grid-cols-4 mb-8">
+    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">
+        Total contacts
+      </div>
+      <div class="text-2xl font-semibold text-slate-50">
+        <%= s.total_contacts || 0 %>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">
+        Active contacts
+      </div>
+      <div class="text-2xl font-semibold text-slate-50">
+        <%= s.active_contacts || 0 %>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">
+        Last email sent
+      </div>
+      <div class="text-sm text-slate-100">
+        <% if (s.last_email_sent_at) { %>
+          <%= s.last_email_sent_at.toISOString
+            ? s.last_email_sent_at.toISOString().slice(0, 19).replace('T', ' ')
+            : String(s.last_email_sent_at)
+          %> UTC
+        <% } else { %>
+          <span class="text-slate-500">No emails sent yet</span>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4">
+      <div class="text-xs uppercase tracking-wide text-slate-400 mb-1">
+        Go-live emails this month
+      </div>
+      <div class="text-2xl font-semibold text-slate-50">
+        <%= s.go_live_emails_this_month || 0 %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="grid gap-6 md:grid-cols-2 mb-10">
+    <form action="/profile/email/settings" method="POST"
+          class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 flex flex-col justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-100 mb-2">
+          Go-live email settings
+        </h2>
+        <p class="text-sm text-slate-400 mb-4">
+          Automatically email your subscribers when you go live on Kick.
+          This uses a simple guardrail so we don’t send more than one email per hour.
+        </p>
+
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <div class="relative">
+            <input
+              type="checkbox"
+              name="go_live_email_kick_enabled"
+              class="sr-only peer"
+              <%= settings.go_live_email_kick_enabled ? 'checked' : '' %>
+            />
+            <div class="w-11 h-6 bg-slate-700 rounded-full peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:bg-emerald-600 transition-colors"></div>
+            <div class="absolute top-[3px] left-[3px] w-5 h-5 bg-white rounded-full shadow transform peer-checked:translate-x-5 transition-transform"></div>
+          </div>
+          <div>
+            <div class="text-sm font-medium text-slate-100">
+              Email my list when I go live on Kick
+            </div>
+            <div class="text-xs text-slate-400">
+              We’ll only email once per hour at most, even if your stream restarts.
+            </div>
+          </div>
+        </label>
+      </div>
+
+      <div class="mt-5 flex justify-end">
+        <button
+          type="submit"
+          class="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow">
+          Save settings
+        </button>
+      </div>
+    </form>
+
+    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+      <h2 class="text-lg font-semibold text-slate-100 mb-2">
+        How this works
+      </h2>
+      <ul class="mt-2 space-y-2 text-sm text-slate-400 list-disc list-inside">
+        <li>Subscribers come from the email field on your public profile.</li>
+        <li>When Scrapbot sees you go live on Kick, it notifies the dashboard.</li>
+        <li>If this toggle is ON and you haven’t emailed in the last hour, we’ll send one go-live email to all active subscribers.</li>
+        <li>All sends are logged so you’ll see counts in the summary cards above.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Subscriber table -->
+  <div class="bg-slate-900/70 border border-slate-800 rounded-xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+      <div class="text-sm font-medium text-slate-100">
+        Subscribers
+      </div>
+      <div class="text-xs text-slate-500">
+        Showing up to 500 most recent
+      </div>
+    </div>
+
+    <% if (!emailSubscribers || emailSubscribers.length === 0) { %>
+      <div class="px-4 py-6 text-sm text-slate-400">
+        No subscribers yet. Once people submit their email on your public profile,
+        they’ll appear here.
+      </div>
+    <% } else { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-slate-950/60 border-b border-slate-800">
+            <tr>
+              <th class="px-4 py-2 font-medium text-slate-300">Email</th>
+              <th class="px-4 py-2 font-medium text-slate-300">Status</th>
+              <th class="px-4 py-2 font-medium text-slate-300">Source</th>
+              <th class="px-4 py-2 font-medium text-slate-300">Date added</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% emailSubscribers.forEach(function(sub) { %>
+              <tr class="border-b border-slate-850/60 last:border-b-0">
+                <td class="px-4 py-2 text-slate-100">
+                  <%= sub.email %>
+                </td>
+                <td class="px-4 py-2">
+                  <% if (sub.unsubscribed) { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800 text-slate-400">
+                      Unsubscribed
+                    </span>
+                  <% } else { %>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-900/60 text-emerald-300">
+                      Active
+                    </span>
+                  <% } %>
+                </td>
+                <td class="px-4 py-2 text-slate-300">
+                  <%= sub.source_slug || '-' %>
+                </td>
+                <td class="px-4 py-2 text-slate-300">
+                  <% if (sub.created_at) { %>
+                    <%= sub.created_at.toISOString
+                      ? sub.created_at.toISOString().slice(0, 19).replace('T', ' ')
+                      : String(sub.created_at)
+                    %> UTC
+                  <% } else { %>
+                    -
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,228 @@
+<div class="w-full max-w-5xl mx-auto">
+
+  <div class="flex items-start justify-between gap-6 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold">🎯 Plinko</h1>
+      <p class="text-gray-400 mt-1">
+        Configure your chat-side Plinko game (reward → ball, multipliers → payout).
+      </p>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/dashboard/casino"
+         class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">
+        ← Back to Casino
+      </a>
+      <a href="/dashboard"
+         class="px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">
+        Dashboard
+      </a>
+    </div>
+  </div>
+
+  <% if (flash?.success) { %>
+    <div class="mb-5 p-3 rounded bg-emerald-900/25 border border-emerald-800 text-emerald-100 text-sm">
+      <%= flash.success %>
+    </div>
+  <% } %>
+
+  <% if (flash?.error) { %>
+    <div class="mb-5 p-3 rounded bg-red-900/25 border border-red-800 text-red-100 text-sm">
+      <%= flash.error %>
+    </div>
+  <% } %>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- Left: Config -->
+    <div class="xl:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <div class="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <h2 class="text-xl font-semibold">Settings</h2>
+          <p class="text-gray-400 text-sm mt-1">
+            Tune the board (rows + multipliers) and the ball “feel” without touching code.
+          </p>
+        </div>
+
+        <span class="text-xs px-2 py-1 rounded bg-gray-800 text-gray-400 border border-gray-700">
+          <%= isPro ? 'Pro' : 'Creator' %>
+        </span>
+      </div>
+
+      <form method="POST" action="/dashboard/widgets/plinko/save" class="space-y-6">
+
+        <!-- Enabled -->
+        <label class="flex items-start gap-3 p-4 rounded border border-gray-800 bg-gray-950/40">
+          <input type="checkbox" name="enabled" value="true" class="mt-1 accent-indigo-500"
+            <%= (cfg?.enabled ?? defaults?.enabled ?? true) ? 'checked' : '' %> />
+          <div>
+            <div class="font-medium">Enable Plinko</div>
+            <div class="text-xs text-gray-400 mt-1">
+              If off, reward redemptions are ignored and no balls drop.
+            </div>
+          </div>
+        </label>
+
+        <!-- Gameplay: rows -->
+        <div>
+          <label class="block text-sm font-medium mb-2">Rows</label>
+          <% const rows = Number(cfg?.gameplay?.rows ?? defaults?.gameplay?.rows ?? 10); %>
+          <input type="number" name="rows" min="6" max="16" step="1"
+                 value="<%= rows %>"
+                 class="w-full md:w-72 bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+          <p class="text-xs text-gray-500 mt-2">
+            Rows controls difficulty/shape. Multipliers must be rows + 1 values.
+          </p>
+        </div>
+
+        <!-- Gameplay: multipliers -->
+        <div>
+          <label class="block text-sm font-medium mb-2">Multipliers (comma-separated)</label>
+          <% 
+            const multArr = (cfg?.gameplay?.multipliers ?? defaults?.gameplay?.multipliers ?? []);
+            const multStr = Array.isArray(multArr) ? multArr.join(", ") : String(multArr || "");
+          %>
+          <input type="text" name="multipliers"
+                 value="<%= multStr %>"
+                 class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 font-mono text-sm" />
+          <p class="text-xs text-gray-500 mt-2">
+            Example: <span class="font-mono text-gray-300">0.2, 0.5, 1, 2, 5, 2, 1, 0.5, 0.2, 0.5, 0.2</span>
+          </p>
+        </div>
+
+        <!-- Queue / multi-ball -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <% const maxConc = Number(cfg?.gameplay?.maxConcurrentBalls ?? defaults?.gameplay?.maxConcurrentBalls ?? 3); %>
+          <% const maxQ = Number(cfg?.gameplay?.maxQueueLength ?? defaults?.gameplay?.maxQueueLength ?? 25); %>
+          <% const perUserQ = Number(cfg?.gameplay?.perUserQueueLimit ?? defaults?.gameplay?.perUserQueueLimit ?? 2); %>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Max concurrent balls</label>
+            <input type="number" name="maxConcurrentBalls" min="1" max="8" step="1"
+                   value="<%= maxConc %>"
+                   class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Max queue length</label>
+            <input type="number" name="maxQueueLength" min="1" max="200" step="1"
+                   value="<%= maxQ %>"
+                   class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-2">Per-user queue limit</label>
+            <input type="number" name="perUserQueueLimit" min="1" max="10" step="1"
+                   value="<%= perUserQ %>"
+                   class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+          </div>
+        </div>
+
+        <!-- Ball feel knobs -->
+        <div class="pt-2 border-t border-gray-800">
+          <h3 class="text-lg font-semibold mb-2">Ball feel</h3>
+          <p class="text-xs text-gray-500 mb-4">
+            These only affect the animation/appearance. Outcomes remain server-authoritative.
+          </p>
+
+          <% const ball = (cfg?.visuals?.ball ?? defaults?.visuals?.ball ?? {}); %>
+          <% const ballSize = Number(ball.size ?? 24); %>
+          <% const curveMin = Number(ball.curveMin ?? 10); %>
+          <% const curveMax = Number(ball.curveMax ?? 20); %>
+          <% const controlLift = Number(ball.controlLift ?? 0.55); %>
+          <% const xLag = Number(ball.xLag ?? 0.92); %>
+          <% const spinMin = Number(ball.spinMin ?? 0.04); %>
+          <% const spinMax = Number(ball.spinMax ?? 0.09); %>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium mb-2">Ball size (px)</label>
+              <input type="number" name="ballSize" min="12" max="60" step="1"
+                     value="<%= ballSize %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Control lift</label>
+              <input type="number" name="controlLift" min="0.10" max="1.50" step="0.01"
+                     value="<%= controlLift %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Curve min</label>
+              <input type="number" name="curveMin" min="0" max="80" step="1"
+                     value="<%= curveMin %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Curve max</label>
+              <input type="number" name="curveMax" min="0" max="120" step="1"
+                     value="<%= curveMax %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">X lag</label>
+              <input type="number" name="xLag" min="0.20" max="1.20" step="0.01"
+                     value="<%= xLag %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Spin min</label>
+              <input type="number" name="spinMin" min="0" max="1" step="0.01"
+                     value="<%= spinMin %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium mb-2">Spin max</label>
+              <input type="number" name="spinMax" min="0" max="1" step="0.01"
+                     value="<%= spinMax %>"
+                     class="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Save -->
+        <div class="flex flex-wrap items-center gap-3 pt-2">
+          <button type="submit"
+                  class="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium">
+            Save
+          </button>
+
+          <button type="submit" name="_action" value="reset"
+                  class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-100">
+            Reset defaults
+          </button>
+
+          <a href="/dashboard/casino"
+             class="px-4 py-2 rounded bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-200">
+            Done
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Right: Info -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow">
+      <h3 class="text-lg font-semibold mb-2">How it works</h3>
+
+      <ul class="text-sm text-gray-400 space-y-2">
+        <li>• Viewer redeems your “Plinko Drop” reward.</li>
+        <li>• Scraplet queues a ball, then animates it in OBS.</li>
+        <li>• Outcome is server-authoritative; overlay just animates the result.</li>
+      </ul>
+
+      <div class="mt-5 pt-5 border-t border-gray-800">
+        <div class="text-xs text-gray-500">Widget ID</div>
+        <div class="text-sm text-gray-200 font-mono break-all">
+          <%= widget?.public_id || '—' %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

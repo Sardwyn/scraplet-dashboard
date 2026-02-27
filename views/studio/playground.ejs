@@ -1,0 +1,618 @@
+<div class="sp-root sp-density-balanced" id="spRoot">
+  <div class="sp-shell">
+    <!-- LEFT: Controls -->
+    <aside class="sp-pane sp-pane-left">
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Studio Playground</div>
+            <div class="pc-panel-sub">Admin-only layout + panel sandbox</div>
+          </div>
+          <span class="pc-badge is-online">System online</span>
+        </div>
+
+        <div class="sp-form">
+          <div class="sp-field">
+            <label>Page</label>
+            <select class="pc-input" id="spPageSelect">
+              <option value="">Loading…</option>
+            </select>
+          </div>
+
+          <div class="sp-field">
+            <label>Layout</label>
+            <div class="sp-seg" id="spLayoutSeg"></div>
+          </div>
+
+          <div class="sp-field">
+            <label>Density</label>
+            <div class="sp-seg" id="spDensitySeg">
+              <button class="pc-btn pc-btn-ghost" data-density="dense">Dense</button>
+              <button class="pc-btn pc-btn-ghost is-active" data-density="balanced">Balanced</button>
+              <button class="pc-btn pc-btn-ghost" data-density="airy">Airy</button>
+            </div>
+          </div>
+
+          <div class="sp-field">
+            <label>Actions</label>
+            <div class="sp-actions">
+              <button class="pc-btn pc-btn-primary" id="spSaveBtn">Save</button>
+              <button class="pc-btn pc-btn-ghost" id="spRevertBtn">Revert</button>
+              <button class="pc-btn pc-btn-ghost" id="spExportBtn">Export</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pc-divider"></div>
+
+        <div class="pc-panel-bd">
+          <div class="pc-row pc-muted">Palette</div>
+          <div class="sp-palette" id="spPalette">
+            <!-- tiles injected -->
+          </div>
+        </div>
+      </div>
+
+      <div class="pc-panel sp-mt">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Selected Panel</div>
+            <div class="pc-panel-sub">Edit metadata</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd" id="spInspector">
+          <div class="pc-muted" style="font-size:12px;">Select a panel…</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: Canvas -->
+    <main class="sp-pane sp-pane-center">
+      <div class="sp-canvas-meta">
+        <div class="sp-canvas-hint" id="spHint">Click panels to select. Drag ordering later.</div>
+        <div class="pc-badge" id="spModeBadge">MODE: <span id="spModeLabel">CONTROL ROOM</span></div>
+      </div>
+
+      <div class="sp-canvas sp-layout-grid3" id="spCanvas">
+        <!-- panels injected -->
+      </div>
+
+      <div class="pc-panel sp-mt">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Debug</div>
+            <div class="pc-panel-sub">Layout JSON + logs</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd">
+          <textarea class="pc-input pc-oled sp-oled-textarea" id="spDebugJson" rows="10" spellcheck="false"></textarea>
+          <div class="pc-row pc-muted" id="spStatusLine" style="padding-top:10px;">Last save —</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT: Notes -->
+    <aside class="sp-pane sp-pane-right">
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Notes</div>
+            <div class="pc-panel-sub">Why this exists</div>
+          </div>
+          <span class="pc-kbd">MODE: <span id="spModeLabel2">CONTROL ROOM</span></span>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="pc-muted" style="font-size:12px; line-height:1.5;">
+            This page renders a “fake page” layout using panel keys, so we can trial layout grids,
+            panel chrome, density, borders, shadows, and display treatment before wiring real panels.
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  const state = {
+    page: "stats",
+    layoutKey: "grid3",
+    density: "balanced",
+    pages: [],
+    layouts: {},
+    selectedPanelId: null,
+    draft: null,
+    defaultLayout: null,
+  };
+
+  const el = {
+    root: $("#spRoot"),
+    pageSelect: $("#spPageSelect"),
+    layoutSeg: $("#spLayoutSeg"),
+    densitySeg: $("#spDensitySeg"),
+    palette: $("#spPalette"),
+    canvas: $("#spCanvas"),
+    inspector: $("#spInspector"),
+    debugJson: $("#spDebugJson"),
+    statusLine: $("#spStatusLine"),
+    saveBtn: $("#spSaveBtn"),
+    revertBtn: $("#spRevertBtn"),
+    exportBtn: $("#spExportBtn"),
+    modeLabel: $("#spModeLabel"),
+    modeLabel2: $("#spModeLabel2"),
+  };
+
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.textContent = msg;
+    t.style.position = "fixed";
+    t.style.right = "18px";
+    t.style.bottom = "18px";
+    t.style.padding = "10px 12px";
+    t.style.borderRadius = "12px";
+    t.style.background = "rgba(0,0,0,0.55)";
+    t.style.border = "1px solid rgba(255,255,255,0.14)";
+    t.style.color = "rgba(255,255,255,0.92)";
+    t.style.fontSize = "12px";
+    t.style.zIndex = "9999";
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2600);
+  }
+
+  function setDensity(d) {
+    state.density = d;
+    el.root.classList.remove("sp-density-dense","sp-density-balanced","sp-density-airy");
+    el.root.classList.add(`sp-density-${d}`);
+    $$("#spDensitySeg .pc-btn").forEach(b => b.classList.toggle("is-active", b.dataset.density === d));
+  }
+
+  function setLayoutKey(k) {
+    state.layoutKey = k;
+    el.canvas.classList.remove("sp-layout-grid3","sp-layout-grid2","sp-layout-hybrid");
+    el.canvas.classList.add(`sp-layout-${k}`);
+    $$("#spLayoutSeg .pc-btn").forEach(b => b.classList.toggle("is-active", b.dataset.layout === k));
+
+    const label = (k === "grid2") ? "FOCUS MODE" : (k === "hybrid") ? "HYBRID" : "CONTROL ROOM";
+    el.modeLabel.textContent = label;
+    el.modeLabel2.textContent = label;
+  }
+
+  function renderLayoutButtons(presets) {
+    el.layoutSeg.innerHTML = "";
+    (presets || []).forEach(p => {
+      const b = document.createElement("button");
+      b.className = "pc-btn pc-btn-ghost";
+      b.textContent = p.name || p.layout || p.key;
+      b.dataset.layout = p.layout || p.key;
+      b.title = p.notes || "";
+      b.addEventListener("click", () => {
+        setLayoutKey(b.dataset.layout);
+        renderCanvas();
+      });
+      el.layoutSeg.appendChild(b);
+    });
+    setLayoutKey(state.layoutKey);
+  }
+
+  function renderPagesSelect(pages) {
+    el.pageSelect.innerHTML = "";
+    pages.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.key;
+      opt.textContent = p.name || p.key;
+      el.pageSelect.appendChild(opt);
+    });
+    el.pageSelect.value = state.page;
+    el.pageSelect.addEventListener("change", async () => {
+      state.page = el.pageSelect.value;
+      await loadPageLayout();
+    });
+  }
+
+  function renderPalette(layout) {
+    el.palette.innerHTML = "";
+    const panels = (layout?.panels || []).slice();
+    panels.forEach(p => {
+      const tile = document.createElement("button");
+      tile.className = "pc-tile";
+      tile.innerHTML = `
+        <div class="pc-tile-title">${p.title || p.id}</div>
+        <div class="pc-tile-sub">${p.id || ""}</div>
+      `;
+      tile.addEventListener("click", () => {
+        state.selectedPanelId = p.id;
+        renderCanvas();
+        renderInspector(layout);
+      });
+      el.palette.appendChild(tile);
+    });
+  }
+
+  function renderInspector(layout) {
+    const id = state.selectedPanelId;
+    const panel = (layout?.panels || []).find(x => x.id === id) || null;
+    if (!panel) {
+      el.inspector.innerHTML = `<div class="pc-muted" style="font-size:12px;">Select a panel…</div>`;
+      return;
+    }
+
+    el.inspector.innerHTML = `
+      <div class="sp-field">
+        <label>Title</label>
+        <input class="pc-input" id="spI_title" value="${(panel.title||"").replace(/"/g,'&quot;')}" />
+      </div>
+      <div class="sp-field">
+        <label>Span</label>
+        <input class="pc-input" id="spI_span" type="range" min="1" max="3" value="${Number(panel.span||1)}" />
+      </div>
+      <div class="sp-field">
+        <label>Notes</label>
+        <textarea class="pc-input sp-notes" id="spI_notes" rows="4">${(panel.notes||"")}</textarea>
+      </div>
+      <div class="sp-actions">
+        <button class="pc-btn pc-btn-danger" id="spI_remove">Remove</button>
+      </div>
+    `;
+
+    $("#spI_title").addEventListener("input", (e) => {
+      panel.title = e.target.value;
+      syncDebug(layout);
+      renderCanvas();
+      renderPalette(layout);
+    });
+    $("#spI_span").addEventListener("input", (e) => {
+      panel.span = Number(e.target.value || 1);
+      syncDebug(layout);
+      renderCanvas();
+    });
+    $("#spI_notes").addEventListener("input", (e) => {
+      panel.notes = e.target.value;
+      syncDebug(layout);
+    });
+    $("#spI_remove").addEventListener("click", () => {
+      layout.panels = (layout.panels || []).filter(x => x.id !== panel.id);
+      state.selectedPanelId = null;
+      syncDebug(layout);
+      renderCanvas();
+      renderPalette(layout);
+      renderInspector(layout);
+    });
+  }
+
+  function looksLike(id, needle){
+    return String(id || "").toLowerCase().includes(String(needle).toLowerCase());
+  }
+
+  function fakePanelBody(p){
+    const id = (p && p.id) ? String(p.id) : "";
+    const t = (p && p.type) ? String(p.type) : "";
+    const key = (id + " " + t).toLowerCase();
+
+    // Charts (reference frames)
+    const chartFrame = (title, sub) => `
+      <div class="pc-chart pc-oled">
+        <div class="pc-chart-head">
+          <div>
+            <div class="pc-chart-title">${title}</div>
+            <div class="pc-chart-sub">${sub}</div>
+          </div>
+          <div class="pc-chart-legend">
+            <span class="pc-chip is-on"><i class="pc-dot"></i> Viewers</span>
+            <span class="pc-chip"><i class="pc-dot is-b"></i> Chat</span>
+            <span class="pc-chip"><i class="pc-dot is-w"></i> Subs</span>
+          </div>
+        </div>
+        <div class="pc-chart-viewport">
+          <div class="pc-chart-grid"></div>
+          <div style="height:160px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);
+                      background:
+                        radial-gradient(circle at 30% 0%, rgba(85,214,255,0.12), transparent 50%),
+                        linear-gradient(90deg, rgba(85,214,255,0.00), rgba(85,214,255,0.10), rgba(57,255,182,0.08), rgba(85,214,255,0.00));">
+          </div>
+        </div>
+        <div class="pc-chart-footer">
+          <span>ticks: 5m</span>
+          <span>range: last 24h</span>
+        </div>
+      </div>
+    `;
+
+    // Overview panel (KPIs + status)
+    if (looksLike(key, "overview")){
+      return `
+        <div class="ui-grid ui-grid-3">
+          <div class="ui-kpi">
+            <div class="ui-kpi-k">Live viewers</div>
+            <div class="ui-kpi-v">1,284</div>
+            <div class="ui-kpi-s is-up">+3.2%</div>
+          </div>
+          <div class="ui-kpi">
+            <div class="ui-kpi-k">Chat rate</div>
+            <div class="ui-kpi-v">42<span class="ui-kpi-unit">/m</span></div>
+            <div class="ui-kpi-s">avg 5s</div>
+          </div>
+          <div class="ui-kpi">
+            <div class="ui-kpi-k">Dropped</div>
+            <div class="ui-kpi-v">0.02<span class="ui-kpi-unit">%</span></div>
+            <div class="ui-kpi-s is-ok">nominal</div>
+          </div>
+        </div>
+
+        <div class="ui-divider"></div>
+
+        <div class="ui-ledrow">
+          <span class="ui-ledgrp"><i class="ui-led is-green"></i><span class="ui-led-label">stream</span></span>
+          <span class="ui-ledgrp"><i class="ui-led is-cyan"></i><span class="ui-led-label">encoder</span></span>
+          <span class="ui-ledgrp"><i class="ui-led is-amber"></i><span class="ui-led-label">alerts</span></span>
+          <span class="ui-ledgrp"><i class="ui-led"></i><span class="ui-led-label">backup</span></span>
+        </div>
+      `;
+    }
+
+    // Sparklines / systems panel (mini chart + meters)
+    if (looksLike(key, "spark")){
+      return `
+        <div class="pc-oled" style="padding:12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:10px;">
+            <div class="pc-muted" style="font-size:12px;">Trend</div>
+            <div class="pc-chart-legend">
+              <span class="pc-chip is-on"><i class="pc-dot"></i> last 10m</span>
+              <span class="pc-chip"><i class="pc-dot is-b"></i> smooth</span>
+              <span class="pc-chip"><i class="pc-dot is-w"></i> p95</span>
+            </div>
+          </div>
+          <div class="pc-chart" style="margin-bottom:10px;">
+            <div class="pc-chart-viewport" style="min-height:96px;">
+              <div class="pc-chart-grid"></div>
+              <div style="height:96px; border-radius:6px; border:1px solid rgba(255,255,255,0.06);
+                          background:
+                            repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 12px),
+                            linear-gradient(90deg, rgba(85,214,255,0.00), rgba(85,214,255,0.12), rgba(57,255,182,0.10), rgba(85,214,255,0.00));">
+              </div>
+            </div>
+          </div>
+
+          <div class="ui-meterrow">
+            <div class="ui-meterlabel">CPU</div>
+            <div class="ui-meter"><div class="ui-meter-bar is-cyan" style="width:38%"></div></div>
+            <div class="ui-meterpct">38%</div>
+          </div>
+          <div class="ui-meterrow">
+            <div class="ui-meterlabel">GPU</div>
+            <div class="ui-meter"><div class="ui-meter-bar is-green" style="width:61%"></div></div>
+            <div class="ui-meterpct">61%</div>
+          </div>
+          <div class="ui-meterrow">
+            <div class="ui-meterlabel">NET</div>
+            <div class="ui-meter"><div class="ui-meter-bar is-amber" style="width:22%"></div></div>
+            <div class="ui-meterpct">7.4Mb</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Engagement panel (mode seg + KPI blocks)
+    if (looksLike(key, "engage")){
+      return `
+        <div class="ui-grid">
+          <div class="ui-seg">
+            <div class="ui-seg-btn is-active">LIVE</div>
+            <div class="ui-seg-btn">PREVIEW</div>
+            <div class="ui-seg-btn">SAFE</div>
+          </div>
+
+          <div class="ui-grid ui-grid-2">
+            <div class="ui-block">
+              <div class="ui-block-h">Unique chatters</div>
+              <div class="ui-kpi-v" style="font-size:18px;">128</div>
+              <div class="ui-kpi-s">last 2m</div>
+            </div>
+            <div class="ui-block">
+              <div class="ui-block-h">Mod actions</div>
+              <div class="ui-kpi-v" style="font-size:18px;">3</div>
+              <div class="ui-kpi-s is-ok">stable</div>
+            </div>
+          </div>
+
+          <div class="ui-ledrow">
+            <span class="ui-chip">auto-mod: on</span>
+            <span class="ui-chip">flood: guard</span>
+            <span class="ui-chip">links: hard</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // Audience growth panel (bar mix + chart frame)
+    if (looksLike(key, "growth")){
+      return `
+        ${chartFrame("Audience Growth", "Followers / subs mix")}
+        <div style="height:10px"></div>
+        <div class="ui-grid ui-grid-3">
+          <div class="ui-block">
+            <div class="ui-block-h">Follows</div>
+            <div class="ui-kpi-v" style="font-size:18px;">+19</div>
+            <div class="ui-kpi-s is-up">this hour</div>
+          </div>
+          <div class="ui-block">
+            <div class="ui-block-h">Subs</div>
+            <div class="ui-kpi-v" style="font-size:18px;">+2</div>
+            <div class="ui-kpi-s">today</div>
+          </div>
+          <div class="ui-block">
+            <div class="ui-block-h">Retention</div>
+            <div class="ui-kpi-v" style="font-size:18px;">61<span class="ui-kpi-unit">%</span></div>
+            <div class="ui-kpi-s">10m</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // If a panel key hints “chart”, show a pure chart reference
+    if (looksLike(key, "chart") || looksLike(key, "audience") || looksLike(key, "trend")){
+      return chartFrame("Signal Trend", "Frame-only reference for Chart.js");
+    }
+
+    // Notes panel stays mostly text
+    if (looksLike(key, "notes")){
+      return `
+        <div class="pc-muted" style="font-size:12px; line-height:1.5;">
+          Reference panel body. Use this sandbox to validate:
+          charts, legends, tables, row-lists, and loading states before wiring real stats panels.
+        </div>
+        <div style="height:10px"></div>
+        <div class="pc-loader">
+          <i class="pc-spinner"></i>
+          <span>Loading…</span>
+        </div>
+      `;
+    }
+
+    // default
+    return `
+      <div class="pc-muted" style="font-size:12px;">
+        Placeholder body — wire real panels later.
+      </div>
+    `;
+  }
+
+  function panelChrome(p) {
+    const selected = state.selectedPanelId === p.id ? " is-selected" : "";
+    const span = Number(p.span || 1);
+    const spanClass = span === 2 ? " sp-span-2" : span === 3 ? " sp-span-3" : "";
+    return `
+      <section class="pc-panel${selected}${spanClass}" data-id="${p.id}">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">${p.title || p.id}</div>
+            <div class="pc-panel-sub">${p.id || ""}</div>
+          </div>
+          <span class="pc-kbd">${span}x</span>
+        </div>
+        <div class="pc-panel-bd">
+          ${fakePanelBody(p)}
+        </div>
+      </section>
+    `;
+  }
+
+  function renderCanvas() {
+    const layout = state.draft || state.defaultLayout;
+    if (!layout) return;
+
+    el.modeLabel.textContent = (state.layoutKey || "grid3").toUpperCase().replace("GRID","").replace("HYBRID","HYBRID");
+    el.modeLabel2.textContent = el.modeLabel.textContent;
+
+    renderPalette(layout);
+
+    const panels = (layout.panels || []).slice();
+    el.canvas.innerHTML = panels.map(p => panelChrome(p)).join("");
+
+    $$("#spCanvas .pc-panel").forEach(node => {
+      node.addEventListener("click", () => {
+        state.selectedPanelId = node.getAttribute("data-id");
+        $$("#spCanvas .pc-panel").forEach(n => n.classList.toggle("is-selected", n === node));
+        renderInspector(layout);
+      });
+    });
+
+    syncDebug(layout);
+  }
+
+  function syncDebug(layout) {
+    const j = JSON.stringify({
+      page: state.page,
+      name: state.pages.find(x=>x.key===state.page)?.name || state.page,
+      global: (layout.global || {}),
+      layout: state.layoutKey,
+      density: state.density,
+      panels: layout.panels || []
+    }, null, 2);
+    el.debugJson.value = j;
+  }
+
+  async function loadPages() {
+    const r = await fetch("/dashboard/api/studio/pages");
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || "load failed");
+    state.pages = j.pages || [];
+    if (!state.page && state.pages[0]) state.page = state.pages[0].key;
+    renderPagesSelect(state.pages);
+  }
+
+  async function loadPageLayout() {
+    const r = await fetch(`/dashboard/api/studio/page-layout?page=${encodeURIComponent(state.page)}`);
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || "load failed");
+    state.defaultLayout = j.layout;
+    state.draft = JSON.parse(JSON.stringify(j.layout));
+    if (state.defaultLayout?.layout) state.layoutKey = state.defaultLayout.layout;
+    if (state.defaultLayout?.density) state.density = state.defaultLayout.density;
+    renderLayoutButtons(<%- JSON.stringify(presets || []) %>);
+    setDensity(state.density);
+    setLayoutKey(state.layoutKey);
+    renderCanvas();
+    el.statusLine.textContent = `Loaded layout for page: ${state.page}`;
+  }
+
+  async function saveLayout() {
+    const layout = state.draft || state.defaultLayout;
+    if (!layout) return;
+    layout.layout = state.layoutKey;
+    layout.density = state.density;
+
+    const r = await fetch(`/dashboard/api/studio/page-layout?page=${encodeURIComponent(state.page)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ layout })
+    });
+    const j = await r.json().catch(()=>null);
+    if (!r.ok || !j?.ok) throw new Error(j?.error || `save failed (${r.status})`);
+    toast("Saved.");
+    el.statusLine.textContent = `Last save — ${new Date().toISOString()}`;
+  }
+
+  function revertLayout() {
+    state.draft = JSON.parse(JSON.stringify(state.defaultLayout));
+    state.selectedPanelId = null;
+    renderCanvas();
+    renderInspector(state.draft);
+    toast("Reverted.");
+  }
+
+  function exportLayout() {
+    const layout = state.draft || state.defaultLayout;
+    if (!layout) return;
+    const blob = new Blob([JSON.stringify(layout, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${state.page}.layout.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  el.saveBtn.addEventListener("click", () => saveLayout().catch(e => toast("Save failed: " + e.message)));
+  el.revertBtn.addEventListener("click", () => revertLayout());
+  el.exportBtn.addEventListener("click", () => exportLayout());
+
+  $$("#spDensitySeg .pc-btn").forEach(b => b.addEventListener("click", () => {
+    setDensity(b.dataset.density);
+    renderCanvas();
+  }));
+
+  (async function init(){
+    try {
+      await loadPages();
+      if (state.pages.find(p => p.key === "stats")) state.page = "stats";
+      el.pageSelect.value = state.page;
+      await loadPageLayout();
+    } catch (e) {
+      console.warn(e);
+      toast("Load failed: " + (e.message || e));
+    }
+  })();
+})();
+</script>

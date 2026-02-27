@@ -1,0 +1,3032 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scrapbot Metrics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-950 text-white font-sans">
+  <% const formatTimestamp=(ts)=> {
+    try {
+    if (!ts) return "—";
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? "—" : d.toISOString().replace("T"," ").replace("Z","");
+    } catch { return "—"; }
+    };
+
+    const formatCount = (n) => {
+    const x = Number(n || 0);
+    if (!isFinite(x)) return "0";
+    return x.toLocaleString();
+    };
+
+    // Safe getter for older Node versions (avoids optional chaining / nullish coalescing)
+    const get = (obj, path, fallback) => {
+    try {
+    if (!obj) return fallback;
+    const parts = String(path || "").split(".");
+    let cur = obj;
+    for (const k of parts) {
+    if (cur && Object.prototype.hasOwnProperty.call(cur, k)) cur = cur[k];
+    else return fallback;
+    }
+    return (cur === undefined || cur === null) ? fallback : cur;
+    } catch (e) {
+    return fallback;
+    }
+    };
+
+
+    const sbStatus = scrapbotStatus || {};
+    const sbMetrics = scrapbotMetrics || {};
+    const sbRecent = scrapbotRecent || {};
+
+    // Security telemetry snapshot (server may pass one of these keys)
+    const sbSecurity =
+    (typeof securityTelemetrySnapshot !== "undefined" && securityTelemetrySnapshot) ||
+    (typeof scrapbotSecurity !== "undefined" && scrapbotSecurity) ||
+    (typeof securityTelemetry !== "undefined" && securityTelemetry) ||
+    {};
+
+    const sbOnline = !!sbStatus.ok;
+    const sbDbOk = !!(sbStatus.db && sbStatus.db.ok);
+
+    const counters = sbMetrics.counters || {};
+    const derived = sbMetrics.derived || {};
+    const derivedChannels = Array.isArray(derived.channels) ? derived.channels : [];
+    const derivedTalkers = Array.isArray(derived.top_talkers) ? derived.top_talkers : [];
+    const derivedIncidents = Array.isArray(derived.top_incident_channels) ? derived.top_incident_channels : [];
+    const ringWindow = derived.ring_window || {};
+
+    const pulseLatest = Array.isArray(sbMetrics.pulse_latest) ? sbMetrics.pulse_latest : [];
+    const recentItems = Array.isArray(sbRecent.items) ? sbRecent.items : [];
+
+    const c = (k) => Number(counters[k] || 0) || 0;
+
+    const inboundTotal = c("inbound_total");
+    const inboundErrors = c("inbound_errors_total");
+    const cmdMatched = c("commands_matched_total");
+    const cmdReplies = c("commands_replies_sent_total");
+    const floodTripped = c("flood_tripped_total");
+    const swarmMatched = c("swarm_matched_total");
+    const modMatched = c("moderation_matched_total");
+
+    const uptimeMs = Number(sbMetrics.uptime_ms || 0) || 0;
+    const uptimeSec = Math.floor(uptimeMs / 1000);
+    const upH = Math.floor(uptimeSec / 3600);
+    const upM = Math.floor((uptimeSec % 3600) / 60);
+    const upS = uptimeSec % 60;
+
+    const topPulse = pulseLatest[0] || null;
+    const topPulseKey = get(topPulse, "key", "—");
+    const pulse = get(topPulse, "pulse", null);
+    const tripwire = get(topPulse, "tripwire", null);
+
+    // Security derived
+    const secOk = !!get(sbSecurity, "ok", false);
+    const secRolling1m = get(sbSecurity, "rolling.last_1m", {});
+    const secRolling5m = get(sbSecurity, "rolling.last_5m", {});
+    const secTop5m = get(sbSecurity, "top_5m", {});
+    const secBuffer = get(sbSecurity, "buffer", {});
+    %>
+
+    <div class="max-w-7xl mx-auto px-6 py-8">
+      <!-- Header -->
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Scrapbot Metrics</h1>
+          <p class="text-gray-400 mt-2">
+            Signal first. Debug later. This page is built to answer: “is it alive?”, “what channel is hot?”, “which
+            guard fired?”, “did we act?”
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <a href="/dashboard"
+            class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl shadow transition border border-gray-700">
+            Back to Dashboard
+          </a>
+
+          <button id="btnRefreshNow"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl shadow transition">
+            Refresh now
+          </button>
+        </div>
+      </div>
+
+      <!-- =========================================================
+         1) OVERVIEW
+    ========================================================== -->
+      <section class="mt-8">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">1) Overview</h2>
+          <div class="text-xs text-gray-400">
+            last update: <span id="lastUpdate">
+              <%= formatTimestamp(sbMetrics.now || sbStatus.now) %>
+            </span>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <!-- Health -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="text-sm text-gray-400">Scrapbot</div>
+                <div class="mt-1 text-2xl font-bold">
+                  <span id="pillOnline"
+  class="inline-flex items-center px-3 py-1 rounded-xl text-sm font-semibold <%= sbOnline ? 'bg-green-700/70 border border-green-600' : 'bg-red-700/70 border border-red-600' %>">
+  <%= sbOnline ? "ONLINE" : "OFFLINE" %>
+</span>
+                </div>
+                <div class="mt-2 text-sm text-gray-300">
+                  DB:
+                  <span id="pillDb"
+  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold <%= sbDbOk ? 'bg-green-700/50 border border-green-700' : 'bg-red-700/50 border border-red-700' %>">
+  <%= sbDbOk ? "OK" : "FAIL" %>
+</span>
+                </div>
+              </div>
+
+              <div class="text-xs text-gray-500 text-right">
+                uptime<br>
+                <span id="uptime" class="text-gray-300 font-mono">
+                  <%= `${upH}h ${upM}m ${upS}s` %>
+                </span>
+              </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500">
+              top pulse key: <span id="topPulseKey" class="text-gray-300 font-mono">
+                <%= topPulseKey %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Totals -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="text-sm text-gray-400">Traffic</div>
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Inbound</div>
+                <div id="kpiInbound" class="text-2xl font-bold">
+                  <%= formatCount(inboundTotal) %>
+                </div>
+              </div>
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Errors</div>
+                <div id="kpiErrors" class="text-2xl font-bold">
+                  <%= formatCount(inboundErrors) %>
+                </div>
+              </div>
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Commands</div>
+                <div id="kpiCmd" class="text-2xl font-bold">
+                  <%= formatCount(cmdMatched) %>
+                </div>
+              </div>
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Replies</div>
+                <div id="kpiReplies" class="text-2xl font-bold">
+                  <%= formatCount(cmdReplies) %>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guards -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="text-sm text-gray-400">Guards</div>
+            <div class="mt-3 grid grid-cols-3 gap-3">
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Flood</div>
+                <div id="kpiFlood" class="text-2xl font-bold">
+                  <%= formatCount(floodTripped) %>
+                </div>
+              </div>
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Swarm</div>
+                <div id="kpiSwarm" class="text-2xl font-bold">
+                  <%= formatCount(swarmMatched) %>
+                </div>
+              </div>
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Moderation</div>
+                <div id="kpiMod" class="text-2xl font-bold">
+                  <%= formatCount(modMatched) %>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500">
+              pulse active: <span id="pulseActive" class="text-gray-300 font-mono">
+                <%= (pulse && pulse.active) ? "true" : "false" %>
+              </span>
+              <span class="mx-2 text-gray-700">•</span>
+              tripwire: <span id="tripwire" class="text-gray-300 font-mono">
+                <%= tripwire ? "set" : "null" %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Security telemetry -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-400">Security Telemetry</div>
+              <!-- pillSec -->
+<span id="pillSec"
+  class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold <%= secOk ? 'bg-green-700/50 border border-green-700' : 'bg-gray-800 border border-gray-700' %>">
+  <%= secOk ? "LIVE" : "—" %>
+</span>
+            </div>
+
+            <div class="mt-3 grid grid-cols-2 gap-3">
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Probes (1m)</div>
+                <div id="kpiProbes1m" class="text-2xl font-bold">
+                  <%= formatCount(secRolling1m.probes || 0) %>
+                </div>
+                <div class="mt-1 text-xs text-gray-500">
+                  blocked <span id="kpiBlocked1m" class="text-gray-300 font-mono">
+                    <%= formatCount(secRolling1m.blocked || 0) %>
+                  </span>
+                </div>
+              </div>
+
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Probes (5m)</div>
+                <div id="kpiProbes5m" class="text-2xl font-bold">
+                  <%= formatCount(secRolling5m.probes || 0) %>
+                </div>
+                <div class="mt-1 text-xs text-gray-500">
+                  blocked <span id="kpiBlocked5m" class="text-gray-300 font-mono">
+                    <%= formatCount(secRolling5m.blocked || 0) %>
+                  </span>
+                </div>
+              </div>
+
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Req (5m)</div>
+                <div id="kpiReq5m" class="text-2xl font-bold">
+                  <%= formatCount(secRolling5m.req || 0) %>
+                </div>
+                <div class="mt-1 text-xs text-gray-500">
+                  4xx <span id="kpi4xx5m" class="text-gray-300 font-mono">
+                    <%= formatCount(secRolling5m.s4xx || 0) %>
+                  </span>
+                  <span class="mx-2 text-gray-700">•</span>
+                  5xx <span id="kpi5xx5m" class="text-gray-300 font-mono">
+                    <%= formatCount(secRolling5m.s5xx || 0) %>
+                  </span>
+                </div>
+              </div>
+
+              <div class="bg-gray-950/40 border border-gray-800 rounded-xl p-3">
+                <div class="text-xs text-gray-500">Buffered</div>
+                <div id="kpiProbeBuffered" class="text-2xl font-bold">
+                  <%= formatCount(secBuffer.probe_events_buffered || 0) %>
+                </div>
+                <div class="mt-1 text-xs text-gray-500">
+                  max <span id="kpiProbeMax" class="text-gray-300 font-mono">
+                    <%= formatCount(secBuffer.max_probe_events || 0) %>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 text-xs text-gray-500">
+              top vectors shown below in section 3.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         2) OPERATIONS
+    ========================================================== -->
+      <section class="mt-10">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">2) Operations</h2>
+          <div class="text-xs text-gray-500">
+            ring window:
+            <span id="ringSize" class="text-gray-300 font-mono">
+              <%= ringWindow.size ?? 0 %>
+            </span>
+            /
+            <span class="text-gray-300 font-mono">
+              <%= ringWindow.capacity ?? 0 %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Test Controls Panel -->
+        <div class="mt-4 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+          <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">Test Controls</h3>
+              <p class="text-xs text-gray-500 mt-1">
+                Fire synthetic swarms/floods into <span class="font-mono text-gray-300">/api/inbound/kick</span> (uses
+                <span class="font-mono text-gray-300">x-scrapbot-secret</span>).
+              </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <div class="relative">
+                <input id="tc_secret" type="password" placeholder="x-scrapbot-secret"
+                  class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full sm:w-[320px] pr-28" />
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+                  <span id="tc_secretHint">not saved</span>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button id="tc_save"
+                  class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">Save</button>
+                <button id="tc_clear"
+                  class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Presets -->
+            <div class="bg-gray-950/40 border border-gray-800 rounded-2xl p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold text-gray-200">Presets</div>
+                <div class="text-xs">
+                  <span id="tc_status"
+                    class="px-2 py-1 rounded-lg border border-gray-700 bg-gray-800 text-gray-200">idle</span>
+                </div>
+              </div>
+
+              <div class="mt-3 grid grid-cols-2 gap-2">
+                <button class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold"
+                  id="tc_swarm_200">Swarm 200</button>
+                <button class="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold"
+                  id="tc_swarm_500">Swarm 500</button>
+
+                <button class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                  id="tc_swarm_cinematic">Cinematic Swarm</button>
+                <button class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                  id="tc_swarm_linkspam">Link Spam</button>
+
+                <button
+                  class="col-span-2 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                  id="tc_flood_emoji">Emoji Flood</button>
+              </div>
+
+              <div class="mt-3 flex gap-2">
+                <button class="flex-1 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                  id="tc_stop">Stop</button>
+                <button class="flex-1 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm"
+                  id="tc_log_clear">Clear log</button>
+              </div>
+
+              <div class="mt-4">
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-2">
+                  <span>Progress</span>
+                  <span id="tc_progressText" class="text-gray-300 font-mono">0 / 0</span>
+                </div>
+                <div class="h-2 w-full rounded-full bg-black/30 border border-gray-800 overflow-hidden">
+                  <div id="tc_progressBar" class="h-2 w-0 bg-green-600"></div>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                  Tip: for “social proof” swarms, use <span class="font-mono text-gray-300">Cinematic Swarm</span>
+                  (staggered joins + variance).
+                </div>
+              </div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="bg-gray-950/40 border border-gray-800 rounded-2xl p-4 lg:col-span-2">
+              <div class="text-sm font-semibold text-gray-200">Parameters</div>
+
+              <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs text-gray-500">Text</label>
+                  <input id="tc_text" type="text" value="free followers"
+                    class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-xs text-gray-500">Channel</label>
+                    <input id="tc_channel" type="text" value="scraplet"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-500">Tenant</label>
+                    <input id="tc_userId" type="number" value="4"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="text-xs text-gray-500">Broadcaster ID</label>
+                    <input id="tc_broadcasterUserId" type="number" value="1017792"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-500">Concurrency</label>
+                    <input id="tc_concurrency" type="number" value="6" min="1" max="80"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                  <div>
+                    <label class="text-xs text-gray-500">Users</label>
+                    <input id="tc_users" type="number" value="200" min="1" max="8000"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-500">Repeats</label>
+                    <input id="tc_repeats" type="number" value="3" min="1" max="500"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                  <div>
+                    <label class="text-xs text-gray-500">Interval (ms)</label>
+                    <input id="tc_interval" type="number" value="120" min="0" max="20000"
+                      class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                  </div>
+                </div>
+
+                <div class="bg-black/20 border border-gray-800 rounded-2xl p-3">
+                  <div class="text-xs text-gray-500 mb-2">Link spam options</div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-xs text-gray-500">Domain</label>
+                      <input id="tc_link_domain" type="text" value="discord.gg"
+                        class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                    </div>
+                    <div>
+                      <label class="text-xs text-gray-500">Link rate (%)</label>
+                      <input id="tc_link_rate" type="number" value="30" min="0" max="100"
+                        class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-black/20 border border-gray-800 rounded-2xl p-3">
+                  <div class="text-xs text-gray-500 mb-2">Emoji / cinematic options</div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="text-xs text-gray-500">Emoji intensity (1–10)</label>
+                      <input id="tc_emoji_intensity" type="number" value="7" min="1" max="10"
+                        class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                    </div>
+                    <div>
+                      <label class="text-xs text-gray-500">Variance (%)</label>
+                      <input id="tc_cine_variance" type="number" value="55" min="0" max="100"
+                        class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm font-semibold text-gray-200">Log</div>
+                  <div class="text-xs text-gray-500">latest first</div>
+                </div>
+                <pre id="tc_log"
+                  class="mt-2 max-h-56 overflow-auto text-xs text-gray-300 bg-black/30 border border-gray-800 rounded-2xl p-3 whitespace-pre-wrap"></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Moderation Runtime + Pipeline Test + Incidents -->
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Runtime toggles -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold">Moderation runtime</h3>
+              <span id="rt_status"
+                class="px-2 py-1 rounded-lg border border-gray-700 bg-gray-800 text-gray-200 text-xs">—</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Live toggles on Scrapbot. Useful for bug-smash and safe rollout.
+            </p>
+
+            <div class="mt-4 space-y-3">
+              <div>
+                <label class="text-xs text-gray-500">Enforcement</label>
+                <select id="rt_enforcement"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full">
+                  <option value="off">off (log only)</option>
+                  <option value="timeout_only">timeout_only</option>
+                  <option value="full">full</option>
+                </select>
+              </div>
+
+              <label class="inline-flex items-center gap-2 text-sm text-gray-300 select-none">
+                <input id="rt_usePulseTripwire" type="checkbox" class="rounded" />
+                enable pulse tripwire tightening
+              </label>
+
+              <div class="flex gap-2">
+                <button id="rt_load"
+                  class="flex-1 px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">Load</button>
+                <button id="rt_apply"
+                  class="flex-1 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold">Apply</button>
+              </div>
+
+              <div class="text-xs text-gray-500">
+                Tip: keep <span class="font-mono text-gray-300">off</span> while tuning thresholds; switch to <span
+                  class="font-mono text-gray-300">timeout_only</span> once stable.
+              </div>
+            </div>
+          </div>
+
+          <!-- Pipeline test -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow lg:col-span-2">
+            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">Pipeline test</h3>
+                <p class="text-xs text-gray-500 mt-1">
+                  Runs pulse → trust → swarm → flood → rules and returns a structured decision. No bans/timeouts
+                  executed.
+                </p>
+              </div>
+              <button id="pt_run" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-sm font-semibold">
+                Run test
+              </button>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="md:col-span-2">
+                <label class="text-xs text-gray-500">Text</label>
+                <input id="pt_text" type="text" value="😂😂😂😂"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Channel</label>
+                <input id="pt_channel" type="text" value="scraplet"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Tenant</label>
+                <input id="pt_userId" type="number" value="4"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Sender username</label>
+                <input id="pt_senderUsername" type="text" value="TestUser"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Sender user id</label>
+                <input id="pt_senderUserId" type="number" value="12345"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Role</label>
+                <select id="pt_userRole"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full">
+                  <option value="everyone">everyone</option>
+                  <option value="subscriber">subscriber</option>
+                  <option value="moderator">moderator</option>
+                  <option value="broadcaster">broadcaster</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="text-xs text-gray-500">Message id</label>
+                <input id="pt_messageId" type="text" placeholder="optional"
+                  class="mt-1 bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-full" />
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold text-gray-200">Result</div>
+                <div class="text-xs text-gray-500">latest first</div>
+              </div>
+              <pre id="pt_out"
+                class="mt-2 max-h-72 overflow-auto text-xs text-gray-300 bg-black/30 border border-gray-800 rounded-2xl p-3 whitespace-pre-wrap"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Incidents (DB) -->
+        <div class="mt-4 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">Moderation incidents (DB)</h3>
+              <p class="text-xs text-gray-500 mt-1">
+                Audit trail from decision → action attempt → action result. This comes from <span
+                  class="font-mono text-gray-300">intelStore.recordIncident</span>.
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+              <input id="inc_channel" placeholder="channel (optional)"
+                class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-40" />
+              <input id="inc_userId" type="number" value="4"
+                class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-24" />
+              <select id="inc_limit" class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+              <button id="inc_refresh"
+                class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 border border-gray-700 text-sm">Refresh</button>
+            </div>
+          </div>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-gray-400">
+                <tr class="border-b border-gray-800">
+                  <th class="text-left py-2 pr-4">Time</th>
+                  <th class="text-left py-2 pr-4">Type</th>
+                  <th class="text-left py-2 pr-4">Channel</th>
+                  <th class="text-left py-2 pr-4">Tenant</th>
+                  <th class="text-left py-2 pr-4">User</th>
+                  <th class="text-left py-2 pr-4">Summary</th>
+                  <th class="text-left py-2 pr-4">Details</th>
+                </tr>
+              </thead>
+              <tbody id="inc_body"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-3 text-xs text-gray-500">
+            Tip: Use this to answer “what decision led to that timeout?” without tailing PM2.
+          </div>
+        </div>
+
+        <!-- Per-channel + hot spots -->
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Channels -->
+          <div class="lg:col-span-2 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold">Per-channel activity</h3>
+                <p class="text-xs text-gray-500 mt-1">
+                  messages/commands/guard hits/errors from the ring buffer derived view.
+                </p>
+              </div>
+              <div class="text-xs text-gray-400">
+                sorted by last seen
+              </div>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="text-gray-400">
+                  <tr class="border-b border-gray-800">
+                    <th class="text-left py-2 pr-4">Channel</th>
+                    <th class="text-left py-2 pr-4">Tenant</th>
+                    <th class="text-right py-2 px-2">Msgs</th>
+                    <th class="text-right py-2 px-2">Cmd</th>
+                    <th class="text-right py-2 px-2">Flood</th>
+                    <th class="text-right py-2 px-2">Swarm</th>
+                    <th class="text-right py-2 px-2">Mod</th>
+                    <th class="text-right py-2 px-2">Err</th>
+                    <th class="text-right py-2 pl-2">Last</th>
+                  </tr>
+                </thead>
+                <tbody id="channelTable">
+                  <% if (!derivedChannels.length) { %>
+                    <tr>
+                      <td colspan="9" class="py-4 text-gray-400">No channel data yet.</td>
+                    </tr>
+                    <% } else { %>
+                      <% derivedChannels.slice(0, 20).forEach((ch)=> { %>
+                        <tr class="border-t border-gray-900 bg-gray-950/30">
+                          <td class="py-2 pr-4 font-semibold text-gray-200">
+                            <%= ch.channelSlug %>
+                          </td>
+                          <td class="py-2 pr-4 text-gray-300">
+                            <%= ch.scraplet_user_id %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.messages) %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.commands) %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.flood) %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.swarm) %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.moderation) %>
+                          </td>
+                          <td class="py-2 px-2 text-right tabular-nums">
+                            <%= formatCount(ch.errors) %>
+                          </td>
+                          <td class="py-2 pl-2 text-right text-gray-400 tabular-nums">
+                            <%= formatTimestamp(ch.last_ts) %>
+                          </td>
+                        </tr>
+                        <% }) %>
+                          <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Hot spots -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+            <h3 class="text-lg font-semibold">Hot spots</h3>
+
+            <div class="mt-4">
+              <div class="text-xs text-gray-500 mb-2">Top talkers (ring derived)</div>
+              <div id="topTalkers" class="space-y-2">
+                <% if (!derivedTalkers.length) { %>
+                  <div class="text-gray-400 text-sm">No talkers yet.</div>
+                  <% } else { %>
+                    <% derivedTalkers.slice(0, 8).forEach((t)=> { %>
+                      <div class="bg-gray-950/40 border border-gray-800 rounded-xl px-3 py-2">
+                        <div class="flex items-center justify-between">
+                          <div class="text-sm font-semibold text-gray-200">
+                            <%= t.senderUsername || "—" %>
+                              <span class="text-xs text-gray-500 font-normal">(<%= t.senderUserId || "no-id" %>)</span>
+                          </div>
+                          <div class="text-xs text-gray-400">
+                            <%= (t.channelSlug || "—" ) %> • tenant <%= t.scraplet_user_id %>
+                          </div>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 flex gap-3">
+                          <span>msgs <span class="text-gray-300 font-mono">
+                              <%= formatCount(t.messages) %>
+                            </span></span>
+                          <span>incidents <span class="text-gray-300 font-mono">
+                              <%= formatCount(t.incidents) %>
+                            </span></span>
+                          <span>last <span class="text-gray-300 font-mono">
+                              <%= formatTimestamp(t.last_ts) %>
+                            </span></span>
+                        </div>
+                      </div>
+                      <% }) %>
+                        <% } %>
+              </div>
+            </div>
+
+            <div class="mt-6">
+              <div class="text-xs text-gray-500 mb-2">Top incident channels (weighted)</div>
+              <div id="incidentChannels" class="space-y-2">
+                <% if (!derivedIncidents.length) { %>
+                  <div class="text-gray-400 text-sm">No incident channels yet.</div>
+                  <% } else { %>
+                    <% derivedIncidents.slice(0, 8).forEach((x)=> { %>
+                      <div class="bg-gray-950/40 border border-gray-800 rounded-xl px-3 py-2">
+                        <div class="flex items-center justify-between">
+                          <div class="text-sm font-semibold text-gray-200">
+                            <%= x.channelSlug %>
+                          </div>
+                          <div class="text-xs text-gray-400">tenant <%= x.scraplet_user_id %>
+                          </div>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 flex gap-3">
+                          <span>score <span class="text-gray-300 font-mono">
+                              <%= formatCount(x.score) %>
+                            </span></span>
+                          <span>flood <span class="text-gray-300 font-mono">
+                              <%= formatCount(x.flood) %>
+                            </span></span>
+                          <span>swarm <span class="text-gray-300 font-mono">
+                              <%= formatCount(x.swarm) %>
+                            </span></span>
+                          <span>mod <span class="text-gray-300 font-mono">
+                              <%= formatCount(x.moderation) %>
+                            </span></span>
+                          <span>err <span class="text-gray-300 font-mono">
+                              <%= formatCount(x.errors) %>
+                            </span></span>
+                        </div>
+                      </div>
+                      <% }) %>
+                        <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+           3) SECURITY VECTORS
+      ========================================================== -->
+        <div class="mt-6 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+          <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">3) Security vectors (last 5m)</h3>
+              <p class="text-xs text-gray-500 mt-1">
+                What’s actually hitting your box right now: top paths, IPs, and UA clusters.
+              </p>
+            </div>
+            <div class="text-xs text-gray-400">
+              snapshot: <span id="secNow">
+                <%= formatTimestamp(get(sbSecurity, "now" , null)) %>
+              </span>
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="bg-gray-950/40 border border-gray-800 rounded-2xl p-4">
+              <div class="text-sm font-semibold text-gray-200">Top paths</div>
+              <div id="secTopPaths" class="mt-3 space-y-2">
+                <% const tp=Array.isArray(secTop5m.top_paths) ? secTop5m.top_paths : []; %>
+                  <% if (!tp.length) { %>
+                    <div class="text-gray-400 text-sm">No probe paths yet.</div>
+                    <% } else { %>
+                      <% tp.slice(0, 10).forEach((x)=> { %>
+                        <div
+                          class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2">
+                          <div class="text-xs text-gray-300 font-mono truncate pr-3">
+                            <%= x.key %>
+                          </div>
+                          <div class="text-xs text-gray-400 tabular-nums">
+                            <%= formatCount(x.count) %>
+                          </div>
+                        </div>
+                        <% }) %>
+                          <% } %>
+              </div>
+            </div>
+
+            <div class="bg-gray-950/40 border border-gray-800 rounded-2xl p-4">
+              <div class="text-sm font-semibold text-gray-200">Top IPs</div>
+              <div id="secTopIps" class="mt-3 space-y-2">
+                <% const ti=Array.isArray(secTop5m.top_ips) ? secTop5m.top_ips : []; %>
+                  <% if (!ti.length) { %>
+                    <div class="text-gray-400 text-sm">No probe IPs yet.</div>
+                    <% } else { %>
+                      <% ti.slice(0, 10).forEach((x)=> { %>
+                        <div
+                          class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2">
+                          <div class="text-xs text-gray-300 font-mono truncate pr-3">
+                            <%= x.key %>
+                          </div>
+                          <div class="text-xs text-gray-400 tabular-nums">
+                            <%= formatCount(x.count) %>
+                          </div>
+                        </div>
+                        <% }) %>
+                          <% } %>
+              </div>
+            </div>
+
+            <div class="bg-gray-950/40 border border-gray-800 rounded-2xl p-4">
+              <div class="text-sm font-semibold text-gray-200">Top UAs</div>
+              <div id="secTopUas" class="mt-3 space-y-2">
+                <% const tu=Array.isArray(secTop5m.top_uas) ? secTop5m.top_uas : []; %>
+                  <% if (!tu.length) { %>
+                    <div class="text-gray-400 text-sm">No probe UAs yet.</div>
+                    <% } else { %>
+                      <% tu.slice(0, 10).forEach((x)=> { %>
+                        <div
+                          class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2">
+                          <div class="text-xs text-gray-300 truncate pr-3">
+                            <%= x.key %>
+                          </div>
+                          <div class="text-xs text-gray-400 tabular-nums">
+                            <%= formatCount(x.count) %>
+                          </div>
+                        </div>
+                        <% }) %>
+                          <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guard Events -->
+        <div class="mt-6 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">Guard Events</h3>
+              <p class="text-xs text-gray-500 mt-1">
+                Built from the Scrapbot ring buffer (no raw message text stored). Shows flood/swarm/mod hits + execution
+                hints.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 items-center">
+              <select id="filterChannel" class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm">
+                <option value="">All channels</option>
+              </select>
+
+              <select id="filterType" class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm">
+                <option value="">All guard types</option>
+                <option value="flood">Flood</option>
+                <option value="swarm">Swarm</option>
+                <option value="moderation">Moderation</option>
+                <option value="error">Error</option>
+              </select>
+
+              <label class="inline-flex items-center gap-2 text-sm text-gray-300 select-none">
+                <input id="onlyIncidents" type="checkbox" class="rounded" checked />
+                only incidents
+              </label>
+
+              <input id="searchUser" placeholder="user / id"
+                class="bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm w-40" />
+            </div>
+          </div>
+
+          <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="text-gray-400">
+                <tr class="border-b border-gray-800">
+                  <th class="text-left py-2 pr-4">Time</th>
+                  <th class="text-left py-2 pr-4">Channel</th>
+                  <th class="text-left py-2 pr-4">Tenant</th>
+                  <th class="text-left py-2 pr-4">User</th>
+                  <th class="text-left py-2 pr-4">Role</th>
+                  <th class="text-left py-2 pr-4">Events</th>
+                  <th class="text-left py-2 pr-4">Details</th>
+                </tr>
+              </thead>
+              <tbody id="guardEventsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="mt-3 text-xs text-gray-500">
+            Tip: click “details” rows to expand raw JSON.
+          </div>
+        </div>
+
+        <!-- Recent inbound -->
+        <div class="mt-6 bg-gray-900/60 border border-gray-800 rounded-2xl p-6 shadow">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">Recent inbound (ring buffer)</h3>
+            <div class="text-xs text-gray-400">(No raw message content — safe)</div>
+          </div>
+
+          <div id="recentList" class="mt-4">
+            <% if (!recentItems.length) { %>
+              <div class="text-gray-400 text-sm">No recent items yet.</div>
+              <% } else { %>
+                <div class="divide-y divide-gray-800 rounded-xl overflow-hidden border border-gray-800">
+                  <% recentItems.slice(0, 20).forEach((it)=> { %>
+                    <div class="p-4 bg-gray-950/30">
+                      <div class="flex items-center justify-between">
+                        <div class="text-sm">
+                          <span class="text-gray-400">
+                            <%= formatTimestamp(it.ts) %>
+                          </span>
+                          <span class="mx-2 text-gray-700">•</span>
+                          <span class="font-semibold">
+                            <%= it.platform %>
+                          </span>
+                          <span class="mx-2 text-gray-700">•</span>
+                          <span class="text-gray-200">
+                            <%= it.channelSlug %>
+                          </span>
+                          <span class="mx-2 text-gray-700">•</span>
+                          <span class="text-gray-400">tenant</span>
+                          <span class="text-gray-200">
+                            <%= it.scraplet_user_id %>
+                          </span>
+                        </div>
+
+                        <div class="text-xs text-gray-400">
+                          <span class="px-2 py-1 rounded bg-gray-800">
+                            <%= it.userRole || "—" %>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="mt-2 text-xs text-gray-400 flex flex-wrap gap-2">
+                        <% if (it.commandMatched) { %><span
+                            class="px-2 py-1 rounded bg-blue-900/50 border border-blue-800">command</span>
+                          <% } %>
+                            <% if (it.commandReplySent) { %><span
+                                class="px-2 py-1 rounded bg-blue-900/50 border border-blue-800">reply</span>
+                              <% } %>
+                                <% if (it.flood) { %><span
+                                    class="px-2 py-1 rounded bg-red-900/50 border border-red-800">flood</span>
+                                  <% } %>
+                                    <% if (it.swarm) { %><span
+                                        class="px-2 py-1 rounded bg-purple-900/50 border border-purple-800">swarm</span>
+                                      <% } %>
+                                        <% if (it.moderation) { %><span
+                                            class="px-2 py-1 rounded bg-orange-900/50 border border-orange-800">moderation</span>
+                                          <% } %>
+                                            <% if (it.pulse_active) { %><span
+                                                class="px-2 py-1 rounded bg-green-900/50 border border-green-800">pulse</span>
+                                              <% } %>
+                                                <% if (it.error) { %><span
+                                                    class="px-2 py-1 rounded bg-red-900/50 border border-red-800">error</span>
+                                                  <% } %>
+                      </div>
+                    </div>
+                    <% }) %>
+                </div>
+                <% } %>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         4) MODERATION TEST LAB
+    ========================================================== -->
+      <section class="mt-10">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">4) Moderation Test Lab</h2>
+          <span
+            class="px-2 py-1 rounded-lg text-xs font-semibold bg-yellow-700/50 border border-yellow-700 text-yellow-100">DRY
+            RUN ONLY</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+          Deterministic moderation pipeline tests. All actions are hypothetical &mdash; nothing is ever executed.
+        </p>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Left: Test List -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-gray-200">Tests</h3>
+              <button id="tl_runAll"
+                class="text-xs px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition">
+                &#9654; Run All
+              </button>
+            </div>
+            <div id="tl_list" class="mt-3 space-y-1 text-sm max-h-[480px] overflow-y-auto">
+              <div class="text-gray-400 text-xs py-4">Loading tests&hellip;</div>
+            </div>
+            <div id="tl_summary" class="mt-3 text-xs text-gray-500"></div>
+          </div>
+
+          <!-- Right: Result Viewer -->
+          <div class="lg:col-span-2 bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-center justify-between">
+              <h3 id="tl_resultTitle" class="text-sm font-semibold text-gray-200">Select a test to run</h3>
+              <span id="tl_resultBadge" class="hidden px-2 py-1 rounded-lg text-xs font-bold"></span>
+            </div>
+            <div id="tl_assertions" class="mt-3 space-y-1 hidden"></div>
+            <div id="tl_actions" class="mt-3 hidden">
+              <div class="text-xs text-gray-500 mb-1">Hypothetical Actions (DRY RUN)</div>
+              <div id="tl_actionsBody" class="space-y-1"></div>
+            </div>
+            <details id="tl_rawWrap" class="mt-3 hidden">
+              <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-300">Raw JSON</summary>
+              <pre id="tl_raw"
+                class="mt-1 text-xs text-gray-400 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800 max-h-64 overflow-y-auto"></pre>
+            </details>
+          </div>
+        </div>
+
+        <!-- Audit Log -->
+        <div class="mt-4 bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-gray-200">Audit Log</h3>
+            <div class="flex gap-2 items-center">
+              <label class="inline-flex items-center gap-2 text-xs text-gray-400 select-none">
+                <input id="tl_auditFilterRun" type="checkbox" class="rounded" />
+                filter by test run
+              </label>
+              <button id="tl_auditRefresh"
+                class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 transition">
+                Refresh
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 overflow-x-auto">
+            <table class="min-w-full text-xs">
+              <thead class="text-gray-400">
+                <tr class="border-b border-gray-800">
+                  <th class="text-left py-2 pr-3">Time</th>
+                  <th class="text-left py-2 pr-3">User</th>
+                  <th class="text-left py-2 pr-3">Channel</th>
+                  <th class="text-left py-2 pr-3">Role</th>
+                  <th class="text-left py-2 pr-3">Guard Hits</th>
+                  <th class="text-left py-2 pr-3">Preview</th>
+                </tr>
+              </thead>
+              <tbody id="tl_auditBody"></tbody>
+            </table>
+          </div>
+          <div id="tl_auditEmpty" class="text-gray-400 text-xs py-3">No audit entries.</div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+         5) COMMAND TEST LAB
+    ========================================================== -->
+      <section class="mt-10">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">5) Command Test Lab</h2>
+          <span
+            class="px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-700/50 border border-indigo-700 text-indigo-100">DRY
+            RUN ONLY</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">
+          Real-time command evaluation testing. Test argument extraction, DSL functions ($random), and role gating.
+        </p>
+
+        <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left Col -->
+          <div class="space-y-6">
+            <!-- Message Runner -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+              <h3 class="text-sm font-semibold text-gray-200 mb-4">Message Runner</h3>
+              <form id="cl_runnerForm" class="space-y-4">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Message Text</label>
+                  <input type="text" id="cl_messageText" value="!help"
+                    class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500 transition" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">User Role</label>
+                    <select id="cl_userRole"
+                      class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500 transition">
+                      <option value="everyone">Everyone</option>
+                      <option value="mod">Moderator</option>
+                      <option value="broadcaster">Broadcaster</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">User Name</label>
+                    <input type="text" id="cl_userName" value="test_user"
+                      class="w-full bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500 transition" />
+                  </div>
+                </div>
+                <button type="submit"
+                  class="w-full py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-900/20">
+                  Execute Pipeline (Dry Run)
+                </button>
+              </form>
+            </div>
+
+            <!-- Test Suite -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+              <h3 class="text-sm font-semibold text-gray-200 mb-3">Test Suite (Deterministic)</h3>
+              <div id="cl_testSuite" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                <!-- Populated via JS -->
+                <div class="text-gray-500 text-xs py-2">Loading commands...</div>
+              </div>
+            </div>
+
+            <!-- Variable Cheat Sheet -->
+            <div class="bg-gray-900/60 border-l-4 border-l-indigo-500 border-gray-800 rounded-2xl p-5 shadow">
+              <h3 class="text-sm font-semibold text-gray-200 mb-3">Variable Cheat Sheet</h3>
+              <div class="space-y-2 text-[11px] leading-relaxed">
+                <div>
+                  <code class="text-indigo-400 font-mono">$1...$9</code>
+                  <span class="text-gray-500 ml-1">- Positional words after trigger.</span>
+                </div>
+                <div>
+                  <code class="text-indigo-400 font-mono">$args</code>
+                  <span class="text-gray-500 ml-1">- Everything after the command.</span>
+                </div>
+                <div>
+                  <code class="text-indigo-400 font-mono">{user}</code>
+                  <span class="text-gray-500 ml-1">- The person typing the message.</span>
+                </div>
+                <div>
+                  <code class="text-indigo-400 font-mono">{channel}</code>
+                  <span class="text-gray-500 ml-1">- The current channel slug.</span>
+                </div>
+                <div class="pt-1 border-t border-gray-800">
+                  <code class="text-yellow-500 font-mono">$random(a,b,c)</code>
+                  <span class="text-gray-500 ml-1">- Randomly picks one choice.</span>
+                </div>
+                <div>
+                  <code class="text-yellow-500 font-mono">$toupper() / $tolower()</code>
+                  <span class="text-gray-500 ml-1">- Case manipulation.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Col: Trace Viewer -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-semibold text-gray-200">Trace Viewer</h3>
+              <div id="cl_statusBadge"></div>
+            </div>
+            <div id="cl_traceResult" class="flex-1 overflow-y-auto">
+              <div class="h-full flex flex-col items-center justify-center text-center p-8">
+                <div class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-3">
+                  <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <p class="text-sm text-gray-500">Run a message to see the command execution trace.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <style>
+        .cl-timeline-item {
+          border-left: 2px solid #374151;
+          /* gray-700 */
+          padding-left: 1.25rem;
+          margin-bottom: 1.5rem;
+          position: relative;
+        }
+
+        .cl-timeline-item::before {
+          content: '';
+          position: absolute;
+          left: -0.45rem;
+          top: 0.15rem;
+          width: 0.75rem;
+          height: 0.75rem;
+          background: #111827;
+          /* gray-900 */
+          border: 2px solid #6366f1;
+          /* indigo-500 */
+          border-radius: 9999px;
+      </style>
+      <!-- Command Lab runtime (section 5) -->
+      <script>(function () {
+          const _$ = (id) => document.getElementById(id);
+
+          function escH(s) {
+            return String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+          }
+
+          async function clApi(path, method = 'GET', body = null) {
+            const options = {
+
+              method,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+
+              ;
+            if (body) options.body = JSON.stringify(body);
+
+            try {
+              const resp = await fetch(path, options);
+              return await resp.json();
+            }
+
+            catch (e) {
+              return {
+                ok: false, error: String(e)
+              }
+
+                ;
+            }
+          }
+
+          async function loadCommandTests() {
+            const data = await clApi('/dashboard/metrics/tests/commands');
+            const container = _$('cl_testSuite');
+            if (!container) return;
+
+            if (!data?.ok || !Array.isArray(data.tests)) {
+              container.innerHTML = '<div class="text-red-400 text-xs py-2">Failed to load tests</div>';
+              return;
+            }
+
+            container.innerHTML = data.tests.map(test => ` <button class="cl-test-btn text-left text-xs px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition truncate"
+
+                data-id="${escH(test.id)}">${escH(test.name)}</button> `).join('');
+
+            container.querySelectorAll('.cl-test-btn').forEach(btn => {
+              btn.addEventListener('click', () => runCommandTest(btn.getAttribute('data-id')));
+            });
+          }
+
+          async function runCommandTest(testId) {
+            const container = _$('cl_traceResult');
+            if (container) container.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500 text-sm">Running...</div>';
+
+            const result = await clApi('/dashboard/metrics/tests/commands/run', 'POST', {
+              test_id: testId
+            });
+            renderCommandTrace(result);
+          }
+
+          _$('cl_runnerForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const container = _$('cl_traceResult');
+            if (container) container.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500 text-sm">Running...</div>';
+
+            const body = {
+              messageText: _$('cl_messageText').value,
+              userRole: _$('cl_userRole').value,
+              userName: _$('cl_userName').value
+            }
+
+              ;
+            const result = await clApi('/dashboard/metrics/tests/commands/run', 'POST', body);
+            renderCommandTrace(result);
+          }
+
+            ;
+
+          function renderCommandTrace(data) {
+            const container = _$('cl_traceResult');
+            const badgeContainer = _$('cl_statusBadge');
+            if (!container) return;
+
+            if (!data?.ok) {
+              container.innerHTML = `<div class="p-4 text-red-400 text-xs bg-red-900/20 border border-red-900 rounded-lg">Error: ${escH(data?.error || 'Unknown error')}</div>`;
+              return;
+            }
+
+            const trace = data.trace;
+            const matched = trace.command.matched;
+
+            let badgeHtml = matched ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-700/50 border border-green-700 text-green-100">MATCHED</span>'
+              : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-700/50 border border-gray-700 text-gray-100">NO MATCH</span>';
+
+            if (trace.command.denied) {
+              badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-700/50 border border-red-700 text-red-100">DENIED</span>';
+            }
+
+            if (badgeContainer) badgeContainer.innerHTML = badgeHtml;
+
+            const actionsHtml = trace.actions_results.length > 0 ? trace.actions_results.map(a => ` <div class="mt-2 p-3 bg-indigo-900/20 border border-dashed border-indigo-500/50 rounded-lg text-xs"><div class="text-indigo-400 font-semibold mb-1">Dispatch Chat:</div><div class="text-gray-200">${escH(a.text)}</div></div> `).join('') : '<div class="text-gray-500 text-xs italic mt-2">No actions dispatched</div>';
+
+            container.innerHTML = `<div class="mb-6"><div class="text-sm font-semibold text-gray-200">Command: <span class="text-indigo-400">${escH(trace.command.name || 'None')}</span></div>
+
+                  ${data.assertions?.length > 0 ? `<div class="mt-2 flex gap-2">${data.passed ? '<span class="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 border border-green-800 rounded">Assertions Passed</span>' : '<span class="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 border border-red-800 rounded">Assertions Failed</span>'}</div>` : ''}
+
+            </div><div class="cl-timeline-item"><div class="text-xs font-bold text-gray-300">1. Normalization</div><div class="text-[11px] text-gray-500 mt-0.5 font-mono bg-black/20 p-1.5 rounded border border-gray-800">Input: "${escH(trace.input.messageText)}"</div></div><div class="cl-timeline-item"><div class="text-xs font-bold text-gray-300">2. Argument Extraction</div><div class="mt-1 flex flex-wrap gap-1">${trace.command.args && trace.command.args.length > 0 ? trace.command.args.map(a => `<span class="px-1.5 py-0.5 bg-gray-800 border border-gray-700 rounded text-[10px] font-mono text-indigo-300">${escH(a)
+              }
+
+                </span>`).join('') : '<span class="text-gray-600 text-[10px] italic">None</span>'
+              }
+
+            </div> </div> <div class="cl-timeline-item"><div class="text-xs font-bold text-gray-300">3. Match Result</div><div class="text-[11px] mt-1"> Status: ${matched ? '<span class="text-green-400">MATCHED</span>' : '<span class="text-gray-500">NO MATCH</span>'
+              }
+
+                ${trace.command.denied ? `<div class="text-red-400 mt-0.5 italic">Denied: ${escH(trace.command.reason || 'Role Restricted')}</div>` : ''}
+
+            </div> </div> <div class="cl-timeline-item mb-0"><div class="text-xs font-bold text-gray-300">4. Actions Preview</div>${actionsHtml}
+
+                <pre class="text-[10px] text-gray-400 bg-black/40 border border-gray-800 p-3 rounded-lg overflow-x-auto h-64">${escH(JSON.stringify(data, null, 2))}</pre>
+
+                </div></details> `;
+          }
+
+          loadCommandTests();
+        })();
+
+      </script>
+      <!--=========================================================Live updater (poll /dashboard/metrics/data)==========================================================-->
+      <script>(function () {
+          const _$ = (id) => document.getElementById(id);
+          let allTests = [];
+
+          let testResults = {}
+
+            ;
+          let lastRunId = null;
+          let auditTimer = null;
+
+          function escH(s) {
+            return String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+          }
+
+          function fmtTsS(ts) {
+            try {
+              if (!ts) return "\u2014"; const d = new Date(ts); return isNaN(d.getTime()) ? "\u2014" : d.toISOString().slice(11, 19);
+            }
+
+            catch (e) {
+              return "\u2014";
+            }
+          }
+
+          async function loadTests() {
+            try {
+              const r = await fetch("/dashboard/metrics/tests", {
+                cache: "no-store"
+              });
+              const j = await r.json().catch(() => null);
+              if (!j?.ok || !Array.isArray(j.tests)) throw new Error(j?.error || "bad response");
+              allTests = j.tests;
+              renderTestList();
+            }
+
+            catch (e) {
+              const el = _$("tl_list");
+              if (el) el.innerHTML = '<div class="text-red-400 text-xs py-2">Failed to load: ' + escH(e.message) + '</div>';
+            }
+          }
+
+          function renderTestList() {
+            const host = _$("tl_list");
+            if (!host) return;
+
+            const cats = {}
+
+              ;
+
+            allTests.forEach(t => {
+              (cats[t.category] = cats[t.category] || []).push(t);
+            });
+            let html = "";
+
+            for (const [cat, tests] of Object.entries(cats)) {
+              html += '<div class="text-xs text-gray-500 uppercase tracking-wider mt-2 mb-1">' + escH(cat) + '</div>';
+
+              for (const t of tests) {
+                const r = testResults[t.id];
+                const badge = r ? r.pass ? '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-700/50 border border-green-700 text-green-100">PASS</span>'
+                  : '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-700/50 border border-red-700 text-red-100">FAIL</span>'
+                  : "";
+                html += '<div class="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-gray-800/60 cursor-pointer group" data-test-id="' + escH(t.id) + '">'
+                  + '<div class="flex items-center gap-2 min-w-0">' + badge + '<span class="text-gray-200 truncate">' + escH(t.name) + '</span></div>'
+                  + '<button class="tl-run-btn opacity-0 group-hover:opacity-100 text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 transition" data-run="' + escH(t.id) + '">Run</button>'
+                  + '</div>';
+              }
+            }
+
+            host.innerHTML = html;
+
+            host.querySelectorAll("button.tl-run-btn").forEach(btn => {
+              btn.addEventListener("click", e => {
+                e.stopPropagation(); runTest(btn.getAttribute("data-run"));
+              });
+            });
+
+            host.querySelectorAll("[data-test-id]").forEach(row => {
+              row.addEventListener("click", () => {
+                const id = row.getAttribute("data-test-id");
+                const r = testResults[id];
+                if (r) showResult(id, r); else runTest(id);
+              });
+            });
+            renderSummary();
+          }
+
+          function renderSummary() {
+            const el = _$("tl_summary");
+            if (!el) return;
+            const total = allTests.length, ran = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r.pass).length;
+
+            if (!ran) {
+              el.textContent = total + " tests available"; return;
+            }
+
+            el.innerHTML = '<span class="text-green-400">' + passed + ' passed</span> \u00b7 <span class="text-red-400">' + (ran - passed) + ' failed</span> \u00b7 ' + (total - ran) + ' pending';
+          }
+
+          async function runTest(testId) {
+            const title = _$("tl_resultTitle"), badge = _$("tl_resultBadge");
+            if (title) title.textContent = "Running\u2026";
+            if (badge) badge.classList.add("hidden");
+
+            try {
+              const r = await fetch("/dashboard/metrics/tests/run", {
+                method: "POST", headers: {
+                  "content-type": "application/json"
+                }
+
+                ,
+                body: JSON.stringify({
+                  test_id: testId
+                }),
+              });
+              const j = await r.json().catch(() => null);
+              if (!j) throw new Error("Empty response");
+              const pass = j.pass ?? (Array.isArray(j.assertions) ? j.assertions.every(a => a.pass) : false);
+              lastRunId = j.test_run_id || null;
+
+              testResults[testId] = {
+                pass, result: j, assertions: j.assertions || []
+              }
+
+                ;
+              renderTestList();
+              showResult(testId, testResults[testId]);
+              refreshAudit();
+            }
+
+            catch (e) {
+              if (title) title.textContent = "Error: " + e.message;
+            }
+          }
+
+          async function runAll() {
+            const btn = _$("tl_runAll");
+
+            if (btn) {
+              btn.disabled = true; btn.textContent = "Running\u2026";
+            }
+
+            for (const t of allTests) await runTest(t.id);
+
+            if (btn) {
+              btn.disabled = false; btn.textContent = "\u25b6 Run All";
+            }
+          }
+
+          function showResult(testId, {
+            pass, result, assertions
+
+          }) {
+            const test = allTests.find(t => t.id === testId);
+            const title = _$("tl_resultTitle"), badge = _$("tl_resultBadge");
+            const assertEl = _$("tl_assertions"), actWrap = _$("tl_actions"), actBody = _$("tl_actionsBody");
+            const rawWrap = _$("tl_rawWrap"), rawEl = _$("tl_raw");
+
+            if (title) title.textContent = test?.name || testId;
+
+            if (badge) {
+              badge.classList.remove("hidden", "bg-green-700/50", "border-green-700", "text-green-100", "bg-red-700/50", "border-red-700", "text-red-100");
+              badge.textContent = pass ? "PASS" : "FAIL";
+              badge.classList.add(pass ? "bg-green-700/50" : "bg-red-700/50", "border", pass ? "border-green-700" : "border-red-700", pass ? "text-green-100" : "text-red-100");
+            }
+
+            if (assertEl && assertions.length) {
+              assertEl.classList.remove("hidden");
+              assertEl.innerHTML = '<div class="text-xs text-gray-500 mb-1">Assertions</div>'
+
+                + assertions.map(a => {
+                  const icon = a.pass ? "\u2713" : "\u2717", cls = a.pass ? "text-green-400" : "text-red-400";
+                  return '<div class="flex items-start gap-2 text-xs px-2 py-1 rounded bg-black/20 border border-gray-800">'
+                    + '<span class="' + cls + ' font-bold">' + icon + '</span>'
+                    + '<span class="text-gray-300"><code>' + escH(a.path) + '</code></span>'
+                    + '<span class="text-gray-500">' + escH(a.reason || "") + '</span></div>';
+                }).join("");
+            }
+
+            else if (assertEl) assertEl.classList.add("hidden");
+
+            const actions = result?.pipeline?.last?.actions_results || result?.last?.actions_results || [];
+
+            if (actWrap && actBody && actions.length) {
+              actWrap.classList.remove("hidden");
+
+              actBody.innerHTML = actions.map(a => {
+                const w = a.would || {}
+
+                  ;
+                return '<div class="text-xs px-2 py-1 rounded bg-yellow-900/20 border border-yellow-800/50 text-yellow-200">'
+                  + '<span class="font-semibold">' + escH(a.label) + '</span>'
+                  + ' \u2192 <span class="text-yellow-300">' + escH(w.action || "") + '</span>'
+                  + (w.target ? ' target: ' + escH(w.target) : "") + (w.duration_seconds ? ' (' + w.duration_seconds + 's)' : "") + (w.reason ? ' \u2014 ' + escH(w.reason) : "") + '</div>';
+              }).join("");
+            }
+
+            else if (actWrap) actWrap.classList.add("hidden");
+
+            if (rawWrap && rawEl) {
+              rawWrap.classList.remove("hidden"); rawEl.textContent = JSON.stringify(result, null, 2);
+            }
+          }
+
+          async function refreshAudit() {
+            try {
+              const r = await fetch("/dashboard/metrics/audit?limit=40", {
+                cache: "no-store"
+              });
+              const j = await r.json().catch(() => null);
+              renderAudit(Array.isArray(j?.items) ? j.items : []);
+            }
+
+            catch {
+              renderAudit([]);
+            }
+          }
+
+          function renderAudit(items) {
+            const body = _$("tl_auditBody"), empty = _$("tl_auditEmpty");
+            if (!body) return;
+            const filterByRun = _$("tl_auditFilterRun")?.checked && lastRunId;
+            const filtered = filterByRun ? items.filter(x => x.test_run_id === lastRunId) : items;
+
+            if (!filtered.length) {
+              body.innerHTML = ""; if (empty) empty.classList.remove("hidden"); return;
+            }
+
+            if (empty) empty.classList.add("hidden");
+
+            body.innerHTML = filtered.slice(0, 30).map(x => {
+              const hits = [];
+              if (x.flood?.matched) hits.push('<span class="px-1 py-0.5 rounded bg-red-900/50 border border-red-800 text-red-200">flood</span>');
+              if (x.swarm?.matched) hits.push('<span class="px-1 py-0.5 rounded bg-purple-900/50 border border-purple-800 text-purple-200">swarm</span>');
+              if (x.moderation?.matched) hits.push('<span class="px-1 py-0.5 rounded bg-orange-900/50 border border-orange-800 text-orange-200">mod</span>');
+              if (x.trust?.hostile) hits.push('<span class="px-1 py-0.5 rounded bg-red-900/50 border border-red-800 text-red-200">trust</span>');
+              return '<tr class="border-t border-gray-900 bg-gray-950/30">'
+                + '<td class="py-1.5 pr-3 text-gray-400 tabular-nums">' + fmtTsS(x.ts) + '</td>'
+                + '<td class="py-1.5 pr-3 text-gray-200">' + escH(x.senderUsername || "\u2014") + '</td>'
+                + '<td class="py-1.5 pr-3 text-gray-300">' + escH(x.channelSlug || "\u2014") + '</td>'
+                + '<td class="py-1.5 pr-3 text-gray-400">' + escH(x.userRole || "\u2014") + '</td>'
+                + '<td class="py-1.5 pr-3"><div class="flex gap-1">' + (hits.join("") || '<span class="text-gray-600">\u2014</span>') + '</div></td>'
+                + '<td class="py-1.5 pr-3 text-gray-500 truncate max-w-[200px]">' + escH(x.text_preview || "") + '</td></tr>';
+            }).join("");
+          }
+
+          _$("tl_runAll")?.addEventListener("click", runAll);
+          _$("tl_auditRefresh")?.addEventListener("click", refreshAudit);
+          _$("tl_auditFilterRun")?.addEventListener("change", refreshAudit);
+          loadTests();
+          refreshAudit();
+          auditTimer = setInterval(refreshAudit, 3000);
+        })();
+      </script>
+      <!--=========================================================Live updater (poll
+        /dashboard/metrics/data)==========================================================-->
+        <script>const $ = (id) => document.getElementById(id);
+
+          function safeNum(v) {
+            const n = Number(v);
+            return Number.isFinite(n) ? n : 0;
+          }
+
+          function fmt(n) {
+            try {
+              return safeNum(n).toLocaleString();
+            }
+
+            catch {
+              return String(n ?? 0);
+            }
+          }
+
+          function fmtTs(ts) {
+            try {
+              if (!ts) return "—";
+              const d = new Date(ts);
+              if (Number.isNaN(d.getTime())) return "—";
+              return d.toISOString().replace("T", " ").replace("Z", "");
+            }
+
+            catch {
+              return "—";
+            }
+          }
+
+          function setPill(el, on, onText, offText) {
+            if (!el) return;
+            el.textContent = on ? onText : offText;
+            el.classList.remove("bg-green-700/70", "border-green-600", "bg-red-700/70", "border-red-600");
+            el.classList.add(on ? "bg-green-700/70" : "bg-red-700/70");
+            el.classList.add(on ? "border-green-600" : "border-red-600");
+          }
+
+          function setPillNeutral(el, on, onText, offText) {
+            if (!el) return;
+            el.textContent = on ? onText : offText;
+            el.classList.remove("bg-green-700/50", "border-green-700", "bg-gray-800", "border-gray-700");
+            el.classList.add(on ? "bg-green-700/50" : "bg-gray-800");
+            el.classList.add(on ? "border-green-700" : "border-gray-700");
+          }
+
+          function uniq(arr) {
+            return Array.from(new Set((arr || []).filter(Boolean)));
+          }
+
+          function escapeHtml(s) {
+            return String(s ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+          }
+
+          function pill(label, kind) {
+            const cls = kind === "flood" ? "bg-red-900/50 border-red-800" :
+              kind === "swarm" ? "bg-purple-900/50 border-purple-800" : kind === "moderation" ? "bg-orange-900/50 border-orange-800" : kind === "error" ? "bg-red-900/50 border-red-800" : "bg-gray-800 border-gray-700";
+
+            return `<span class="px-2 py-1 rounded border ${cls} text-xs">$ {
+            escapeHtml(label)
+          }
+
+          </span>`;
+          }
+
+          function rowDetails(it) {
+            const parts = [];
+
+            if (it.flood) {
+              const a = it.flood.action || "action";
+
+              const d = it.flood.duration_seconds != null ? `$ {
+              it.flood.duration_seconds
+            }
+
+            s` : "";
+
+              parts.push(`$ {
+                pill("flood", "flood")
+              }
+
+              <span class="text-gray-300" >$ {
+                escapeHtml(a)
+              }
+
+              $ {
+                escapeHtml(d)
+              }
+
+              </span>`);
+            }
+
+            if (it.swarm) {
+              const acts = Array.isArray(it.swarm.actions) ? it.swarm.actions.join(", ") : "";
+
+              parts.push(`$ {
+                pill("swarm", "swarm")
+              }
+
+              <span class="text-gray-300" >$ {
+                escapeHtml(acts || "actions")
+              }
+
+              </span>`);
+            }
+
+            if (it.moderation) {
+              const a = it.moderation.action || "action";
+
+              parts.push(`$ {
+                pill("moderation", "moderation")
+              }
+
+              <span class="text-gray-300" >$ {
+                escapeHtml(a)
+              }
+
+              </span>`);
+            }
+
+            if (it.error) {
+              parts.push(`$ {
+                pill("error", "error")
+              }
+
+              <span class="text-gray-300" >$ {
+                escapeHtml(String(it.error).slice(0, 200))
+              }
+
+              </span>`);
+            }
+
+            if (!parts.length) return `<span class="text-gray-500">—</span>`;
+
+            return `<div class="flex flex-wrap gap-2">$ {
+            parts.join("")
+          }
+
+          </div>`;
+          }
+
+          function isIncident(it) {
+            return ! !(it?.flood || it?.swarm || it?.moderation || it?.error);
+          }
+
+          function matchesType(it, type) {
+            if (!type) return true;
+            if (type === "flood") return ! !it.flood;
+            if (type === "swarm") return ! !it.swarm;
+            if (type === "moderation") return ! !it.moderation;
+            if (type === "error") return ! !it.error;
+            return true;
+          }
+
+          function matchesUser(it, q) {
+            if (!q) return true;
+            const needle = String(q).toLowerCase().trim();
+            if (!needle) return true;
+            const u = String(it.senderUsername || "").toLowerCase();
+            const id = String(it.senderUserId || "").toLowerCase();
+            return u.includes(needle) || id.includes(needle);
+          }
+
+          function itemKey(it) {
+            const mid = String(it?.message_id || "").trim();
+
+            if (mid) return `m:$ {
+            mid
+          }
+
+          `;
+
+            const ts = String(it?.ts || "");
+            const ch = String(it?.channelSlug || "");
+            const tenant = String(it?.scraplet_user_id ?? "");
+            const uid = String(it?.senderUserId || it?.senderUsername || "");
+            const ev = String(it?.eventType || "");
+
+            return `x:$ {
+            ts
+          }
+
+          |$ {
+            tenant
+          }
+
+          |$ {
+            ch
+          }
+
+          |$ {
+            uid
+          }
+
+          |$ {
+            ev
+          }
+
+          `;
+          }
+
+          const expanded = new Set();
+
+          function setExpanded(key, isOpen) {
+            if (!key) return;
+            if (isOpen) expanded.add(key);
+            else expanded.delete(key);
+          }
+
+          function isExpanded(key) {
+            return expanded.has(key);
+          }
+
+          let lastSnapshot = {
+            scrapbotStatus: null,
+            scrapbotMetrics: null,
+            recentItems: [],
+            securityTelemetrySnapshot: null,
+            fetchedAt: 0,
+          }
+
+            ;
+
+          function buildChannelOptions(items) {
+            const channels = uniq((items || []).map(it => it.channelSlug).filter(Boolean)).sort();
+            const sel = $("filterChannel");
+            if (!sel) return;
+
+            const current = sel.value;
+
+            const opts = ['<option value="">All channels</option>'].concat(channels.map(ch => `<option value="${escapeHtml(ch)}" >$ {
+                escapeHtml(ch)
+              }
+
+              </option>`));
+
+            sel.innerHTML = opts.join("");
+
+            if (current && channels.includes(current)) sel.value = current;
+          }
+
+          function renderChannelTable(channels, ringWindow) {
+            const host = $("channelTable");
+            if (!host) return;
+
+            if ($("ringSize")) $("ringSize").textContent = ringWindow?.size ?? 0;
+
+            if (!Array.isArray(channels) || !channels.length) {
+              host.innerHTML = '<tr><td colspan="9" class="py-4 text-gray-400">No channel data yet.</td></tr>';
+              return;
+            }
+
+            host.innerHTML = channels.slice(0, 20).map((ch) => ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 font-semibold text-gray-200" >$ {
+              escapeHtml(ch.channelSlug || "?")
+            }
+
+            </td> <td class="py-2 pr-4 text-gray-300" >$ {
+              escapeHtml(String(ch.scraplet_user_id ?? 0))
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.messages)
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.commands)
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.flood)
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.swarm)
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.moderation)
+            }
+
+            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+              fmt(ch.errors)
+            }
+
+            </td> <td class="py-2 pl-2 text-right text-gray-400 tabular-nums" >$ {
+              fmtTs(ch.last_ts)
+            }
+
+            </td> </tr> `).join("");
+          }
+
+          function renderTopList(hostId, items) {
+            const host = $(hostId);
+            if (!host) return;
+
+            const arr = Array.isArray(items) ? items : [];
+
+            if (!arr.length) {
+              host.innerHTML = `<div class="text-gray-400 text-sm">No data yet.</div>`;
+              return;
+            }
+
+            host.innerHTML = arr.slice(0, 10).map((x) => ` <div class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2" > <div class="text-xs text-gray-300 ${hostId === " secTopUas" ? " " : " font-mono"} truncate pr-3" >$ {
+              escapeHtml(x.key || "")
+            }
+
+            </div> <div class="text-xs text-gray-400 tabular-nums" >$ {
+              fmt(x.count)
+            }
+
+            </div> </div> `).join("");
+          }
+
+          function updateKpis(sbStatus, sbMetrics, secSnap) {
+            const counters = sbMetrics?.counters || {}
+
+              ;
+            const statusOk = ! !sbStatus?.ok;
+            const dbOk = ! !(sbStatus?.db && sbStatus?.db?.ok);
+
+            setPill($("pillOnline"), statusOk, "ONLINE", "OFFLINE");
+            setPill($("pillDb"), dbOk, "OK", "FAIL");
+
+            if ($("kpiInbound")) $("kpiInbound").textContent = fmt(counters["inbound_total"]);
+            if ($("kpiErrors")) $("kpiErrors").textContent = fmt(counters["inbound_errors_total"]);
+            if ($("kpiCmd")) $("kpiCmd").textContent = fmt(counters["commands_matched_total"]);
+            if ($("kpiReplies")) $("kpiReplies").textContent = fmt(counters["commands_replies_sent_total"]);
+
+            if ($("kpiFlood")) $("kpiFlood").textContent = fmt(counters["flood_tripped_total"]);
+            if ($("kpiSwarm")) $("kpiSwarm").textContent = fmt(counters["swarm_matched_total"]);
+            if ($("kpiMod")) $("kpiMod").textContent = fmt(counters["moderation_matched_total"]);
+
+            if ($("lastUpdate")) $("lastUpdate").textContent = fmtTs(sbMetrics?.now || sbStatus?.now);
+
+            const upMs = safeNum(sbMetrics?.uptime_ms);
+            const upSec = Math.floor(upMs / 1000);
+            const h = Math.floor(upSec / 3600);
+            const m = Math.floor((upSec % 3600) / 60);
+            const s = upSec % 60;
+
+            if ($("uptime")) $("uptime").textContent = `$ {
+            h
+          }
+
+          h $ {
+            m
+          }
+
+          m $ {
+            s
+          }
+
+          s`;
+
+            const pulseLatest = Array.isArray(sbMetrics?.pulse_latest) ? sbMetrics.pulse_latest : [];
+            const top = pulseLatest[0] || null;
+            if ($("topPulseKey")) $("topPulseKey").textContent = top?.key || "—";
+            if ($("pulseActive")) $("pulseActive").textContent = top?.pulse?.active ? "true" : "false";
+            if ($("tripwire")) $("tripwire").textContent = top?.tripwire ? "set" : "null";
+
+            // SECURITY
+            const ok = ! !secSnap?.ok;
+            setPillNeutral($("pillSec"), ok, "LIVE", "—");
+
+            const r1 = secSnap?.rolling?.last_1m || {}
+
+              ;
+
+            const r5 = secSnap?.rolling?.last_5m || {}
+
+              ;
+
+            const buf = secSnap?.buffer || {}
+
+              ;
+
+            const top5 = secSnap?.top_5m || {}
+
+              ;
+
+            if ($("secNow")) $("secNow").textContent = fmtTs(secSnap?.now);
+
+            if ($("kpiProbes1m")) $("kpiProbes1m").textContent = fmt(r1.probes);
+            if ($("kpiBlocked1m")) $("kpiBlocked1m").textContent = fmt(r1.blocked);
+
+            if ($("kpiProbes5m")) $("kpiProbes5m").textContent = fmt(r5.probes);
+            if ($("kpiBlocked5m")) $("kpiBlocked5m").textContent = fmt(r5.blocked);
+
+            if ($("kpiReq5m")) $("kpiReq5m").textContent = fmt(r5.req);
+            if ($("kpi4xx5m")) $("kpi4xx5m").textContent = fmt(r5.s4xx);
+            if ($("kpi5xx5m")) $("kpi5xx5m").textContent = fmt(r5.s5xx);
+
+            if ($("kpiProbeBuffered")) $("kpiProbeBuffered").textContent = fmt(buf.probe_events_buffered);
+            if ($("kpiProbeMax")) $("kpiProbeMax").textContent = fmt(buf.max_probe_events);
+
+            renderTopList("secTopPaths", top5.top_paths);
+            renderTopList("secTopIps", top5.top_ips);
+            renderTopList("secTopUas", top5.top_uas);
+          }
+
+          function renderGuardEvents(items) {
+            const body = $("guardEventsBody");
+            if (!body) return;
+
+            const chan = $("filterChannel")?.value || "";
+            const type = $("filterType")?.value || "";
+            const onlyInc = $("onlyIncidents")?.checked !== false;
+            const q = $("searchUser")?.value || "";
+
+            const filtered = (items || []).filter(it => it && (!onlyInc || isIncident(it))).filter(it => !chan || String(it.channelSlug || "") === chan).filter(it => matchesType(it, type)).filter(it => matchesUser(it, q)).slice(0, 50);
+
+            if (!filtered.length) {
+              body.innerHTML = `<tr><td colspan="7" class="py-4 text-gray-400">No matching guard events.</td></tr>`;
+              return;
+            }
+
+            const rows = filtered.map((it) => {
+              const key = itemKey(it);
+              const ts = fmtTs(it.ts);
+              const channel = it.channelSlug || "—";
+              const tenant = it.scraplet_user_id ?? 0;
+              const user = it.senderUsername || "—";
+
+              const userId = it.senderUserId ? ` ($ {
+                  it.senderUserId
+                })` : "";
+              const role = it.userRole || "—";
+
+              const has = [];
+              if (it.flood) has.push(pill("flood", "flood"));
+              if (it.swarm) has.push(pill("swarm", "swarm"));
+              if (it.moderation) has.push(pill("moderation", "moderation"));
+              if (it.error) has.push(pill("error", "error"));
+              if (it.commandMatched) has.push(pill("cmd", "other"));
+              if (it.commandReplySent) has.push(pill("reply", "other"));
+              if (it.pulse_active) has.push(pill("pulse", "other"));
+              if (it.tripwire) has.push(pill("tripwire", "other"));
+
+              const summary = has.length ? `<div class="flex flex-wrap gap-2" >$ {
+                has.join("")
+              }
+
+              </div>` : `<span class="text-gray-500" >—</span>`;
+              const raw = escapeHtml(JSON.stringify(it, null, 2));
+
+              const detailId = `detail_$ {
+                key.replaceAll(":", "_").replaceAll("|", "_")
+              }
+
+              `;
+              const open = isExpanded(key);
+
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+                ts
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+                escapeHtml(channel)
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+                escapeHtml(String(tenant))
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+                escapeHtml(user)
+              }
+
+              <span class="text-gray-500" >$ {
+                escapeHtml(userId)
+              }
+
+              </span></td> <td class="py-2 pr-4 text-gray-300" >$ {
+                escapeHtml(role)
+              }
+
+              </td> <td class="py-2 pr-4" >$ {
+                summary
+              }
+
+              </td> <td class="py-2 pr-4" > <button data-toggle="${escapeHtml(detailId)}"
+              data-key="${escapeHtml(key)}"
+              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700"
+
+              >details</button> </td> </tr> <tr id="${escapeHtml(detailId)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <div class="text-xs text-gray-500 mb-2" >Summary</div> $ {
+                rowDetails(it)
+              }
+
+              <div class="mt-3 text-xs text-gray-500 mb-2" >Raw</div> <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+                raw
+              }
+
+              </pre> </div> </td> </tr> `;
+            }).join("");
+
+            body.innerHTML = rows;
+
+            body.querySelectorAll("button[data-toggle]").forEach(btn => {
+              btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-toggle");
+                const key = btn.getAttribute("data-key");
+                const row = document.getElementById(id);
+                if (!row || !key) return;
+                const willOpen = row.classList.contains("hidden");
+                row.classList.toggle("hidden");
+                setExpanded(key, willOpen);
+              });
+            });
+          }
+
+          function renderFromCache() {
+            const sbStatus = lastSnapshot.scrapbotStatus || {}
+
+              ;
+
+            const sbMetrics = lastSnapshot.scrapbotMetrics || {}
+
+              ;
+            const items = Array.isArray(lastSnapshot.recentItems) ? lastSnapshot.recentItems : [];
+
+            const sec = lastSnapshot.securityTelemetrySnapshot || {}
+
+              ;
+
+            updateKpis(sbStatus, sbMetrics, sec);
+
+            const derived = sbMetrics.derived || {}
+
+              ;
+
+            renderChannelTable(Array.isArray(derived.channels) ? derived.channels : [], derived.ring_window || {});
+            buildChannelOptions(items);
+            renderGuardEvents(items);
+          }
+
+          async function fetchLatest() {
+            try {
+              const resp = await fetch("/dashboard/metrics/data", {
+                cache: "no-store"
+              });
+              const data = await resp.json().catch(() => null);
+              if (!data || !data.ok) return;
+
+              lastSnapshot = {
+                scrapbotStatus: data.scrapbotStatus || {}
+
+                ,
+                scrapbotMetrics: data.scrapbotMetrics || {}
+
+                ,
+                recentItems: Array.isArray(data.scrapbotRecent?.items) ? data.scrapbotRecent.items : [],
+                securityTelemetrySnapshot: data.securityTelemetrySnapshot || data.securityTelemetry || data.scrapbotSecurity || null,
+                fetchedAt: Date.now(),
+              }
+
+                ;
+
+              renderFromCache();
+            }
+
+            catch (e) {
+              // keep last render
+            }
+          }
+
+          function bindFilters() {
+
+            ["filterChannel",
+              "filterType",
+              "onlyIncidents",
+              "searchUser"].forEach((id) => {
+                const el = $(id);
+                if (!el) return;
+                el.addEventListener("input", renderFromCache);
+                el.addEventListener("change", renderFromCache);
+              });
+          }
+
+          let timer = null;
+
+          function start() {
+            bindFilters();
+            bindModerationExtras();
+            fetchLatest();
+            if (timer) clearInterval(timer);
+            timer = setInterval(fetchLatest, 2500);
+          }
+
+          $("btnRefreshNow")?.addEventListener("click", fetchLatest);
+
+          // =========================================================
+          // Moderation runtime + pipeline test + incidents (DB)
+          // =========================================================
+          async function rtLoad() {
+            try {
+              const r = await fetch("/api/moderation/runtime", {
+                cache: "no-store"
+              });
+              const j = await r.json().catch(() => null);
+              if (!j || !j.ok) throw new Error(j?.error || "failed");
+              if ($("rt_enforcement")) $("rt_enforcement").value = j.runtime?.enforcement || "off";
+              if ($("rt_usePulseTripwire")) $("rt_usePulseTripwire").checked = ! !j.runtime?.usePulseTripwire;
+              if ($("rt_status")) $("rt_status").textContent = "loaded";
+            }
+
+            catch (e) {
+              if ($("rt_status")) $("rt_status").textContent = "load failed";
+            }
+          }
+
+          async function rtApply() {
+            try {
+              const body = {
+                enforcement: $(
+                  "rt_enforcement")?.value || "off",
+                usePulseTripwire: ! !$(
+                  "rt_usePulseTripwire")?.checked,
+              }
+
+                ;
+
+              const r = await fetch("/api/moderation/runtime", {
+
+                method: "POST",
+                headers: {
+                  "content-type": "application/json"
+                }
+
+                ,
+                body: JSON.stringify(body),
+              }
+              );
+              const j = await r.json().catch(() => null);
+              if (!j || !j.ok) throw new Error(j?.error || "failed");
+              if ($("rt_status")) $("rt_status").textContent = "applied";
+            }
+
+            catch (e) {
+              if ($("rt_status")) $("rt_status").textContent = "apply failed";
+            }
+          }
+
+          function ptUuid() {
+            if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+            return "pt_" + Math.random().toString(16).slice(2) + "_" + Date.now();
+          }
+
+          async function ptRun() {
+            const out = $("pt_out");
+
+            if (out) out.textContent = `[$ {
+            new Date().toISOString()
+          }
+
+          ] running…\n`+ (out.textContent || "");
+
+            const payload = {
+              platform: "kick",
+              scraplet_user_id: Number($(
+                "pt_userId")?.value || 0) || 0,
+              channelSlug: ($(
+                "pt_channel")?.value || "").trim(),
+              text: ($(
+                "pt_text")?.value || "").toString(),
+              senderUsername: ($(
+                "pt_senderUsername")?.value || "").trim(),
+              senderUserId: Number($(
+                "pt_senderUserId")?.value || 0) || 0,
+              userRole: ($(
+                "pt_userRole")?.value || "everyone").trim(),
+              message_id: ($(
+                "pt_messageId")?.value || "").trim() || ptUuid(),
+            }
+
+              ;
+
+            try {
+              const r = await fetch("/api/moderation/pipeline_test", {
+
+                method: "POST",
+                headers: {
+                  "content-type": "application/json"
+                }
+
+                ,
+                body: JSON.stringify(payload),
+              }
+              );
+              const j = await r.json().catch(() => null);
+              const txt = JSON.stringify(j, null, 2);
+              if (out) out.textContent = txt + "\n\n" + (out.textContent || "");
+            }
+
+            catch (e) {
+              if (out) out.textContent = `ERROR: $ {
+            String(e?.message || e)
+          }
+
+          \n\n`+ (out.textContent || "");
+            }
+          }
+
+          const incExpanded = new Set();
+
+          function incKey(x) {
+            return String(x?.id || x?.ts || "") + "|" + String(x?.type || "");
+          }
+
+          function renderIncidents(items) {
+            const body = $("inc_body");
+            if (!body) return;
+
+            const arr = Array.isArray(items) ? items : [];
+
+            if (!arr.length) {
+              body.innerHTML = `<tr><td colspan="7" class="py-4 text-gray-400">No incidents yet.</td></tr>`;
+              return;
+            }
+
+            body.innerHTML = arr.slice(0, 80).map((x) => {
+              const key = incKey(x);
+              const open = incExpanded.has(key);
+              const id = "inc_" + key.replaceAll(/[^a-zA-Z0-9_]/g, "_");
+
+              const ts = fmtTs(x.ts || x.created_at || x.occurred_at);
+              const type = x.type || x.incident_type || "—";
+              const ch = x.channel_slug || x.channelSlug || "—";
+              const tenant = x.scraplet_user_id ?? x.tenant_id ?? "—";
+              const user = x.sender_username || x.senderUsername || x.target_username || x.user || "—";
+              const summary = x.summary || x.action || x.reason || (x.meta && (x.meta.action || x.meta.reason)) || "";
+
+              const raw = escapeHtml(JSON.stringify(x, null, 2));
+
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+                escapeHtml(ts)
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+                escapeHtml(type)
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+                escapeHtml(ch)
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+                escapeHtml(String(tenant))
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+                escapeHtml(user)
+              }
+
+              </td> <td class="py-2 pr-4 text-gray-300" >$ {
+                escapeHtml(String(summary).slice(0, 120))
+              }
+
+              </td> <td class="py-2 pr-4" > <button data-inc-toggle="${escapeHtml(id)}" data-inc-key="${escapeHtml(key)}"
+
+              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700" >details</button> </td> </tr> <tr id="${escapeHtml(id)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+                raw
+              }
+
+              </pre> </div> </td> </tr> `;
+            }).join("");
+
+            body.querySelectorAll("button[data-inc-toggle]").forEach(btn => {
+              btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-inc-toggle");
+                const key = btn.getAttribute("data-inc-key");
+                const row = document.getElementById(id);
+                if (!row || !key) return;
+                const willOpen = row.classList.contains("hidden");
+                row.classList.toggle("hidden");
+                if (willOpen) incExpanded.add(key);
+                else incExpanded.delete(key);
+              });
+            });
+          }
+
+          async function fetchIncidents() {
+            const tenant = Number($("inc_userId")?.value || 0) || 0;
+            const channel = ($("inc_channel")?.value || "").trim();
+            const limit = Number($("inc_limit")?.value || 50) || 50;
+
+            if (!tenant) return;
+
+            const qs = new URLSearchParams();
+            qs.set("scraplet_user_id", String(tenant));
+            qs.set("platform", "kick");
+            if (channel) qs.set("channel_slug", channel);
+            qs.set("limit", String(limit));
+
+            try {
+              const r = await fetch("/api/moderation/incidents?" + qs.toString(), {
+                cache: "no-store"
+              });
+              const j = await r.json().catch(() => null);
+              const items = j?.items || j?.incidents || j?.data || [];
+              renderIncidents(items);
+            }
+
+            catch (e) {
+              renderIncidents([]);
+            }
+          }
+
+          let incTimer = null;
+
+          function bindModerationExtras() {
+            $("rt_load")?.addEventListener("click", rtLoad);
+            $("rt_apply")?.addEventListener("click", rtApply);
+            $("pt_run")?.addEventListener("click", ptRun);
+            $("inc_refresh")?.addEventListener("click", fetchIncidents);
+
+            // initial pulls
+            rtLoad();
+            fetchIncidents();
+
+            if (incTimer) clearInterval(incTimer);
+            incTimer = setInterval(fetchIncidents, 5000);
+          }
+
+          start();
+
+        </script>
+        <!--=========================================================Test Controls runner (in-browser load
+          generator)==========================================================-->
+          <script>(function () {
+              const LS_KEY = "scrapbot_test_secret";
+
+              const $ = (id) => document.getElementById(id);
+              const logEl = $("tc_log");
+
+              let running = false;
+              let stopRequested = false;
+
+              function setStatus(text, kind) {
+                const el = $("tc_status");
+                if (!el) return;
+                el.textContent = text;
+
+                el.classList.remove("bg-gray-800", "border-gray-700", "text-gray-200");
+                el.classList.remove("bg-green-700/50", "border-green-700", "text-green-100");
+                el.classList.remove("bg-red-700/50", "border-red-700", "text-red-100");
+                el.classList.remove("bg-blue-700/50", "border-blue-700", "text-blue-100");
+
+                if (kind === "ok") el.classList.add("bg-green-700/50", "border", "border-green-700", "text-green-100");
+                else if (kind === "error") el.classList.add("bg-red-700/50", "border", "border-red-700", "text-red-100");
+                else if (kind === "running") el.classList.add("bg-blue-700/50", "border", "border-blue-700", "text-blue-100");
+                else el.classList.add("bg-gray-800", "border", "border-gray-700", "text-gray-200");
+              }
+
+              function setProgress(done, total) {
+                const bar = $("tc_progressBar");
+                const txt = $("tc_progressText");
+
+                if (txt) txt.textContent = `$ {
+                done
+              }
+
+              / $ {
+                total
+              }
+
+              `;
+                if (!bar) return;
+
+                if (!total) {
+                  bar.style.width = "0%"; return;
+                }
+
+                bar.style.width = `$ {
+                Math.max(0, Math.min(100, Math.round((done / total) * 100)))
+              }
+
+              %`;
+              }
+
+              function disableControls(disabled) {
+                ["tc_swarm_200", "tc_swarm_500", "tc_swarm_cinematic", "tc_swarm_linkspam", "tc_flood_emoji",
+                  "tc_stop", "tc_save", "tc_clear", "tc_log_clear",
+                  "tc_text", "tc_channel", "tc_userId", "tc_broadcasterUserId",
+                  "tc_users", "tc_repeats", "tc_interval", "tc_concurrency",
+                  "tc_link_domain", "tc_link_rate", "tc_emoji_intensity", "tc_cine_variance"
+
+                ].forEach(id => {
+                  const el = $(id);
+                  if (el) el.disabled = ! !disabled;
+                });
+              }
+
+              function log(msg) {
+                if (!logEl) return;
+
+                const line = `[$ {
+                new Date().toISOString()
+              }
+
+              ] $ {
+                msg
+              }
+
+              `;
+                logEl.textContent = (line + "\n" + logEl.textContent).slice(0, 14000);
+              }
+
+              function getSecret() {
+                return ($("tc_secret")?.value || localStorage.getItem(LS_KEY) || "").trim();
+              }
+
+              function updateSecretHint() {
+                const hint = $("tc_secretHint");
+                if (!hint) return;
+                const saved = localStorage.getItem(LS_KEY);
+                hint.textContent = saved ? "secret saved locally" : "not saved";
+              }
+
+              function saveSecret() {
+                const s = ($("tc_secret")?.value || "").trim();
+
+                if (!s) {
+                  log("No secret entered."); setStatus("missing secret", "error"); return;
+                }
+
+                localStorage.setItem(LS_KEY, s);
+                updateSecretHint();
+                log("Secret saved to localStorage.");
+                setStatus("secret saved", "ok");
+              }
+
+              function clearSecret() {
+                localStorage.removeItem(LS_KEY);
+                if ($("tc_secret")) $("tc_secret").value = "";
+                updateSecretHint();
+                log("Secret cleared.");
+                setStatus("idle", "idle");
+              }
+
+              async function postInbound(payload, secret) {
+                const r = await fetch("/api/inbound/kick", {
+
+                  method: "POST",
+                  headers: {
+                    "content-type": "application/json",
+                    "x-scrapbot-secret": secret,
+                  }
+
+                  ,
+                  body: JSON.stringify(payload),
+                });
+
+                const text = await r.text();
+
+                if (!r.ok) throw new Error(`HTTP $ {
+                r.status
+              }
+
+              : $ {
+                text
+              }
+
+              `);
+                return text;
+              }
+
+              function uuid() {
+                if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+                return "m_" + Math.random().toString(16).slice(2) + "_" + Date.now();
+              }
+
+              const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+
+              function clamp(n, lo, hi) {
+                n = Number(n);
+                if (!Number.isFinite(n)) n = lo;
+                return Math.max(lo, Math.min(hi, n));
+              }
+
+              function pick(arr) {
+                return arr[Math.floor(Math.random() * arr.length)];
+              }
+
+              function maybe(pct) {
+                return Math.random() * 100 < pct;
+              }
+
+              function obfuscateUrl(url) {
+                const variants = [url,
+                  url.replace("https://", "http://"),
+                  url.replace("https://", "hxxps://"),
+                  url.replace("https://", "h t t p s : / / "),
+                  url.replace("://", " :// "),
+                  url.replace(/\./g, " dot "),
+                  url.replace(/\./g, "[dot]"),
+                  url.replace(/\//g, " / "),
+                  url.replace("discord.gg", "discord . gg"),
+                  url.replace("discord.gg", "d i s c o r d . g g"),
+                ];
+                return pick(variants);
+              }
+
+              function buildLinkSpamText(baseText, domain) {
+                const url = `https: //${domain}/` + Math.random().toString(16).slice(2, 8);
+                const leadIns = ["join fast",
+                  "free nitro",
+                  "mods asleep",
+                  "limited offer",
+                  "best community",
+                  "claim here",
+                  "100% legit",
+                  "new drop",
+                ];
+                const tail = pick(["", "!!!", " 🔥", " ✅", " (real)", " (working)", " rn"]);
+
+                return `$ {
+            pick(leadIns)
+          }
+
+          $ {
+            obfuscateUrl(url)
+          }
+
+          $ {
+            baseText
+          }
+
+          $ {
+            tail
+          }
+
+          `.trim();
+              }
+
+              function buildEmojiFloodText(baseText, intensity) {
+                const emojis = ["🔥", "😂", "💀", "✅", "🚀", "💎", "🎯", "🧠", "👀", "😈", "😳", "✨", "⚡", "🟢", "🎉", "🙌"];
+                const count = clamp(intensity, 1, 10) * 3 + Math.floor(Math.random() * 6);
+                let blob = "";
+                for (let i = 0; i < count; i++) blob += pick(emojis);
+
+                if (maybe(35)) return `$ {
+            blob
+          }
+
+          $ {
+            baseText
+          }
+
+          $ {
+            blob
+          }
+
+          `.trim();
+                return blob;
+              }
+
+              function buildCinematicText(baseText, variancePct) {
+
+                const variants = [baseText,
+                  baseText.toUpperCase(),
+                  baseText.replace(/\bfree\b/i, "FREE"),
+                  baseText.replace(/\bfollowers\b/i, "followers rn"),
+                  `yo $ {
+            baseText
+          }
+
+          `,
+                  `$ {
+            baseText
+          }
+
+          (no cap)`,
+                  `$ {
+            baseText
+          }
+
+          ✅`,
+                  `$ {
+            baseText
+          }
+
+          right now`,
+                  `$ {
+            baseText
+          }
+
+          legit`,
+                  `$ {
+            baseText
+          }
+
+          check bio`,
+                ];
+
+                let t = maybe(variancePct) ? pick(variants) : baseText;
+
+                if (maybe(variancePct * 0.5)) t += pick(["!", "!!", "!!!", " 🔥", " 👀", " ✅", " 💀"]);
+                if (maybe(variancePct * 0.25)) t = pick(["bro", "nah", "yo", "okay"]) + " " + t;
+
+                return t.trim();
+              }
+
+              async function runScenario({
+
+                label,
+                users,
+                repeats,
+                intervalMs,
+                concurrency,
+                senderPrefix = "SwarmUser",
+                textBuilder,
+                staggerMs = 0,
+              }) {
+                if (running) {
+                  log("Already running."); return;
+                }
+
+                const secret = getSecret();
+
+                if (!secret) {
+                  log("Missing secret. Paste it and hit Save."); setStatus("missing secret", "error"); return;
+                }
+
+                const channelSlug = ($("tc_channel")?.value || "scraplet").trim() || "scraplet";
+                const scraplet_user_id = parseInt($("tc_userId")?.value, 10) || 4;
+                const broadcasterUserId = parseInt($("tc_broadcasterUserId")?.value, 10) || 1017792;
+
+                users = clamp(users, 1, 8000);
+                repeats = clamp(repeats, 1, 500);
+                intervalMs = clamp(intervalMs, 0, 20000);
+                concurrency = clamp(concurrency, 1, 80);
+                staggerMs = clamp(staggerMs, 0, 2000);
+
+                stopRequested = false;
+                running = true;
+                disableControls(true);
+                setStatus("running", "running");
+
+                const total = users * repeats;
+                let done = 0;
+                setProgress(0, total);
+
+                log(`$ {
+              label
+            }
+
+            starting: users=$ {
+              users
+            }
+
+            repeats=$ {
+              repeats
+            }
+
+            interval=$ {
+              intervalMs
+            }
+
+            ms concurrency=$ {
+              concurrency
+            }
+
+            stagger=$ {
+              staggerMs
+            }
+
+            ms`);
+
+                try {
+                  for (let rep = 0; rep < repeats; rep++) {
+                    if (stopRequested) break;
+
+                    const jobs = [];
+
+                    for (let i = 0; i < users; i++) {
+                      const senderUsername = `$ {
+                  senderPrefix
+                }
+
+                $ {
+                  String(i + 1).padStart(3, "0")
+                }
+
+                `;
+                      const senderUserId = 9000000 + i + (rep * users);
+
+                      const payload = {
+                        platform: "kick",
+                        scraplet_user_id,
+                        channelSlug,
+                        broadcasterUserId,
+                        senderUsername,
+                        senderUserId,
+                        userRole: "everyone",
+                        text: textBuilder ? textBuilder(i, rep) : ($("tc_text")?.value || "free followers"),
+                        eventType: "chat.message.sent",
+                        message_id: uuid(),
+                      }
+
+                        ;
+
+                      jobs.push({
+                        payload, delay: staggerMs ? Math.floor(Math.random() * staggerMs) : 0
+                      });
+                    }
+
+                    let idx = 0;
+
+                    async function worker() {
+                      while (idx < jobs.length && !stopRequested) {
+                        const mine = jobs[idx++];
+                        if (mine.delay) await sleep(mine.delay);
+                        await postInbound(mine.payload, secret);
+                        done++;
+                        if (done % 10 === 0 || done === total) setProgress(done, total);
+                      }
+                    }
+
+                    await Promise.all(Array.from({
+                      length: concurrency
+                    }
+
+                      , () => worker()));
+
+                    log(`$ {
+              label
+            }
+
+            rep $ {
+              rep + 1
+            }
+
+            /$ {
+              repeats
+            }
+
+            done`);
+                    if (stopRequested) break;
+                    if (intervalMs > 0) await sleep(intervalMs);
+                  }
+
+                  if (stopRequested) {
+                    log(`$ {
+              label
+            }
+
+            stopped.`);
+                    setStatus("stopped", "error");
+                  }
+
+                  else {
+                    log(`$ {
+              label
+            }
+
+            complete.`);
+                    setStatus("done", "ok");
+                  }
+                }
+
+                catch (e) {
+                  log(`$ {
+              label
+            }
+
+            FAILED: $ {
+              e.message || e
+            }
+
+            `);
+                  setStatus("failed", "error");
+                }
+
+                finally {
+                  running = false;
+                  disableControls(false);
+                }
+              }
+
+              function runBasicSwarm(users, repeats, intervalMs, concurrencyOverride) {
+                const text = ($("tc_text")?.value || "free followers").trim() || "free followers";
+                const concurrency = concurrencyOverride ?? (parseInt($("tc_concurrency")?.value, 10) || 6);
+
+                return runScenario({
+                  label: `Swarm $ {
+              users
+            }
+
+            `,
+                  users,
+                  repeats,
+                  intervalMs,
+                  concurrency,
+                  senderPrefix: "SwarmUser",
+                  textBuilder: () => text,
+                  staggerMs: 0,
+                });
+              }
+
+              function runCinematicSwarm() {
+                const base = ($("tc_text")?.value || "free followers").trim() || "free followers";
+                const variance = clamp(parseInt($("tc_cine_variance")?.value, 10) || 55, 0, 100);
+
+                return runScenario({
+                  label: "Cinematic Swarm",
+                  users: parseInt($("tc_users")?.value, 10) || 200,
+                  repeats: parseInt($("tc_repeats")?.value, 10) || 3,
+                  intervalMs: parseInt($("tc_interval")?.value, 10) || 120,
+                  concurrency: parseInt($("tc_concurrency")?.value, 10) || 6,
+                  senderPrefix: "CineUser",
+                  staggerMs: 180,
+                  textBuilder: () => buildCinematicText(base, variance),
+                });
+              }
+
+              function runLinkSpam() {
+                const base = ($("tc_text")?.value || "free followers").trim() || "free followers";
+                const domain = ($("tc_link_domain")?.value || "discord.gg").trim() || "discord.gg";
+                const linkRate = clamp(parseInt($("tc_link_rate")?.value, 10) || 30, 0, 100);
+
+                return runScenario({
+
+                  label: "Link Spam",
+                  users: parseInt($("tc_users")?.value, 10) || 200,
+                  repeats: parseInt($("tc_repeats")?.value, 10) || 3,
+                  intervalMs: parseInt($("tc_interval")?.value, 10) || 120,
+                  concurrency: parseInt($("tc_concurrency")?.value, 10) || 6,
+                  senderPrefix: "LinkUser",
+                  staggerMs: 60,
+                  textBuilder: () => {
+                    if (maybe(linkRate)) return buildLinkSpamText(base, domain);
+                    return buildCinematicText(base, 35);
+                  }
+
+                  ,
+                });
+              }
+
+              function runEmojiFlood() {
+                const base = ($("tc_text")?.value || "free followers").trim() || "free followers";
+                const intensity = clamp(parseInt($("tc_emoji_intensity")?.value, 10) || 7, 1, 10);
+
+                return runScenario({
+                  label: "Emoji Flood",
+                  users: clamp(parseInt($("tc_users")?.value, 10) || 40, 1, 500),
+                  repeats: clamp(parseInt($("tc_repeats")?.value, 10) || 8, 1, 200),
+                  intervalMs: clamp(parseInt($("tc_interval")?.value, 10) || 20, 0, 2000),
+                  concurrency: clamp(parseInt($("tc_concurrency")?.value, 10) || 10, 1, 50),
+                  senderPrefix: "EmojiUser",
+                  staggerMs: 10,
+                  textBuilder: () => buildEmojiFloodText(base, intensity),
+                });
+              }
+
+              function wire() {
+                $("tc_save")?.addEventListener("click", saveSecret);
+                $("tc_clear")?.addEventListener("click", clearSecret);
+
+                $("tc_swarm_200")?.addEventListener("click", () => runBasicSwarm(200, 3, 120));
+                $("tc_swarm_500")?.addEventListener("click", () => runBasicSwarm(500, 2, 140));
+
+                $("tc_swarm_cinematic")?.addEventListener("click", runCinematicSwarm);
+                $("tc_swarm_linkspam")?.addEventListener("click", runLinkSpam);
+                $("tc_flood_emoji")?.addEventListener("click", runEmojiFlood);
+
+                $("tc_stop")?.addEventListener("click", () => {
+                  if (!running) {
+                    log("Not running."); return;
+                  }
+
+                  stopRequested = true;
+                  log("Stop requested…");
+                  setStatus("stopping…", "running");
+                });
+
+                $("tc_log_clear")?.addEventListener("click", () => {
+                  if (logEl) logEl.textContent = "";
+                  setProgress(0, 0);
+                  setStatus("idle", "idle");
+                });
+
+                const saved = localStorage.getItem(LS_KEY);
+                if (saved && $("tc_secret")) $("tc_secret").value = saved;
+
+                updateSecretHint();
+                log("Test Controls ready.");
+              }
+
+              wire();
+            })();
+          </script>
+</body>
+
+</html>

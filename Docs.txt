@@ -1,0 +1,37 @@
+CHANGING THE LAYOUTS IN EDITOR OR CHANGING THE EDITOR IN GENERAL:
+
+What this means for future changes
+
+If you:
+
+add a new card style (e.g. “Hologram”)
+
+add a new layout section
+
+add another buttons feature (badges, counters, etc.)
+
+you do not have to inline everything again. You just:
+
+Add the new swatch / chip / field in profile-editor.ejs using the same hook pattern (class + data attribute).
+
+Extend the relevant module:
+
+new cardStyle → update the map in profile-editor-theme.js
+
+new section → add it to the map in profile-editor-layout.js
+
+new per-button field → extend the payload and preview builder in profile-editor-buttons.js
+
+As long as you don’t randomly rename/remove those core hooks, the rest of the editor will keep working.
+
+If you ever do a massive layout rewrite, the process is:
+
+Duplicate the current working files as backup (profile-editor.v1.ejs, etc.).
+
+In your new layout, keep the same IDs/classes/data attributes.
+
+Only after the HTML is stable, adjust selectors in the modules if needed.
+
+Test: basics → buttons → theme → layout, in that order.
+
+No re-inlining, no huge unpick required.

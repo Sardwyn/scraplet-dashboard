@@ -1,0 +1,119 @@
+<section style="margin-bottom:60px; font-family:'Inter',sans-serif;">
+  <h2
+    style="
+      font-size:22px;
+      margin-bottom:12px;
+      color:<%= theme.primary %>;
+      border-bottom:2px solid <%= theme.accent %>;
+      display:inline-block;
+      padding-bottom:4px;
+    "
+  >
+    📊 Platform Performance Overview
+  </h2>
+
+  <% if (!performance || performance.length === 0) { %>
+    <p style="color:#9ca3af;font-style:italic;margin-top:8px;">
+      No platform data available yet. Once your profiles are connected,
+      this section will show follower counts, CCV, and engagement across all linked platforms.
+    </p>
+  <% } else { %>
+    <div
+      style="
+        margin-top:16px;
+        border-radius:8px;
+        overflow:hidden;
+        border:1px solid #e5e7eb;
+      "
+    >
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead style="background:<%= theme.primary %>;color:#fff;">
+          <tr>
+            <th style="padding:10px 12px;text-align:left;">Platform</th>
+            <th style="padding:10px 12px;text-align:right;">Followers</th>
+            <th style="padding:10px 12px;text-align:right;">Engagement</th>
+            <th style="padding:10px 12px;text-align:right;">CCV</th>
+            <% if (Array.isArray(weeklyTrends) && weeklyTrends.length) { %>
+              <th style="padding:10px 12px;text-align:right;">Δ 7d</th>
+            <% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% performance.forEach((p, i) => {
+               const trend = (weeklyTrends || []).find(t => t.platform === p.platform);
+               const delta = trend ? Number(trend.deltaPct || 0) : 0;
+               const color = delta >= 0 ? theme.accent : '#dc2626';
+          %>
+            <tr
+              style="
+                background:<%= i % 2 === 0 ? '#f9fafb' : '#f3f4f6' %>;
+                color:#111827;
+              "
+            >
+              <td style="padding:8px 12px;"><strong><%= p.platform %></strong></td>
+              <td style="padding:8px 12px;text-align:right;">
+                <%= (p.followers ?? 0).toLocaleString() %>
+              </td>
+              <td style="padding:8px 12px;text-align:right;">
+                <%= p.engagement ?? 0 %>%
+              </td>
+              <td style="padding:8px 12px;text-align:right;">
+                <%= p.ccv ?? 0 %>
+              </td>
+              <% if (Array.isArray(weeklyTrends) && weeklyTrends.length) { %>
+                <td style="padding:8px 12px;text-align:right;color:<%= color %>;">
+                  <%= delta > 0 ? '+' : '' %><%= delta.toFixed(1) %>%
+                </td>
+              <% } %>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <%
+      // Compute summary insights safely
+      const totalFollowers = (performance || []).reduce((sum, p) => sum + (p.followers || 0), 0);
+      const top = (performance || [])[0]
+        ? performance.reduce((prev, curr) =>
+            (curr.followers || 0) > (prev.followers || 0) ? curr : prev
+          )
+        : { platform: "—", followers: 0 };
+      const topPct = totalFollowers > 0
+        ? ((top.followers / totalFollowers) * 100).toFixed(1)
+        : 0;
+    %>
+
+    <div style="margin-top:18px;">
+      <p
+        style="
+          font-size:14px;
+          color:#1f2937;
+          background:linear-gradient(90deg,<%= theme.primary %>10,<%= theme.accent %>10);
+          padding:12px 16px;
+          border-left:4px solid <%= theme.primary %>;
+          border-radius:6px;
+          line-height:1.5;
+        "
+      >
+        <strong><%= (top.platform || '').charAt(0).toUpperCase() + (top.platform || '').slice(1) %></strong>
+        is your strongest platform, representing
+        <strong><%= topPct %>%</strong> of your total audience.
+        Combined, you’ve built an estimated
+        <strong><%= totalFollowers.toLocaleString() %></strong> follower presence
+        across all connected platforms.
+      </p>
+    </div>
+
+    <p
+      style="
+        font-size:12px;
+        color:#6b7280;
+        margin-top:8px;
+        text-align:right;
+      "
+    >
+      Data current as of <%= new Date().toLocaleDateString() %>
+    </p>
+  <% } %>
+</section>

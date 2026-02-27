@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Raffle Widget — Config</title>
+
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=1" />
+
+  <style>
+    body { background: #070a0f; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
+    .row { display:flex; gap: 12px; flex-wrap: wrap; align-items:center; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .urlBox {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(200,215,235,0.14);
+      background: rgba(0,0,0,0.25);
+      color: rgba(240,245,255,0.92);
+      outline: none;
+    }
+    .mini { font-size: 12px; color: rgba(180,190,210,0.75); }
+    .grid2 { display:grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 900px) { .grid2 { grid-template-columns: 1.2fr 0.8fr; } }
+    .k { color: rgba(210,220,245,0.88); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
+    .pill { padding: 7px 10px; border-radius: 999px; border:1px solid rgba(200,215,235,0.14); background: rgba(0,0,0,0.22); }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="pc-panel pc-panel--premium pc-panel--premium-display">
+      <div class="pc-panel-hd flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-xs tracking-[0.28em] text-gray-500">WIDGET</span>
+          <span class="text-xs text-gray-300 font-semibold">RAFFLE</span>
+        </div>
+        <span class="pc-chip">
+          <span class="inline-block w-2 h-2 rounded-full bg-indigo-400"></span>
+          <span class="mono ml-1 text-indigo-200">CONFIG</span>
+        </span>
+      </div>
+
+      <div class="pc-panel-bd">
+        <div class="grid2">
+          <div>
+            <div class="k mb-2">Overlay URL (Browser / OBS)</div>
+            <input id="overlayUrl" class="urlBox mono" readonly value="<%= overlayUrl %>" />
+
+            <div class="row mt-3">
+              <a class="pc-btn pc-btn--primary text-sm" href="<%= overlayUrl %>" target="_blank" rel="noopener">
+                Open overlay →
+              </a>
+              <button class="pc-btn pc-btn--ghost text-sm" id="copyBtn">Copy URL</button>
+              <span class="pill mini mono">Token: <%= (token || '').slice(0, 18) %>…</span>
+            </div>
+
+            <div class="mt-6">
+              <div class="k mb-2">Test Controls</div>
+
+              <div class="pc-oled p-4 rounded-md border border-gray-800/60 bg-gray-950/30">
+                <div class="row">
+                  <div style="min-width:260px; flex: 1;">
+                    <div class="mini mb-1">Channel slug (for topic)</div>
+                    <input id="channelSlug" class="urlBox mono" style="padding:10px 10px;" value="<%= defaultChannelSlug || '' %>" placeholder="e.g. scraplet" />
+                  </div>
+
+                  <div style="min-width:260px; flex: 1;">
+                    <div class="mini mb-1">Join phrase</div>
+                    <input id="joinPhrase" class="urlBox mono" style="padding:10px 10px;" value="!join" />
+                  </div>
+
+                  <div style="min-width:240px;">
+                    <div class="mini mb-1">Animation</div>
+                    <select id="animation" class="urlBox mono" style="padding:10px 10px;">
+                      <option value="wheel">wheel</option>
+                      <option value="slot">slot</option>
+                      <option value="scramble">scramble</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="row mt-3">
+                  <button class="pc-btn pc-btn--ghost text-sm" id="btnCollecting">Send: collecting</button>
+                  <button class="pc-btn pc-btn--ghost text-sm" id="btnRolling">Send: rolling</button>
+                  <button class="pc-btn pc-btn--ghost text-sm" id="btnWinner">Send: winner</button>
+                  <button class="pc-btn pc-btn--ghost text-sm" id="btnReset">Send: reset</button>
+                </div>
+
+                <div class="mini mt-3">
+                  These buttons POST into <span class="mono">public.events</span> via <span class="mono">/dashboard/api/raffle/events</span>.
+                  Your overlay listens via <span class="mono">/w/:token/stream</span> and updates live.
+                </div>
+
+                <div id="status" class="mini mt-3 mono"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="k mb-2">What to expect</div>
+            <div class="pc-oled p-4 rounded-md border border-gray-800/60 bg-gray-950/30">
+              <ul class="mini" style="margin:0; padding-left: 18px; line-height:1.7;">
+                <li><span class="mono">collecting</span> shows “Entries Open”.</li>
+                <li><span class="mono">rolling</span> starts animation (wheel/slot/scramble).</li>
+                <li><span class="mono">winner</span> reveals and confetti pops.</li>
+                <li><span class="mono">reset</span> returns to waiting state.</li>
+              </ul>
+              <div class="mini mt-3">
+                You can open the overlay URL in a normal browser tab and watch updates instantly — OBS is optional.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const overlayUrl = document.getElementById("overlayUrl");
+  const copyBtn = document.getElementById("copyBtn");
+  const status = document.getElementById("status");
+
+  const channelSlugEl = document.getElementById("channelSlug");
+  const joinPhraseEl  = document.getElementById("joinPhrase");
+  const animationEl   = document.getElementById("animation");
+
+  // Default channel slug for testing only
+  if (!channelSlugEl.value) channelSlugEl.value = "scraplet";
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(overlayUrl.value);
+      status.textContent = "Copied overlay URL.";
+    } catch {
+      overlayUrl.select();
+      status.textContent = "Copy failed; URL selected.";
+    }
+  });
+
+  async function post(kind, payload) {
+    status.textContent = "Sending…";
+    const body = {
+      user_id: <%= Number(user.id) %>,
+      source: "kick",
+      channel_slug: String(channelSlugEl.value || "scraplet").trim(),
+      kind,
+      payload
+    };
+
+    const r = await fetch("/dashboard/api/raffle/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+
+    const txt = await r.text();
+    status.textContent = r.ok ? `Sent ${kind}` : `Failed (${r.status}): ${txt}`;
+  }
+
+  function basePayload(statusValue) {
+    const joinPhrase = String(joinPhraseEl.value || "").trim() || "!join";
+    const animation = String(animationEl.value || "wheel").trim() || "wheel";
+    const channelSlug = String(channelSlugEl.value || "scraplet").trim();
+
+    return {
+      sessionId: `kick:${channelSlug}`,
+      status: statusValue,
+      joinPhrase,
+      count: Math.floor(5 + Math.random() * 70),
+      animation,
+      sampleNames: ["TabLord","ScrapletFan","NeoPulp","KickEnjoyer","ChatGoblin","CaptainClip","ModBoss"]
+    };
+  }
+
+  document.getElementById("btnCollecting").addEventListener("click", () => {
+    post("raffle.state", basePayload("collecting"));
+  });
+
+  document.getElementById("btnRolling").addEventListener("click", () => {
+    post("raffle.state", basePayload("rolling"));
+  });
+
+  document.getElementById("btnWinner").addEventListener("click", () => {
+    const p = basePayload("winner");
+    const winnerName = p.sampleNames[Math.floor(Math.random() * p.sampleNames.length)];
+    post("raffle.winner", {
+      sessionId: p.sessionId,
+      joinPhrase: p.joinPhrase,
+      animation: p.animation,
+      winner: { platform: "kick", username: winnerName },
+      pool: p.sampleNames
+    });
+  });
+
+  document.getElementById("btnReset").addEventListener("click", () => {
+    post("raffle.reset", { sessionId: `kick:${String(channelSlugEl.value || "scraplet").trim()}` });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,712 @@
+<%
+  const safe = (v, d) => (typeof v === 'undefined' ? d : v);
+
+  const profileAnalytics = safe(locals.profileAnalytics, { views: 0 });
+  const referrerStats = safe(locals.referrerStats, []);
+  const clickBuckets = safe(locals.clickBuckets, []);
+  const clickDetails = safe(locals.clickDetails, []);
+  const heatmapPoints = safe(locals.heatmapPoints, []);
+  const profileEngagementTrend = safe(locals.profileEngagementTrend, {
+    percentChange: 0,
+    dailyViews: [],
+  });
+
+  // These are typically provided by the route. Leave as-is if already in locals.
+  const stats = safe(locals.stats, locals.stats);
+  const weeklyTrends = safe(locals.weeklyTrends, locals.weeklyTrends);
+  const selectedWindow = safe(locals.selectedWindow, locals.selectedWindow || 7);
+%>
+
+<div class="w-full max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 space-y-8">
+
+  <!-- Header -->
+  <div class="pc-panel">
+    <div class="pc-panel-bd">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-white">Your Stats Dashboard</h1>
+          <p class="text-sm text-gray-400 mt-1">
+            Metrics pulled from your public profile and integrations
+          </p>
+        </div>
+
+        <a
+          href="/dashboard/pitchdeck.pdf"
+          class="pc-btn pc-btn-primary text-xs px-4 py-2 uppercase tracking-wider"
+          title="Generate pitch deck PDF"
+        >
+          <span aria-hidden="true">📄</span>
+          <span>Generate Pitch Deck</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📈 Audience Growth -->
+  <section>
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">📈 Audience Growth</div>
+          <div class="pc-panel-sub">Combined followers across all connected platforms (daily snapshots).</div>
+        </div>
+
+        <div class="flex gap-2 text-xs">
+          <button data-days="14" class="pc-btn pc-btn-ghost agbtn bg-indigo-600 text-white">14d</button>
+          <button data-days="30" class="pc-btn pc-btn-ghost agbtn text-gray-300 hover:bg-gray-800">30d</button>
+          <button data-days="60" class="pc-btn pc-btn-ghost agbtn text-gray-300 hover:bg-gray-800">60d</button>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <div class="pc-chart pc-oled">
+          <div class="pc-chart-viewport relative h-[180px] sm:h-[220px] md:h-[240px]">
+            <div class="pc-chart-grid"></div>
+
+            <div
+              id="ag-loading"
+              class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-20"
+            >
+              <div class="pc-loader">
+                <i class="pc-spinner"></i>
+                <span>Loading…</span>
+              </div>
+            </div>
+
+            <canvas id="audienceGrowthChart" class="absolute inset-0 w-full h-full"></canvas>
+          </div>
+
+          <div class="pc-chart-footer">
+            <span id="ag-caption">Last 14 days</span>
+            <span class="pc-muted">window</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 📊 Platform Performance -->
+  <section>
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">📊 Platform Performance</div>
+          <div class="pc-panel-sub">Followers, engagement, CCV, trends + sparklines</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <% if (!stats || !Array.isArray(stats) || stats.length === 0) { %>
+          <div class="pc-empty">No platform data yet.</div>
+        <% } else { %>
+
+          <div class="pc-oled" style="padding:12px;">
+            <div class="overflow-x-auto">
+              <table class="pc-table w-full">
+                <thead>
+                  <tr>
+                    <th>Platform</th>
+                    <th class="is-right">Followers</th>
+                    <th class="is-right">Engagement</th>
+                    <th class="is-right">CCV</th>
+                    <% const hasTrends = Array.isArray(weeklyTrends) && weeklyTrends.length > 0; %>
+                    <% if (hasTrends) { %>
+                      <th class="is-right">7d Trend</th>
+                    <% } %>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% stats.forEach((stat) => {
+                       const platform = String(stat.platform || '').toLowerCase() || 'unknown';
+                       const followers = Number(stat.followers ?? 0);
+                       const engagement = Number(stat.engagement ?? 0);
+                       const ccv = Number(stat.ccv ?? 0);
+                       const trend = hasTrends ? weeklyTrends.find(t => String(t.platform).toLowerCase() === platform) : null;
+                       const delta = trend ? Number(trend.deltaPct || 0) : 0;
+                  %>
+                    <tr>
+                      <td class="capitalize"><%= platform %></td>
+                      <td class="is-right" style="color: rgba(57,255,182,0.95); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;">
+                        <%= followers.toLocaleString() %>
+                      </td>
+                      <td class="is-right" style="color: rgba(255,201,64,0.95); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;">
+                        <%= Number.isFinite(engagement) ? engagement.toFixed(2) + '%' : '—' %>
+                      </td>
+                      <td class="is-right" style="color: rgba(85,214,255,0.95); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;">
+                        <%= Number.isFinite(ccv) ? ccv : '—' %>
+                      </td>
+                      <% if (hasTrends) { %>
+                        <td class="is-right">
+                          <% if (delta > 0) { %>
+                            <span style="color: rgba(57,255,182,0.95); font-weight: 700;">▲ <%= delta.toFixed(1) %>%</span>
+                          <% } else if (delta < 0) { %>
+                            <span style="color: rgba(255,90,90,0.95); font-weight: 700;">▼ <%= Math.abs(delta).toFixed(1) %>%</span>
+                          <% } else { %>
+                            <span class="pc-muted">—</span>
+                          <% } %>
+                        </td>
+                      <% } %>
+                    </tr>
+
+                    <tr>
+                      <td colspan="<%= hasTrends ? 5 : 4 %>" style="padding: 10px 10px 14px;">
+                        <div class="pc-chart pc-oled" style="padding:10px;">
+                          <div class="pc-chart-viewport" style="min-height: 44px; padding: 6px;">
+                            <div class="pc-chart-grid"></div>
+                            <canvas id="spark-<%= platform %>" height="30"></canvas>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <% if (Array.isArray(weeklyTrends) && weeklyTrends.length) { 
+               const sorted = weeklyTrends.slice().sort((a, b) => Number(b.deltaPct || 0) - Number(a.deltaPct || 0));
+               const top = sorted[0];
+               const growth = Number(top.deltaPct || 0).toFixed(1);
+               const positiveTop = Number(top.deltaPct || 0) >= 0;
+               const arrow = positiveTop ? '📈' : '📉';
+               const color = positiveTop ? 'text-green-400' : 'text-red-400';
+
+               const totals = weeklyTrends.reduce((acc, t) => {
+                 acc.current += Number(t.current || 0);
+                 acc.previous += Number(t.previous || 0);
+                 return acc;
+               }, { current: 0, previous: 0 });
+
+               const overallDelta = totals.previous > 0
+                 ? ((totals.current - totals.previous) / totals.previous) * 100
+                 : 0;
+               const overallPositive = overallDelta >= 0;
+               const overallWord = overallPositive ? 'increased' : 'decreased';
+               const overallColor = overallPositive ? 'text-green-400' : 'text-red-400';
+          %>
+            <div class="pc-panel" style="margin-top: 14px;">
+              <div class="pc-panel-bd">
+                <p class="text-sm leading-relaxed text-gray-200">
+                  <span class="text-indigo-300 font-semibold"><%= arrow %> <%= top.platform.charAt(0).toUpperCase() + top.platform.slice(1) %></span>
+                  is your fastest-growing platform this week, showing a
+                  <span class="<%= color %> font-semibold"><%= growth %>%</span> change in total followers compared to last week.
+                  When we consider your following across all social estates, your total reach has
+                  <span class="<%= overallColor %> font-semibold"><%= overallWord %></span>
+                  by <span class="<%= overallColor %> font-semibold"><%= Math.abs(overallDelta).toFixed(1) %>%</span>.
+                </p>
+              </div>
+            </div>
+          <% } %>
+
+          <p class="text-xs text-gray-500 mt-2 text-right">
+            Data current as of <%= new Date().toLocaleDateString() %>
+          </p>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- 📈 Profile Engagement -->
+  <section>
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">📈 Profile Engagement</div>
+          <div class="pc-panel-sub">Views trend + top referrers</div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2 text-sm">
+          <button data-window="7"  class="pc-btn pc-btn-ghost winbtn px-3 py-1 <%= selectedWindow===7  ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">7d</button>
+          <button data-window="30" class="pc-btn pc-btn-ghost winbtn px-3 py-1 <%= selectedWindow===30 ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">30d</button>
+          <button data-window="60" class="pc-btn pc-btn-ghost winbtn px-3 py-1 <%= selectedWindow===60 ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:bg-gray-800' %>">60d</button>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd space-y-6">
+
+        <div class="pc-oled" style="padding: 12px;">
+          <div class="space-y-4 text-sm">
+            <div class="flex justify-between">
+              <span>Total Views (<span id="headline-window"><%= selectedWindow %></span>d)</span>
+              <span id="headline-views" class="font-semibold"><%= profileAnalytics.views %></span>
+            </div>
+
+            <% if (referrerStats && referrerStats.length) { %>
+              <div>
+                <p class="text-gray-400 mb-2">Top Referrers</p>
+                <div class="pc-rowlist">
+                  <% referrerStats.forEach(({ referrer, count }) => { %>
+                    <div class="pc-rowitem">
+                      <div>
+                        <div class="k"><%= referrer || 'Direct / Unknown' %></div>
+                        <div class="s">referrer</div>
+                      </div>
+                      <div class="v"><%= count %></div>
+                    </div>
+                  <% }) %>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="pc-chart pc-oled">
+          <div class="pc-chart-viewport relative h-[160px] sm:h-[200px] md:h-[240px]">
+            <div class="pc-chart-grid"></div>
+
+            <div
+              id="chart-loading"
+              class="absolute inset-0 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 z-20"
+            >
+              <div class="pc-loader">
+                <i class="pc-spinner"></i>
+                <span>Loading…</span>
+              </div>
+            </div>
+
+            <canvas id="engagementChart" class="absolute inset-0 w-full h-full"></canvas>
+          </div>
+
+          <div class="pc-chart-footer">
+            <span class="text-xs text-gray-300">
+              <span id="pct-arrow"><%= profileEngagementTrend.percentChange >= 0 ? '📈' : '📉' %></span>
+              <span id="pct-value" class="<%= profileEngagementTrend.percentChange >= 0 ? 'text-green-400' : 'text-red-400' %> font-semibold">
+                <%= Math.abs(profileEngagementTrend.percentChange).toFixed(1) %>%</span>
+              compared to previous <span id="caption-window"><%= selectedWindow %></span>d
+            </span>
+            <span class="pc-muted">trend</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 🧭 Internal Engagement -->
+  <section>
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">🧭 Internal Engagement</div>
+          <div class="pc-panel-sub">Heatmap + click buckets</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div class="pc-panel-title" style="margin-bottom: 10px;">Profile Heatmap</div>
+            <div class="pc-oled" style="position: relative; width: 100%; height: 18rem; overflow:hidden;">
+              <svg id="heatmap" class="absolute inset-0 w-full h-full"></svg>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Clicks recorded on your public profile</p>
+          </div>
+
+          <div>
+            <div class="pc-panel-title" style="margin-bottom: 10px;">Click Buckets</div>
+            <div class="pc-oled" style="padding: 12px;">
+              <div class="space-y-2 text-sm">
+                <% (Array.isArray(clickBuckets) ? clickBuckets : []).forEach(c => { %>
+                  <div class="flex justify-between">
+                    <span><%= c.action %></span>
+                    <span class="font-semibold"><%= c.count %></span>
+                  </div>
+                <% }) %>
+                <% if (!clickBuckets || clickBuckets.length === 0) { %>
+                  <p class="text-gray-500 italic">No click bucket data.</p>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 🖱️ Clickstream Details -->
+  <section>
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">🖱️ Clickstream Analysis</div>
+          <div class="pc-panel-sub">Recent actions + timestamps</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <% if (Array.isArray(clickDetails) && clickDetails.length) { %>
+          <div class="pc-oled" style="padding:12px;">
+            <div class="pc-rowlist">
+              <% clickDetails.forEach(({ action, referrer, timestamp }) => { %>
+                <div class="pc-rowitem">
+                  <div>
+                    <div class="k"><%= action %></div>
+                    <div class="s">
+                      <%= new Date(timestamp).toLocaleString() %>
+                      <% if (referrer) { %> · <%= referrer %> <% } %>
+                    </div>
+                  </div>
+                  <div class="v">•</div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="pc-empty">No clickstream data yet.</div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    window.HEATMAP_POINTS = <%- JSON.stringify(heatmapPoints || []) %>;
+  </script>
+
+  <!-- Engagement chart + API wiring -->
+  <script>
+  (function() {
+    const btns = Array.from(document.querySelectorAll('.winbtn'));
+    const headlineViews = document.getElementById('headline-views');
+    const headlineWindow = document.getElementById('headline-window');
+    const captionWindow = document.getElementById('caption-window');
+    const pctArrow = document.getElementById('pct-arrow');
+    const pctValue = document.getElementById('pct-value');
+
+    const canvas = document.getElementById('engagementChart');
+    const ctx = canvas?.getContext('2d');
+    const overlay = document.getElementById('chart-loading');
+    if (!ctx) return;
+
+    function oledLineTheme(ctx, opts = {}) {
+      const g = ctx.createLinearGradient(0, 0, 0, (opts.gradH || 260));
+      g.addColorStop(0, 'rgba(85,214,255,0.30)');
+      g.addColorStop(1, 'rgba(85,214,255,0.03)');
+
+      const grid = 'rgba(255,255,255,0.06)';
+      const tick = 'rgba(255,255,255,0.55)';
+      const font = {
+        family: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial",
+        size: 11
+      };
+
+      return {
+        gradient: g,
+        commonOptions: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 220 },
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: {
+              ticks: { color: tick, maxRotation: 0, autoSkip: true, font },
+              grid: { color: grid },
+              border: { color: 'rgba(255,255,255,0.08)' }
+            },
+            y: {
+              ticks: { color: tick, font },
+              grid: { color: grid },
+              border: { color: 'rgba(255,255,255,0.08)' },
+              beginAtZero: true,
+              grace: '6%'
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(0,0,0,0.78)',
+              borderColor: 'rgba(85,214,255,0.28)',
+              borderWidth: 1,
+              titleColor: 'rgba(255,255,255,0.92)',
+              bodyColor: 'rgba(255,255,255,0.82)',
+              padding: 10,
+              displayColors: false,
+              cornerRadius: 8,
+              titleFont: { ...font, size: 12, weight: '700' },
+              bodyFont: { ...font, size: 11 }
+            }
+          },
+          elements: {
+            line: { borderWidth: 2 },
+            point: { radius: 0, hoverRadius: 3, hitRadius: 10 }
+          }
+        }
+      };
+    }
+
+    const initial = <%- JSON.stringify(profileEngagementTrend.dailyViews || []) %>;
+    const themed = oledLineTheme(ctx);
+
+    const CHART = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: initial.map(d => d.date),
+        datasets: [{
+          label: 'Profile Views',
+          data: initial.map(d => d.count),
+          borderColor: 'rgba(85,214,255,0.95)',
+          backgroundColor: themed.gradient,
+          fill: true,
+          tension: 0.35
+        }]
+      },
+      options: themed.commonOptions
+    });
+
+    const fmt = n => (n >= 1000 ? n.toLocaleString() : String(n));
+
+    async function loadWindow(win) {
+      overlay.style.opacity = '1';
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        const resp = await fetch(`/dashboard/api/stats/engagement?window=${win}`);
+        const json = await resp.json();
+
+        headlineWindow.textContent = json.windowDays;
+        captionWindow.textContent = json.windowDays;
+        headlineViews.textContent = fmt(json.totalViews);
+
+        const up = json.percentChange >= 0;
+        pctArrow.textContent = up ? '📈' : '📉';
+        pctValue.textContent = Math.abs(json.percentChange).toFixed(1) + '%';
+        pctValue.classList.toggle('text-green-400', up);
+        pctValue.classList.toggle('text-red-400', !up);
+
+        CHART.data.labels = json.labels;
+        CHART.data.datasets[0].data = json.values;
+        CHART.update();
+
+        btns.forEach(b => {
+          const active = Number(b.dataset.window) === json.windowDays;
+          b.classList.toggle('bg-indigo-600', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('text-gray-300', !active);
+        });
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('window', json.windowDays);
+        history.replaceState({}, '', url);
+      } catch (e) {
+        console.error('Failed to load engagement window:', e);
+      } finally {
+        overlay.style.opacity = '0';
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    btns.forEach(b => b.addEventListener('click', () => loadWindow(Number(b.dataset.window))));
+  })();
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded',()=> {
+      const pts = window.HEATMAP_POINTS || [];
+      const svg = document.getElementById('heatmap');
+      if (!svg) return;
+
+      const w = svg.clientWidth || svg.parentElement.clientWidth;
+      const h = svg.clientHeight || svg.parentElement.clientHeight;
+
+      while (svg.firstChild) svg.removeChild(svg.firstChild);
+      if (!pts.length) return;
+
+      pts.forEach(({x,y,weight=1}) => {
+        const cx = Math.max(4, Math.min(w-4, Math.round(x*w)));
+        const cy = Math.max(4, Math.min(h-4, Math.round(y*h)));
+        const r = 2 + Math.min(8, weight);
+
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx', cx);
+        c.setAttribute('cy', cy);
+        c.setAttribute('r', r);
+        c.setAttribute('fill', 'rgba(79,70,229,0.55)');
+        c.setAttribute('stroke', 'rgba(99,102,241,0.9)');
+        c.setAttribute('stroke-width', '1');
+        svg.appendChild(c);
+      });
+    });
+  </script>
+
+  <!-- Audience growth chart -->
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const canvas = document.getElementById('audienceGrowthChart');
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+
+    const loader = document.getElementById('ag-loading');
+    const caption = document.getElementById('ag-caption');
+    const buttons = Array.from(document.querySelectorAll('.agbtn'));
+
+    function oledLineTheme(ctx, opts = {}) {
+      const g = ctx.createLinearGradient(0, 0, 0, (opts.gradH || 260));
+      g.addColorStop(0, 'rgba(57,255,182,0.22)');
+      g.addColorStop(1, 'rgba(57,255,182,0.02)');
+
+      const grid = 'rgba(255,255,255,0.06)';
+      const tick = 'rgba(255,255,255,0.55)';
+      const font = {
+        family: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial",
+        size: 11
+      };
+
+      return {
+        gradient: g,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 220 },
+          interaction: { mode: 'index', intersect: false },
+          scales: {
+            x: { ticks: { color: tick, font, maxRotation: 0 }, grid: { color: grid }, border: { color: 'rgba(255,255,255,0.08)' } },
+            y: { ticks: { color: tick, font }, grid: { color: grid }, border: { color: 'rgba(255,255,255,0.08)' }, beginAtZero: true, grace: '6%' }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(0,0,0,0.78)',
+              borderColor: 'rgba(57,255,182,0.26)',
+              borderWidth: 1,
+              titleColor: 'rgba(255,255,255,0.92)',
+              bodyColor: 'rgba(255,255,255,0.82)',
+              padding: 10,
+              displayColors: false,
+              cornerRadius: 8,
+              titleFont: { ...font, size: 12, weight: '700' },
+              bodyFont: { ...font, size: 11 }
+            }
+          },
+          elements: {
+            line: { borderWidth: 2 },
+            point: { radius: 0, hoverRadius: 3, hitRadius: 10 }
+          }
+        }
+      };
+    }
+
+    const themed = oledLineTheme(ctx);
+
+    const CHART = new Chart(ctx, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label: 'Total Followers',
+        data: [],
+        borderColor: 'rgba(57,255,182,0.92)',
+        backgroundColor: themed.gradient,
+        fill: true,
+        tension: 0.35
+      }]},
+      options: themed.options
+    });
+
+    async function load(days) {
+      try {
+        loader.style.opacity = '1';
+        buttons.forEach(b => b.disabled = true);
+
+        const r = await fetch(`/dashboard/api/stats/audience-growth?days=${days}`);
+        const j = await r.json();
+
+        CHART.data.labels = j.labels;
+        CHART.data.datasets[0].data = j.values;
+        CHART.update();
+
+        caption.textContent = `Last ${j.windowDays} days`;
+        buttons.forEach(b => {
+          const active = Number(b.dataset.days) === j.windowDays;
+          b.classList.toggle('bg-indigo-600', active);
+          b.classList.toggle('text-white', active);
+          b.classList.toggle('text-gray-300', !active);
+        });
+      } catch (e) {
+        console.error('Audience growth load failed:', e);
+      } finally {
+        loader.style.opacity = '0';
+        buttons.forEach(b => b.disabled = false);
+      }
+    }
+
+    buttons.forEach(b => b.addEventListener('click', () => load(Number(b.dataset.days))));
+    load(14);
+  });
+  </script>
+
+  <!-- Sparklines -->
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      const resp = await fetch('/dashboard/api/stats/sparkline');
+      const json = await resp.json();
+      if (!json.success || !json.data) return;
+
+      const allPlatforms = new Set([
+        ...Object.keys(json.data),
+        ...Array.from(document.querySelectorAll('canvas[id^="spark-"]')).map(c => c.id.replace('spark-', ''))
+      ]);
+
+      function sparkTheme(ctx, isUp) {
+        const g = ctx.createLinearGradient(0, 0, 0, 32);
+        g.addColorStop(0, isUp ? 'rgba(57,255,182,0.26)' : 'rgba(255,90,90,0.22)');
+        g.addColorStop(1, 'rgba(0,0,0,0.00)');
+        return {
+          border: isUp ? 'rgba(57,255,182,0.90)' : 'rgba(255,90,90,0.88)',
+          fill: g
+        };
+      }
+
+      allPlatforms.forEach(platform => {
+        const canvas = document.getElementById(`spark-${platform}`);
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const platformData = json.data?.[platform] || [];
+
+        const points = platformData.length
+          ? platformData.map(p => ({ date: p.date, followers: Number(p.followers) }))
+          : Array.from({ length: 14 }, (_, i) => ({
+              date: new Date(Date.now() - (13 - i) * 86400000).toISOString().split('T')[0],
+              followers: 0
+            }));
+
+        const first = points[0]?.followers ?? 0;
+        const last = points[points.length - 1]?.followers ?? 0;
+        const isUp = last >= first;
+
+        const themed = sparkTheme(ctx, isUp);
+
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: points.map(p => p.date),
+            datasets: [{
+              data: points.map(p => p.followers),
+              borderColor: themed.border,
+              backgroundColor: themed.fill,
+              fill: true,
+              pointRadius: 0,
+              tension: 0.35
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 160 },
+            scales: { x: { display: false }, y: { display: false } },
+            plugins: { legend: { display: false }, tooltip: { enabled: false } },
+            elements: { line: { borderWidth: 1.5 } }
+          }
+        });
+      });
+    } catch (err) {
+      console.error('Failed to render sparklines:', err);
+    }
+  });
+  </script>
+
+</div>

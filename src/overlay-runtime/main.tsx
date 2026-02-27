@@ -1,0 +1,543 @@
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  OverlayElement,
+  OverlayConfigV0,
+} from "../shared/overlayTypes";
+import { ElementRenderer } from "../shared/overlayRenderer";
+import { FontLoader } from "../shared/FontManager";
+
+
+declare global {
+  interface Window {
+    __OVERLAY_PUBLIC_ID__?: string;
+  }
+}
+
+/* -----------------------------
+   Overlay State (V0 contract peg)
+   - Mirrors server shape from /api/overlays/public/:publicId/state
+------------------------------*/
+type OverlayStateV0 = {
+  rev: number;
+  ts: number;
+  tenant: {
+    public_id: string;
+    platform?: string;
+    channel?: string;
+  };
+  show: {
+    mode?: string;
+    scene?: string;
+    intent?: string;
+    hold_alerts?: boolean;
+  };
+  signals: Record<string, any>;
+  events: any[];
+  triggers: any[];
+};
+
+
+
+/* -----------------------------
+   Small debug HUD (optional)
+   Enable via: /o/:publicId?debug=1
+------------------------------*/
+function DebugHud({ state, data }: { state: OverlayStateV0 | null, data?: Record<string, string> }) {
+  const enabled = (() => {
+    try {
+      const u = new URL(window.location.href);
+      return u.searchParams.get("debug") === "1";
+    } catch {
+      return false;
+    }
+  })();
+
+  if (!enabled) return null;
+
+  const maxW = "min(520px, calc(100vw - 24px))";
+  const maxH = "min(240px, calc(100vh - 24px))";
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 12,
+        bottom: 12,
+        zIndex: 9999,
+        fontFamily:
+          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+        fontSize: 12,
+        lineHeight: 1.25,
+        color: "#e5e7eb",
+        background: "rgba(2,6,23,0.75)",
+        border: "1px solid rgba(148,163,184,0.25)",
+        borderRadius: 10,
+        padding: "10px 12px",
+        width: "auto",
+        maxWidth: maxW,
+        maxHeight: maxH,
+        overflow: "auto",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          alignItems: "baseline",
+          marginBottom: 6,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ fontWeight: 700 }}>Overlay State</div>
+        {state?.rev != null && (
+          <div style={{ opacity: 0.8 }}>
+            rev {state.rev} · {state.show?.mode ?? "—"} ·{" "}
+            {state.tenant?.platform ?? "no-platform"}
+          </div>
+        )}
+      </div>
+      <pre
+        style={{
+          margin: 0,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          opacity: 0.95,
+        }}
+      >
+        {JSON.stringify(state, null, 2)}
+      </pre>
+      {data && (
+        <>
+          <div style={{ fontWeight: 700, marginTop: 10, marginBottom: 6 }}>Event Data</div>
+          <pre
+            style={{
+              margin: 0,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              opacity: 0.95,
+              color: "#a5f3fc"
+            }}
+          >
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* -----------------------------
+   Overlay Event & Override Logic (Phase 11)
+------------------------------*/
+type OverrideMap = Record<string, Partial<OverlayElement>>;
+
+function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
+  const [overrides, setOverrides] = useState<OverrideMap>({});
+  const [data, setData] = useState<Record<string, string>>({});
+  const [flash, setFlash] = useState(false);
+  const lastIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!publicId) return;
+
+    // Connect to Event Gate
+    const url = `/api/overlays/public/${encodeURIComponent(publicId)}/events/stream`;
+    console.log("[OverlayEvents] Connecting to:", url);
+
+    // Pass Last-Event-ID if we have one (reconnect scenario)
+    // Note: Native EventSource handles Last-Event-ID auto-magically on reconnect, 
+    // but we can also append it to query if needed manually.
+    const es = new EventSource(url);
+
+    es.onopen = () => console.log("[OverlayEvents] Connected");
+    es.onerror = (e) => {
+      // EventSource auto-reconnects, but nice to log
+      console.warn("[OverlayEvents] Connection lost/error", e);
+    };
+
+    es.onmessage = (msg) => {
+      try {
+        if (!msg.data) return;
+        const packet = JSON.parse(msg.data);
+        const { header, payload } = packet || {};
+
+        console.log("[OverlayEvents] Packet:", header?.type, payload);
+        // Producer → Overlay events
+        if (header?.type === "overlay.lower_third.show") {
+          // 1. Resolve payload
+          const p = payload || {};
+          const text = p.text || (p.username && p.message ? `${p.username}: ${p.message}` : "");
+          const title = p.title || "";
+          const subtitle = p.subtitle || "";
+
+          // 2. Generate Sequence Token to race-condition proof the timer
+          const seqToken = Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+          // 3. Update Data (Global keys only for V1)
+          setData((prev) => ({
+            ...prev,
+            "lower_third.active": "1",
+            "lower_third._seq": seqToken,
+            "lower_third": text,
+            "lower_third.title": title,
+            "lower_third.subtitle": subtitle,
+          }));
+
+          // 4. Determine Duration
+          // Priority: payload.duration_ms -> element default -> 8000
+          let duration = typeof p.duration_ms === 'number' ? p.duration_ms : undefined;
+
+          if (duration === undefined) {
+            // Try to find ANY lower_third element to steal its default
+            const ltEl = elements.find(e => e.type === "lower_third") as any; // Cast to avoid strict type error if not full Updated
+            if (ltEl && typeof ltEl.defaultDurationMs === 'number') {
+              duration = ltEl.defaultDurationMs;
+            }
+          }
+          if (duration === undefined) duration = 8000;
+
+          // 5. Set Auto-Hide Timer
+          window.setTimeout(() => {
+            setData((prev) => {
+              // Only clear if the sequence token matches (meaning no NEW show event came in)
+              if (prev["lower_third._seq"] !== seqToken) return prev;
+
+              // Clear active state - MUST set to "0" to override hasContent fallback
+              const next = { ...prev };
+              next["lower_third.active"] = "0";
+
+              // We can strip content keys or leave them for out-animation.
+              // We leave them so it doesn't pop empty.
+              return next;
+            });
+          }, duration);
+        }
+
+        if (header?.type === "overlay.lower_third.hide") {
+          setData((prev) => {
+            const next = { ...prev };
+            next["lower_third.active"] = "0";
+            return next;
+          });
+        }
+
+        lastIdRef.current = header?.id;
+
+        // Universal Packet Handler (Phase 12)
+        // Bind payload to data.event.* and root keys
+        if (payload) {
+          const flatData: Record<string, string> = {};
+
+          // Helper to flatten object
+          const flatten = (obj: any, prefix: string) => {
+            for (const [k, v] of Object.entries(obj)) {
+              if (v && typeof v === 'object' && !Array.isArray(v)) {
+                flatten(v, `${prefix}${k}.`);
+              } else {
+                flatData[`${prefix}${k}`] = String(v);
+              }
+            }
+          };
+
+          // 1. Namespace under "event"
+          flatten(payload, "event.");
+
+          // 2. Back-compat: Top-level keys (shallow)
+          for (const [k, v] of Object.entries(payload)) {
+            if (v && typeof v !== 'object') {
+              flatData[k] = String(v);
+            }
+          }
+
+          console.log("[OverlayEvents] Bound Data:", flatData);
+          setData(prev => ({ ...prev, ...flatData }));
+        }
+
+
+
+        // 2. Find "alertGroup" -> specific reaction?
+        // Or just flash a group if we find one named "Group"
+        const groupEl = elements.find(e => e.type === "group" || e.name === "Group");
+        if (groupEl) {
+          setOverrides(prev => ({
+            ...prev,
+            [groupEl.id]: { opacity: 1, visible: true }
+          }));
+
+          // Hide after 5s
+          setTimeout(() => {
+            setOverrides(prev => ({
+              ...prev,
+            }));
+          }, 5000);
+        }
+      } catch (err) {
+        console.error("[OverlayEvents] Parse error:", err);
+      }
+    };
+
+    return () => {
+      es.close();
+      console.log("[OverlayEvents] Disconnected");
+    };
+  }, [publicId, elements]); // Re-bind if elements list changes drastically? Ideally stable.
+
+  return { overrides, data, flash };
+}
+
+/* -----------------------------
+   Overlay runtime root
+------------------------------*/
+function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
+  const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
+  const [state, setState] = useState<OverlayStateV0 | null>(null);
+
+  // ... (existing refs/state) ...
+  const pinnedMeasureRef = useRef<HTMLDivElement>(null);
+  const [pinnedHeight, setPinnedHeight] = useState(0);
+  const [viewport, setViewport] = useState({
+    w: window.innerWidth,
+    h: window.innerHeight,
+  });
+
+  // Enable Event System
+  // We need the elements list to find targets
+  const baseElements = overlay?.elements ?? [];
+  const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements);
+
+  // Apply Overrides Merge
+  const elements = React.useMemo(() => {
+    return baseElements.map(el => {
+      const ov = overrides[el.id];
+      if (ov) return { ...el, ...ov } as OverlayElement;
+      return el;
+    });
+  }, [baseElements, overrides]);
+
+
+  // Load config (static-ish)
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const res = await fetch(`/api/overlays/public/${encodeURIComponent(publicId)}`);
+      if (!res.ok) {
+        console.error("Failed to load overlay config", res.status);
+        return;
+      }
+      const data = (await res.json()) as OverlayConfigV0;
+      if (!cancelled) setOverlay(data);
+    })().catch((e) => console.error("Failed to load overlay config", e));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [publicId]);
+
+  // Poll state (dynamic, contract peg)
+  useEffect(() => {
+    let stopped = false;
+    let timer: number | null = null;
+
+    const pollMs = 1000; // V0: simple + low load
+    let lastWarnAt = 0;
+
+    const tick = async () => {
+      if (stopped) return;
+
+      try {
+        const res = await fetch(
+          `/api/overlays/public/${encodeURIComponent(publicId)}/state`,
+          { cache: "no-store" }
+        );
+
+        if (!res.ok) {
+          const now = Date.now();
+          if (now - lastWarnAt > 10_000) {
+            console.warn("Overlay state fetch failed", res.status);
+            lastWarnAt = now;
+          }
+          return;
+        }
+
+        const next = (await res.json()) as OverlayStateV0;
+
+        setState((prev) => {
+          if (!prev) return next;
+          if (prev.rev !== next.rev) return next;
+          if (prev.ts !== next.ts) return next;
+          return prev;
+        });
+      } catch (e) {
+        const now = Date.now();
+        if (now - lastWarnAt > 10_000) {
+          console.warn("Overlay state fetch error", e);
+          lastWarnAt = now;
+        }
+      }
+    };
+
+    tick();
+    timer = window.setInterval(tick, pollMs);
+
+    const onVis = () => {
+      if (document.visibilityState === "hidden") return;
+      tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      stopped = true;
+      if (timer) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [publicId]);
+
+  // Resize tracking
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Safe defaults before overlay loads (keeps hooks order stable)
+  const baseW = overlay?.baseResolution?.width ?? 1920;
+  const baseH = overlay?.baseResolution?.height ?? 1080;
+
+  // elements is now the MERGED list from above
+  const pinnedElements = elements.filter((el: any) => el.pinned === true);
+  const normalElements = elements.filter((el: any) => el.pinned !== true);
+
+  // IMPORTANT: COVER scale (fills viewport; crops overflow) — NO GAPS
+  const scale = Math.max(viewport.w / baseW, viewport.h / baseH);
+
+  const elementsById = React.useMemo(() => {
+    const map: Record<string, OverlayElement> = {};
+    for (const el of elements) {
+      map[el.id] = el as OverlayElement;
+    }
+    return map;
+  }, [elements]);
+
+  // Calculate used fonts
+  const usedFonts = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const el of elements) {
+      if (el.type === "text" && (el as any).fontFamily) {
+        set.add((el as any).fontFamily);
+      }
+    }
+    return Array.from(set);
+  }, [elements]);
+
+  // Measure pinned block height in overlay coordinate space (unscaled)
+  useLayoutEffect(() => {
+    const el = pinnedMeasureRef.current;
+    if (!el || pinnedElements.length === 0) {
+      setPinnedHeight(0);
+      return;
+    }
+
+    const sync = () => {
+      const px = el.getBoundingClientRect().height;
+      const overlayUnits = scale > 0 ? px / scale : 0;
+      setPinnedHeight(Math.ceil(overlayUnits));
+    };
+
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    window.addEventListener("resize", sync);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", sync);
+    };
+  }, [pinnedElements.length, scale]);
+
+  return (
+    <>
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          background:
+            overlay?.backgroundColor && overlay.backgroundColor !== "transparent"
+              ? overlay.backgroundColor
+              : "transparent",
+
+          overflow: "hidden", // crops when using COVER scaling
+          position: "relative",
+        }}
+      >
+        {/* Stage is centered and scaled to COVER the viewport */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            width: baseW,
+            height: baseH,
+            transformOrigin: "top left",
+            transform: `translate(-50%, -50%) scale(${scale})`,
+          }}
+        >
+          {/* PINNED LAYER */}
+          {pinnedElements.length > 0 && (
+            <div
+              ref={pinnedMeasureRef}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 20,
+                pointerEvents: "none",
+              }}
+            >
+              {pinnedElements.map((el: any) => (
+                <ElementRenderer
+                  key={el.id}
+                  element={{
+                    ...el,
+                    x: 0,
+                    y: 0,
+                  }}
+                  elementsById={elementsById}
+                  data={{}} // Test data placeholder
+                  visited={new Set()}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* NORMAL ELEMENTS — JS OFFSET, NOT CSS */}
+          {overlay &&
+            normalElements.map((el: any) => (
+              <ElementRenderer
+                key={el.id}
+                element={el}
+                yOffset={pinnedHeight}
+                elementsById={elementsById}
+                data={eventData}
+                visited={new Set()}
+              />
+            ))}
+        </div>
+      </div>
+
+      <DebugHud state={state} data={eventData} />
+    </>
+  );
+}
+
+/* -----------------------------
+   Boot
+------------------------------*/
+const rootEl = document.getElementById("overlay-runtime-root");
+if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
+  createRoot(rootEl).render(<OverlayRuntimeRoot publicId={window.__OVERLAY_PUBLIC_ID__} />);
+}

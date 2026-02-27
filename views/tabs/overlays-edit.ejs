@@ -1,0 +1,22 @@
+<div class="pc-page w-full max-w-none">
+  <div class="pc-panel mb-4">
+    <div class="pc-panel-bd flex justify-between items-center py-3">
+      <div>
+        <h1 class="text-xl font-bold text-white">Edit Overlay</h1>
+        <p class="pc-text-muted text-xs">Drag, resize, and configure elements. Save to publish.</p>
+      </div>
+      <div>
+        <a href="/dashboard/overlays" class="pc-btn pc-btn--ghost">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-editor-root" class="w-full"></div>
+</div>
+
+<script>
+  window.__OVERLAY__ = <%- overlayJson %>;
+</script>
+
+<!-- cache buster while iterating -->
+<script type="module" src="/static/overlays/overlay-editor.bundle.js?v=<%= Date.now() %>"></script>

@@ -1,0 +1,35 @@
+<!-- Scrapbot Health Row -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Scrapbot Service</p>
+    <p class="text-3xl font-semibold mt-2 <%= scrapbotOnline ? 'text-green-300' : 'text-red-300' %>">
+      <%= scrapbotOnline ? 'Online' : 'Offline' %>
+    </p>
+    <p class="text-xs text-gray-500 mt-2">
+      Last check: <%= scrapbotLastCheck ? formatTimestamp(scrapbotLastCheck) : '—' %>
+    </p>
+    <% if (scrapbot.error) { %>
+      <p class="text-xs text-red-400 mt-2">Error: <%= scrapbot.error %></p>
+    <% } %>
+    <% if (scrapbot.raw) { %>
+      <p class="text-xs text-gray-500 mt-2 break-all">Raw: <%= scrapbot.raw %></p>
+    <% } %>
+  </div>
+
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Scrapbot DB</p>
+    <p class="text-3xl font-semibold mt-2 <%= scrapbotDbOk ? 'text-green-300' : 'text-red-300' %>">
+      <%= scrapbotDbOk ? 'OK' : 'Issue' %>
+    </p>
+    <p class="text-xs text-gray-500 mt-2">
+      <%= (scrapbot.db && scrapbot.db.message) ? scrapbot.db.message : '—' %>
+    </p>
+  </div>
+
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Scrapbot Notes</p>
+    <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+      This row is a health snapshot only. The “Firehose” tool below is for live event visibility in OBS.
+    </p>
+  </div>
+</section>

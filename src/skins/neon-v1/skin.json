@@ -1,0 +1,35 @@
+{
+  "key": "neon-v1",
+  "version": 1,
+  "shared": {
+    "fonts": [],
+    "textures": {
+      "plate": "/skins/neon-v1/shared/textures/plate.png"
+    }
+  },
+  "games": {
+    "crash": {
+      "textures": {
+        "rocket": "/skins/neon-v1/crash/textures/rocket.png",
+        "flame": "/skins/neon-v1/crash/textures/flame.png",
+        "boom": "/skins/neon-v1/crash/textures/boom.png"
+      },
+      "params": {
+        "hudOffsetY": 24,
+        "hudFontSize": 64,
+
+        "rocketStartX": 160,
+        "rocketEndX": 1120,
+
+        "rocketW": 140,
+        "rocketH": 140,
+
+        "flameW": 70,
+        "flameH": 120,
+
+        "boomW": 260,
+        "boomH": 260
+      }
+    }
+  }
+}

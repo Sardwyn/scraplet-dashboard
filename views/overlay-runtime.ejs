@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Overlay Runtime</title>
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+      #overlay-runtime-root {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="overlay-runtime-root"></div>
+
+    <script>
+      window.__OVERLAY_PUBLIC_ID__ = "<%- publicId %>";
+    </script>
+
+    <script type="module" src="/static/overlays/overlay-runtime.bundle.js"></script>
+  </body>
+</html>

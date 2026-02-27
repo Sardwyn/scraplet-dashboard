@@ -1,0 +1,178 @@
+<header class="bg-gray-950 border-b border-gray-800 text-gray-200">
+  <!-- Control-strip -->
+  <div class="w-full px-6 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/70">
+    <div class="flex items-center gap-3 text-xs">
+      <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-gray-800 bg-gray-900/60">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="tracking-widest text-gray-300">SYSTEM ONLINE</span>
+      </span>
+
+      <span class="hidden md:inline text-gray-500">/</span>
+
+      <span
+        class="hidden md:inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-gray-800 bg-gray-900/40">
+        <span class="text-gray-500 tracking-widest">OPERATOR</span>
+        <span class="text-gray-300">
+          <%= user?.username || 'Creator' %>
+        </span>
+      </span>
+
+      <% if (user?.isAdmin) { %>
+        <span
+          class="hidden md:inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-red-700/40 bg-red-600/10 text-red-200">
+          <span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>
+          <span class="tracking-widest">ADMIN</span>
+        </span>
+        <% } %>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/dashboard/casino"
+        class="px-3 py-1.5 rounded-md bg-gray-900 hover:bg-gray-800 text-gray-200 text-xs font-semibold border border-gray-800 shadow-sm">
+        Labs
+      </a>
+
+      <% if (Number(user?.id)===4) { %>
+        <a href="/dashboard/studio/playground"
+          class="px-3 py-1.5 rounded-md bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-200 text-xs font-semibold border border-indigo-700/40 shadow-sm">
+          Studio Playground
+        </a>
+        <% } %>
+
+          <form action="/auth/logout" method="POST">
+            <button type="submit"
+              class="px-3 py-1.5 rounded-md bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold border border-red-700/50">
+              Logout
+            </button>
+          </form>
+    </div>
+  </div>
+
+  <!-- Main nav bar -->
+  <div class="w-full px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <a href="/dashboard" class="flex items-baseline gap-2">
+      <span class="text-xl font-extrabold tracking-wide text-indigo-300">SCRAPLET</span>
+      <span class="text-xs tracking-[0.28em] text-gray-400">CONTROL</span>
+    </a>
+
+    <nav class="flex flex-wrap items-center gap-2 text-sm">
+      <a href="/dashboard"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+        Overview
+      </a>
+      <a href="/profile/editor" class="relative px-3 py-2 rounded-md border border-indigo-700/40
+                bg-indigo-600/10 hover:bg-indigo-600/20
+                text-indigo-300 hover:text-indigo-200
+                font-medium">
+        Profile
+        <% if (!user?.has_onboarded) { %>
+          <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-400"></span>
+          <% } %>
+      </a>
+
+      <a href="/dashboard/scrapbot"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+        Scrapbot
+      </a>
+      <a href="/dashboard/widgets"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+        Widgets
+      </a>
+      <a href="/dashboard/overlays"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+        Overlays
+      </a>
+      <a href="/dashboard/email"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+        Email
+      </a>
+
+      <span class="mx-2 text-gray-700">|</span>
+
+      <a href="/dashboard/stats"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-400 hover:text-gray-200">
+        Stats
+      </a>
+      <a href="/dashboard/metrics"
+        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-400 hover:text-gray-200">
+        Metrics
+      </a>
+
+      <% if (user?.isAdmin) { %>
+        <span class="mx-2 text-gray-700">|</span>
+        <a href="/admin"
+          class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-400 hover:text-gray-200">
+          Admin
+        </a>
+        <% } %>
+    </nav>
+
+    <div class="flex items-center bg-gray-900 border border-gray-800 rounded-md p-0.5" role="group"
+      aria-label="Theme Switcher">
+      <button onclick="setTheme('system-saas')" id="btn-saas"
+        class="px-3 py-1 text-[10px] font-bold tracking-wider rounded text-gray-400 hover:text-gray-200"
+        aria-pressed="true">
+        SYSTEM
+      </button>
+      <button onclick="setTheme('control-room')" id="btn-control"
+        class="px-3 py-1 text-[10px] font-bold tracking-wider rounded text-gray-400 hover:text-gray-200"
+        aria-pressed="false">
+        CONTROL
+      </button>
+    </div>
+  </div>
+  </div>
+</header>
+
+<script>
+  (function () {
+    // 1. Init from Storage
+    const saved = localStorage.getItem('dashTheme') || 'system-saas';
+    applyTheme(saved);
+
+    // 2. Make global for button clicks
+    window.setTheme = function (theme) {
+      localStorage.setItem('dashTheme', theme);
+      applyTheme(theme);
+    };
+
+    function applyTheme(theme) {
+      const isControl = theme === 'control-room';
+
+      // HTML Attribute
+      if (isControl) {
+        document.documentElement.setAttribute('data-theme', 'control-room');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+
+      // Button UI (Simple toggle class logic)
+      const btnSaas = document.getElementById('btn-saas');
+      const btnControl = document.getElementById('btn-control');
+
+      if (!btnSaas || !btnControl) return; // safety
+
+      if (isControl) {
+        // Active: Control
+        btnControl.classList.add('bg-gray-700', 'text-white', 'shadow-sm');
+        btnControl.classList.remove('text-gray-400');
+        btnControl.setAttribute('aria-pressed', 'true');
+
+        // Inactive: SaaS
+        btnSaas.classList.remove('bg-gray-700', 'text-white', 'shadow-sm');
+        btnSaas.classList.add('text-gray-400');
+        btnSaas.setAttribute('aria-pressed', 'false');
+      } else {
+        // Active: SaaS
+        btnSaas.classList.add('bg-gray-700', 'text-white', 'shadow-sm');
+        btnSaas.classList.remove('text-gray-400');
+        btnSaas.setAttribute('aria-pressed', 'true');
+
+        // Inactive: Control
+        btnControl.classList.remove('bg-gray-700', 'text-white', 'shadow-sm');
+        btnControl.classList.add('text-gray-400');
+        btnControl.setAttribute('aria-pressed', 'false');
+      }
+    }
+  })();
+</script>

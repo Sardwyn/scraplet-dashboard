@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Account Settings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Archivo:wght@400;600;700&family=Barlow:wght@400;600;700&family=Bebas+Neue&family=Press+Start+2P&display=swap"
+    rel="stylesheet" />
+  <!-- Reuse dashboard CSS for consistency -->
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=1">
+</head>
+
+<body class="np text-white min-h-screen flex flex-col">
+
+  <%- include('partials/dashboard-header', { user }) %>
+
+    <main class="flex-1 px-6 md:px-10 py-8 w-full max-w-5xl mx-auto">
+
+      <% if (query.saved==='true' ) { %>
+        <div class="mb-6 pc-panel border-green-500/30 bg-green-500/10">
+          <div class="pc-panel-bd flex items-center gap-2 text-green-300">
+            <span>✅</span>
+            <span>Profile saved successfully!</span>
+          </div>
+        </div>
+        <% } %>
+
+          <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+              <h1 class="text-3xl font-bold font-display tracking-tight text-white">Account Settings</h1>
+              <p class="pc-text-muted mt-1">Manage your public profile and billing.</p>
+            </div>
+            <a href="/dashboard" class="pc-btn pc-btn--ghost">
+              ← Return to Dashboard
+            </a>
+          </div>
+
+          <!-- Tabs (Visual only for now, mapped to URLs) -->
+          <div class="flex gap-1 mb-8 border-b border-white/5 pb-0">
+            <a href="/account" class="px-4 py-2 text-sm font-bold border-b-2 border-cyan-400 text-cyan-400">Bio</a>
+            <a href="/account/billing"
+              class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-white/50 hover:text-white hover:border-white/10 transition-colors">Billing</a>
+            <a href="/account/customize"
+              class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-white/50 hover:text-white hover:border-white/10 transition-colors">Customize</a>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- LEFT COLUMN: BIO -->
+            <div class="lg:col-span-2 space-y-8">
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Public Profile</div>
+                    <div class="pc-panel-sub">Visible on your public page</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd">
+                  <form action="/account/bio" method="POST" enctype="multipart/form-data" class="space-y-6">
+
+                    <!-- Avatar -->
+                    <div>
+                      <label class="pc-text-muted text-xs mb-2 block uppercase tracking-wider">Avatar</label>
+                      <div class="flex items-center gap-4">
+                        <% if (profile.avatar_url) { %>
+                          <img src="<%= profile.avatar_url %>"
+                            class="w-16 h-16 rounded-full border border-white/10 bg-black/50 object-cover" />
+                          <% } else { %>
+                            <div
+                              class="w-16 h-16 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white/20 text-2xl font-bold">
+                              <%= (profile.display_name || user.username || '?' )[0].toUpperCase() %>
+                            </div>
+                            <% } %>
+                              <input type="file" name="avatar" class="pc-input text-xs" />
+                      </div>
+                    </div>
+
+                    <!-- Display Name -->
+                    <div>
+                      <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">Display Name</label>
+                      <input type="text" name="display_name" value="<%= profile.display_name || '' %>"
+                        class="pc-input" />
+                    </div>
+
+                    <!-- Bio -->
+                    <div>
+                      <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">Bio</label>
+                      <textarea name="bio" rows="4" class="pc-input"><%= profile.bio || '' %></textarea>
+                    </div>
+
+                    <!-- Social Links -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">X (Twitter)</label>
+                        <div class="flex">
+                          <span
+                            class="inline-flex items-center px-3 rounded-l bg-white/5 border border-r-0 border-white/10 text-white/40 text-xs">x.com/</span>
+                          <input type="text" name="x" placeholder="username" value="<%= profile.x || '' %>"
+                            class="pc-input rounded-l-none" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">YouTube</label>
+                        <input type="text" name="youtube" placeholder="YouTube URL" value="<%= profile.youtube || '' %>"
+                          class="pc-input" />
+                      </div>
+
+                      <div>
+                        <label class="pc-text-muted text-xs mb-1 block uppercase tracking-wider">Twitch</label>
+                        <input type="text" name="twitch" placeholder="Twitch URL" value="<%= profile.twitch || '' %>"
+                          class="pc-input" />
+                      </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/5 flex justify-end">
+                      <button type="submit" class="pc-btn pc-btn--primary">
+                        Save Profile
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: BUTTONS -->
+            <div class="space-y-8">
+
+              <div class="pc-panel">
+                <div class="pc-panel-hd">
+                  <div>
+                    <div class="pc-panel-title">Custom Buttons</div>
+                    <div class="pc-panel-sub">Links for your store, portfolio, etc.</div>
+                  </div>
+                </div>
+                <div class="pc-panel-bd">
+
+                  <!-- Add Button -->
+                  <form method="POST" action="/account/buttons"
+                    class="space-y-4 mb-8 bg-white/5 p-4 rounded border border-white/5">
+                    <div>
+                      <label class="pc-text-muted text-xs mb-1 block">Label</label>
+                      <input type="text" name="label" placeholder="e.g. Portfolio" required class="pc-input" />
+                    </div>
+                    <div>
+                      <label class="pc-text-muted text-xs mb-1 block">URL</label>
+                      <input type="url" name="url" placeholder="https://..." required class="pc-input" />
+                    </div>
+                    <button type="submit" class="pc-btn pc-btn--ghost w-full justify-center">
+                      + Add Button
+                    </button>
+                  </form>
+
+                  <!-- List -->
+                  <div class="space-y-3">
+                    <% customButtons.forEach(btn=> { %>
+                      <div class="pc-panel border-white/5 bg-black/20">
+                        <div class="pc-panel-bd p-3">
+                          <form method="POST" action="/account/buttons/<%= btn.id %>/update" class="space-y-3">
+                            <div class="grid grid-cols-[1fr_2fr] gap-2">
+                              <input type="text" name="label" value="<%= btn.label %>" class="pc-input h-8 text-xs" />
+                              <input type="url" name="url" value="<%= btn.url %>" class="pc-input h-8 text-xs" />
+                            </div>
+                            <div class="flex justify-between items-center">
+                              <button type="submit"
+                                class="text-cyan-400 hover:text-cyan-300 text-xs font-bold uppercase tracking-wider">Save</button>
+                          </form>
+                          <form method="POST" action="/account/buttons/<%= btn.id %>/delete" class="inline">
+                            <button
+                              class="text-red-400 hover:text-red-300 text-xs uppercase tracking-wider">Delete</button>
+                          </form>
+                        </div>
+                      </div>
+                  </div>
+                  <% }) %>
+                    <% if (customButtons.length===0) { %>
+                      <div class="text-center text-xs text-white/30 italic py-4">
+                        No custom buttons added.
+                      </div>
+                      <% } %>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          </div>
+
+    </main>
+
+    <%- include('partials/dashboard-footer') %>
+
+</body>
+
+</html>

@@ -1,0 +1,424 @@
+/* public/dashboard/css/studio-playground.css
+   Playground layout + widget demo styles (ui-*)
+   pc-* chrome lives in neo-pulp.css
+*/
+
+:root { color-scheme: dark; }
+
+.sp-root,
+.sp-root * { box-sizing: border-box; }
+
+.sp-root{
+  /* Page-scoped theme overrides for pc-* primitives */
+  --pc-bg: var(--np-bg, #05070c);
+  --pc-bg-2: #070b14;
+  --pc-panel: rgba(10, 14, 20, 0.90);
+  --pc-panel-2: rgba(7, 10, 14, 0.94);
+  --pc-text: rgba(255,255,255,0.90);
+  --pc-muted: rgba(255,255,255,0.58);
+  --pc-accent: #55d6ff;
+  --pc-accent-2: #39ffb6;
+
+  --pc-gap: 16px;
+  --pc-pad: 16px;
+  --pc-r-md: 8px;
+  --pc-r-sm: 6px;
+  --pc-hd-h: 44px;
+
+  --pc-border-a: 0.12;
+
+  min-height: 100vh;
+  color: var(--pc-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+
+  background:
+    radial-gradient(circle at 35% -10%, rgba(85,214,255,0.12), transparent 58%),
+    radial-gradient(circle at 80% 12%, rgba(57,255,182,0.08), transparent 58%),
+    radial-gradient(circle at 55% 45%, rgba(255, 201, 64, 0.03), transparent 62%),
+    linear-gradient(180deg, rgba(0,0,0,0.52), rgba(0,0,0,0.06)),
+    var(--pc-bg);
+  position: relative;
+}
+
+.sp-root::after{
+  content:"";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.55) 0.6px, transparent 0.7px);
+  background-size: 12px 12px;
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+
+.sp-root > *{ position: relative; z-index: 1; }
+
+/* ─────────────────────────────────────────────
+   Shell / layout
+   ───────────────────────────────────────────── */
+.sp-shell{
+  display: grid;
+  grid-template-columns: 320px 1fr 360px;
+  gap: var(--pc-gap);
+  padding: 18px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.sp-pane{ min-width: 0; }
+.sp-pane-left,
+.sp-pane-right{
+  position: sticky;
+  top: 74px;
+  align-self: start;
+}
+
+.sp-mt{ margin-top: var(--pc-gap); }
+
+.sp-canvas-meta{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px 10px 2px;
+}
+.sp-canvas-hint{
+  font-size: 12px;
+  color: var(--pc-muted);
+}
+
+.sp-canvas{
+  display:grid;
+  gap: var(--pc-gap);
+  min-width: 0;
+}
+
+/* canvas presets */
+.sp-layout-grid3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sp-layout-grid2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sp-layout-hybrid{ grid-template-columns: 1.2fr 1.6fr 1.2fr; }
+
+.sp-span-2{ grid-column: span 2; }
+.sp-span-3{ grid-column: span 3; }
+
+/* density */
+.sp-density-dense{ --pc-gap: 12px; --pc-pad: 14px; --pc-hd-h: 40px; }
+.sp-density-balanced{ }
+.sp-density-airy{ --pc-gap: 20px; --pc-pad: 18px; --pc-hd-h: 50px; }
+
+/* ─────────────────────────────────────────────
+   Left column controls / palette / inspector
+   ───────────────────────────────────────────── */
+.sp-form{
+  display:grid;
+  gap: 12px;
+  padding: var(--pc-pad);
+}
+
+.sp-field label{
+  display:block;
+  font-size: 11px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+  margin: 0 0 6px 2px;
+}
+
+.sp-actions{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sp-notes{ min-height: 140px; resize: vertical; }
+
+.sp-palette{
+  display:grid;
+  gap: 10px;
+  padding: var(--pc-pad);
+}
+.sp-palette .pc-tile{ border-radius: var(--pc-r-sm); }
+
+/* segmented selector containers (Layout / Density) */
+.sp-seg{
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sp-seg .pc-btn{
+  padding: 7px 10px;
+  font-size: 11px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+}
+
+/* OLED textarea in Debug */
+.sp-oled-textarea{
+  min-height: 260px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0.2px;
+  line-height: 1.45;
+  padding: 12px 12px;
+}
+
+/* inspector spacing */
+.sp-inspector{
+  display:grid;
+  gap: 12px;
+}
+
+/* ─────────────────────────────────────────────
+   UI demo widgets used by fakePanelBody() in playground.ejs
+   (These classnames MUST match the markup.)
+   ───────────────────────────────────────────── */
+
+/* grids */
+.ui-grid{ display:grid; gap: 10px; }
+.ui-grid-2{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ui-grid-3{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* divider */
+.ui-divider{
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 12px 0;
+}
+
+/* KPI card */
+.ui-kpi{
+  border-radius: var(--pc-r-sm);
+  background: rgba(0,0,0,0.30);
+  border: 1px solid rgba(255,255,255,0.10);
+  padding: 10px 12px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.ui-kpi-k{
+  font-size: 10px;
+  letter-spacing: 1.0px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.58);
+}
+.ui-kpi-v{
+  margin-top: 4px;
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.92);
+}
+.ui-kpi-unit{
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.70;
+  margin-left: 2px;
+}
+.ui-kpi-s{
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.58);
+}
+.ui-kpi-s.is-up{ color: rgba(57,255,182,0.85); }
+.ui-kpi-s.is-ok{ color: rgba(85,214,255,0.80); }
+
+/* chips */
+.ui-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: rgba(0,0,0,0.30);
+  color: rgba(255,255,255,0.82);
+}
+
+/* LED groups row */
+.ui-ledrow{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ui-ledgrp{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--pc-r-sm);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.26);
+}
+.ui-led{
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.22);
+  box-shadow: 0 0 10px rgba(255,255,255,0.06);
+}
+.ui-led.is-green{ background: rgba(57,255,182,0.92); box-shadow: 0 0 12px rgba(57,255,182,0.30); }
+.ui-led.is-cyan{ background: rgba(85,214,255,0.92); box-shadow: 0 0 12px rgba(85,214,255,0.26); }
+.ui-led.is-amber{ background: rgba(255,201,64,0.92); box-shadow: 0 0 12px rgba(255,201,64,0.22); }
+
+.ui-led-label{
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.72);
+}
+
+/* blocks */
+.ui-block{
+  border-radius: var(--pc-r-sm);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(0,0,0,0.26);
+  padding: 10px 12px;
+}
+.ui-block-h{
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.58);
+  margin-bottom: 8px;
+}
+
+/* spark (inside pc-oled) */
+.ui-spark{
+  height: 74px;
+  border-radius: calc(var(--pc-r-sm) - 1px);
+  background:
+    linear-gradient(90deg, rgba(85,214,255,0.00), rgba(85,214,255,0.10), rgba(57,255,182,0.08), rgba(85,214,255,0.00)),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 10px);
+  opacity: 0.90;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* micro chips row under spark */
+.ui-micro{
+  margin-top: 8px;
+  display:flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* meters */
+.ui-meterrow{
+  display:grid;
+  grid-template-columns: 44px 1fr 54px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+.ui-meterlabel{
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+.ui-meterpct{
+  text-align: right;
+  font-size: 11px;
+  color: rgba(255,255,255,0.62);
+}
+.ui-meter{
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.46);
+  border: 1px solid rgba(255,255,255,0.10);
+  overflow: hidden;
+  position: relative;
+}
+.ui-meter-bar{
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(85,214,255,0.60), rgba(57,255,182,0.55), rgba(255,201,64,0.45));
+  box-shadow: 0 0 14px rgba(85,214,255,0.12);
+}
+.ui-meter-bar.is-cyan{ background: linear-gradient(90deg, rgba(85,214,255,0.70), rgba(85,214,255,0.40)); }
+.ui-meter-bar.is-green{ background: linear-gradient(90deg, rgba(57,255,182,0.70), rgba(57,255,182,0.40)); }
+.ui-meter-bar.is-amber{ background: linear-gradient(90deg, rgba(255,201,64,0.70), rgba(255,201,64,0.40)); }
+
+/* segmented control (Engagement) */
+.ui-seg{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ui-seg-btn{
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: var(--pc-r-sm);
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(0,0,0,0.32);
+  font-size: 11px;
+  letter-spacing: 1.0px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.86);
+  cursor: default;
+}
+.ui-seg-btn.is-active{
+  border-color: rgba(85,214,255,0.42);
+  box-shadow: 0 0 0 2px rgba(85,214,255,0.10);
+}
+
+/* notes card */
+.ui-note-h{
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.62);
+  margin-bottom: 6px;
+}
+.ui-note-b{
+  font-size: 12px;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.45;
+}
+
+/* list in pc-oled */
+.ui-list{
+  padding: 10px 10px;
+  max-height: 150px;
+  overflow: auto;
+}
+.ui-list-row{
+  display:grid;
+  grid-template-columns: 12px 52px 1fr;
+  align-items:center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.08);
+  font-size: 12px;
+}
+.ui-list-row:last-child{ border-bottom: none; }
+.ui-list-k{
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.55);
+}
+.ui-list-v{
+  color: rgba(255,255,255,0.80);
+}
+
+/* Make pc-oled look like a recessed display cavity when used for widgets */
+.pc-oled.ui-list,
+.pc-oled.ui-meter,
+.pc-oled.ui-spark{
+  border-color: rgba(85,214,255,0.16);
+}
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+@media (max-width: 1200px){
+  .sp-shell{ grid-template-columns: 1fr; }
+  .sp-pane-left, .sp-pane-right{ position: relative; top: auto; }
+  .sp-root::after{ opacity: 0.04; }
+  .ui-grid-3{ grid-template-columns: 1fr; }
+  .ui-grid-2{ grid-template-columns: 1fr; }
+}

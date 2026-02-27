@@ -1,0 +1,192 @@
+<%
+  const safe = (v, fallback) => (typeof v === "undefined" || v === null || v === "") ? fallback : v;
+
+  const label = safe(cfg && cfg.label, "SUB GOAL");
+  const goal = Number(safe(cfg && cfg.goal, 25));
+  const cap = Number(safe(cfg && cfg.cap, 50));
+  const overfill = !!(cfg && cfg.overfill);
+  const showNumbers = !!(cfg && cfg.showNumbers);
+  const showPercent = !!(cfg && cfg.showPercent);
+  const decimals = Number(safe(cfg && cfg.decimals, 0));
+%>
+
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <!-- Page header panel -->
+  <div class="pc-panel mb-4">
+    <div class="pc-panel-hd">
+      <div>
+        <div class="pc-panel-title">Widget</div>
+        <div class="pc-panel-sub">Sub Counter</div>
+      </div>
+
+      <div class="pc-badge is-online">
+        <span>CONFIG</span>
+      </div>
+    </div>
+
+    <div class="pc-panel-bd">
+      <div class="text-sm text-white/70">
+        A clean <span class="pc-kbd">Sub Goal</span> bar that fills from live <span class="pc-kbd">subs.update</span> events.
+      </div>
+
+      <% if (flash && flash.success) { %>
+        <div class="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+          <span class="text-emerald-300 font-semibold">OK:</span> <%= flash.success %>
+        </div>
+      <% } %>
+
+      <% if (flash && flash.error) { %>
+        <div class="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/80">
+          <span class="text-red-300 font-semibold">ERR:</span> <%= flash.error %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Two-column layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- OBS URL -->
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">OBS URL</div>
+          <div class="pc-panel-sub">Paste this into an OBS Browser Source.</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <label class="text-xs tracking-widest uppercase text-white/60 block mb-2">Overlay URL</label>
+
+        <input id="obsUrl"
+               class="pc-input font-mono text-[11px]"
+               readonly
+               value="<%= overlayUrl %>" />
+
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button class="pc-btn pc-btn-ghost" type="button" onclick="copyObsUrl()">
+            Copy
+          </button>
+
+          <a class="pc-btn pc-btn-primary"
+             href="<%= overlayUrl %>"
+             target="_blank"
+             rel="noreferrer">
+            Open
+          </a>
+        </div>
+
+        <div class="pc-divider"></div>
+
+        <div class="text-xs text-white/60 leading-relaxed">
+          Optional overrides (query params):<br/>
+          <span class="pc-kbd">?goal=25</span>
+          <span class="pc-kbd">label=SUB%20GOAL</span>
+          <span class="pc-kbd">overfill=1</span>
+          <span class="pc-kbd">cap=50</span>
+          <span class="pc-kbd">numbers=1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Settings</div>
+          <div class="pc-panel-sub">Saved to DB and auto-loaded by the widget.</div>
+        </div>
+      </div>
+
+      <div class="pc-panel-bd">
+        <form method="POST" action="/dashboard/widgets/sub-counter/save" class="space-y-4">
+          <div>
+            <label class="text-xs tracking-widest uppercase text-white/60 block mb-2">Label</label>
+            <input class="pc-input"
+                   name="label"
+                   value="<%= label %>" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs tracking-widest uppercase text-white/60 block mb-2">Goal</label>
+              <input class="pc-input"
+                     name="goal"
+                     type="number"
+                     min="1"
+                     step="1"
+                     value="<%= isFinite(goal) ? goal : 25 %>" />
+            </div>
+
+            <div>
+              <label class="text-xs tracking-widest uppercase text-white/60 block mb-2">Cap (visual max)</label>
+              <input class="pc-input"
+                     name="cap"
+                     type="number"
+                     min="1"
+                     step="1"
+                     value="<%= isFinite(cap) ? cap : 50 %>" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 text-sm text-white/80">
+              <input type="checkbox" name="overfill" value="1" <%= overfill ? "checked" : "" %> />
+              <span>Allow overfill (up to cap)</span>
+            </label>
+
+            <label class="flex items-center gap-2 text-sm text-white/80">
+              <input type="checkbox" name="showNumbers" value="1" <%= showNumbers ? "checked" : "" %> />
+              <span>Show numbers</span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 text-sm text-white/80">
+              <input type="checkbox" name="showPercent" value="1" <%= showPercent ? "checked" : "" %> />
+              <span>Show percent</span>
+            </label>
+
+            <div>
+              <label class="text-xs tracking-widest uppercase text-white/60 block mb-2">Decimals</label>
+              <input class="pc-input"
+                     name="decimals"
+                     type="number"
+                     min="0"
+                     max="2"
+                     step="1"
+                     value="<%= isFinite(decimals) ? decimals : 0 %>" />
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 pt-1">
+            <button class="pc-btn pc-btn-primary" type="submit">Save</button>
+            <button class="pc-btn pc-btn-ghost" type="submit" name="_action" value="reset">Reset</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function copyObsUrl(){
+    const inp = document.getElementById("obsUrl");
+    if (!inp) return;
+
+    const text = inp.value || "";
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+    } catch (e) {}
+
+    // fallback
+    try {
+      inp.focus();
+      inp.select();
+      inp.setSelectionRange(0, 999999);
+      document.execCommand("copy");
+    } catch (e) {}
+  }
+</script>

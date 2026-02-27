@@ -1,0 +1,98 @@
+<script>
+  const SERVER_PROPS = <%- JSON.stringify({ userId, widgetId, config: config || {} }) %>;
+
+  function ensureUI() {
+    // If a parent layout swallowed our markup, rebuild UI safely.
+    let logEl = document.getElementById('log');
+    let statusEl = document.getElementById('status');
+
+    if (!statusEl) {
+      statusEl = document.createElement('div');
+      statusEl.id = 'status';
+      statusEl.style.cssText =
+        'font-size:12px;padding:4px 10px;border-radius:999px;' +
+        'border:1px solid rgba(239,68,68,0.35);color:#fecaca;' +
+        'background:rgba(0,0,0,0.25);display:inline-block;margin-bottom:12px;';
+      document.body.prepend(statusEl);
+    }
+
+    if (!logEl) {
+      logEl = document.createElement('div');
+      logEl.id = 'log';
+      logEl.style.cssText =
+        'height:520px;overflow:auto;border-radius:14px;' +
+        'border:1px solid rgba(255,255,255,0.12);' +
+        'background:rgba(0,0,0,0.35);padding:10px;' +
+        'box-shadow:0 10px 30px rgba(0,0,0,0.25);';
+      document.body.appendChild(logEl);
+    }
+
+    return { logEl, statusEl };
+  }
+
+  function start() {
+    const { logEl, statusEl } = ensureUI();
+
+    function append(line, cls) {
+      try {
+        const pre = document.createElement('pre');
+        pre.textContent = String(line);
+        pre.style.margin = '0 0 8px 0';
+        pre.style.whiteSpace = 'pre-wrap';
+        pre.style.wordBreak = 'break-word';
+        pre.style.fontSize = '12px';
+        pre.style.lineHeight = '1.35';
+        if (cls === 'muted') pre.style.color = 'rgba(229,231,235,0.65)';
+        if (cls === 'err') pre.style.color = '#fecaca';
+        logEl.appendChild(pre);
+        logEl.scrollTop = logEl.scrollHeight;
+      } catch (e) {
+        console.error('append failed', e);
+      }
+    }
+
+    function setStatus(text, ok) {
+      statusEl.textContent = text;
+      statusEl.style.borderColor = ok ? 'rgba(16,185,129,0.35)' : 'rgba(239,68,68,0.35)';
+      statusEl.style.color = ok ? '#a7f3d0' : '#fecaca';
+    }
+
+    append('[boot] ' + JSON.stringify(SERVER_PROPS), 'muted');
+    append('[debug] js is running', 'muted');
+
+    const streamUrl = window.location.pathname.replace(/\/$/, '') + '/stream';
+    append('[sse] connecting -> ' + streamUrl, 'muted');
+
+    let es;
+    try {
+      es = new EventSource(streamUrl);
+
+      es.addEventListener('open', () => {
+        setStatus('SSE: connected', true);
+        append('[sse] connected', 'muted');
+      });
+
+      es.addEventListener('error', () => {
+        setStatus('SSE: error / reconnecting…', false);
+        append('[sse] error (browser will retry)', 'err');
+      });
+
+      // default messages (if server ever sends without `event:`)
+      es.onmessage = (ev) => append(ev.data);
+
+      // your named kinds
+      es.addEventListener('chat.message', (ev) => append(ev.data));
+      es.addEventListener('system.stream.online', (ev) => append(ev.data));
+      es.addEventListener('ping', () => {});
+    } catch (e) {
+      setStatus('SSE: failed to init', false);
+      append('[sse] init failed: ' + (e?.message || String(e)), 'err');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+</script>

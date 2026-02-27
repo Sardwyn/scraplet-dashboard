@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat Overlay • Scraplet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <div class="flex items-start justify-between gap-6">
+      <div>
+        <h1 class="text-3xl font-bold">Chat Overlay</h1>
+        <p class="text-zinc-400 mt-2">
+          Configure your overlay, then add it as an OBS Browser Source. The preview is the real overlay runtime.
+        </p>
+      </div>
+
+      <a href="/dashboard" class="text-sm text-zinc-300 hover:text-white underline">
+        ← Back to dashboard
+      </a>
+    </div>
+
+    <% if (flash && flash.error) { %>
+      <div class="mt-6 rounded-xl border border-red-900/40 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+        <span class="font-semibold">Error:</span> <%= flash.error %>
+      </div>
+    <% } %>
+
+    <% if (flash && flash.success) { %>
+      <div class="mt-6 rounded-xl border border-emerald-900/40 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200">
+        <%= flash.success %>
+      </div>
+    <% } %>
+
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- LEFT: Config -->
+      <div class="space-y-6">
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="text-sm text-zinc-400">OBS Browser Source URL</div>
+              <div class="mt-2 font-mono text-sm break-all"><%= obsUrl %></div>
+            </div>
+            <button
+              type="button"
+              class="shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+              data-copy="<%= obsUrl %>"
+            >Copy</button>
+          </div>
+
+          <div class="mt-4 grid gap-3">
+            <div class="rounded-lg border border-zinc-800 bg-black/20 p-4">
+              <div class="text-sm text-zinc-400">Poll URL (renderer reads from here)</div>
+              <div class="mt-2 font-mono text-xs break-all"><%= pollUrl %></div>
+            </div>
+
+            <div class="rounded-lg border border-zinc-800 bg-black/20 p-4">
+              <div class="text-sm text-zinc-400">Ingest URL (optional)</div>
+              <div class="mt-2 font-mono text-xs break-all"><%= ingestUrl %></div>
+
+              <div class="mt-4 text-sm text-zinc-400">Ingest Key</div>
+              <div class="mt-2 font-mono text-xs break-all"><%= widget.ingest_key %></div>
+
+              <div class="mt-4 text-sm text-zinc-400">Test Ingest</div>
+              <pre class="mt-2 text-xs bg-black/40 border border-zinc-800 rounded-lg p-3 overflow-auto"><code>curl -sS -X POST "<%= ingestUrl %>" -H "Content-Type: application/json" -H "x-ingest-key: <%= widget.ingest_key %>" --data-raw '{"platform":"kick","user":{"name":"Rizler","avatar":""},"text":"HELLO FROM INGEST ✅"}'</code></pre>
+              <div class="mt-2 text-xs text-zinc-500">Tip: your normal Kick webhook flow doesn’t need ingest — this is just a manual tester.</div>
+            </div>
+          </div>
+        </div>
+
+        <form method="POST" action="/dashboard/widgets/chat/save" class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5 space-y-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">Appearance</h2>
+              <p class="text-sm text-zinc-400 mt-1">These map directly to overlay runtime config.</p>
+            </div>
+            <button
+              type="submit"
+              name="_action"
+              value="reset"
+              class="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+            >Reset to defaults</button>
+          </div>
+
+          <!-- Typography -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm text-zinc-300">Font</span>
+              <input
+                type="text"
+                name="fontFamily"
+                value="<%= cfg.fontFamily %>"
+                placeholder="Inter"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+              />
+              <div class="mt-1 text-xs text-zinc-500">Google font name (renderer sanitizes). Example: Inter, Roboto, Poppins</div>
+            </label>
+
+            <label class="block">
+              <span class="text-sm text-zinc-300">Font size (px)</span>
+              <input
+                type="number"
+                name="fontSizePx"
+                min="10"
+                max="96"
+                value="<%= cfg.fontSizePx %>"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+              />
+            </label>
+
+            <label class="block">
+              <span class="text-sm text-zinc-300">Line height</span>
+              <input
+                type="number"
+                step="0.05"
+                name="lineHeight"
+                min="0.9"
+                max="2.2"
+                value="<%= cfg.lineHeight %>"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+              />
+            </label>
+
+            <label class="block">
+              <span class="text-sm text-zinc-300">Message gap (px)</span>
+              <input
+                type="number"
+                name="messageGapPx"
+                min="0"
+                max="48"
+                value="<%= cfg.messageGapPx %>"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+              />
+            </label>
+          </div>
+
+          <!-- Toggles -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <label class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black/20 px-3 py-2">
+              <input type="checkbox" name="showAvatars" value="1" class="accent-white" <%= cfg.showAvatars ? "checked" : "" %> />
+              <span class="text-sm text-zinc-200">Show avatars</span>
+            </label>
+
+            <label class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black/20 px-3 py-2">
+              <input type="checkbox" name="showPlatformIcon" value="1" class="accent-white" <%= cfg.showPlatformIcon ? "checked" : "" %> />
+              <span class="text-sm text-zinc-200">Platform icon</span>
+            </label>
+
+            <label class="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black/20 px-3 py-2">
+              <input type="checkbox" name="shadow" value="1" class="accent-white" <%= cfg.shadow ? "checked" : "" %> />
+              <span class="text-sm text-zinc-200">Shadow</span>
+            </label>
+          </div>
+
+          <!-- Colors -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block">
+              <span class="text-sm text-zinc-300">Name color</span>
+              <input
+                type="text"
+                name="nameColor"
+                value="<%= cfg.nameColor %>"
+                placeholder="#ffffff"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:border-zinc-600"
+              />
+              <div class="mt-1 text-xs text-zinc-500">Supports hex, rgb/rgba, transparent</div>
+            </label>
+
+            <label class="block">
+              <span class="text-sm text-zinc-300">Message color</span>
+              <input
+                type="text"
+                name="messageColor"
+                value="<%= cfg.messageColor %>"
+                placeholder="#e8e8e8"
+                class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:border-zinc-600"
+              />
+            </label>
+          </div>
+
+          <!-- Bubble -->
+          <div class="rounded-xl border border-zinc-800 bg-black/20 p-4 space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-semibold">Bubble</div>
+                <div class="text-sm text-zinc-500">Background, border, and radius.</div>
+              </div>
+              <label class="flex items-center gap-2 text-sm text-zinc-200">
+                <input type="checkbox" name="bubbleEnabled" value="1" class="accent-white" <%= (cfg.bubble && cfg.bubble.enabled !== false) ? "checked" : "" %> />
+                Enabled
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <label class="block sm:col-span-1">
+                <span class="text-sm text-zinc-300">Radius (px)</span>
+                <input
+                  type="number"
+                  name="bubbleRadiusPx"
+                  min="0"
+                  max="48"
+                  value="<%= (cfg.bubble && cfg.bubble.radiusPx != null) ? cfg.bubble.radiusPx : 14 %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                />
+              </label>
+
+              <label class="block sm:col-span-1">
+                <span class="text-sm text-zinc-300">Bubble BG</span>
+                <input
+                  type="text"
+                  name="bubbleBg"
+                  value="<%= (cfg.bubble && cfg.bubble.bg) ? cfg.bubble.bg : 'rgba(0,0,0,0.55)' %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:border-zinc-600"
+                />
+              </label>
+
+              <label class="block sm:col-span-1">
+                <span class="text-sm text-zinc-300">Bubble border</span>
+                <input
+                  type="text"
+                  name="bubbleBorder"
+                  value="<%= (cfg.bubble && cfg.bubble.border) ? cfg.bubble.border : 'rgba(255,255,255,0.12)' %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm font-mono outline-none focus:border-zinc-600"
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Limits -->
+          <div class="rounded-xl border border-zinc-800 bg-black/20 p-4 space-y-4">
+            <div>
+              <div class="font-semibold">Limits</div>
+              <div class="text-sm text-zinc-500">On-screen count and fade-out timing.</div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <label class="block">
+                <span class="text-sm text-zinc-300">Max messages (on-screen)</span>
+                <input
+                  type="number"
+                  name="limitsMaxMessages"
+                  min="1"
+                  max="30"
+                  value="<%= (cfg.limits && cfg.limits.maxMessages != null) ? cfg.limits.maxMessages : 6 %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                />
+              </label>
+
+              <label class="block">
+                <span class="text-sm text-zinc-300">Fade (ms)</span>
+                <input
+                  type="number"
+                  name="limitsFadeMs"
+                  min="1500"
+                  max="60000"
+                  step="500"
+                  value="<%= (cfg.limits && cfg.limits.fadeMs != null) ? cfg.limits.fadeMs : 9000 %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                />
+              </label>
+
+              <label class="block">
+                <span class="text-sm text-zinc-300">Buffer max (memory)</span>
+                <input
+                  type="number"
+                  name="bufferMax"
+                  min="30"
+                  max="500"
+                  value="<%= cfg.bufferMax != null ? cfg.bufferMax : 120 %>"
+                  class="mt-1 w-full rounded-lg bg-zinc-950 border border-zinc-800 px-3 py-2 text-sm outline-none focus:border-zinc-600"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-4 pt-2">
+            <div class="text-xs text-zinc-500">
+              Saving will reload the preview automatically.
+            </div>
+            <button
+              type="submit"
+              name="_action"
+              value="save"
+              class="rounded-lg bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-zinc-200"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- RIGHT: Preview -->
+      <div class="space-y-4">
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">Live Preview</h2>
+              <p class="text-sm text-zinc-400 mt-1">
+                This is the real overlay page: <span class="font-mono text-xs text-zinc-300"><%= obsPathOnly %></span>
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800"
+              id="reloadPreview"
+            >Reload</button>
+          </div>
+
+          <div class="mt-4 rounded-xl overflow-hidden border border-zinc-800 bg-black">
+            <iframe
+              id="previewFrame"
+              src="<%= obsPathOnly %>?t=<%= Date.now() %>"
+              class="w-full"
+              style="height: 520px;"
+            ></iframe>
+          </div>
+
+          <div class="mt-3 text-xs text-zinc-500">
+            OBS tip: set Browser Source width/height to your scene size and keep background transparent.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // copy buttons
+    document.querySelectorAll("[data-copy]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const text = btn.getAttribute("data-copy") || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          const old = btn.textContent;
+          btn.textContent = "Copied";
+          setTimeout(() => (btn.textContent = old), 900);
+        } catch (e) {
+          alert("Copy failed — your browser may block clipboard access.");
+        }
+      });
+    });
+
+    // reload preview
+    const frame = document.getElementById("previewFrame");
+    document.getElementById("reloadPreview")?.addEventListener("click", () => {
+      try {
+        const u = new URL(frame.src, window.location.origin);
+        u.searchParams.set("t", String(Date.now()));
+        frame.src = u.toString();
+      } catch (e) {
+        frame.src = frame.src.split("?")[0] + "?t=" + Date.now();
+      }
+    });
+  </script>
+</body>
+</html>

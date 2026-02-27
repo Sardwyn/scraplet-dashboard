@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign Up — Scraplet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-transparent text-white p-6">
+  <div class="w-full max-w-md bg-gray-900/80 border border-gray-800 rounded-xl p-8">
+    <h1 class="text-2xl font-bold mb-6">Create your account</h1>
+
+    <form
+      action="/auth/signup<%= embed ? '?embed=1' : '' %>"
+      method="POST"
+      class="space-y-4"
+    >
+      <% if (embed) { %>
+        <input type="hidden" name="embed" value="1" />
+      <% } %>
+
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        required
+        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        autocomplete="email"
+      />
+
+      <input
+        type="text"
+        name="username"
+        placeholder="Username"
+        required
+        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        autocomplete="username"
+      />
+
+      <input
+        type="password"
+        name="password"
+        placeholder="Password"
+        required
+        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        autocomplete="new-password"
+      />
+
+      <button
+        type="submit"
+        class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded"
+      >
+        Sign up
+      </button>
+    </form>
+
+    <div class="mt-6 text-sm text-gray-300">
+      <span>Already have an account?</span>
+      <a
+        href="/auth/login<%= embed ? '?embed=1' : '' %>"
+        class="text-yellow-400 hover:text-yellow-300 font-semibold"
+      >Log in</a>
+    </div>
+  </div>
+</body>
+</html>

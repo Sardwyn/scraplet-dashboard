@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scraplet Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Grotesk:wght@400;600;700&family=Archivo:wght@400;600;700&family=Barlow:wght@400;600;700&family=Bebas+Neue&family=Press+Start+2P&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Scraplet pulp theme -->
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=1">
+
+  <% if (tabView === 'studio/playground') { %>
+    <link rel="stylesheet" href="/dashboard/css/studio-playground.css" />
+  <% } %>
+
+  <style>
+    /* Guard Intensity Slider */
+    .guard-slider {
+      --track-h: 10px;
+      --thumb: 22px;
+      --glow: rgba(34, 197, 94, 0.45);
+    }
+
+    .guard-slider::-webkit-slider-runnable-track {
+      height: var(--track-h);
+      background: linear-gradient(
+        90deg,
+        #22c55e 0%,
+        #facc15 60%,
+        #ef4444 100%
+      );
+      border-radius: 999px;
+      box-shadow: 0 0 12px var(--glow);
+    }
+
+    .guard-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: var(--thumb);
+      height: var(--thumb);
+      margin-top: calc((var(--track-h) - var(--thumb)) / 2);
+      border-radius: 999px;
+      background: #0f172a;
+      border: 2px solid #e5e7eb;
+      box-shadow:
+        0 0 0 4px rgba(255,255,255,0.08),
+        0 0 16px var(--glow);
+      cursor: pointer;
+    }
+
+    .guard-slider::-moz-range-track {
+      height: var(--track-h);
+      background: linear-gradient(
+        90deg,
+        #22c55e 0%,
+        #facc15 60%,
+        #ef4444 100%
+      );
+      border-radius: 999px;
+    }
+
+    .guard-slider::-moz-range-thumb {
+      width: var(--thumb);
+      height: var(--thumb);
+      border-radius: 999px;
+      background: #0f172a;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 0 16px var(--glow);
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body class="np text-white min-h-screen flex flex-col">
+  <%- include('partials/dashboard-header', { user }) %>
+
+  <main class="flex-1 px-6 md:px-10 py-8 w-full">
+    <%- include(tabView) %>
+  </main>
+
+  <%- include('partials/dashboard-footer') %>
+</body>
+</html>

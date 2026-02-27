@@ -1,0 +1,122 @@
+<!-- Existing metrics cards -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Scraper Success</p>
+    <p class="text-3xl font-semibold mt-2">
+      <%= formatCount(scrapers.reduce((sum, item) => sum + (item.success || 0), 0)) %>
+    </p>
+  </div>
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Scraper Failures</p>
+    <p class="text-3xl font-semibold mt-2 text-red-400">
+      <%= formatCount(scrapers.reduce((sum, item) => sum + (item.fail || 0), 0)) %>
+    </p>
+  </div>
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Total API Events</p>
+    <p class="text-3xl font-semibold mt-2">
+      <%= formatCount(apiEvents.length) %>
+    </p>
+  </div>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Tests Passed</p>
+    <p class="text-3xl font-semibold mt-2 text-green-300">
+      <%= formatCount(tests.passed || 0) %>
+    </p>
+    <p class="text-xs text-gray-500 mt-2">
+      Last run: <%= tests.lastRun ? formatTimestamp(tests.lastRun) : '—' %>
+    </p>
+  </div>
+
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Tests Failed</p>
+    <p class="text-3xl font-semibold mt-2 text-red-400">
+      <%= formatCount(tests.failed || 0) %>
+    </p>
+    <p class="text-xs text-gray-500 mt-2">
+      Last run: <%= tests.lastRun ? formatTimestamp(tests.lastRun) : '—' %>
+    </p>
+  </div>
+
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <p class="text-sm text-gray-400">Follower Rows</p>
+    <p class="text-3xl font-semibold mt-2">
+      <%= formatCount(followers.length) %>
+    </p>
+  </div>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <h2 class="text-xl font-bold mb-4">Layout Visibility</h2>
+    <% if (!layout.length) { %>
+      <p class="text-gray-500 text-sm">No layout data available.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% layout.forEach(item => { %>
+          <div class="flex items-center justify-between bg-gray-950 border border-gray-800 rounded-lg px-4 py-3">
+            <div>
+              <p class="font-semibold"><%= item.name || item.key || 'Unknown' %></p>
+              <p class="text-xs text-gray-500">
+                Last changed: <%= item.updated_at ? formatTimestamp(item.updated_at) : '—' %>
+              </p>
+            </div>
+            <span class="text-xs px-3 py-1 rounded-full <%= item.visible ? 'bg-green-600/20 text-green-300 border border-green-600/30' : 'bg-red-600/20 text-red-300 border border-red-600/30' %>">
+              <%= item.visible ? 'Visible' : 'Hidden' %>
+            </span>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow">
+    <h2 class="text-xl font-bold mb-4">Platform Activity</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div class="bg-gray-950 border border-gray-800 rounded-lg p-4">
+        <p class="text-sm text-gray-400">Requests Total</p>
+        <p class="text-2xl font-semibold mt-1"><%= formatCount(activity.requestsTotal || 0) %></p>
+      </div>
+      <div class="bg-gray-950 border border-gray-800 rounded-lg p-4">
+        <p class="text-sm text-gray-400">Views Total</p>
+        <p class="text-2xl font-semibold mt-1"><%= formatCount(activity.viewsTotal || 0) %></p>
+      </div>
+    </div>
+
+    <p class="text-xs text-gray-500 mb-4">
+      Last request: <%= activity.lastRequest ? formatTimestamp(activity.lastRequest) : '—' %>
+    </p>
+
+    <% if (!activity.byUser || !activity.byUser.length) { %>
+      <p class="text-gray-500 text-sm">No per-user breakdown yet.</p>
+    <% } else { %>
+      <div class="space-y-3">
+        <% activity.byUser.forEach(user => { %>
+          <div class="bg-gray-950 border border-gray-800 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold"><%= user.username || user.user_id || 'Unknown user' %></p>
+              <span class="text-xs text-gray-400">
+                <%= formatCount(user.count || 0) %> hits
+              </span>
+            </div>
+
+            <% if (user.statuses && Object.keys(user.statuses).length) { %>
+              <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-300">
+                <% Object.entries(user.statuses || {}).forEach(([status, count]) => { %>
+                  <div class="bg-gray-900/70 border border-gray-800 rounded px-3 py-2 flex items-center justify-between">
+                    <span class="uppercase tracking-wide"><%= status %></span>
+                    <span class="font-semibold"><%= formatCount(count) %></span>
+                  </div>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+</section>

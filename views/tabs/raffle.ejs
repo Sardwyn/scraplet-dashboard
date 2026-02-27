@@ -1,0 +1,287 @@
+<div class="pc-panel" style="padding: 18px;">
+  <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+    <div>
+      <div class="pc-k" style="letter-spacing:.22em;">RAFFLE</div>
+      <div class="pc-subtle" style="margin-top:6px;">OBS Widget</div>
+    </div>
+  </div>
+
+  <div class="pc-panel" style="margin-top: 14px; padding: 14px;">
+    <div class="pc-k" style="margin-bottom: 8px;">OBS URL</div>
+
+    <div style="display:flex; gap: 10px; align-items:center; flex-wrap: wrap;">
+      <input
+        id="obsUrl"
+        class="pc-input"
+        style="flex:1; min-width: 520px;"
+        placeholder="Paste your OBS URL here (example: https://scraplet.store/w/<token>)"
+        value="<%= (typeof obsUrl !== 'undefined' && obsUrl) ? obsUrl : ((typeof overlayUrl !== 'undefined' && overlayUrl) ? overlayUrl : '') %>"
+      />
+      <button id="btnCopy" class="pc-btn pc-btn-primary" type="button">Copy</button>
+      <button id="btnUse" class="pc-btn" type="button">Use</button>
+      <a id="btnStream" class="pc-btn" href="#" target="_blank" rel="noreferrer">Open stream</a>
+    </div>
+
+    <div id="tokenWarn" class="pc-subtle" style="margin-top:10px; opacity:.85;">
+      <% if (typeof token !== 'undefined' && token) { %>
+        Token present (minted for you).
+      <% } else { %>
+        No token injected for this tab (that’s fine). Paste the OBS URL you already have and hit “Use”.
+      <% } %>
+    </div>
+
+    <div class="pc-subtle" style="margin-top: 10px;">
+      Preview uses the exact OBS URL (so it always matches OBS behavior).
+    </div>
+  </div>
+
+  <!-- TEST CONTROLS -->
+  <div class="pc-panel" style="margin-top: 14px; padding: 14px;">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; flex-wrap: wrap;">
+      <div>
+        <div class="pc-k" style="margin-bottom: 6px;">TEST CONTROLS</div>
+        <div class="pc-subtle" style="opacity:.85;">
+          Sends events into <span class="mono">public.events</span> via <span class="mono">/dashboard/api/raffle/events</span>.
+          This is only for testing your overlay.
+        </div>
+        <div class="pc-subtle" style="opacity:.85; margin-top:6px;">
+          Note: this endpoint requires <span class="mono">user_id</span> (your dashboard user).
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+        <div>
+          <div class="pc-subtle" style="font-size:12px; margin-bottom:6px;">Channel</div>
+          <input
+            id="testChannel"
+            class="pc-input"
+            style="width: 220px;"
+            value="<%= (typeof defaultChannelSlug !== 'undefined' && defaultChannelSlug) ? defaultChannelSlug : 'scraplet' %>"
+          />
+        </div>
+        <div>
+          <div class="pc-subtle" style="font-size:12px; margin-bottom:6px;">Session</div>
+          <input
+            id="testSession"
+            class="pc-input"
+            style="width: 280px;"
+            value="kick:<%= (typeof defaultChannelSlug !== 'undefined' && defaultChannelSlug) ? defaultChannelSlug : 'scraplet' %>"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px;">
+      <button id="btnCollectWheel" class="pc-btn" type="button">Collecting (Wheel)</button>
+      <button id="btnRollingWheel" class="pc-btn" type="button">Rolling (Wheel)</button>
+      <button id="btnWinnerWheel" class="pc-btn" type="button">Winner (Wheel)</button>
+
+      <button id="btnCollectSlot" class="pc-btn" type="button">Collecting (Slot)</button>
+      <button id="btnRollingSlot" class="pc-btn" type="button">Rolling (Slot)</button>
+      <button id="btnWinnerSlot" class="pc-btn" type="button">Winner (Slot)</button>
+
+      <button id="btnCollectScramble" class="pc-btn" type="button">Collecting (Scramble)</button>
+      <button id="btnRollingScramble" class="pc-btn" type="button">Rolling (Scramble)</button>
+      <button id="btnWinnerScramble" class="pc-btn" type="button">Winner (Scramble)</button>
+    </div>
+
+    <div style="display:flex; gap: 10px; margin-top: 10px; align-items:center; flex-wrap: wrap;">
+      <button id="btnReset" class="pc-btn pc-btn-primary" type="button">Reset</button>
+      <div id="testStatus" class="pc-subtle" style="opacity:.85;">—</div>
+    </div>
+  </div>
+
+  <div class="pc-panel" style="margin-top: 14px; padding: 0; overflow:hidden;">
+    <div style="padding: 12px 14px; border-bottom: 1px solid rgba(200,215,235,0.12); display:flex; align-items:center; justify-content:space-between;">
+      <div class="pc-k">PREVIEW</div>
+      <div class="pc-subtle" id="previewStatus">—</div>
+    </div>
+    <div style="padding: 0;">
+      <iframe
+        id="previewFrame"
+        title="Raffle Preview"
+        style="width:100%; height: 520px; border: 0; background: rgba(0,0,0,0.2);"
+        src=""
+      ></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  const obsUrl = $("obsUrl");
+  const btnCopy = $("btnCopy");
+  const btnUse = $("btnUse");
+  const btnStream = $("btnStream");
+  const previewFrame = $("previewFrame");
+  const previewStatus = $("previewStatus");
+  const tokenWarn = $("tokenWarn");
+
+  const testChannel = $("testChannel");
+  const testSession = $("testSession");
+  const testStatus = $("testStatus");
+
+  const LS_KEY = "scraplet.raffle.obsUrl";
+
+  function normalizeObsUrl(v) {
+    const s = String(v || "").trim();
+    if (!s) return "";
+    // allow user to paste just the token; convert to full URL
+    if (s.startsWith("eyJ") && !s.includes("/")) {
+      return location.origin.replace(/\/$/, "") + "/w/" + s;
+    }
+    return s;
+  }
+
+  function setPreview(url) {
+    const u = normalizeObsUrl(url);
+    if (!u) {
+      previewStatus.textContent = "No URL";
+      previewFrame.src = "about:blank";
+      btnStream.href = "#";
+      return;
+    }
+    previewStatus.textContent = "Loaded";
+    previewFrame.src = u;
+    // stream URL is always /w/:token/stream
+    btnStream.href = u.replace(/\/$/, "") + "/stream";
+  }
+
+  // server minted token (for raffle) is passed as "token" in layout vars
+  const injectedToken = "<%= (typeof token !== 'undefined' && token) ? token : '' %>";
+  let initial = obsUrl.value;
+
+  if (!initial) {
+    if (injectedToken) {
+      initial = location.origin.replace(/\/$/, "") + "/w/" + injectedToken;
+      obsUrl.value = initial;
+      tokenWarn.textContent = "Token present (injected).";
+    } else {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        obsUrl.value = saved;
+        tokenWarn.textContent = "Loaded last used OBS URL from this browser.";
+      }
+    }
+  }
+
+  function setTestStatus(msg, isErr) {
+    if (!testStatus) return;
+    testStatus.textContent = msg || "—";
+    testStatus.style.color = isErr ? "rgba(255,120,120,0.95)" : "";
+  }
+
+  async function postEvent(kind, payload) {
+    const userId = <%= (user && user.id) ? Number(user.id) : 0 %>;
+    if (!userId) throw new Error("Missing user.id in template");
+
+    const channel = String(testChannel?.value || "scraplet").trim() || "scraplet";
+    const sessionId = String(testSession?.value || ("kick:" + channel)).trim() || ("kick:" + channel);
+
+    const body = {
+      user_id: userId,
+      source: "dashboard_test",
+      channel_slug: channel,
+      kind,
+      payload: Object.assign({ sessionId }, payload || {}),
+      actor_id: null,
+      actor_username: null,
+      channel_id: null,
+      chatroom_id: null
+    };
+
+    const r = await fetch("/dashboard/api/raffle/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body)
+    });
+
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      throw new Error(`HTTP ${r.status} ${t}`);
+    }
+    return r.json().catch(() => ({ ok: true }));
+  }
+
+  const sampleNames = ["TabLord","ScrapletFan","NeoPulp","KickEnjoyer","ChatGoblin","CaptainClip","ModBoss"];
+
+  function mkState(animation, status) {
+    return {
+      count: Math.floor(Math.random() * 70) + 1,
+      status,
+      animation,
+      joinPhrase: "!join",
+      sampleNames
+    };
+  }
+
+  function mkWinner(animation) {
+    const w = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+    return {
+      pool: sampleNames,
+      winner: { platform: "kick", username: w },
+      animation,
+      joinPhrase: "!join"
+    };
+  }
+
+  function bind(id, fn) {
+    const b = $(id);
+    if (!b) return;
+    b.addEventListener("click", async () => {
+      try {
+        setTestStatus("Sending…");
+        await fn();
+        setTestStatus("Sent ✓");
+        setTimeout(() => setTestStatus("—"), 900);
+      } catch (e) {
+        setTestStatus(e?.message || String(e), true);
+      }
+    });
+  }
+
+  bind("btnCollectWheel", () => postEvent("raffle.state", mkState("wheel","collecting")));
+  bind("btnRollingWheel", () => postEvent("raffle.state", mkState("wheel","rolling")));
+  bind("btnWinnerWheel", () => postEvent("raffle.winner", mkWinner("wheel")));
+
+  bind("btnCollectSlot", () => postEvent("raffle.state", mkState("slot","collecting")));
+  bind("btnRollingSlot", () => postEvent("raffle.state", mkState("slot","rolling")));
+  bind("btnWinnerSlot", () => postEvent("raffle.winner", mkWinner("slot")));
+
+  bind("btnCollectScramble", () => postEvent("raffle.state", mkState("scramble","collecting")));
+  bind("btnRollingScramble", () => postEvent("raffle.state", mkState("scramble","rolling")));
+  bind("btnWinnerScramble", () => postEvent("raffle.winner", mkWinner("scramble")));
+
+  bind("btnReset", () => postEvent("raffle.reset", { }));
+
+  // actions
+  btnUse.addEventListener("click", () => {
+    const u = normalizeObsUrl(obsUrl.value);
+    if (!u) return;
+    localStorage.setItem(LS_KEY, u);
+    setPreview(u);
+  });
+
+  btnCopy.addEventListener("click", async () => {
+    const u = normalizeObsUrl(obsUrl.value);
+    if (!u) return;
+    try {
+      await navigator.clipboard.writeText(u);
+      tokenWarn.textContent = "Copied.";
+      setTimeout(() => (tokenWarn.textContent = ""), 900);
+    } catch {
+      obsUrl.focus();
+      obsUrl.select();
+      document.execCommand("copy");
+      tokenWarn.textContent = "Copied.";
+      setTimeout(() => (tokenWarn.textContent = ""), 900);
+    }
+  });
+
+  // boot
+  setPreview(obsUrl.value);
+})();
+</script>
