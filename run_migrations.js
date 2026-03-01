@@ -14,6 +14,11 @@ async function run() {
         const sql2 = fs.readFileSync('../scrapbot/migrations/004_add_session_to_moderation.sql', 'utf8');
         await scrapbotDb.query(sql2);
         console.log("OK!");
+
+        console.log("Applying Shield Guard settings migration...");
+        const sql3 = fs.readFileSync('../scrapbot/migrations/005_shield_guard_settings.sql', 'utf8');
+        await scrapbotDb.query(sql3);
+        console.log("OK!");
     } catch (e) {
         console.error("Migration failed:", e);
     } finally {
