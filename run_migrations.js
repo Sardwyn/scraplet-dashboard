@@ -19,6 +19,11 @@ async function run() {
         const sql3 = fs.readFileSync('../scrapbot/migrations/005_shield_guard_settings.sql', 'utf8');
         await scrapbotDb.query(sql3);
         console.log("OK!");
+
+        console.log("Applying Room Intel snapshots migration...");
+        const sql4 = fs.readFileSync('../scrapbot/migrations/006_create_roomintel_snapshots.sql', 'utf8');
+        await scrapbotDb.query(sql4);
+        console.log("OK!");
     } catch (e) {
         console.error("Migration failed:", e);
     } finally {
