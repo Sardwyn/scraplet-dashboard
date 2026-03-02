@@ -150,7 +150,6 @@
             ctx.lineTo(getX(points[points.length - 1].bucket_ts, width), height - MARGIN.bottom);
             ctx.lineTo(getX(points[0].bucket_ts, width), height - MARGIN.bottom);
             const grad = ctx.createLinearGradient(0, MARGIN.top, 0, height - MARGIN.bottom);
-            grad.addColorStop(0, color.replace(')', ', 0.2)').replace('#', 'rgba(')); // Rough conversion
             // Using static since I don't want to write a hex-to-rgba helper here
             grad.addColorStop(0, 'rgba(96, 165, 250, 0.15)');
             grad.addColorStop(1, 'rgba(96, 165, 250, 0)');
