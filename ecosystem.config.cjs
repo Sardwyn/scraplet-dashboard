@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'scrapletdashboard',
     script: './index.js',
-    cwd: '/root/scrapletdashboard',
+    cwd: '/var/www/scraplet/scraplet-dashboard',
     instances: 1,
     exec_mode: 'fork',
     env: {
