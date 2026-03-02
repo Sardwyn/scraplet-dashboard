@@ -57,6 +57,7 @@ import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
+import intelApiRouter from './routes/intelApi.js';
 
 
 global.studioEventBus = new EventBus();
@@ -177,6 +178,7 @@ app.use(
 
 app.use("/dashboard/api", assetsApiRouter);
 app.use("/dashboard/api/uploads", uploadsRouter);
+app.use("/dashboard", intelApiRouter);
 
 //register apps and widgets here
 registerChatOverlay(app);

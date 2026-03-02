@@ -27,6 +27,62 @@
       </div>
     </div>
 
+    <!-- PULSE GRAPH (Real-time Chat Telemetry) -->
+    <a href="/dashboard/stats"
+      class="block pc-panel mb-6 overflow-hidden relative group hover:border-white/20 transition-colors"
+      id="pulse_graph_container" data-platform="<%= scrapbot.platform || 'kick' %>"
+      data-channel="<%= scrapbot.channel_slug || '' %>">
+      <div class="pc-panel-hd !border-b-0 absolute top-0 left-0 w-full z-10 pointer-events-none">
+        <div class="flex items-center justify-between w-full pointer-events-auto">
+          <div>
+            <div class="pc-panel-title flex items-center gap-2">
+              Room Pulse
+              <span id="pulse_live_indicator" class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse hidden"></span>
+            </div>
+            <div class="pc-panel-sub">Real-time engagement & activity metrics.</div>
+          </div>
+          <div class="flex items-center gap-4 text-[10px] uppercase tracking-widest font-bold text-white/40">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500/80"></span> EI
+            </div>
+            <div class="flex items-center gap-1.5 group-hover:text-white/60 transition-colors">
+              <span class="w-2 h-2 rounded-full bg-emerald-500/80"></span> MPM
+            </div>
+            <div class="ml-2 pl-2 border-l border-white/5 text-white/20 group-hover:text-white/40 transition-colors">
+              Click for Stats &rarr;
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-[180px] w-full relative mt-8">
+        <!-- Canvas for the graph -->
+        <canvas id="pulse_canvas" class="w-full h-full cursor-crosshair"></canvas>
+
+        <!-- Hover tooltip -->
+        <div id="pulse_tooltip"
+          class="absolute hidden pointer-events-none bg-black/90 border border-white/10 p-2 rounded text-[10px] z-50 backdrop-blur-sm min-w-[120px]">
+          <div id="pulse_tooltip_time" class="text-white/40 mb-1 border-b border-white/5 pb-1"></div>
+          <div class="flex justify-between gap-4">
+            <span class="text-white/60">Engagement:</span>
+            <span id="pulse_tooltip_ei" class="font-mono text-blue-400"></span>
+          </div>
+          <div class="flex justify-between gap-4">
+            <span class="text-white/60">Messages:</span>
+            <span id="pulse_tooltip_mpm" class="font-mono text-emerald-400"></span>
+          </div>
+          <div id="pulse_tooltip_state" class="mt-1 font-bold italic text-center text-white/80"></div>
+        </div>
+
+        <!-- Initial Loader -->
+        <div id="pulse_loader"
+          class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-opacity duration-500">
+          <div class="text-xs text-white/40 animate-pulse font-mono tracking-widest uppercase">Initializing Pulse...
+          </div>
+        </div>
+      </div>
+    </a>
+
     <!-- STATUS ROW -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
@@ -58,13 +114,13 @@
           <% if (typeof scrapbot.moderation_recent_count==='number' ) { %>
             <div class="text-sm font-mono text-white/80 mt-2">
               <%= scrapbot.moderation_recent_count %> actions
-              <% if (scrapbot.current_session?.status === 'live') { %>
-                <span class="text-xs text-white/50 block">Current Stream Session</span>
-              <% } else if (scrapbot.current_session?.status === 'ended') { %>
-                <span class="text-xs text-white/50 block">Last Stream Session</span>
-              <% } else { %>
-                <span class="text-xs text-white/50 block">Lifetime</span>
-              <% } %>
+                <% if (scrapbot.current_session?.status==='live' ) { %>
+                  <span class="text-xs text-white/50 block">Current Stream Session</span>
+                  <% } else if (scrapbot.current_session?.status==='ended' ) { %>
+                    <span class="text-xs text-white/50 block">Last Stream Session</span>
+                    <% } else { %>
+                      <span class="text-xs text-white/50 block">Lifetime</span>
+                      <% } %>
             </div>
             <% } %>
               <div class="text-[10px] text-white/50 px-4 mt-1">
@@ -204,3 +260,4 @@
   <%- JSON.stringify(moderationReviews || []) %>
 </script>
   <script src="/js/scrapbot-tab.js"></script>
+  <script src="/js/pulse-graph.js"></script>
