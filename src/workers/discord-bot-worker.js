@@ -1,6 +1,10 @@
 import crypto from "crypto";
+import dotenv from "dotenv";
 import db from "../../db.js";
 import { Client, GatewayIntentBits, Partials, PermissionsBitField } from "discord.js";
+
+// Make the worker completely immune to PM2 env-file caching bugs by forcing it to load the .env dynamically
+dotenv.config({ path: "/var/www/scraplet/scraplet-dashboard/.env" });
 
 
 const ENABLED = String(process.env.DISCORD_BOT_ENABLED || "true").toLowerCase() === "true";
