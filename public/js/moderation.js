@@ -1389,6 +1389,7 @@ function wireSettingsAutoSave() {
 
     el.addEventListener(ev, () => {
       refreshBoundLabels();
+      snapIntensityToClosestPreset();
       if (suppressAutoSave) return;
       scheduleSave('settings');
     });
