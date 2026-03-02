@@ -127,6 +127,11 @@
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
+      const must = (id) => {
+        const el = $(id);
+        if (!el) throw new Error(`missing_dom_${id}`);
+        return el;
+      };
 
       const state = {
         guildId: null,
