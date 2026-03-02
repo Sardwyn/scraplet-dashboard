@@ -141,6 +141,7 @@ vite.config.ts.timestamp-*
 # --- local backups / dumps ---
 *.dump
 *.sql
+!migrations/*.sql
 backup_payload/
 vps-backup_payload/
 *.log
