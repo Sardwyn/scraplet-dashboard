@@ -1777,7 +1777,7 @@ router.get("/api/discord/guild-structure", requireAuth, async (req, res) => {
     const guildId = rows[0].guild_id;
 
     const r = await fetch(
-      `http://127.0.0.1:3025/internal/guild/${guildId}/structure`
+      `http://localhost:3025/internal/guild/${guildId}/structure`
     ).catch(() => null);
 
     const j = await (r ? r.json().catch(() => null) : null);

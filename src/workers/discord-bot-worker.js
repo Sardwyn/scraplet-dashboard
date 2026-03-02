@@ -323,8 +323,8 @@ internalApp.get("/internal/guild/:guildId/structure", (req, res) => {
   }
 });
 
-internalApp.listen(3025, "127.0.0.1", () => {
-  console.log("[discord-bot] internal structure API on 127.0.0.1:3025");
+internalApp.listen(3025, "localhost", () => {
+  console.log("[discord-bot] internal structure API on localhost:3025");
   if (typeof process.send === "function") {
     process.send("ready");
   }
