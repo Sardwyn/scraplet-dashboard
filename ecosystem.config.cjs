@@ -19,5 +19,11 @@ module.exports = {
       SCRAPBOT_SHARED_SECRET: 'OutrunIsTheBestRacingGame1979',
       INTERNAL_SECRET: 'OutrunIsTheBestRacingGame1979',
     }
+  },
+  {
+    name: "discord-bot-worker",
+    script: "src/workers/discord-bot-worker.js",
+    cwd: "/var/www/scraplet/scraplet-dashboard",
+    env_file: "/var/www/scraplet/scraplet-dashboard/.env",
   }]
 };
