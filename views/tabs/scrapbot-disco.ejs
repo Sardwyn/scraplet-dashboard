@@ -1,4 +1,4 @@
-<% tabView='tabs/scrapbot' ; %>
+<% locals.tabView='tabs/scrapbot' ; %>
 
   <div class="pc-page" style="margin:0 auto; padding: 14px 14px 24px;">
     <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; width:100%;">
@@ -145,7 +145,7 @@
       const MAX_LOG = 60;
 
       function setBadge(text, tone) {
-        const el = $("discoBadge");
+        const el = must("discoBadge");
         el.textContent = text;
 
         el.classList.remove("pc-int-badge--good", "pc-int-badge--warn", "pc-int-badge--muted");
@@ -168,8 +168,8 @@
       }
 
       function renderChannelOptions() {
-        const sel = $("channelSelect");
-        const filter = String($("channelFilter").value || "").toLowerCase().trim();
+        const sel = must("channelSelect");
+        const filter = String(must("channelFilter").value || "").toLowerCase().trim();
 
         const items = state.channels
           .filter(c => !filter || c.name.toLowerCase().includes(filter) || c.id.includes(filter))
@@ -187,9 +187,9 @@
       }
 
       function renderRolesList() {
-        const wrap = $("rolesList");
-        const empty = $("rolesEmpty");
-        const filter = String($("roleFilter").value || "").toLowerCase().trim();
+        const wrap = must("rolesList");
+        const empty = must("rolesEmpty");
+        const filter = String(must("roleFilter").value || "").toLowerCase().trim();
 
         const items = state.roles
           .filter(r => !filter || r.name.toLowerCase().includes(filter) || r.id.includes(filter));
@@ -235,7 +235,7 @@
       }
 
       function renderRolePills() {
-        const wrap = $("rolePills");
+        const wrap = must("rolePills");
         wrap.innerHTML = "";
 
         const selected = Array.from(state.selectedRoleIds);
@@ -263,23 +263,23 @@
       }
 
       function refreshArmedKbd() {
-        $("guildIdKbd").textContent = state.guildId ? String(state.guildId) : "—";
+        must("guildIdKbd").textContent = state.guildId ? String(state.guildId) : "—";
 
         const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
-        $("armedChannelKbd").textContent = chan ? `#${chan.name}` : "—";
+        must("armedChannelKbd").textContent = chan ? `#${chan.name}` : "—";
       }
 
       function refreshPips() {
-        $("pipDiscord").textContent = state.guildId ? "CONNECTED" : "NOT LINKED";
+        must("pipDiscord").textContent = state.guildId ? "CONNECTED" : "NOT LINKED";
 
         const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
-        $("pipChannel").textContent = chan ? `#${safeText(chan.name, 18)}` : "—";
+        must("pipChannel").textContent = chan ? `#${safeText(chan.name, 18)}` : "—";
 
-        $("pipRoles").textContent = `${state.selectedRoleIds.size}`;
+        must("pipRoles").textContent = `${state.selectedRoleIds.size}`;
       }
 
       function setSaveStatus(msg, tone) {
-        const el = $("saveStatus");
+        const el = must("saveStatus");
         el.textContent = msg;
         el.style.color = "";
         if (tone === "good") el.style.color = "rgba(167,243,208,0.95)";
@@ -438,8 +438,8 @@
       }
 
       function renderLog(items) {
-        const wrap = $("logList");
-        const empty = $("logEmpty");
+        const wrap = must("logList");
+        const empty = must("logEmpty");
 
         wrap.innerHTML = "";
         const arr = Array.isArray(items) ? items : [];
@@ -535,23 +535,23 @@
       }
 
       // Events
-      $("btnRefresh").addEventListener("click", async () => {
+      must("btnRefresh").addEventListener("click", async () => {
         setSaveStatus("Refreshing…", "warn");
         await boot();
       });
 
-      $("channelFilter").addEventListener("input", () => renderChannelOptions());
+      must("channelFilter").addEventListener("input", () => renderChannelOptions());
 
-      $("channelSelect").addEventListener("change", () => {
-        state.selectedChannelId = $("channelSelect").value || null;
+      must("channelSelect").addEventListener("change", () => {
+        state.selectedChannelId = must("channelSelect").value || null;
         refreshArmedKbd();
         refreshPips();
         if (currentConfigChanged()) setSaveStatus("Unsaved changes.", "warn");
       });
 
-      $("roleFilter").addEventListener("input", () => renderRolesList());
+      must("roleFilter").addEventListener("input", () => renderRolesList());
 
-      $("btnSave").addEventListener("click", async () => {
+      must("btnSave").addEventListener("click", async () => {
         await saveConfig();
       });
 
