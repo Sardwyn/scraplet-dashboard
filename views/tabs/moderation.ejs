@@ -215,10 +215,6 @@
         <h2 class="text-xl font-bold">Protections</h2>
         <p class="text-sm pc-text-muted mt-1">Slider-first controls. Advanced knobs are optional.</p>
       </div>
-
-      <button id="m_save_settings" class="pc-btn pc-btn--primary">
-        Save settings
-      </button>
     </div>
 
     <!-- Two-column layout on xl: Shield tuning + Flood -->
@@ -288,13 +284,8 @@
           </div>
 
           <div>
-
-            <!-- Advanced shield knobs toggled below -->
-            <button id="m_toggle_shield_advanced" class="text-xs pc-text-muted hover:text-white underline">
-              Show advanced Shield knobs
-            </button>
-
-            <div id="m_shield_advanced_wrap" class="hidden p-4 rounded bg-white/5 border border-white/5">
+            <!-- Advanced shield knobs exposed directly -->
+            <div id="m_shield_advanced_wrap" class="p-4 rounded bg-white/5 border border-white/5">
               <div class="font-semibold">Advanced knobs</div>
               <div class="text-xs pc-text-muted mt-1">These increase detection quality. Defaults are safe.</div>
 
@@ -363,7 +354,7 @@
       </div>
 
       <!-- Flood protection -->
-      <div class="pc-panel mt-6">
+      <div class="pc-panel">
         <div class="pc-panel-hd">
           <div>
             <div class="pc-panel-title">Flood protection (single user)</div>
@@ -433,6 +424,14 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Save Settings Bottom Anchor -->
+    <div class="mt-6 flex justify-end">
+      <button id="m_save_settings" class="pc-btn pc-btn--primary">
+        Save settings
+      </button>
+    </div>
   </section>
 
   <!-- TEST -->
