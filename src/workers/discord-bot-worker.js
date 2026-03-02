@@ -4,7 +4,9 @@ import { Client, GatewayIntentBits, Partials, PermissionsBitField } from "discor
 
 
 const ENABLED = String(process.env.DISCORD_BOT_ENABLED || "true").toLowerCase() === "true";
-const TOKEN = process.env.DISCORD_BOT_TOKEN;
+let TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+// Aggressively strip quotes and trailing spaces just in case the .env was copy-pasted weirdly
+TOKEN = TOKEN.replace(/^["']|["']$/g, "").trim();
 
 if (!ENABLED) {
   console.log("[discord-bot] DISABLED via env");
