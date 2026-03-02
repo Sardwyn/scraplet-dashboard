@@ -115,6 +115,18 @@ client.on("ready", () => {
   console.log(`[discord-bot] ready as ${client.user?.tag}`);
 });
 
+client.on("error", (err) => {
+  console.error("[discord-bot] client error:", err?.message || err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[discord-bot] process uncaughtException:", err?.message || err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("[discord-bot] process unhandledRejection:", err?.message || err);
+});
+
 client.on("messageReactionAdd", async (reaction, user) => {
   try {
     if (!reaction || !user || user.bot) return;
@@ -149,62 +161,62 @@ client.on("messageReactionAdd", async (reaction, user) => {
     const member = await msg.guild.members.fetch(user.id).catch(() => null);
     const roleIds = member ? Array.from(member.roles.cache.keys()) : [];
     // Admin/owner fallback OR role allowlist
-const isAdmin = hasAdministrator(member);
+    const isAdmin = hasAdministrator(member);
 
-let allowed = false;
-if (isAdmin) {
-  allowed = true;
-} else {
-  allowed = await canUserReactShow(guildId, roleIds);
-}
+    let allowed = false;
+    if (isAdmin) {
+      allowed = true;
+    } else {
+      allowed = await canUserReactShow(guildId, roleIds);
+    }
 
-if (!allowed) {
-  await safeReact(msg, "🚫");
+    if (!allowed) {
+      await safeReact(msg, "🚫");
 
-  const ownerUserId = Number(claim.owner_user_id);
-  const eventId = crypto.randomUUID();
+      const ownerUserId = Number(claim.owner_user_id);
+      const eventId = crypto.randomUUID();
 
-  const packet = {
-    header: {
-      id: eventId,
-      type: "producer.card_rejected",
-      ts: Date.now(),
-      producer: "discord",
-      platform: "discord",
-      scope: { tenantId: ownerUserId },
-    },
-    payload: {
-      reason: "unauthorized_role",
-      source: {
-        guild_id: String(guildId),
-        channel_id: String(channelId),
-        message_id: String(msg.id),
-        author_id: String(user.id),
-        author_name: String(msg.author?.username || ""),
-      },
-    },
-  };
+      const packet = {
+        header: {
+          id: eventId,
+          type: "producer.card_rejected",
+          ts: Date.now(),
+          producer: "discord",
+          platform: "discord",
+          scope: { tenantId: ownerUserId },
+        },
+        payload: {
+          reason: "unauthorized_role",
+          source: {
+            guild_id: String(guildId),
+            channel_id: String(channelId),
+            message_id: String(msg.id),
+            author_id: String(user.id),
+            author_name: String(msg.author?.username || ""),
+          },
+        },
+      };
 
-  await db.query(
-    `
+      await db.query(
+        `
     INSERT INTO public.producer_outbox
       (event_id, target, owner_user_id, payload)
     VALUES
       ($1, 'overlay_gate', $2, $3::jsonb)
     ON CONFLICT (event_id, target) DO NOTHING
     `,
-    [
-      eventId,
-      ownerUserId,
-      JSON.stringify({
-        tenantId: ownerUserId,
-        packet,
-      }),
-    ]
-  );
+        [
+          eventId,
+          ownerUserId,
+          JSON.stringify({
+            tenantId: ownerUserId,
+            packet,
+          }),
+        ]
+      );
 
-  return;
-}
+      return;
+    }
 
 
 
@@ -259,10 +271,10 @@ if (!allowed) {
 
     await enqueueShowNow({ ownerUserId, eventId, packet });
     // UX: accepted
-await safeReact(msg, "📤");
+    await safeReact(msg, "📤");
 
-// Optional: remove the user's ✅ to keep channel clean (comment out if you prefer to keep it)
-// await safeRemoveUserReaction(reaction, user);
+    // Optional: remove the user's ✅ to keep channel clean (comment out if you prefer to keep it)
+    // await safeRemoveUserReaction(reaction, user);
 
   } catch (err) {
     console.error("[discord-bot] reaction handler error:", err?.message || err);
@@ -275,6 +287,10 @@ const internalApp = express();
 
 internalApp.get("/internal/guild/:guildId/structure", (req, res) => {
   try {
+    if (!client.isReady()) {
+      return res.status(503).json({ error: "bot_offline", channels: [], roles: [] });
+    }
+
     const guild = client.guilds.cache.get(req.params.guildId);
     if (!guild) {
       return res.json({ channels: [], roles: [] });
@@ -308,5 +324,5 @@ internalApp.listen(3025, "127.0.0.1", () => {
 
 client.login(TOKEN).catch((e) => {
   console.error("[discord-bot] login failed:", e?.message || e);
-  process.exit(1);
+  // Do not exit, allow express to run so dashboard knows bot is dead instead of timing out
 });

@@ -1,558 +1,560 @@
-<%
-  tabView = 'tabs/scrapbot';
-%>
+<% tabView='tabs/scrapbot' ; %>
 
-<div class="pc-page" style="margin:0 auto; padding: 14px 14px 24px;">
-  <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; width:100%;">
-    <!-- LEFT: CONFIG -->
-    <div class="pc-panel pc-panel--premium-studio" style="min-height: 520px;">
-      <div class="pc-panel-hd" style="position:relative;">
-        <div>
-          <div class="pc-panel-title">Discord Producer Control</div>
-          <div class="pc-panel-sub">
-            Arm a single producer channel, allow multiple roles. Reactions trigger actions.
+  <div class="pc-page" style="margin:0 auto; padding: 14px 14px 24px;">
+    <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap: 14px; width:100%;">
+      <!-- LEFT: CONFIG -->
+      <div class="pc-panel pc-panel--premium-studio" style="min-height: 520px;">
+        <div class="pc-panel-hd" style="position:relative;">
+          <div>
+            <div class="pc-panel-title">Discord Producer Control</div>
+            <div class="pc-panel-sub">
+              Arm a single producer channel, allow multiple roles. Reactions trigger actions.
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span id="discoBadge" class="pc-int-badge pc-int-badge--muted">LOADING</span>
+            <button id="btnRefresh" class="pc-btn pc-btn-ghost" type="button">Refresh</button>
           </div>
         </div>
 
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span id="discoBadge" class="pc-int-badge pc-int-badge--muted">LOADING</span>
-          <button id="btnRefresh" class="pc-btn pc-btn-ghost" type="button">Refresh</button>
+        <div class="pc-panel-bd">
+          <div class="pc-row" style="justify-content:space-between; padding-top:0;">
+            <div class="pc-muted">Guild</div>
+            <div class="pc-kbd" id="guildIdKbd">—</div>
+          </div>
+
+          <div class="pc-divider"></div>
+
+          <!-- Producer Channel -->
+          <div style="display:grid; gap: 8px;">
+            <div class="pc-panel-title" style="font-size:11px;">Producer Channel</div>
+            <div class="pc-muted" style="font-size:12px;">
+              Only one channel can be armed. This is where reactions are accepted.
+            </div>
+
+            <input id="channelFilter" class="pc-input" placeholder="Search channels…" autocomplete="off" />
+
+            <select id="channelSelect" class="pc-input" style="height: 44px;">
+              <option value="">Loading channels…</option>
+            </select>
+
+            <div class="pc-row" style="justify-content:space-between;">
+              <div class="pc-muted">Currently armed</div>
+              <div class="pc-kbd" id="armedChannelKbd">—</div>
+            </div>
+          </div>
+
+          <div class="pc-divider"></div>
+
+          <!-- Roles -->
+          <div style="display:grid; gap: 8px;">
+            <div class="pc-panel-title" style="font-size:11px;">Authorised Roles</div>
+            <div class="pc-muted" style="font-size:12px;">
+              Multiple roles allowed. Administrators always override.
+            </div>
+
+            <input id="roleFilter" class="pc-input" placeholder="Search roles…" autocomplete="off" />
+
+            <div class="pc-oled" style="padding: 10px; max-height: 220px; overflow:auto;">
+              <div id="rolesList" style="display:grid; gap: 8px;"></div>
+              <div id="rolesEmpty" class="pc-empty" style="display:none;">No roles found.</div>
+            </div>
+
+            <div class="pc-row" style="align-items:flex-start;">
+              <div class="pc-muted" style="min-width:120px; padding-top: 6px;">Selected</div>
+              <div id="rolePills" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            </div>
+          </div>
+
+          <div class="pc-divider"></div>
+
+          <!-- Save bar -->
+          <div style="display:flex; gap: 10px; align-items:center; justify-content:space-between;">
+            <div id="saveStatus" class="pc-muted" style="font-size:12px;">Not saved yet.</div>
+            <div style="display:flex; gap:10px;">
+              <button id="btnSave" class="pc-btn pc-btn-primary" type="button">Save Configuration</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <div class="pc-panel-bd">
-        <div class="pc-row" style="justify-content:space-between; padding-top:0;">
-          <div class="pc-muted">Guild</div>
-          <div class="pc-kbd" id="guildIdKbd">—</div>
-        </div>
-
-        <div class="pc-divider"></div>
-
-        <!-- Producer Channel -->
-        <div style="display:grid; gap: 8px;">
-          <div class="pc-panel-title" style="font-size:11px;">Producer Channel</div>
-          <div class="pc-muted" style="font-size:12px;">
-            Only one channel can be armed. This is where reactions are accepted.
+      <!-- RIGHT: LOG / STATUS -->
+      <div class="pc-panel pc-panel--premium-display" style="min-height: 520px;">
+        <div class="pc-panel-hd" style="position:relative;">
+          <div>
+            <div class="pc-panel-title">Production Link Status</div>
+            <div class="pc-panel-sub">Accepted + rejected events (live)</div>
           </div>
 
-          <input id="channelFilter" class="pc-input" placeholder="Search channels…" autocomplete="off" />
-
-          <select id="channelSelect" class="pc-input" style="height: 44px;">
-            <option value="">Loading channels…</option>
-          </select>
-
-          <div class="pc-row" style="justify-content:space-between;">
-            <div class="pc-muted">Currently armed</div>
-            <div class="pc-kbd" id="armedChannelKbd">—</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="pc-kbd">poll: 3s</span>
           </div>
         </div>
 
-        <div class="pc-divider"></div>
-
-        <!-- Roles -->
-        <div style="display:grid; gap: 8px;">
-          <div class="pc-panel-title" style="font-size:11px;">Authorised Roles</div>
-          <div class="pc-muted" style="font-size:12px;">
-            Multiple roles allowed. Administrators always override.
-          </div>
-
-          <input id="roleFilter" class="pc-input" placeholder="Search roles…" autocomplete="off" />
-
-          <div class="pc-oled" style="padding: 10px; max-height: 220px; overflow:auto;">
-            <div id="rolesList" style="display:grid; gap: 8px;"></div>
-            <div id="rolesEmpty" class="pc-empty" style="display:none;">No roles found.</div>
-          </div>
-
-          <div class="pc-row" style="align-items:flex-start;">
-            <div class="pc-muted" style="min-width:120px; padding-top: 6px;">Selected</div>
-            <div id="rolePills" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-          </div>
-        </div>
-
-        <div class="pc-divider"></div>
-
-        <!-- Save bar -->
-        <div style="display:flex; gap: 10px; align-items:center; justify-content:space-between;">
-          <div id="saveStatus" class="pc-muted" style="font-size:12px;">Not saved yet.</div>
-          <div style="display:flex; gap:10px;">
-            <button id="btnSave" class="pc-btn pc-btn-primary" type="button">Save Configuration</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- RIGHT: LOG / STATUS -->
-    <div class="pc-panel pc-panel--premium-display" style="min-height: 520px;">
-      <div class="pc-panel-hd" style="position:relative;">
-        <div>
-          <div class="pc-panel-title">Production Link Status</div>
-          <div class="pc-panel-sub">Accepted + rejected events (live)</div>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="pc-kbd">poll: 3s</span>
-        </div>
-      </div>
-
-      <div class="pc-panel-bd">
-        <div class="pc-mini-oled" style="padding: 12px; margin-bottom: 12px;">
-          <div class="pc-armed-pips">
-            <div class="pc-pip">
-              <div class="k">DISCORD</div>
-              <div class="v"><span class="dot pc-bot--blue"></span><span id="pipDiscord">—</span></div>
-            </div>
-            <div class="pc-pip">
-              <div class="k">CHANNEL</div>
-              <div class="v"><span class="dot pc-bot--amber"></span><span id="pipChannel">—</span></div>
-            </div>
-            <div class="pc-pip">
-              <div class="k">ROLES</div>
-              <div class="v"><span class="dot pc-bot--green"></span><span id="pipRoles">—</span></div>
+        <div class="pc-panel-bd">
+          <div class="pc-mini-oled" style="padding: 12px; margin-bottom: 12px;">
+            <div class="pc-armed-pips">
+              <div class="pc-pip">
+                <div class="k">DISCORD</div>
+                <div class="v"><span class="dot pc-bot--blue"></span><span id="pipDiscord">—</span></div>
+              </div>
+              <div class="pc-pip">
+                <div class="k">CHANNEL</div>
+                <div class="v"><span class="dot pc-bot--amber"></span><span id="pipChannel">—</span></div>
+              </div>
+              <div class="pc-pip">
+                <div class="k">ROLES</div>
+                <div class="v"><span class="dot pc-bot--green"></span><span id="pipRoles">—</span></div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- GREEN OLED LOG WINDOW -->
-        <div class="pc-oled" style="padding: 10px; max-height: 420px; overflow:auto;">
-          <div class="pc-rowlist" id="logList"></div>
-          <div id="logEmpty" class="pc-empty" style="margin-top:10px; display:none;">
-            No producer events yet.
+          <!-- GREEN OLED LOG WINDOW -->
+          <div class="pc-oled" style="padding: 10px; max-height: 420px; overflow:auto;">
+            <div class="pc-rowlist" id="logList"></div>
+            <div id="logEmpty" class="pc-empty" style="margin-top:10px; display:none;">
+              No producer events yet.
+            </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-(() => {
-  const $ = (id) => document.getElementById(id);
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
 
-  const state = {
-    guildId: null,
-    channels: [], // {id,name}
-    roles: [],    // {id,name}
-    selectedChannelId: null,
-    selectedRoleIds: new Set(),
-    lastSaved: { channelId: null, roleIds: [] },
+      const state = {
+        guildId: null,
+        channels: [], // {id,name}
+        roles: [],    // {id,name}
+        selectedChannelId: null,
+        selectedRoleIds: new Set(),
+        lastSaved: { channelId: null, roleIds: [] },
 
-    // log persistence
-    logTimer: null,
-    logSeen: new Set(),
-    logItems: [],
-  };
+        // log persistence
+        logTimer: null,
+        logSeen: new Set(),
+        logItems: [],
+      };
 
-  const MAX_LOG = 60;
+      const MAX_LOG = 60;
 
-  function setBadge(text, tone) {
-    const el = $("discoBadge");
-    el.textContent = text;
+      function setBadge(text, tone) {
+        const el = $("discoBadge");
+        el.textContent = text;
 
-    el.classList.remove("pc-int-badge--good", "pc-int-badge--warn", "pc-int-badge--muted");
-    if (tone === "good") el.classList.add("pc-int-badge--good");
-    else if (tone === "warn") el.classList.add("pc-int-badge--warn");
-    else el.classList.add("pc-int-badge--muted");
-  }
+        el.classList.remove("pc-int-badge--good", "pc-int-badge--warn", "pc-int-badge--muted");
+        if (tone === "good") el.classList.add("pc-int-badge--good");
+        else if (tone === "warn") el.classList.add("pc-int-badge--warn");
+        else el.classList.add("pc-int-badge--muted");
+      }
 
-  function fmtTime(ts) {
-    try {
-      const d = new Date(ts);
-      if (Number.isNaN(d.getTime())) return "";
-      return d.toISOString().slice(11,19); // HH:MM:SS
-    } catch { return ""; }
-  }
+      function fmtTime(ts) {
+        try {
+          const d = new Date(ts);
+          if (Number.isNaN(d.getTime())) return "";
+          return d.toISOString().slice(11, 19); // HH:MM:SS
+        } catch { return ""; }
+      }
 
-  function safeText(s, max=140) {
-    const t = String(s ?? "");
-    return t.length > max ? t.slice(0, max - 1) + "…" : t;
-  }
+      function safeText(s, max = 140) {
+        const t = String(s ?? "");
+        return t.length > max ? t.slice(0, max - 1) + "…" : t;
+      }
 
-  function renderChannelOptions() {
-    const sel = $("channelSelect");
-    const filter = String($("channelFilter").value || "").toLowerCase().trim();
+      function renderChannelOptions() {
+        const sel = $("channelSelect");
+        const filter = String($("channelFilter").value || "").toLowerCase().trim();
 
-    const items = state.channels
-      .filter(c => !filter || c.name.toLowerCase().includes(filter) || c.id.includes(filter))
-      .slice(0, 200);
+        const items = state.channels
+          .filter(c => !filter || c.name.toLowerCase().includes(filter) || c.id.includes(filter))
+          .slice(0, 200);
 
-    sel.innerHTML = "";
-    sel.appendChild(new Option(items.length ? "Select a channel…" : "No channels", ""));
+        sel.innerHTML = "";
+        sel.appendChild(new Option(items.length ? "Select a channel…" : "No channels", ""));
 
-    for (const c of items) {
-      const label = `#${c.name}`;
-      const opt = new Option(label, c.id);
-      if (String(state.selectedChannelId || "") === String(c.id)) opt.selected = true;
-      sel.appendChild(opt);
-    }
-  }
+        for (const c of items) {
+          const label = `#${c.name}`;
+          const opt = new Option(label, c.id);
+          if (String(state.selectedChannelId || "") === String(c.id)) opt.selected = true;
+          sel.appendChild(opt);
+        }
+      }
 
-  function renderRolesList() {
-    const wrap = $("rolesList");
-    const empty = $("rolesEmpty");
-    const filter = String($("roleFilter").value || "").toLowerCase().trim();
+      function renderRolesList() {
+        const wrap = $("rolesList");
+        const empty = $("rolesEmpty");
+        const filter = String($("roleFilter").value || "").toLowerCase().trim();
 
-    const items = state.roles
-      .filter(r => !filter || r.name.toLowerCase().includes(filter) || r.id.includes(filter));
+        const items = state.roles
+          .filter(r => !filter || r.name.toLowerCase().includes(filter) || r.id.includes(filter));
 
-    wrap.innerHTML = "";
-    empty.style.display = items.length ? "none" : "block";
+        wrap.innerHTML = "";
+        empty.style.display = items.length ? "none" : "block";
 
-    for (const r of items) {
-      const row = document.createElement("label");
-      row.className = "pc-row";
-      row.style.justifyContent = "space-between";
-      row.style.gap = "12px";
-      row.style.cursor = "pointer";
-      row.style.margin = "0";
-      row.style.padding = "6px 2px";
+        for (const r of items) {
+          const row = document.createElement("label");
+          row.className = "pc-row";
+          row.style.justifyContent = "space-between";
+          row.style.gap = "12px";
+          row.style.cursor = "pointer";
+          row.style.margin = "0";
+          row.style.padding = "6px 2px";
 
-      const left = document.createElement("div");
-      left.style.display = "flex";
-      left.style.alignItems = "center";
-      left.style.gap = "10px";
+          const left = document.createElement("div");
+          left.style.display = "flex";
+          left.style.alignItems = "center";
+          left.style.gap = "10px";
 
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = state.selectedRoleIds.has(String(r.id));
-      cb.addEventListener("change", () => {
-        const id = String(r.id);
-        if (cb.checked) state.selectedRoleIds.add(id);
-        else state.selectedRoleIds.delete(id);
-        renderRolePills();
-        refreshPips();
-      });
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = state.selectedRoleIds.has(String(r.id));
+          cb.addEventListener("change", () => {
+            const id = String(r.id);
+            if (cb.checked) state.selectedRoleIds.add(id);
+            else state.selectedRoleIds.delete(id);
+            renderRolePills();
+            refreshPips();
+          });
 
-      const name = document.createElement("div");
-      name.innerHTML = `<div style="font-weight:700; font-size:12px;">${safeText(r.name, 48)}</div>
+          const name = document.createElement("div");
+          name.innerHTML = `<div style="font-weight:700; font-size:12px;">${safeText(r.name, 48)}</div>
                         <div class="pc-muted" style="font-size:11px;"><code>${r.id}</code></div>`;
 
-      left.appendChild(cb);
-      left.appendChild(name);
+          left.appendChild(cb);
+          left.appendChild(name);
 
-      row.appendChild(left);
-      wrap.appendChild(row);
-    }
-  }
+          row.appendChild(left);
+          wrap.appendChild(row);
+        }
+      }
 
-  function renderRolePills() {
-    const wrap = $("rolePills");
-    wrap.innerHTML = "";
+      function renderRolePills() {
+        const wrap = $("rolePills");
+        wrap.innerHTML = "";
 
-    const selected = Array.from(state.selectedRoleIds);
-    if (!selected.length) {
-      wrap.innerHTML = `<span class="pc-muted" style="padding-top:6px;">None</span>`;
-      return;
-    }
+        const selected = Array.from(state.selectedRoleIds);
+        if (!selected.length) {
+          wrap.innerHTML = `<span class="pc-muted" style="padding-top:6px;">None</span>`;
+          return;
+        }
 
-    const byId = new Map(state.roles.map(r => [String(r.id), r]));
-    for (const id of selected) {
-      const r = byId.get(String(id));
-      const pill = document.createElement("span");
-      pill.className = "pc-chip is-on";
-      pill.style.cursor = "pointer";
-      pill.title = "Click to remove";
-      pill.innerHTML = `<span class="pc-dot is-b"></span>${safeText(r?.name || id, 24)} <span style="opacity:.65;">✕</span>`;
-      pill.addEventListener("click", () => {
-        state.selectedRoleIds.delete(String(id));
-        renderRolesList();
-        renderRolePills();
-        refreshPips();
-      });
-      wrap.appendChild(pill);
-    }
-  }
+        const byId = new Map(state.roles.map(r => [String(r.id), r]));
+        for (const id of selected) {
+          const r = byId.get(String(id));
+          const pill = document.createElement("span");
+          pill.className = "pc-chip is-on";
+          pill.style.cursor = "pointer";
+          pill.title = "Click to remove";
+          pill.innerHTML = `<span class="pc-dot is-b"></span>${safeText(r?.name || id, 24)} <span style="opacity:.65;">✕</span>`;
+          pill.addEventListener("click", () => {
+            state.selectedRoleIds.delete(String(id));
+            renderRolesList();
+            renderRolePills();
+            refreshPips();
+          });
+          wrap.appendChild(pill);
+        }
+      }
 
-  function refreshArmedKbd() {
-    $("guildIdKbd").textContent = state.guildId ? String(state.guildId) : "—";
+      function refreshArmedKbd() {
+        $("guildIdKbd").textContent = state.guildId ? String(state.guildId) : "—";
 
-    const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
-    $("armedChannelKbd").textContent = chan ? `#${chan.name}` : "—";
-  }
+        const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
+        $("armedChannelKbd").textContent = chan ? `#${chan.name}` : "—";
+      }
 
-  function refreshPips() {
-    $("pipDiscord").textContent = state.guildId ? "CONNECTED" : "NOT LINKED";
+      function refreshPips() {
+        $("pipDiscord").textContent = state.guildId ? "CONNECTED" : "NOT LINKED";
 
-    const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
-    $("pipChannel").textContent = chan ? `#${safeText(chan.name, 18)}` : "—";
+        const chan = state.channels.find(c => String(c.id) === String(state.selectedChannelId));
+        $("pipChannel").textContent = chan ? `#${safeText(chan.name, 18)}` : "—";
 
-    $("pipRoles").textContent = `${state.selectedRoleIds.size}`;
-  }
+        $("pipRoles").textContent = `${state.selectedRoleIds.size}`;
+      }
 
-  function setSaveStatus(msg, tone) {
-    const el = $("saveStatus");
-    el.textContent = msg;
-    el.style.color = "";
-    if (tone === "good") el.style.color = "rgba(167,243,208,0.95)";
-    if (tone === "bad") el.style.color = "rgba(248,113,113,0.95)";
-  }
+      function setSaveStatus(msg, tone) {
+        const el = $("saveStatus");
+        el.textContent = msg;
+        el.style.color = "";
+        if (tone === "good") el.style.color = "rgba(167,243,208,0.95)";
+        if (tone === "bad") el.style.color = "rgba(248,113,113,0.95)";
+      }
 
-  async function loadStructure() {
-    const r = await fetch("/dashboard/api/discord/guild-structure", { credentials: "same-origin" });
-    const j = await r.json().catch(() => null);
-    if (!r.ok || !j || !j.ok) throw new Error(j?.error || "structure_failed");
+      async function loadStructure() {
+        const r = await fetch("/dashboard/api/discord/guild-structure", { credentials: "same-origin" });
+        const j = await r.json().catch(() => null);
+        if (!r.ok || !j || !j.ok) throw new Error(j?.error || "structure_failed");
 
-    // NOTE: your real shape is { ok:true, channels:[...], roles:[...] }
-    // Older version returned { ok:true, structure:{channels,roles} }.
-    const channelsRaw =
-      (Array.isArray(j.channels) && j.channels) ||
-      (Array.isArray(j.structure?.channels) && j.structure.channels) ||
-      [];
+        // NOTE: your real shape is { ok:true, channels:[...], roles:[...] }
+        // Older version returned { ok:true, structure:{channels,roles} }.
+        const channelsRaw =
+          (Array.isArray(j.channels) && j.channels) ||
+          (Array.isArray(j.structure?.channels) && j.structure.channels) ||
+          [];
 
-    const rolesRaw =
-      (Array.isArray(j.roles) && j.roles) ||
-      (Array.isArray(j.structure?.roles) && j.structure.roles) ||
-      [];
+        const rolesRaw =
+          (Array.isArray(j.roles) && j.roles) ||
+          (Array.isArray(j.structure?.roles) && j.structure.roles) ||
+          [];
 
-    state.channels = channelsRaw.map(c => ({ id: String(c.id), name: String(c.name || c.id) }));
-    state.roles = rolesRaw.map(x => ({ id: String(x.id), name: String(x.name || x.id) }));
+        state.channels = channelsRaw.map(c => ({ id: String(c.id), name: String(c.name || c.id) }));
+        state.roles = rolesRaw.map(x => ({ id: String(x.id), name: String(x.name || x.id) }));
 
-    // Clean obvious whitespace in ids (you had one earlier with a space)
-    state.channels = state.channels.map(c => ({ ...c, id: c.id.replace(/\s+/g, "") }));
-    state.roles = state.roles.map(r => ({ ...r, id: r.id.replace(/\s+/g, "") }));
-
-    renderChannelOptions();
-    renderRolesList();
-    renderRolePills();
-  }
-
-  async function loadConfig() {
-    const r = await fetch("/dashboard/api/discord/config", { credentials: "same-origin" });
-    const j = await r.json().catch(() => null);
-
-    if (!r.ok || !j) throw new Error("config_failed");
-    if (!j.ok) {
-      state.guildId = null;
-      state.selectedChannelId = null;
-      state.selectedRoleIds = new Set();
-      setBadge("NOT LINKED", "warn");
-      refreshArmedKbd();
-      refreshPips();
-      renderChannelOptions();
-      renderRolesList();
-      renderRolePills();
-      return;
-    }
-
-    state.guildId = String(j.guildId);
-    state.selectedChannelId = j.channelId ? String(j.channelId).replace(/\s+/g, "") : null;
-    state.selectedRoleIds = new Set((j.roleIds || []).map(x => String(x).replace(/\s+/g, "")));
-
-    state.lastSaved = {
-      channelId: state.selectedChannelId,
-      roleIds: Array.from(state.selectedRoleIds),
-    };
-
-    setBadge("CONNECTED", "good");
-    refreshArmedKbd();
-    refreshPips();
-
-    renderChannelOptions();
-    renderRolesList();
-    renderRolePills();
-
-    setSaveStatus("Loaded from server.", "good");
-  }
-
-  function currentConfigChanged() {
-    const chanChanged = String(state.selectedChannelId || "") !== String(state.lastSaved.channelId || "");
-    const rolesNow = Array.from(state.selectedRoleIds).sort();
-    const rolesSaved = Array.from(state.lastSaved.roleIds || []).map(String).sort();
-    const rolesChanged = rolesNow.join(",") !== rolesSaved.join(",");
-    return chanChanged || rolesChanged;
-  }
-
-  async function saveConfig() {
-    const channelId = String(state.selectedChannelId || "").trim();
-    if (!channelId) {
-      setSaveStatus("Select a producer channel first.", "bad");
-      return;
-    }
-
-    const roleIds = Array.from(state.selectedRoleIds);
-
-    setSaveStatus("Saving…", "warn");
-    const r = await fetch("/dashboard/api/discord/config", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({ channelId, roleIds }),
-    });
-
-    const j = await r.json().catch(() => null);
-    if (!r.ok || !j || !j.ok) {
-      setSaveStatus("Save failed. Check logs.", "bad");
-      return;
-    }
-
-    state.lastSaved = { channelId, roleIds: Array.from(roleIds) };
-    setSaveStatus("✓ Saved.", "good");
-  }
-
-  function extractPacketFromItem(item) {
-    // Supports shapes like:
-    // - { payload: { packet: {...} }, created_at }
-    // - { packet: {...} }
-    // - { payload: {...packetFields...} }
-    const pkt =
-      item?.payload?.packet ||
-      item?.packet ||
-      (item?.payload?.header ? item.payload : null) ||
-      null;
-    return pkt;
-  }
-
-  function getItemKey(item) {
-    const pkt = extractPacketFromItem(item);
-    const id = pkt?.header?.id || pkt?.header?.event_id || item?.id || item?.event_id || null;
-    if (id) return String(id);
-    // fallback: stable-ish hash key
-    return JSON.stringify(item).slice(0, 200);
-  }
-
-  function pickBestSummary(item) {
-    const pkt = extractPacketFromItem(item) || {};
-    const type = pkt?.header?.type || "";
-    const ts = pkt?.header?.ts || item?.created_at || item?.ts || null;
-
-    const src = pkt?.payload?.source || {};
-    const author = src?.author_name || src?.author_id || "unknown";
-
-    if (type === "producer.card_show") {
-      const card = pkt?.payload?.card || {};
-      const kind = card?.kind || "card";
-      const text = card?.text || card?.filename || card?.url || "";
-      return { tone: "good", icon: "📤", ts, line1: `${kind} by ${author}`, line2: safeText(text, 90) };
-    }
-
-    if (type === "producer.card_rejected") {
-      const reason = pkt?.payload?.reason || "rejected";
-      return { tone: "bad", icon: "🚫", ts, line1: `rejected by ${author}`, line2: safeText(reason, 90) };
-    }
-
-    // If your backend logs “accepted/rejected” as plain strings sometimes:
-    if (String(item?.status || "").toLowerCase() === "rejected") {
-      return { tone: "bad", icon: "🚫", ts, line1: `rejected`, line2: safeText(item?.reason || "", 90) };
-    }
-
-    return { tone: "neutral", icon: "•", ts, line1: safeText(type || "event", 60), line2: safeText(author, 60) };
-  }
-
-  function renderLog(items) {
-    const wrap = $("logList");
-    const empty = $("logEmpty");
-
-    wrap.innerHTML = "";
-    const arr = Array.isArray(items) ? items : [];
-    empty.style.display = arr.length ? "none" : "block";
-
-    for (const it of arr) {
-      const sum = pickBestSummary(it);
-      const row = document.createElement("div");
-      row.className = "pc-rowitem";
-
-      const left = document.createElement("div");
-      left.innerHTML = `
-        <div class="k">${sum.icon} ${safeText(sum.line1, 80)}</div>
-        <div class="s">${safeText(sum.line2, 120)}</div>
-      `;
-
-      const right = document.createElement("div");
-      right.className = "v";
-      right.textContent = fmtTime(sum.ts);
-
-      if (sum.tone === "bad") right.style.color = "rgba(248,113,113,0.95)";
-      else if (sum.tone === "good") right.style.color = "rgba(52,211,153,0.95)";
-      else right.style.color = "rgba(226,232,240,0.70)";
-
-      row.appendChild(left);
-      row.appendChild(right);
-      wrap.appendChild(row);
-    }
-  }
-
-  function mergeLogItems(incoming) {
-    const arr = Array.isArray(incoming) ? incoming : [];
-    // keep newest-first; your endpoint probably already returns newest-first, but we’ll be robust
-    for (const it of arr) {
-      const key = getItemKey(it);
-      if (state.logSeen.has(key)) continue;
-      state.logSeen.add(key);
-      state.logItems.unshift(it);
-    }
-    if (state.logItems.length > MAX_LOG) state.logItems = state.logItems.slice(0, MAX_LOG);
-  }
-
-  async function pollLog() {
-    try {
-      const r = await fetch("/dashboard/api/discord/producer-log", { credentials: "same-origin" });
-      const j = await r.json().catch(() => null);
-      if (!r.ok || !j || !j.ok) return;
-
-      const incoming =
-        (Array.isArray(j.items) && j.items) ||
-        (Array.isArray(j.rows) && j.rows) ||
-        (Array.isArray(j.events) && j.events) ||
-        [];
-
-      mergeLogItems(incoming);
-      renderLog(state.logItems);
-    } catch {
-      // ignore
-    }
-  }
-
-  async function boot() {
-    try {
-      setBadge("LOADING", "muted");
-
-      await loadConfig();
-
-      if (state.guildId) {
-        await loadStructure();
+        // Clean obvious whitespace in ids (you had one earlier with a space)
+        state.channels = state.channels.map(c => ({ ...c, id: c.id.replace(/\s+/g, "") }));
+        state.roles = state.roles.map(r => ({ ...r, id: r.id.replace(/\s+/g, "") }));
 
         renderChannelOptions();
         renderRolesList();
         renderRolePills();
-        refreshArmedKbd();
-        refreshPips();
       }
 
-      await pollLog();
+      async function loadConfig() {
+        const r = await fetch("/dashboard/api/discord/config", { credentials: "same-origin" });
+        const j = await r.json().catch(() => null);
 
-      if (state.logTimer) clearInterval(state.logTimer);
-      state.logTimer = setInterval(pollLog, 3000);
+        if (!r.ok || !j) throw new Error("config_failed");
+        if (!j.ok) {
+          state.guildId = null;
+          state.selectedChannelId = null;
+          state.selectedRoleIds = new Set();
+          setBadge("NOT LINKED", "warn");
+          refreshArmedKbd();
+          refreshPips();
+          renderChannelOptions();
+          renderRolesList();
+          renderRolePills();
+          return;
+        }
 
-      setSaveStatus("Ready.", "good");
-    } catch (e) {
-      setBadge("ERROR", "warn");
-      setSaveStatus("Failed to load Discord surface.", "bad");
-      console.error(e);
-    }
-  }
+        state.guildId = String(j.guildId);
+        state.selectedChannelId = j.channelId ? String(j.channelId).replace(/\s+/g, "") : null;
+        state.selectedRoleIds = new Set((j.roleIds || []).map(x => String(x).replace(/\s+/g, "")));
 
-  // Events
-  $("btnRefresh").addEventListener("click", async () => {
-    setSaveStatus("Refreshing…", "warn");
-    await boot();
-  });
+        state.lastSaved = {
+          channelId: state.selectedChannelId,
+          roleIds: Array.from(state.selectedRoleIds),
+        };
 
-  $("channelFilter").addEventListener("input", () => renderChannelOptions());
+        setBadge("CONNECTED", "good");
+        refreshArmedKbd();
+        refreshPips();
 
-  $("channelSelect").addEventListener("change", () => {
-    state.selectedChannelId = $("channelSelect").value || null;
-    refreshArmedKbd();
-    refreshPips();
-    if (currentConfigChanged()) setSaveStatus("Unsaved changes.", "warn");
-  });
+        renderChannelOptions();
+        renderRolesList();
+        renderRolePills();
 
-  $("roleFilter").addEventListener("input", () => renderRolesList());
+        setSaveStatus("Loaded from server.", "good");
+      }
 
-  $("btnSave").addEventListener("click", async () => {
-    await saveConfig();
-  });
+      function currentConfigChanged() {
+        const chanChanged = String(state.selectedChannelId || "") !== String(state.lastSaved.channelId || "");
+        const rolesNow = Array.from(state.selectedRoleIds).sort();
+        const rolesSaved = Array.from(state.lastSaved.roleIds || []).map(String).sort();
+        const rolesChanged = rolesNow.join(",") !== rolesSaved.join(",");
+        return chanChanged || rolesChanged;
+      }
 
-  boot();
-})();
-</script>
+      async function saveConfig() {
+        const channelId = String(state.selectedChannelId || "").trim();
+        if (!channelId) {
+          setSaveStatus("Select a producer channel first.", "bad");
+          return;
+        }
+
+        const roleIds = Array.from(state.selectedRoleIds);
+
+        setSaveStatus("Saving…", "warn");
+        const r = await fetch("/dashboard/api/discord/config", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ channelId, roleIds }),
+        });
+
+        const j = await r.json().catch(() => null);
+        if (!r.ok || !j || !j.ok) {
+          setSaveStatus("Save failed. Check logs.", "bad");
+          return;
+        }
+
+        state.lastSaved = { channelId, roleIds: Array.from(roleIds) };
+        setSaveStatus("✓ Saved.", "good");
+      }
+
+      function extractPacketFromItem(item) {
+        // Supports shapes like:
+        // - { payload: { packet: {...} }, created_at }
+        // - { packet: {...} }
+        // - { payload: {...packetFields...} }
+        const pkt =
+          item?.payload?.packet ||
+          item?.packet ||
+          (item?.payload?.header ? item.payload : null) ||
+          null;
+        return pkt;
+      }
+
+      function getItemKey(item) {
+        const pkt = extractPacketFromItem(item);
+        const id = pkt?.header?.id || pkt?.header?.event_id || item?.id || item?.event_id || null;
+        if (id) return String(id);
+        // fallback: stable-ish hash key
+        return JSON.stringify(item).slice(0, 200);
+      }
+
+      function pickBestSummary(item) {
+        const pkt = extractPacketFromItem(item) || {};
+        const type = pkt?.header?.type || "";
+        const ts = pkt?.header?.ts || item?.created_at || item?.ts || null;
+
+        const src = pkt?.payload?.source || {};
+        const author = src?.author_name || src?.author_id || "unknown";
+
+        if (type === "producer.card_show") {
+          const card = pkt?.payload?.card || {};
+          const kind = card?.kind || "card";
+          const text = card?.text || card?.filename || card?.url || "";
+          return { tone: "good", icon: "📤", ts, line1: `${kind} by ${author}`, line2: safeText(text, 90) };
+        }
+
+        if (type === "producer.card_rejected") {
+          const reason = pkt?.payload?.reason || "rejected";
+          return { tone: "bad", icon: "🚫", ts, line1: `rejected by ${author}`, line2: safeText(reason, 90) };
+        }
+
+        // If your backend logs “accepted/rejected” as plain strings sometimes:
+        if (String(item?.status || "").toLowerCase() === "rejected") {
+          return { tone: "bad", icon: "🚫", ts, line1: `rejected`, line2: safeText(item?.reason || "", 90) };
+        }
+
+        return { tone: "neutral", icon: "•", ts, line1: safeText(type || "event", 60), line2: safeText(author, 60) };
+      }
+
+      function renderLog(items) {
+        const wrap = $("logList");
+        const empty = $("logEmpty");
+
+        wrap.innerHTML = "";
+        const arr = Array.isArray(items) ? items : [];
+        empty.style.display = arr.length ? "none" : "block";
+
+        for (const it of arr) {
+          const sum = pickBestSummary(it);
+          const row = document.createElement("div");
+          row.className = "pc-rowitem";
+
+          const left = document.createElement("div");
+          left.innerHTML = `
+        <div class="k">${sum.icon} ${safeText(sum.line1, 80)}</div>
+        <div class="s">${safeText(sum.line2, 120)}</div>
+      `;
+
+          const right = document.createElement("div");
+          right.className = "v";
+          right.textContent = fmtTime(sum.ts);
+
+          if (sum.tone === "bad") right.style.color = "rgba(248,113,113,0.95)";
+          else if (sum.tone === "good") right.style.color = "rgba(52,211,153,0.95)";
+          else right.style.color = "rgba(226,232,240,0.70)";
+
+          row.appendChild(left);
+          row.appendChild(right);
+          wrap.appendChild(row);
+        }
+      }
+
+      function mergeLogItems(incoming) {
+        const arr = Array.isArray(incoming) ? incoming : [];
+        // keep newest-first; your endpoint probably already returns newest-first, but we’ll be robust
+        for (const it of arr) {
+          const key = getItemKey(it);
+          if (state.logSeen.has(key)) continue;
+          state.logSeen.add(key);
+          state.logItems.unshift(it);
+        }
+        if (state.logItems.length > MAX_LOG) state.logItems = state.logItems.slice(0, MAX_LOG);
+      }
+
+      async function pollLog() {
+        try {
+          const r = await fetch("/dashboard/api/discord/producer-log", { credentials: "same-origin" });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j || !j.ok) return;
+
+          const incoming =
+            (Array.isArray(j.items) && j.items) ||
+            (Array.isArray(j.rows) && j.rows) ||
+            (Array.isArray(j.events) && j.events) ||
+            [];
+
+          mergeLogItems(incoming);
+          renderLog(state.logItems);
+        } catch {
+          // ignore
+        }
+      }
+
+      async function boot() {
+        try {
+          setBadge("LOADING", "muted");
+
+          await loadConfig();
+
+          if (state.guildId) {
+            await loadStructure();
+
+            renderChannelOptions();
+            renderRolesList();
+            renderRolePills();
+            refreshArmedKbd();
+            refreshPips();
+          }
+
+          await pollLog();
+
+          if (state.logTimer) clearInterval(state.logTimer);
+          state.logTimer = setInterval(pollLog, 3000);
+
+          setSaveStatus("Ready.", "good");
+        } catch (e) {
+          setBadge("ERROR", "warn");
+          if (e?.message === "bot_offline") {
+            setSaveStatus("Discord bot is offline (check server logs/token).", "bad");
+          } else {
+            setSaveStatus("Failed to load Discord surface.", "bad");
+          }
+          console.error(e);
+        }
+      }
+
+      // Events
+      $("btnRefresh").addEventListener("click", async () => {
+        setSaveStatus("Refreshing…", "warn");
+        await boot();
+      });
+
+      $("channelFilter").addEventListener("input", () => renderChannelOptions());
+
+      $("channelSelect").addEventListener("change", () => {
+        state.selectedChannelId = $("channelSelect").value || null;
+        refreshArmedKbd();
+        refreshPips();
+        if (currentConfigChanged()) setSaveStatus("Unsaved changes.", "warn");
+      });
+
+      $("roleFilter").addEventListener("input", () => renderRolesList());
+
+      $("btnSave").addEventListener("click", async () => {
+        await saveConfig();
+      });
+
+      boot();
+    })();
+  </script>

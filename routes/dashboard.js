@@ -1778,12 +1778,12 @@ router.get("/api/discord/guild-structure", requireAuth, async (req, res) => {
 
     const r = await fetch(
       `http://127.0.0.1:3025/internal/guild/${guildId}/structure`
-    );
+    ).catch(() => null);
 
-    const j = await r.json().catch(() => null);
+    const j = await (r ? r.json().catch(() => null) : null);
 
-    if (!r.ok || !j) {
-      return res.status(500).json({ ok: false });
+    if (!r || !r.ok || !j) {
+      return res.status(500).json({ ok: false, error: j?.error || "bot_offline" });
     }
 
     return res.json({ ok: true, channels: j.channels, roles: j.roles });
@@ -2178,10 +2178,10 @@ router.get("/api/discord/guild-structure", requireAuth, async (req, res) => {
 
     const r = await fetch(
       `http://127.0.0.1:3025/internal/guild/${guildId}/structure`
-    );
+    ).catch(() => null);
 
-    if (!r.ok) {
-      return res.status(500).json({ ok: false });
+    if (!r || !r.ok) {
+      return res.status(500).json({ ok: false, error: "bot_offline" });
     }
 
     const data = await r.json();
