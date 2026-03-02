@@ -1123,8 +1123,6 @@ function presetDistance(preset, current) {
   str(preset.swarm_action, current.swarm_action, 8);
   num(preset.swarm_duration_seconds, current.swarm_duration_seconds, 0.2);
 
-  bool(preset.swarm_promote_global, current.swarm_promote_global, 2);
-  num(preset.swarm_promote_confidence, current.swarm_promote_confidence, 0.2);
 
   bool(preset.sig_lowercase, current.sig_lowercase, 2);
   bool(preset.sig_strip_punct, current.sig_strip_punct, 2);
