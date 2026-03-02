@@ -1,4 +1,5 @@
 // /scrapbotDb.js
+import './bootstrap/env.js';
 import pg from 'pg';
 
 const { Pool } = pg;
