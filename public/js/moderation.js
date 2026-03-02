@@ -306,8 +306,8 @@ function ruleRow(rule) {
 
     <td class="p-3 align-top">
       ${meta.valueKind === 'none'
-        ? `<span class="text-xs text-gray-500">—</span>`
-        : `<div class="font-mono text-xs break-all">${escapeHtml(rule.rule_value || '')}</div>`}
+      ? `<span class="text-xs text-gray-500">—</span>`
+      : `<div class="font-mono text-xs break-all">${escapeHtml(rule.rule_value || '')}</div>`}
     </td>
 
     <td class="p-3 align-top">
@@ -560,22 +560,22 @@ function updateNewRuleValueUI() {
 
   // Your EJS uses these IDs:
   const labelEl = qs('#m_new_rule_value_label');
-  const hintEl  = qs('#m_new_rule_value_hint');
+  const hintEl = qs('#m_new_rule_value_hint');
   const inputEl = qs('#m_new_rule_value');
 
   if (labelEl) {
     labelEl.textContent =
       meta.valueKind === 'number' ? 'Threshold' :
-      preset === 'blacklist_word' ? 'Word to match' :
-      'Phrase to match';
+        preset === 'blacklist_word' ? 'Word to match' :
+          'Phrase to match';
   }
 
   if (hintEl) {
     hintEl.textContent =
       meta.valueKind === 'none' ? 'No value required.' :
-      meta.valueKind === 'number' ? 'Example: 0.7 (70% caps). Higher = stricter.' :
-      preset === 'equals' ? 'Must match the message exactly.' :
-      'Matches anywhere in the message.';
+        meta.valueKind === 'number' ? 'Example: 0.7 (70% caps). Higher = stricter.' :
+          preset === 'equals' ? 'Must match the message exactly.' :
+            'Matches anywhere in the message.';
   }
 
   if (inputEl) {
@@ -599,10 +599,10 @@ function updateNewRuleDurationUI() {
   if (btn) {
     const label =
       action === 'ignore' ? 'Create exception (ignore)' :
-      action === 'timeout' ? 'Create timeout rule' :
-      action === 'ban' ? 'Create ban rule' :
-      action === 'delete' ? 'Create delete rule' :
-      'Create rule';
+        action === 'timeout' ? 'Create timeout rule' :
+          action === 'ban' ? 'Create ban rule' :
+            action === 'delete' ? 'Create delete rule' :
+              'Create rule';
     btn.textContent = label;
   }
 
@@ -881,7 +881,21 @@ function setChecked(id, v) {
 }
 
 function refreshBoundLabels() {
-  // Optional: if you have any <span data-bind="..."> labels, update them here.
+  const map = {
+    m_swarm_window_seconds: 'm_swarm_window_seconds_label',
+    m_swarm_min_unique_users: 'm_swarm_min_unique_users_label',
+    m_swarm_min_repeats: 'm_swarm_min_repeats_label',
+    m_swarm_cooldown_seconds: 'm_swarm_cooldown_seconds_label',
+    m_swarm_escalate_repeat_threshold: 'm_swarm_escalate_repeat_threshold_label',
+  };
+
+  for (const [inputId, labelId] of Object.entries(map)) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if (input && label) {
+      label.textContent = input.value;
+    }
+  }
 }
 
 const INTENSITY_NAMES = ['Lite', 'Balanced', 'Strong', 'Heavy', 'Nuclear'];
@@ -916,8 +930,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 600,
     flood_cooldown_seconds: 60,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Balanced
@@ -949,8 +962,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 600,
     flood_cooldown_seconds: 120,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Strong
@@ -982,8 +994,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 900,
     flood_cooldown_seconds: 120,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Heavy
@@ -1015,8 +1026,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 1200,
     flood_cooldown_seconds: 180,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Nuclear
@@ -1048,8 +1058,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 1800,
     flood_cooldown_seconds: 300,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 ];
 
@@ -1152,9 +1161,6 @@ function applyPresetToControls(preset) {
     if (qs('#m_swarm_action')) qs('#m_swarm_action').value = String(preset.swarm_action || 'timeout').toLowerCase();
     setVal('m_swarm_duration_seconds', preset.swarm_duration_seconds);
 
-    setChecked('m_swarm_promote_global', preset.swarm_promote_global);
-    setVal('m_swarm_promote_confidence', preset.swarm_promote_confidence);
-
     setChecked('m_sig_lowercase', preset.sig_lowercase);
     setChecked('m_sig_strip_punct', preset.sig_strip_punct);
     setChecked('m_sig_collapse_ws', preset.sig_collapse_ws);
@@ -1195,9 +1201,6 @@ function buildSettingsPayloadFromControls() {
     swarm_action: String(qs('#m_swarm_action')?.value || 'timeout').toLowerCase(),
     swarm_duration_seconds: Number(qs('#m_swarm_duration_seconds')?.value || 30) || 30,
 
-    swarm_promote_global: !!qs('#m_swarm_promote_global')?.checked,
-    swarm_promote_confidence: Number(qs('#m_swarm_promote_confidence')?.value || 0.75) || 0.75,
-
     sig_lowercase: !!qs('#m_sig_lowercase')?.checked,
     sig_strip_punct: !!qs('#m_sig_strip_punct')?.checked,
     sig_collapse_ws: !!qs('#m_sig_collapse_ws')?.checked,
@@ -1229,9 +1232,9 @@ async function saveSettingsNow() {
   const payload = buildSettingsPayloadFromControls();
 
   await api(`/dashboard/api/moderation/settings?platform=${encodeURIComponent(platform())}`, {
-  method: 'PUT',
-  body: JSON.stringify(payload),
-});
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 
 
   await loadSettings();
@@ -1241,7 +1244,7 @@ async function saveSettingsNow() {
   if (postSaveHooks.length) {
     const hooks = postSaveHooks;
     postSaveHooks = [];
-    try { hooks.forEach(fn => fn()); } catch (_) {}
+    try { hooks.forEach(fn => fn()); } catch (_) { }
   }
 
   const shield = qs('#m_shield_status_line');
@@ -1251,7 +1254,7 @@ async function saveSettingsNow() {
 }
 
 qs('#m_save_settings')?.addEventListener('click', async () => {
-  try { await saveNowImmediate(); } catch (_) {}
+  try { await saveNowImmediate(); } catch (_) { }
 });
 
 async function loadSettings() {
@@ -1270,9 +1273,6 @@ async function loadSettings() {
     if (s.swarm_cooldown_seconds != null) setVal('m_swarm_cooldown_seconds', s.swarm_cooldown_seconds);
     if (qs('#m_swarm_action') && s.swarm_action != null) qs('#m_swarm_action').value = String(s.swarm_action).toLowerCase();
     if (s.swarm_duration_seconds != null) setVal('m_swarm_duration_seconds', s.swarm_duration_seconds);
-
-    setChecked('m_swarm_promote_global', s.swarm_promote_global);
-    if (s.swarm_promote_confidence != null) setVal('m_swarm_promote_confidence', s.swarm_promote_confidence);
 
     setChecked('m_sig_lowercase', s.sig_lowercase);
     setChecked('m_sig_strip_punct', s.sig_strip_punct);
@@ -1374,14 +1374,14 @@ function wireSettingsAutoSave() {
   if (!AUTO_SAVE_ANY_SETTINGS_CHANGE) return;
 
   const ids = [
-    'm_swarm_enabled','m_swarm_window_seconds','m_swarm_min_unique_users','m_swarm_min_repeats','m_swarm_cooldown_seconds',
-    'm_swarm_action','m_swarm_duration_seconds','m_swarm_promote_global','m_swarm_promote_confidence',
+    'm_swarm_enabled', 'm_swarm_window_seconds', 'm_swarm_min_unique_users', 'm_swarm_min_repeats', 'm_swarm_cooldown_seconds',
+    'm_swarm_action', 'm_swarm_duration_seconds',
 
-    'm_sig_lowercase','m_sig_strip_punct','m_sig_collapse_ws','m_sig_strip_emojis',
-    'm_swarm_escalate','m_swarm_escalate_repeat_threshold','m_swarm_escalate_action',
+    'm_sig_lowercase', 'm_sig_strip_punct', 'm_sig_collapse_ws', 'm_sig_strip_emojis',
+    'm_swarm_escalate', 'm_swarm_escalate_repeat_threshold', 'm_swarm_escalate_action',
 
-    'm_flood_enabled','m_flood_window_seconds','m_flood_max_messages','m_flood_action','m_flood_duration_seconds',
-    'm_flood_escalate','m_flood_escalate_multiplier','m_flood_max_duration_seconds','m_flood_cooldown_seconds',
+    'm_flood_enabled', 'm_flood_window_seconds', 'm_flood_max_messages', 'm_flood_action', 'm_flood_duration_seconds',
+    'm_flood_escalate', 'm_flood_escalate_multiplier', 'm_flood_max_duration_seconds', 'm_flood_cooldown_seconds',
   ];
 
   ids.forEach(id => {
@@ -1390,6 +1390,7 @@ function wireSettingsAutoSave() {
     const ev = (el.type === 'checkbox') ? 'change' : 'input';
 
     el.addEventListener(ev, () => {
+      refreshBoundLabels();
       if (suppressAutoSave) return;
       scheduleSave('settings');
     });

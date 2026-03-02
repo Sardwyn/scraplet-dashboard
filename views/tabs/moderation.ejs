@@ -78,11 +78,16 @@
           <div class="mt-3">
             <input id="m_guard_intensity" type="range" min="0" max="4" step="1" value="1" class="guard-slider w-full">
             <div class="mt-2 grid grid-cols-5 gap-2 text-xs pc-text-muted">
-              <span class="text-left">Lite</span>
-              <span class="text-center">Balanced</span>
-              <span class="text-center">Strong</span>
-              <span class="text-center">Heavy</span>
-              <span class="text-right">Nuclear</span>
+              <span class="text-left"
+                title="Shield: 8 users, 10 repeats, 12s window. Action: 30s timeout.&#10;Flood: 8 msgs / 10s. Action: 10s timeout.">Lite</span>
+              <span class="text-center"
+                title="Shield: 6 users, 8 repeats, 10s window. Action: Ban.&#10;Flood: 5 msgs / 10s. Action: 30s timeout.">Balanced</span>
+              <span class="text-center"
+                title="Shield: 5 users, 7 repeats, 8s window. Action: Ban.&#10;Flood: 4 msgs / 8s. Action: 60s timeout.">Strong</span>
+              <span class="text-center"
+                title="Shield: 4 users, 6 repeats, 6s window. Action: Ban.&#10;Flood: 3 msgs / 6s. Action: 120s timeout.">Heavy</span>
+              <span class="text-right"
+                title="Shield: 3 users, 5 repeats, 5s window. Action: Ban.&#10;Flood: 2 msgs / 5s. Action: Ban.">Nuclear</span>
             </div>
 
             <div class="mt-3 text-xs pc-text-muted">
@@ -160,7 +165,8 @@
         </div>
 
         <div class="mt-4 text-xs text-white/40">
-          Tip: Use <span class="text-white font-semibold">exception (ignore)</span> rules above punish rules to create safe exceptions.
+          Tip: Use <span class="text-white font-semibold">exception (ignore)</span> rules above punish rules to create
+          safe exceptions.
         </div>
       </div>
     </div>
@@ -266,7 +272,8 @@
               <label class="text-sm pc-text-muted">Cooldown</label>
               <div class="text-xs pc-text-muted"><span id="m_swarm_cooldown_seconds_label">120</span>s</div>
             </div>
-            <input id="m_swarm_cooldown_seconds" type="range" min="0" max="1800" step="30" value="120" class="w-full mt-2">
+            <input id="m_swarm_cooldown_seconds" type="range" min="0" max="1800" step="30" value="120"
+              class="w-full mt-2">
             <div class="text-xs pc-text-muted mt-1">Prevents repeated triggers on the same signature.</div>
           </div>
 
@@ -281,163 +288,151 @@
           </div>
 
           <div>
-            <label class="text-sm pc-text-muted">Timeout duration (seconds)</label>
-            <input id="m_swarm_duration_seconds" type="number" min="0" class="pc-input mt-2 w-full text-sm" value="30">
-            <div class="text-xs pc-text-muted mt-1">Only used if action = timeout.</div>
-          </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+            <!-- Advanced shield knobs toggled below -->
+            <button id="m_toggle_shield_advanced" class="text-xs pc-text-muted hover:text-white underline">
+              Show advanced Shield knobs
+            </button>
+
+            <div id="m_shield_advanced_wrap" class="hidden p-4 rounded bg-white/5 border border-white/5">
+              <div class="font-semibold">Advanced knobs</div>
+              <div class="text-xs pc-text-muted mt-1">These increase detection quality. Defaults are safe.</div>
+
+              <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="pc-panel">
+                  <div class="pc-panel-bd">
+                    <div class="font-semibold text-sm">Signature normalization</div>
+                    <div class="text-xs pc-text-muted mt-1">Helps catch CAPs / punctuation variants without regex.</div>
+
+                    <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
+                      <input id="m_sig_lowercase" type="checkbox" checked class="pc-toggle">
+                      Lowercase
+                    </label>
+                    <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                      <input id="m_sig_strip_punct" type="checkbox" checked class="pc-toggle">
+                      Strip punctuation
+                    </label>
+                    <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                      <input id="m_sig_collapse_ws" type="checkbox" checked class="pc-toggle">
+                      Collapse whitespace
+                    </label>
+                    <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
+                      <input id="m_sig_strip_emojis" type="checkbox" class="pc-toggle">
+                      Strip emojis
+                    </label>
+                  </div>
+                </div>
+
+                <div class="pc-panel">
+                  <div class="pc-panel-bd">
+                    <div class="font-semibold text-sm">Escalation</div>
+                    <div class="text-xs pc-text-muted mt-1">If the same signature keeps coming back, go harder.</div>
+
+                    <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
+                      <input id="m_swarm_escalate" type="checkbox" checked class="pc-toggle">
+                      Escalate repeat offenders
+                    </label>
+
+                    <div class="mt-3">
+                      <div class="flex items-center justify-between">
+                        <label class="text-sm pc-text-muted">Repeat threshold</label>
+                        <div class="text-xs pc-text-muted"><span id="m_swarm_escalate_repeat_threshold_label">2</span>
+                        </div>
+                      </div>
+                      <input id="m_swarm_escalate_repeat_threshold" type="range" min="1" max="10" step="1" value="2"
+                        class="w-full mt-2">
+                      <div class="text-xs pc-text-muted mt-1">Number of incidents before escalating.</div>
+                    </div>
+
+                    <div class="mt-3">
+                      <label class="text-sm pc-text-muted">Escalate action</label>
+                      <select id="m_swarm_escalate_action" class="pc-select mt-2 w-full text-sm">
+                        <option value="ban">ban</option>
+                        <option value="timeout">timeout</option>
+                        <option value="none">none</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs pc-text-muted" id="m_settings_status"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flood protection -->
+      <div class="pc-panel mt-6">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Flood protection (single user)</div>
+            <div class="pc-panel-sub">Stops one user spamming many messages fast.</div>
+          </div>
+        </div>
+
+        <div class="pc-panel-bd">
+          <div class="text-xs text-white/40 mb-4">These controls generate internal rules automatically.</div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <label class="flex items-center gap-2 text-sm text-white">
-              <input id="m_swarm_promote_global" type="checkbox" checked class="pc-toggle">
-              Promote triggered signatures to global intel
+              <input id="m_flood_enabled" type="checkbox" checked class="pc-toggle">
+              Enable flood protection
+            </label>
+            <div></div>
+
+            <div>
+              <label class="text-sm pc-text-muted">Window (seconds)</label>
+              <input id="m_flood_window_seconds" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="10">
+            </div>
+
+            <div>
+              <label class="text-sm pc-text-muted">Max messages (per user)</label>
+              <input id="m_flood_max_messages" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="5">
+            </div>
+
+            <div>
+              <label class="text-sm pc-text-muted">Action</label>
+              <select id="m_flood_action" class="pc-select mt-1 w-full text-sm">
+                <option value="timeout">timeout</option>
+                <option value="ban">ban</option>
+                <option value="delete">delete</option>
+                <option value="ignore">ignore</option>
+                <option value="none">none</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-sm pc-text-muted">Duration (seconds)</label>
+              <input id="m_flood_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm"
+                value="30">
+            </div>
+
+            <label class="flex items-center gap-2 text-sm pc-text-muted">
+              <input id="m_flood_escalate" type="checkbox" checked class="pc-toggle">
+              Escalate on repeat spam
             </label>
 
-            <div class="flex items-center gap-3">
-              <label class="text-sm text-white whitespace-nowrap">Promotion confidence</label>
-              <input id="m_swarm_promote_confidence" type="range" min="0.2" max="1" step="0.05" value="0.75" class="w-full">
-              <div class="text-xs pc-text-muted w-16 text-right">
-                <span id="m_swarm_promote_confidence_label">0.75</span>
-              </div>
+            <div>
+              <label class="text-sm pc-text-muted">Escalate multiplier</label>
+              <input id="m_flood_escalate_multiplier" type="number" min="1" class="pc-input mt-1 w-full text-sm"
+                value="2">
+            </div>
+
+            <div>
+              <label class="text-sm pc-text-muted">Max duration (seconds)</label>
+              <input id="m_flood_max_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm"
+                value="600">
+            </div>
+
+            <div>
+              <label class="text-sm text-white">Cooldown (seconds)</label>
+              <input id="m_flood_cooldown_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm"
+                value="120">
             </div>
           </div>
-
-          <button id="m_toggle_shield_advanced" class="text-xs pc-text-muted hover:text-white underline">
-            Show advanced Shield knobs
-          </button>
-
-          <div id="m_shield_advanced_wrap" class="hidden p-4 rounded bg-white/5 border border-white/5">
-            <div class="font-semibold">Advanced knobs</div>
-            <div class="text-xs pc-text-muted mt-1">These increase detection quality. Defaults are safe.</div>
-
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="pc-panel">
-                <div class="pc-panel-bd">
-                  <div class="font-semibold text-sm">Signature normalization</div>
-                  <div class="text-xs pc-text-muted mt-1">Helps catch CAPs / punctuation variants without regex.</div>
-
-                  <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
-                    <input id="m_sig_lowercase" type="checkbox" checked class="pc-toggle">
-                    Lowercase
-                  </label>
-                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
-                    <input id="m_sig_strip_punct" type="checkbox" checked class="pc-toggle">
-                    Strip punctuation
-                  </label>
-                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
-                    <input id="m_sig_collapse_ws" type="checkbox" checked class="pc-toggle">
-                    Collapse whitespace
-                  </label>
-                  <label class="mt-2 flex items-center gap-2 text-sm pc-text-muted">
-                    <input id="m_sig_strip_emojis" type="checkbox" class="pc-toggle">
-                    Strip emojis
-                  </label>
-                </div>
-              </div>
-
-              <div class="pc-panel">
-                <div class="pc-panel-bd">
-                  <div class="font-semibold text-sm">Escalation</div>
-                  <div class="text-xs pc-text-muted mt-1">If the same signature keeps coming back, go harder.</div>
-
-                  <label class="mt-3 flex items-center gap-2 text-sm pc-text-muted">
-                    <input id="m_swarm_escalate" type="checkbox" checked class="pc-toggle">
-                    Escalate repeat offenders
-                  </label>
-
-                  <div class="mt-3">
-                    <div class="flex items-center justify-between">
-                      <label class="text-sm pc-text-muted">Repeat threshold</label>
-                      <div class="text-xs pc-text-muted"><span id="m_swarm_escalate_repeat_threshold_label">2</span></div>
-                    </div>
-                    <input id="m_swarm_escalate_repeat_threshold" type="range" min="1" max="10" step="1" value="2" class="w-full mt-2">
-                    <div class="text-xs pc-text-muted mt-1">Number of incidents before escalating.</div>
-                  </div>
-
-                  <div class="mt-3">
-                    <label class="text-sm pc-text-muted">Escalate action</label>
-                    <select id="m_swarm_escalate_action" class="pc-select mt-2 w-full text-sm">
-                      <option value="ban">ban</option>
-                      <option value="timeout">timeout</option>
-                      <option value="none">none</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-xs pc-text-muted" id="m_settings_status"></div>
         </div>
       </div>
-    </div>
-
-    <!-- Flood protection -->
-    <div class="pc-panel mt-6">
-      <div class="pc-panel-hd">
-        <div>
-          <div class="pc-panel-title">Flood protection (single user)</div>
-          <div class="pc-panel-sub">Stops one user spamming many messages fast.</div>
-        </div>
-      </div>
-
-      <div class="pc-panel-bd">
-        <div class="text-xs text-white/40 mb-4">These controls generate internal rules automatically.</div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <label class="flex items-center gap-2 text-sm text-white">
-            <input id="m_flood_enabled" type="checkbox" checked class="pc-toggle">
-            Enable flood protection
-          </label>
-          <div></div>
-
-          <div>
-            <label class="text-sm pc-text-muted">Window (seconds)</label>
-            <input id="m_flood_window_seconds" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="10">
-          </div>
-
-          <div>
-            <label class="text-sm pc-text-muted">Max messages (per user)</label>
-            <input id="m_flood_max_messages" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="5">
-          </div>
-
-          <div>
-            <label class="text-sm pc-text-muted">Action</label>
-            <select id="m_flood_action" class="pc-select mt-1 w-full text-sm">
-              <option value="timeout">timeout</option>
-              <option value="ban">ban</option>
-              <option value="delete">delete</option>
-              <option value="ignore">ignore</option>
-              <option value="none">none</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-sm pc-text-muted">Duration (seconds)</label>
-            <input id="m_flood_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="30">
-          </div>
-
-          <label class="flex items-center gap-2 text-sm pc-text-muted">
-            <input id="m_flood_escalate" type="checkbox" checked class="pc-toggle">
-            Escalate on repeat spam
-          </label>
-
-          <div>
-            <label class="text-sm pc-text-muted">Escalate multiplier</label>
-            <input id="m_flood_escalate_multiplier" type="number" min="1" class="pc-input mt-1 w-full text-sm" value="2">
-          </div>
-
-          <div>
-            <label class="text-sm pc-text-muted">Max duration (seconds)</label>
-            <input id="m_flood_max_duration_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="600">
-          </div>
-
-          <div>
-            <label class="text-sm text-white">Cooldown (seconds)</label>
-            <input id="m_flood_cooldown_seconds" type="number" min="0" class="pc-input mt-1 w-full text-sm" value="120">
-          </div>
-        </div>
-      </div>
-    </div>
   </section>
 
   <!-- TEST -->
@@ -447,7 +442,8 @@
     <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="md:col-span-2">
         <label class="text-sm pc-text-muted">Message text</label>
-        <textarea id="m_test_text" class="pc-input w-full mt-1 text-sm" rows="6" placeholder="Paste a message here...">TEST TEST TEST</textarea>
+        <textarea id="m_test_text" class="pc-input w-full mt-1 text-sm" rows="6"
+          placeholder="Paste a message here...">TEST TEST TEST</textarea>
       </div>
 
       <div>
@@ -608,7 +604,8 @@
 
         <div id="m_ignore_hint"
           class="hidden md:col-span-2 -mt-2 text-xs text-emerald-300/80 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-3 py-2">
-          <span class="font-semibold text-emerald-200">Exception:</span> “ignore” bypasses actions below. Put these rules at the top.
+          <span class="font-semibold text-emerald-200">Exception:</span> “ignore” bypasses actions below. Put these
+          rules at the top.
         </div>
 
         <div>
@@ -620,7 +617,8 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label class="text-sm pc-text-muted">Channel (optional)</label>
-          <input id="m_new_rule_channel" class="pc-input mt-1 w-full text-sm" placeholder="leave blank for all channels">
+          <input id="m_new_rule_channel" class="pc-input mt-1 w-full text-sm"
+            placeholder="leave blank for all channels">
           <div class="flex items-center gap-2 mt-3">
             <input id="m_new_rule_ignore_mods" type="checkbox" checked class="pc-toggle">
             <label for="m_new_rule_ignore_mods" class="text-sm text-white/70">Ignore mods</label>
@@ -633,7 +631,8 @@
             Enabled
           </label>
 
-          <button id="m_create_rule" type="button" data-default-text="Create rule" class="pc-btn pc-btn--primary text-sm shadow">
+          <button id="m_create_rule" type="button" data-default-text="Create rule"
+            class="pc-btn pc-btn--primary text-sm shadow">
             Create rule
           </button>
 
@@ -715,10 +714,21 @@
   }
 
   @keyframes nuclearFlash {
-    0% { opacity: 0; }
-    35% { opacity: 0.92; }
-    55% { opacity: 0.92; }
-    100% { opacity: 0; }
+    0% {
+      opacity: 0;
+    }
+
+    35% {
+      opacity: 0.92;
+    }
+
+    55% {
+      opacity: 0.92;
+    }
+
+    100% {
+      opacity: 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
