@@ -1088,21 +1088,24 @@ function snapIntensityToClosestPreset() {
   try {
     const current = buildSettingsPayloadFromControls();
 
-    let bestIdx = 1;
-    let bestScore = Infinity;
+    let exactMatchIdx = null;
 
     for (let i = 0; i < INTENSITY_PRESETS.length; i++) {
       const preset = INTENSITY_PRESETS[i];
       const score = presetDistance(preset, current);
-      if (score < bestScore) {
-        bestScore = score;
-        bestIdx = i;
+      if (score === 0) {
+        exactMatchIdx = i;
+        break;
       }
     }
 
     const r = qs('#m_guard_intensity');
-    if (r) r.value = String(bestIdx);
-    setIntensityLabel(bestIdx);
+    if (exactMatchIdx !== null) {
+      if (r) r.value = String(exactMatchIdx);
+      setIntensityLabel(exactMatchIdx);
+    } else {
+      setIntensityLabel(null); // Resolves to "Custom" label
+    }
   } finally {
     suppressAutoSave = prev;
   }
@@ -1369,8 +1372,6 @@ function triggerNuclearFlash() {
 
 
 function wireSettingsAutoSave() {
-  if (!AUTO_SAVE_ANY_SETTINGS_CHANGE) return;
-
   const ids = [
     'm_swarm_enabled', 'm_swarm_window_seconds', 'm_swarm_min_unique_users', 'm_swarm_min_repeats', 'm_swarm_cooldown_seconds',
     'm_swarm_action', 'm_swarm_duration_seconds',
