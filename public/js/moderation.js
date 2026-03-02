@@ -1126,16 +1126,6 @@ function presetDistance(preset, current) {
   str(preset.swarm_action, current.swarm_action, 8);
   num(preset.swarm_duration_seconds, current.swarm_duration_seconds, 0.2);
 
-
-  bool(preset.sig_lowercase, current.sig_lowercase, 2);
-  bool(preset.sig_strip_punct, current.sig_strip_punct, 2);
-  bool(preset.sig_collapse_ws, current.sig_collapse_ws, 2);
-  bool(preset.sig_strip_emojis, current.sig_strip_emojis, 2);
-
-  bool(preset.swarm_escalate, current.swarm_escalate, 4);
-  num(preset.swarm_escalate_repeat_threshold, current.swarm_escalate_repeat_threshold, 2);
-  str(preset.swarm_escalate_action, current.swarm_escalate_action, 6);
-
   bool(preset.flood_enabled, current.flood_enabled, 6);
   num(preset.flood_window_seconds, current.flood_window_seconds, 1);
   num(preset.flood_max_messages, current.flood_max_messages, 3);
@@ -1161,15 +1151,6 @@ function applyPresetToControls(preset) {
     setVal('m_swarm_cooldown_seconds', preset.swarm_cooldown_seconds);
     if (qs('#m_swarm_action')) qs('#m_swarm_action').value = String(preset.swarm_action || 'timeout').toLowerCase();
     setVal('m_swarm_duration_seconds', preset.swarm_duration_seconds);
-
-    setChecked('m_sig_lowercase', preset.sig_lowercase);
-    setChecked('m_sig_strip_punct', preset.sig_strip_punct);
-    setChecked('m_sig_collapse_ws', preset.sig_collapse_ws);
-    setChecked('m_sig_strip_emojis', preset.sig_strip_emojis);
-
-    setChecked('m_swarm_escalate', preset.swarm_escalate);
-    setVal('m_swarm_escalate_repeat_threshold', preset.swarm_escalate_repeat_threshold);
-    if (qs('#m_swarm_escalate_action')) qs('#m_swarm_escalate_action').value = String(preset.swarm_escalate_action || 'ban').toLowerCase();
 
     setChecked('m_flood_enabled', preset.flood_enabled);
     setVal('m_flood_window_seconds', preset.flood_window_seconds);
@@ -1201,15 +1182,6 @@ function buildSettingsPayloadFromControls() {
     swarm_cooldown_seconds: Number(qs('#m_swarm_cooldown_seconds')?.value || 120) || 120,
     swarm_action: String(qs('#m_swarm_action')?.value || 'timeout').toLowerCase(),
     swarm_duration_seconds: Number(qs('#m_swarm_duration_seconds')?.value || 30) || 30,
-
-    sig_lowercase: !!qs('#m_sig_lowercase')?.checked,
-    sig_strip_punct: !!qs('#m_sig_strip_punct')?.checked,
-    sig_collapse_ws: !!qs('#m_sig_collapse_ws')?.checked,
-    sig_strip_emojis: !!qs('#m_sig_strip_emojis')?.checked,
-
-    swarm_escalate: !!qs('#m_swarm_escalate')?.checked,
-    swarm_escalate_repeat_threshold: Number(qs('#m_swarm_escalate_repeat_threshold')?.value || 2) || 2,
-    swarm_escalate_action: String(qs('#m_swarm_escalate_action')?.value || 'ban').toLowerCase(),
 
     flood_enabled: !!qs('#m_flood_enabled')?.checked,
     flood_window_seconds: Number(qs('#m_flood_window_seconds')?.value || 10) || 10,
@@ -1274,15 +1246,6 @@ async function loadSettings() {
     if (s.swarm_cooldown_seconds != null) setVal('m_swarm_cooldown_seconds', s.swarm_cooldown_seconds);
     if (qs('#m_swarm_action') && s.swarm_action != null) qs('#m_swarm_action').value = String(s.swarm_action).toLowerCase();
     if (s.swarm_duration_seconds != null) setVal('m_swarm_duration_seconds', s.swarm_duration_seconds);
-
-    setChecked('m_sig_lowercase', s.sig_lowercase);
-    setChecked('m_sig_strip_punct', s.sig_strip_punct);
-    setChecked('m_sig_collapse_ws', s.sig_collapse_ws);
-    setChecked('m_sig_strip_emojis', s.sig_strip_emojis);
-
-    setChecked('m_swarm_escalate', s.swarm_escalate);
-    if (s.swarm_escalate_repeat_threshold != null) setVal('m_swarm_escalate_repeat_threshold', s.swarm_escalate_repeat_threshold);
-    if (qs('#m_swarm_escalate_action') && s.swarm_escalate_action != null) qs('#m_swarm_escalate_action').value = String(s.swarm_escalate_action).toLowerCase();
 
     setChecked('m_flood_enabled', s.flood_enabled);
     if (s.flood_window_seconds != null) setVal('m_flood_window_seconds', s.flood_window_seconds);
@@ -1375,9 +1338,6 @@ function wireSettingsAutoSave() {
   const ids = [
     'm_swarm_enabled', 'm_swarm_window_seconds', 'm_swarm_min_unique_users', 'm_swarm_min_repeats', 'm_swarm_cooldown_seconds',
     'm_swarm_action', 'm_swarm_duration_seconds',
-
-    'm_sig_lowercase', 'm_sig_strip_punct', 'm_sig_collapse_ws', 'm_sig_strip_emojis',
-    'm_swarm_escalate', 'm_swarm_escalate_repeat_threshold', 'm_swarm_escalate_action',
 
     'm_flood_enabled', 'm_flood_window_seconds', 'm_flood_max_messages', 'm_flood_action', 'm_flood_duration_seconds',
     'm_flood_escalate', 'm_flood_escalate_multiplier', 'm_flood_max_duration_seconds', 'm_flood_cooldown_seconds',
