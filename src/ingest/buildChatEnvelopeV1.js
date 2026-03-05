@@ -93,6 +93,7 @@ export function buildChatEnvelopeV1FromKick({
 
     message: {
       text: String(messageText ?? ""),
+      emotes: (platformPayload && Array.isArray(platformPayload.emotes)) ? platformPayload.emotes : undefined,
     },
 
     source: {
