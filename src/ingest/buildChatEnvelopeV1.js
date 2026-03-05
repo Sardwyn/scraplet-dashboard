@@ -221,12 +221,19 @@ export function buildChatEnvelopeV1FromTikTok({
   } else if (type === 'follow') {
     eventType = 'chat.follow.joined';
     text = 'Followed';
+  } else if (type === 'roomUser') {
+    eventType = 'livestream.metadata.updated'; // Matches Kick semantic for roomIntel listener
+    text = 'Viewer count updated';
   }
 
   const env = {
     v: 1,
     id: str(data.msgId) || undefined, // TikTok provides msgId
     ts: data.createTime ? new Date(Number(data.createTime)).toISOString() : isoNow(),
+
+    // TELEMETRY (RoomIntel 2.0)
+    viewers: data.viewerCount !== undefined ? data.viewerCount : undefined,
+    eventType: eventType, // Pass explicitly for router
 
     platform: 'tiktok',
     scraplet_user_id: Number(ownerUserId),

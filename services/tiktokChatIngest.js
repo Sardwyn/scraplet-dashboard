@@ -236,6 +236,7 @@ function connectUser(state) {
     conn.on('share', d => handle('share', d));
     conn.on('follow', d => handle('follow', d));
     conn.on('member', d => handle('member', d));
+    conn.on('roomUser', d => handle('roomUser', d)); // TELEMETRY: Viewer counts
 
     // 4. Connect
     conn.connect().catch(err => {

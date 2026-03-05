@@ -76,8 +76,73 @@
         return height - MARGIN.bottom - (value / max) * chartHeight;
     }
 
+    function interpolateData(originalTimeline) {
+        if (!originalTimeline || originalTimeline.length < 2) return originalTimeline;
+
+        // Since we removed the 5-second heartbeat, we might have gaps of minutes 
+        // between events. To keep the graph continuous and flat during quiet periods,
+        // we inject synthetic "flat" points every 5 seconds up to the current time, 
+        // carrying forward the last known values for EI, Viewers, etc.
+
+        const interpolated = [];
+        const intervalMs = 5000; // 5 seconds
+
+        // Sort chronologically just to be sure
+        const sorted = [...originalTimeline].sort((a, b) => new Date(a.bucket_ts).getTime() - new Date(b.bucket_ts).getTime());
+
+        let lastPoint = sorted[0];
+        interpolated.push(lastPoint);
+
+        const now = Date.now();
+
+        for (let i = 1; i < sorted.length; i++) {
+            const currentPoint = sorted[i];
+            const lpTime = new Date(lastPoint.bucket_ts).getTime();
+            const cpTime = new Date(currentPoint.bucket_ts).getTime();
+
+            // If gap is larger than roughly 2 intervals, fill it
+            if (cpTime - lpTime > intervalMs * 1.5) {
+                let fillTime = lpTime + intervalMs;
+                while (fillTime < cpTime - intervalMs) {
+                    // Carry forward previous values, but decay MPM to 0 since no chat happened
+                    const syntheticPoint = {
+                        ...lastPoint,
+                        bucket_ts: new Date(fillTime).toISOString(),
+                        synthetic: true,
+                        mpm: 0, // No messages in this synthetic gap
+                    };
+                    interpolated.push(syntheticPoint);
+                    fillTime += intervalMs;
+                }
+            }
+
+            interpolated.push(currentPoint);
+            lastPoint = currentPoint;
+        }
+
+        // Fill trailing gap up to 'now'
+        const lpTime = new Date(lastPoint.bucket_ts).getTime();
+        if (now - lpTime > intervalMs * 1.5) {
+            let fillTime = lpTime + intervalMs;
+            // Cap at 'now'
+            while (fillTime <= now) {
+                interpolated.push({
+                    ...lastPoint,
+                    bucket_ts: new Date(fillTime).toISOString(),
+                    synthetic: true,
+                    mpm: 0, // No messages
+                });
+                fillTime += intervalMs;
+            }
+        }
+
+        return interpolated;
+    }
+
     function render() {
         if (!data.timeline || data.timeline.length < 2) return;
+
+        const displayTimeline = interpolateData(data.timeline);
 
         const width = canvas.width / (window.devicePixelRatio || 1);
         const height = canvas.height / (window.devicePixelRatio || 1);
@@ -96,13 +161,13 @@
         ctx.stroke();
 
         // 2. Resolve Max MPM for scaling
-        const maxMpm = Math.max(50, ...data.timeline.map(d => d.mpm || 0));
+        const maxMpm = Math.max(50, ...displayTimeline.map(d => d.mpm || 0));
 
         // 3. Draw Engagement (EI) - Blue Area
-        drawPath(data.timeline, d => d.engagement_index, 100, COLORS.ei, true);
+        drawPath(displayTimeline, d => d.engagement_index, 100, COLORS.ei, true);
 
         // 4. Draw MPM - Emerald Line
-        drawPath(data.timeline, d => d.mpm, maxMpm, COLORS.mpm, false, 2);
+        drawPath(displayTimeline, d => d.mpm, maxMpm, COLORS.mpm, false, 2);
 
         // 5. Draw Moments
         data.moments.forEach(m => {
@@ -191,12 +256,13 @@
         const mouseX = e.clientX - rect.left;
 
         const width = canvas.width / (window.devicePixelRatio || 1);
+        const displayTimeline = interpolateData(data.timeline);
 
         // Binary search or find closest
-        let closest = data.timeline[0];
+        let closest = displayTimeline[0];
         let minDist = Math.abs(getX(closest.bucket_ts, width) - mouseX);
 
-        for (const p of data.timeline) {
+        for (const p of displayTimeline) {
             const d = Math.abs(getX(p.bucket_ts, width) - mouseX);
             if (d < minDist) {
                 minDist = d;
@@ -213,6 +279,21 @@
         document.getElementById('pulse_tooltip_time').textContent = ts.toLocaleTimeString();
         document.getElementById('pulse_tooltip_ei').textContent = closest.engagement_index + '%';
         document.getElementById('pulse_tooltip_mpm').textContent = closest.mpm;
+
+        // Viewer count parsing
+        let viewersText = '-';
+        if (closest.meta && closest.meta.telemetry && closest.meta.telemetry.viewers !== undefined) {
+            viewersText = closest.meta.telemetry.viewers.toLocaleString();
+        }
+        document.getElementById('pulse_tooltip_viewers').textContent = viewersText;
+
+        // Mood / Emotes parsing
+        let moodText = '-';
+        if (closest.meta && closest.meta.top_emotes && closest.meta.top_emotes.length > 0) {
+            moodText = closest.meta.top_emotes.map(e => e.name || e.emote || '').join(' ');
+        }
+        document.getElementById('pulse_tooltip_mood').textContent = moodText || '-';
+
         document.getElementById('pulse_tooltip_state').textContent = closest.room_state;
         document.getElementById('pulse_tooltip_state').style.color = (closest.engagement_index > 70) ? '#f87171' : (closest.engagement_index > 40) ? '#60a5fa' : '#94a3b8';
 

@@ -255,6 +255,7 @@ async function maybeInsertIntoEvents({
     "channel.subscription.gifts",
     "kicks.gifted",
     "livestream.status.updated",
+    "livestream.metadata.updated",
     "chat.message.sent",
   ]);
 
@@ -1251,12 +1252,54 @@ export async function kickWebhookHandler(req, res) {
       return res.json({ ok: true });
     }
 
-    // Default response for non-handled events (we log/record above)
     return res.json({ ok: true });
-  } catch (err) {
-    console.error("[kickWebhook] handler error", err?.message || err);
-    return res.status(500).json({ ok: false, error: "kick_webhook_failed" });
   }
+
+    // TELEMETRY FORWARDER (v2.0 Room Intel)
+    // For non-chat events that carry room state (viewers, follows, subs) we forward them
+    // to Scrapbot so the Pulse Graph can interpolate the data points.
+    if (eventType === "livestream.metadata.updated" || eventType.startsWith("channel.subscription") || eventType === "channel.followed") {
+    try {
+      const telemetryPayload = {
+        platform: "kick",
+        eventType,
+        scraplet_user_id: ownerRow.user_id,
+        channelSlug: ownerRow.channel_slug || channelSlug,
+        broadcasterUserId: broadcasterUserId || ownerRow.external_user_id || null,
+        payload: data
+      };
+
+      // Extract viewers from livestream.metadata.updated
+      if (eventType === "livestream.metadata.updated" && data.livestream) {
+        if (data.livestream.viewer_count !== undefined) {
+          telemetryPayload.viewers = data.livestream.viewer_count;
+        }
+      }
+
+      // Forward to Scrapbot's inboundKick endpoint
+      const scrapbotUrl = process.env.SCRAPBOT_INGEST_URL || "http://127.0.0.1:3030/api/inbound/kick";
+      const token = String(process.env.SCRAPBOT_SHARED_SECRET || "").trim();
+
+      fetch(scrapbotUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "X-Scrapbot-Secret": token } : {})
+        },
+        body: JSON.stringify(telemetryPayload)
+      }).catch(e => console.warn("[kickWebhook] telemetry forward failed", e?.message));
+
+    } catch (err) {
+      console.error("[kickWebhook] telemetry build failed", err);
+    }
+  }
+
+  // Default response for non-handled events (we log/record above)
+  return res.json({ ok: true });
+} catch (err) {
+  console.error("[kickWebhook] handler error", err?.message || err);
+  return res.status(500).json({ ok: false, error: "kick_webhook_failed" });
+}
 }
 
 
