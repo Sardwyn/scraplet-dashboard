@@ -36,7 +36,11 @@ router.post('/overlay-components', requireAuth, async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Error saving overlay component:', err);
-        res.status(500).json({ error: 'Failed to save component.' });
+        res.status(500).json({
+            error: 'Failed to save component.',
+            details: err.message,
+            code: err.code
+        });
     }
 });
 
@@ -125,7 +129,11 @@ router.get('/overlay-components', requireAuth, async (req, res) => {
         res.json(allComponents);
     } catch (err) {
         console.error('Error fetching overlay components:', err);
-        res.status(500).json({ error: 'Failed to fetch components.' });
+        res.status(500).json({
+            error: 'Failed to fetch components.',
+            details: err.message,
+            code: err.code
+        });
     }
 });
 
@@ -160,7 +168,11 @@ router.put('/overlay-components/:id', requireAuth, async (req, res) => {
         res.json(result.rows[0]);
     } catch (err) {
         console.error('Error updating overlay component:', err);
-        res.status(500).json({ error: 'Failed to update component.' });
+        res.status(500).json({
+            error: 'Failed to update component.',
+            details: err.message,
+            code: err.code
+        });
     }
 });
 

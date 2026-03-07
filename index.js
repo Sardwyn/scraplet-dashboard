@@ -59,6 +59,7 @@ import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js'
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
 import intelApiRouter from './routes/intelApi.js';
+import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
 
 
 global.studioEventBus = new EventBus();
@@ -104,6 +105,7 @@ const { default: db } = await import('./db.js');
   try {
     await db.query('SELECT 1');
     console.log('Connected to PostgreSQL');
+    await applyStartupMigrations();
   } catch (error) {
     console.error('DB connection error:', error);
   }
