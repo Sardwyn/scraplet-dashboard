@@ -561,12 +561,17 @@ router.get("/dashboard/scrapbot", requireAuth, async (req, res, next) => {
     const discordIntegration = await getActiveDiscordIntegrationForUser(db, sessionUser.id);
     const discordConnected = !!discordIntegration?.guild_id;
 
-    // Collect connected platforms
+    // Collect connected platforms (OAuth platforms require tokens, TikTok just requires a row)
     const { rows: allExtAcc } = await db.query(
       `
-      SELECT platform
-      FROM public.external_accounts
-      WHERE user_id = $1 AND enabled = true
+      SELECT DISTINCT ea.platform
+      FROM public.external_accounts ea
+      LEFT JOIN public.external_account_tokens eat ON eat.external_account_id = ea.id
+      WHERE ea.user_id = $1
+        AND (
+          (ea.platform IN ('kick', 'youtube', 'twitch') AND eat.id IS NOT NULL)
+          OR (ea.platform = 'tiktok')
+        )
       `,
       [sessionUser.id]
     );
