@@ -381,6 +381,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
+  const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
+  const [originalConfig, setOriginalConfig] = useState<OverlayConfigV0 | null>(null);
+  const [originalIsMaster, setOriginalIsMaster] = useState(false);
+  const [originalName, setOriginalName] = useState("");
+  const [originalSlug, setOriginalSlug] = useState("");
 
   // Fetch components
   useEffect(() => {
@@ -443,6 +448,43 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setConfig(prev => ({ ...prev, elements: [...prev.elements, el] }));
     setSelectedIds([id]);
     setTemplatePickerOpen(false);
+  }
+
+  function enterIsolationMode(componentId: string) {
+    const def = overlayComponents.find(c => c.id === componentId);
+    if (!def) {
+      alert("Component definition not found.");
+      return;
+    }
+
+    setOriginalConfig(config);
+    setOriginalIsMaster(isComponentMaster);
+    setOriginalName(name);
+    setOriginalSlug(slug);
+
+    setConfig({ ...config, elements: def.elements });
+    setIsComponentMaster(true);
+    setName(def.name);
+    setSlug(`component-${def.id}`);
+    setPropsSchema(def.propsSchema);
+    setMetadata(def.metadata);
+    setEditingMasterId(def.id);
+    setSelectedIds([]);
+  }
+
+  function exitIsolationMode() {
+    if (!originalConfig) {
+      setEditingMasterId(null);
+      setIsComponentMaster(false);
+      return;
+    }
+    setConfig(originalConfig);
+    setIsComponentMaster(originalIsMaster);
+    setName(originalName);
+    setSlug(originalSlug);
+    setEditingMasterId(null);
+    setOriginalConfig(null);
+    setSelectedIds([]);
   }
 
   const { baseResolution } = config;
@@ -947,6 +989,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
 
+      const newDef: OverlayComponentDef = {
+        id: data.public_id,
+        name: componentName,
+        schemaVersion: 1,
+        elements: payload.elements,
+        propsSchema: {},
+        metadata: {}
+      };
+      setOverlayComponents(prev => [...prev, newDef]);
+
       const instId = genId("instance");
       const instanceEl: AnyEl = {
         id: instId,
@@ -965,17 +1017,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       setConfig((prev) => {
         const withoutOld = prev.elements.filter(e => e.id !== grp.id && !childrenIds.includes(e.id));
-
         let insertIndex = prev.elements.findIndex(e => e.id === grp.id);
         if (insertIndex < 0) insertIndex = withoutOld.length;
-        else {
-          // Insert right after the last removed child/group.
-          insertIndex = withoutOld.length;
-        }
-
         return { ...prev, elements: [...withoutOld, instanceEl] };
       });
+
       setSelectedIds([instId]);
+
+      // Proactive: Enter isolation mode immediately to edit the master
+      enterIsolationMode(data.public_id);
 
     } catch (err) {
       console.error(err);
@@ -1174,10 +1224,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       let body: any = { name, slug, config_json: config };
 
       if (isComponentMaster) {
-        url = `/dashboard/api/overlay-components/${initialOverlay.id}`;
+        let idToSave = initialOverlay.id;
+        if (editingMasterId) {
+          idToSave = editingMasterId as any;
+        }
+        url = `/dashboard/api/overlay-components/${idToSave}`;
         body = {
           name,
-          schemaVersion: initialOverlay.schemaVersion || 1,
+          schemaVersion: (initialOverlay as any).schemaVersion || 1,
           elements: config.elements,
           propsSchema,
           metadata
@@ -1920,6 +1974,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <div className="flex-1 min-h-0 flex flex-col pt-1">
               <ComponentLibraryPanel
                 components={overlayComponents}
+                onEdit={enterIsolationMode}
                 onInsert={(comp) => {
                   const instId = genId("instance");
 
@@ -2052,6 +2107,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           }}
         >
+          {editingMasterId && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] flex items-center gap-3 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-2 text-indigo-100">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span className="text-[10px] font-black uppercase tracking-[0.15em]">Isolation Mode</span>
+              </div>
+              <div className="w-px h-3 bg-indigo-400/50" />
+              <div className="text-xs font-bold truncate max-w-[200px]">{name}</div>
+              <div className="w-px h-3 bg-indigo-400/50" />
+              <button
+                onClick={exitIsolationMode}
+                className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-[10px] font-black transition-colors uppercase tracking-widest"
+              >
+                Exit
+              </button>
+            </div>
+          )}
           {/* Stage viewport */}
           <div
             className="absolute left-1/2 top-1/2"
@@ -2299,11 +2371,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col overflow-y-auto">
         {primarySelectedEl ? (
           <InspectorPanel
-            element={primarySelectedEl}
-            onChange={(patch) => updateElement(primarySelectedEl.id, patch)}
-            onRename={(name) => updateElement(primarySelectedEl.id, { name })}
-            onPickImage={() => openPicker("images", url => updateElement(primarySelectedEl.id, { src: url } as any))}
-            onPickVideo={() => openPicker("videos", url => updateElement(primarySelectedEl.id, { src: url } as any))}
+            element={elementsById[selectedIds[0]]}
+            onChange={(u) => updateElement(selectedIds[0], u)}
+            onRename={(n) => updateElement(selectedIds[0], { name: n })}
+            onPickImage={() => {
+              setAssetPicker({
+                open: true,
+                kind: "images",
+                scope: "profiles",
+                title: "Pick Image",
+                onPick: (url) => updateElement(selectedIds[0], { url } as any)
+              });
+            }}
+            onPickVideo={() => {
+              setAssetPicker({
+                open: true,
+                kind: "videos",
+                scope: "profiles",
+                title: "Pick Video",
+                onPick: (url) => updateElement(selectedIds[0], { url } as any)
+              });
+            }}
             ltPreview={ltPreview}
             onLtPreviewChange={setLtPreview}
             onTestLowerThird={async (action) => {
@@ -2329,15 +2417,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               }
             }}
             onSaveTemplate={() => {
-              // Extract only relevant template properties
+              const el = elementsById[selectedIds[0]];
               const templateJson = {
                 type: "lower_third",
-                width: primarySelectedEl.width,
-                height: primarySelectedEl.height,
-                layout: (primarySelectedEl as any).layout,
-                style: (primarySelectedEl as any).style,
-                animation: (primarySelectedEl as any).animation,
-                bind: (primarySelectedEl as any).bind
+                width: el.width,
+                height: el.height,
+                layout: (el as any).layout,
+                style: (el as any).style,
+                animation: (el as any).animation,
+                bind: (el as any).bind
               };
               setTemplateToSave(templateJson);
               setSaveTemplateModalOpen(true);
@@ -2346,6 +2434,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             isComponentMaster={isComponentMaster}
             propsSchema={propsSchema}
             onUpdateSchema={setPropsSchema}
+            onEditMaster={enterIsolationMode}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
@@ -2402,6 +2491,7 @@ interface InspectorProps {
   isComponentMaster?: boolean;
   propsSchema?: any;
   onUpdateSchema?: (schema: any) => void;
+  onEditMaster?: (id: string) => void;
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
@@ -2465,7 +2555,8 @@ function InspectorPanel({
   element, onChange, onRename, onPickImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
   onSaveTemplate, overlayComponents,
-  isComponentMaster, propsSchema, onUpdateSchema
+  isComponentMaster, propsSchema, onUpdateSchema,
+  onEditMaster
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
@@ -2602,7 +2693,7 @@ function InspectorPanel({
               })()}
               <div className="pt-2">
                 <button
-                  onClick={() => window.location.href = `/dashboard/components/${(element as any).componentId}/edit`}
+                  onClick={() => onEditMaster?.((element as any).componentId)}
                   className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-600 hover:border-indigo-500"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -3721,7 +3812,11 @@ function LayersPanel({
   );
 }
 
-function ComponentLibraryPanel({ components, onInsert }: { components: OverlayComponentDef[], onInsert: (c: OverlayComponentDef) => void }) {
+function ComponentLibraryPanel({ components, onInsert, onEdit }: {
+  components: OverlayComponentDef[],
+  onInsert: (c: OverlayComponentDef) => void,
+  onEdit: (id: string) => void
+}) {
   if (!components || components.length === 0) {
     return (
       <div className="p-4 text-center">
@@ -3740,12 +3835,24 @@ function ComponentLibraryPanel({ components, onInsert }: { components: OverlayCo
           onClick={() => onInsert(comp)}
         >
           <div className="flex flex-col truncate">
-            <span className="text-sm font-semibold text-slate-200 truncate pr-2">{comp.name}</span>
+            <span className="text-sm font-semibold text-slate-200 truncate pr-2" title={comp.name}>{comp.name}</span>
             <span className="text-[10px] text-slate-500 mt-0.5">{comp.elements?.length || 0} nodes</span>
           </div>
-          <button className="text-slate-400 hover:text-white p-1 rounded-full bg-slate-700 group-hover:bg-indigo-600 transition-colors">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-slate-600 transition-colors border border-slate-700"
+              onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
+              title="Edit Master"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            </button>
+            <button
+              className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-indigo-600 transition-colors border border-slate-700"
+              title="Insert Instance"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            </button>
+          </div>
         </div>
       ))}
     </div>
