@@ -1889,15 +1889,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         <div className="flex border-b border-slate-800 bg-slate-900 border-t mt-2">
           <button
             onClick={() => setLeftTab("layers")}
-            className={`flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider ${leftTab === "layers" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "layers" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
           >
-            Layers
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+            <span>Layers</span>
           </button>
           <button
             onClick={() => setLeftTab("components")}
-            className={`flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
           >
-            Components
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <span>Components</span>
           </button>
         </div>
 
@@ -3402,26 +3404,31 @@ function ToolButton({
   icon,
   label,
   active,
-  onClick
+  onClick,
+  disabled
 }: {
   icon: string | React.ReactNode;
   label: string;
   active?: boolean;
-  onClick: () => void
+  onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={`
-        relative group flex items-center justify-center w-10 h-10 rounded-xl transition-all
-        ${active ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"}
+        flex flex-col items-center justify-center p-2 rounded-lg transition-all border
+        ${active
+          ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
+          : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+        }
+        ${disabled ? "opacity-20 cursor-not-allowed" : ""}
       `}
       title={label}
     >
-      <div className="text-xl">{icon}</div>
-      <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-slate-200 text-[10px] rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 border border-slate-800 shadow-xl translate-x-1 transition-all">
-        {label}
-      </div>
+      <div className="text-xl mb-1">{icon}</div>
+      <div className="text-[10px] font-medium truncate w-full text-center">{label}</div>
     </button>
   );
 }
@@ -3503,14 +3510,6 @@ function CreationToolbar({
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
           </button>
-          <button
-            onClick={onCreateComponent}
-            disabled={!canCreateComponent}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded ml-2"
-            title="Create Component (Convert group to reusable master component)"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-          </button>
         </div>
       </div>
 
@@ -3521,6 +3520,12 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.image} label="Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Lower Third" onClick={onAddLowerThird} />
+        <ToolButton
+          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
+          label="Component"
+          onClick={onCreateComponent}
+          disabled={!canCreateComponent}
+        />
         <ToolButton
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>}
           label="Template"
