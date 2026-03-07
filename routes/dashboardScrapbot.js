@@ -569,7 +569,7 @@ router.get("/dashboard/scrapbot", requireAuth, async (req, res, next) => {
       LEFT JOIN public.external_account_tokens eat ON eat.external_account_id = ea.id
       WHERE ea.user_id = $1
         AND (
-          (ea.platform IN ('kick', 'youtube', 'twitch') AND eat.id IS NOT NULL)
+          (ea.platform IN ('kick', 'youtube', 'twitch') AND eat.external_account_id IS NOT NULL)
           OR (ea.platform = 'tiktok')
         )
       `,
