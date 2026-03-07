@@ -123,6 +123,54 @@ router.get("/overlays/:id/edit", requireAuth, async (req, res, next) => {
 });
 
 
+// GET /dashboard/components/:id/edit
+router.get("/components/:id/edit", requireAuth, async (req, res, next) => {
+  try {
+    const sessionUser = req.session.user;
+    const userId = sessionUser.id;
+    const id = req.params.id;
+
+    const { rows } = await db.query(
+      `SELECT id, public_id, name, schema_version, component_json 
+       FROM overlay_components 
+       WHERE (id::text = $1 OR public_id = $1) AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (!rows.length) return res.sendStatus(404);
+
+    const compRow = rows[0];
+    const compDef = compRow.component_json || { elements: [], propsSchema: {}, metadata: {} };
+
+    // Construct a fake Overlay object so the editor can boot up
+    const fakeOverlay = {
+      id: compRow.id,
+      public_id: compRow.public_id,
+      name: compRow.name,
+      isComponentMaster: true,
+      config_json: {
+        version: 0,
+        baseResolution: { width: 1920, height: 1080 },
+        elements: compDef.elements || []
+      },
+      propsSchema: compDef.propsSchema || {},
+      metadata: compDef.metadata || {}
+    };
+
+    res.render("layout", {
+      tabView: "tabs/overlays-edit",
+      user: sessionUser,
+      overlay: fakeOverlay,
+      overlayJson: JSON.stringify(fakeOverlay),
+      templates: [] // unused when editing components usually
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 // POST /dashboard/overlays/:id/test-event
 // Inject a test event into the overlay stream
 router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {

@@ -11,6 +11,8 @@ import {
     OverlayProgressRingElement,
     OverlayLowerThirdElement,
     OverlayMediaFit,
+    OverlayComponentDef,
+    OverlayComponentInstanceElement
 } from "../overlayTypes";
 import { getFontStack } from "../FontManager";
 
@@ -30,6 +32,7 @@ function resolveText(text: string, data?: Record<string, string>) {
 export function ElementRenderer({
     element,
     elementsById, // Required for Group recursion
+    overlayComponents, // Required for componentInstance rendering
     data,         // Variable binding context
     yOffset = 0,
     layout = "absolute",
@@ -37,11 +40,29 @@ export function ElementRenderer({
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
-    data?: Record<string, string>;
+    overlayComponents?: OverlayComponentDef[];
+    data?: Record<string, any>;
     yOffset?: number;
     layout?: "absolute" | "fill";
     visited?: Set<string>;
 }) {
+    // -------------------------------------------------------------------------
+    // PROP WEAVING: If this element has bindings and we have data, override props
+    // -------------------------------------------------------------------------
+    let el = element as any;
+    if (el.bindings && data) {
+        const overrides: any = {};
+        for (const [propPath, dataKey] of Object.entries(el.bindings)) {
+            const val = data[dataKey as string];
+            if (val !== undefined) {
+                overrides[propPath] = val;
+            }
+        }
+        if (Object.keys(overrides).length > 0) {
+            el = { ...el, ...overrides };
+        }
+    }
+
     // -------------------------------------------------------------------------
     // 1. BASE STYLES & LAYOUT
     // -------------------------------------------------------------------------
@@ -53,14 +74,21 @@ export function ElementRenderer({
                 top: 0,
                 width: "100%",
                 height: "100%",
+                transition: "all 0.4s ease-out", // Default smooth transitions
             }
             : {
                 position: "absolute",
-                left: element.x,
-                top: element.y + yOffset,
-                width: element.width,
-                height: element.height,
+                left: el.x,
+                top: el.y + yOffset,
+                width: el.width,
+                height: el.height,
+                transition: "all 0.4s ease-out", // Default smooth transitions
             };
+
+    if (el.visible === false) {
+        baseStyle.opacity = 0;
+        baseStyle.pointerEvents = "none";
+    }
 
     // -------------------------------------------------------------------------
     // 2. TRANSFORMS (Rotation)
@@ -118,15 +146,75 @@ export function ElementRenderer({
     const innerStyle: React.CSSProperties = {
         width: "100%",
         height: "100%",
-        opacity: typeof element.opacity === "number" ? element.opacity : 1,
+        opacity: typeof el.opacity === "number" ? el.opacity : 1,
         ...transformStyle,
         ...effectStyle,
         ...clipStyle,
+        transition: "inherit",
     };
 
     // -------------------------------------------------------------------------
     // 6. RENDERERS
     // -------------------------------------------------------------------------
+
+    // --- COMPONENT INSTANCE ---
+    if (element.type === "componentInstance") {
+        const inst = element as OverlayComponentInstanceElement;
+
+        // Cycle Check
+        if (visited && visited.has(element.id)) return null;
+        const nextVisited = new Set(visited);
+        nextVisited.add(element.id);
+
+        const def = overlayComponents?.find(c => c.id === inst.componentId);
+        if (!def) {
+            // Render a missing component placeholder in editor/debug mode?
+            return (
+                <div style={baseStyle}>
+                    <div style={{ ...innerStyle, border: '2px dashed red', background: 'rgba(255,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red', fontSize: 10 }}>
+                        Missing Component
+                    </div>
+                </div>
+            );
+        }
+
+        // We apply prop overrides here eventually (Phase 3).
+        // For now we just render the master elements at the origin of this component container.
+        const mergedData = { ...data, ...inst.propOverrides };
+
+        // Ensure child elements map correctly if `elements` is flat
+        // If master definition has grouping, it should provide a hierarchy via childIds.
+        // We'll trust that the master definition 'elements' is self-contained.
+        const masterElementsById = Object.fromEntries(def.elements.map(e => [e.id, e]));
+
+        // Root elements of the component definition are those that aren't children of any group inside the def
+        const childIds = new Set<string>();
+        def.elements.forEach(c => {
+            if (c.type === 'group' && Array.isArray((c as any).childIds)) {
+                (c as any).childIds.forEach((cid: string) => childIds.add(cid));
+            }
+        });
+
+        const roots = def.elements.filter(e => !childIds.has(e.id));
+
+        return (
+            <div style={baseStyle}>
+                <div style={{ ...innerStyle, position: "relative" }}>
+                    {roots.map(child => (
+                        <ElementRenderer
+                            key={child.id}
+                            element={child}
+                            elementsById={masterElementsById}
+                            overlayComponents={overlayComponents} // pass down!
+                            data={mergedData}
+                            layout="absolute"
+                            visited={nextVisited}
+                        />
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     // --- GROUP ---
     if (element.type === "group") {

@@ -9,7 +9,8 @@ export type OverlayElementType =
   | "group"
   | "progressBar"
   | "progressRing"
-  | "lower_third";
+  | "lower_third"
+  | "componentInstance";
 
 /**
  * V1 uses normalized coords (0..1) relative to the browser source viewport.
@@ -66,6 +67,10 @@ export interface OverlayElementBase extends OverlayEditorFields {
     type: OverlayClipType;
     radius?: number; // used if type="roundRect"
   };
+
+  // Component Props / Dynamic Bindings
+  // e.g. { "text": "titleKey", "backgroundColor": "accentColor" }
+  bindings?: Record<string, string>;
 }
 
 /* =========================
@@ -293,6 +298,27 @@ export interface OverlayLowerThirdElement extends OverlayElementBase {
 }
 
 /* =========================
+   COMPONENTS
+========================= */
+
+export interface OverlayComponentInstanceElement extends OverlayElementBase {
+  type: "componentInstance";
+  componentId: string; // The ID of the OverlayComponentDef this instantiates
+  propOverrides: Record<string, any>; // User-edited field overrides matching propsSchema
+}
+
+export interface OverlayComponentDef {
+  id: string;
+  name: string;
+  schemaVersion: number;
+  elements: OverlayElement[]; // Flat array, group.childIds apply here too
+  propsSchema: {
+    [propKey: string]: { type: "text" | "color" | "image" | "boolean"; label: string; default: any }
+  };
+  metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
+}
+
+/* =========================
    UNIONS
 ========================= */
 
@@ -303,10 +329,10 @@ export type OverlayElement =
   | OverlayImageElement
   | OverlayVideoElement
   | OverlayGroupElement
-  | OverlayGroupElement
   | OverlayProgressBarElement
   | OverlayProgressRingElement
-  | OverlayLowerThirdElement;
+  | OverlayLowerThirdElement
+  | OverlayComponentInstanceElement;
 
 /* =========================
    CONFIGS
@@ -348,6 +374,7 @@ export interface OverlayConfigV0 {
     | OverlayProgressBarElement
     | OverlayProgressRingElement
     | OverlayLowerThirdElement
+    | OverlayComponentInstanceElement
   >;
 }
 

@@ -11,6 +11,7 @@ import {
   OverlayShapeKind,
   OverlayMediaFit,
   OverlayLowerThirdElement,
+  OverlayComponentDef
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
@@ -23,6 +24,10 @@ interface ServerOverlay {
   slug: string;
   public_id: string;
   config_json: OverlayConfigV0;
+  isComponentMaster?: boolean;
+  schemaVersion?: number;
+  propsSchema?: any;
+  metadata?: any;
 }
 
 interface Props {
@@ -304,9 +309,20 @@ async function uploadAssetFile(file: File, scope: AssetScope, kind: AssetKind): 
 }
 
 export function OverlayEditorApp({ initialOverlay }: Props) {
-  const [name, setName] = useState(initialOverlay.name);
-  const [slug, setSlug] = useState(initialOverlay.slug);
-  const [config, setConfig] = useState<OverlayConfigV0>(initialOverlay.config_json);
+  const [name, setName] = useState(initialOverlay.name || "Untitled Overlay");
+  const [slug, setSlug] = useState(initialOverlay.slug || "");
+  const [config, setConfig] = useState<OverlayConfigV0>(
+    initialOverlay.config_json || {
+      version: 0,
+      baseResolution: { width: 1920, height: 1080 },
+      elements: [],
+    }
+  );
+
+  // Component Master State
+  const [isComponentMaster, setIsComponentMaster] = useState(initialOverlay.isComponentMaster || false);
+  const [propsSchema, setPropsSchema] = useState<any>(initialOverlay.propsSchema || {});
+  const [metadata, setMetadata] = useState<any>(initialOverlay.metadata || {});
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<string[]>(() => {
@@ -362,6 +378,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Template Picker State
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
+  const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+
+  const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
+
+  // Fetch components
+  useEffect(() => {
+    fetch("/dashboard/api/overlay-components")
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        const defs: OverlayComponentDef[] = rows.map((r: any) => ({
+          id: r.public_id,
+          name: r.name,
+          schemaVersion: r.schema_version,
+          elements: r.component_json?.elements || [],
+          propsSchema: r.component_json?.propsSchema || {},
+          metadata: r.component_json?.metadata || {}
+        }));
+        setOverlayComponents(defs);
+      })
+      .catch((e: Error) => console.error("Failed to load components:", e));
+  }, []);
 
   // Save Template State
   const [saveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
@@ -800,36 +837,133 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function groupSelected() {
-    if (selectedIds.length < 1) return;
+    if (selectedIds.length < 2) return;
     const id = genId("group");
 
-    const els = config.elements.filter(e => selectedIds.includes(e.id));
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    setConfig((prev) => {
+      const els = prev.elements;
 
-    els.forEach(el => {
-      minX = Math.min(minX, el.x);
-      minY = Math.min(minY, el.y);
-      maxX = Math.max(maxX, el.x + el.width);
-      maxY = Math.max(maxY, el.y + el.height);
-    });
+      const selectedElsInOrder = els.filter(e => selectedIds.includes(e.id));
+      if (selectedElsInOrder.length === 0) return prev;
 
-    if (!isFinite(minX)) return;
+      let highestIdx = -1;
+      selectedElsInOrder.forEach(el => {
+        const idx = els.findIndex(e => e.id === el.id);
+        if (idx > highestIdx) highestIdx = idx;
+      });
 
-    const grp: AnyEl = {
-      id, type: "group", name: "Group",
-      x: minX, y: minY, width: maxX - minX, height: maxY - minY,
-      visible: true, locked: false, opacity: 1,
-      childIds: selectedIds,
-      style: {
-        backgroundColor: "rgba(0,0,0,0)",
-        borderColor: "transparent",
-        borderWidth: 0,
-        borderRadius: 0
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      selectedElsInOrder.forEach(el => {
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + el.width);
+        maxY = Math.max(maxY, el.y + el.height);
+      });
+
+      if (!isFinite(minX)) return prev;
+
+      const grp: AnyEl = {
+        id, type: "group", name: "Group",
+        x: minX, y: minY, width: maxX - minX, height: maxY - minY,
+        visible: true, locked: false, opacity: 1,
+        childIds: selectedElsInOrder.map(e => e.id),
+      } as any;
+
+      const withoutSelected = els.filter(e => !selectedIds.includes(e.id));
+
+      let shift = 0;
+      for (let i = 0; i < highestIdx; i++) {
+        if (selectedIds.includes(els[i].id)) shift++;
       }
-    } as any;
+      const targetIdx = highestIdx - shift + 1;
 
-    setConfig((prev) => ({ ...prev, elements: [...prev.elements, grp] }));
+      const before = withoutSelected.slice(0, targetIdx);
+      const after = withoutSelected.slice(targetIdx);
+
+      const newElements = [
+        ...before,
+        ...selectedElsInOrder,
+        grp,
+        ...after
+      ];
+
+      return { ...prev, elements: newElements };
+    });
     setSelectedIds([id]);
+  }
+
+  async function createComponentSelected() {
+    if (!primarySelectedEl || primarySelectedEl.type !== 'group') {
+      alert("Please group your selected elements first before creating a component. By grouping elements, you create a parent container for the component's internal structure.");
+      return;
+    }
+
+    const grp = primarySelectedEl as any;
+    const childrenIds = grp.childIds || [];
+    if (childrenIds.length === 0) return;
+
+    const componentName = prompt("Enter a name for this new component:", "My Component");
+    if (!componentName) return;
+
+    const childElements = config.elements
+      .filter(e => childrenIds.includes(e.id))
+      .map(e => ({
+        ...e,
+        x: e.x - grp.x,
+        y: e.y - grp.y
+      }));
+
+    const payload = {
+      name: componentName,
+      schemaVersion: 1,
+      elements: childElements,
+      propsSchema: {},
+      metadata: {}
+    };
+
+    try {
+      const res = await fetch("/dashboard/api/overlay-components", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+
+      const instId = genId("instance");
+      const instanceEl: AnyEl = {
+        id: instId,
+        type: "componentInstance",
+        name: componentName,
+        x: grp.x,
+        y: grp.y,
+        width: grp.width,
+        height: grp.height,
+        visible: true,
+        locked: false,
+        opacity: 1,
+        componentId: data.public_id,
+        propOverrides: {}
+      } as any;
+
+      setConfig((prev) => {
+        const withoutOld = prev.elements.filter(e => e.id !== grp.id && !childrenIds.includes(e.id));
+
+        let insertIndex = prev.elements.findIndex(e => e.id === grp.id);
+        if (insertIndex < 0) insertIndex = withoutOld.length;
+        else {
+          // Insert right after the last removed child/group.
+          insertIndex = withoutOld.length;
+        }
+
+        return { ...prev, elements: [...withoutOld, instanceEl] };
+      });
+      setSelectedIds([instId]);
+
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save component. Check console for details.");
+    }
   }
 
   function ungroupSelected() {
@@ -1019,10 +1153,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setSaveError(null);
       setSaveOk(false);
 
-      const res = await fetch(`/dashboard/api/overlays/${initialOverlay.id}`, {
+      let url = `/dashboard/api/overlays/${initialOverlay.id}`;
+      let body: any = { name, slug, config_json: config };
+
+      if (isComponentMaster) {
+        url = `/dashboard/api/overlay-components/${initialOverlay.id}`;
+        body = {
+          name,
+          schemaVersion: initialOverlay.schemaVersion || 1,
+          elements: config.elements,
+          propsSchema,
+          metadata
+        };
+      }
+
+      const res = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, config_json: config }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
@@ -1682,8 +1830,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           onInsertTemplate={() => { fetchTemplates(); setTemplatePickerOpen(true); }}
           onGroup={groupSelected}
           onUngroup={ungroupSelected}
+          onCreateComponent={createComponentSelected}
           canGroup={canGroup}
           canUngroup={canUngroup}
+          canCreateComponent={primarySelectedEl?.type === 'group'}
           onSave={handleSave}
           saving={saving}
           saveOk={saveOk}
@@ -1718,19 +1868,71 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           }}
         />
 
-        {/* Layers */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800 bg-slate-900">
+        {/* Sidebar Tabs */}
+        <div className="flex border-b border-slate-800 bg-slate-900 border-t mt-2">
+          <button
+            onClick={() => setLeftTab("layers")}
+            className={`flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider ${leftTab === "layers" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+          >
             Layers
-          </div>
-          <LayersPanel
-            elements={config.elements}
-            layersTopToBottom={config.elements.slice().reverse()}
-            selectedIds={selectedIds}
-            onSelect={onSelectElement}
-            onToggleVisible={(id) => updateElement(id, { visible: !(elementsById[id]?.visible !== false) })}
-            onToggleLock={(id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) })}
-          />
+          </button>
+          <button
+            onClick={() => setLeftTab("components")}
+            className={`flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+          >
+            Library
+          </button>
+        </div>
+
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+          {leftTab === "layers" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1">
+              <LayersPanel
+                elements={config.elements}
+                layersTopToBottom={config.elements.slice().reverse()}
+                selectedIds={selectedIds}
+                onSelect={onSelectElement}
+                onToggleVisible={(id) => updateElement(id, { visible: !(elementsById[id]?.visible !== false) })}
+                onToggleLock={(id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) })}
+              />
+            </div>
+          )}
+          {leftTab === "components" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1">
+              <ComponentLibraryPanel
+                components={overlayComponents}
+                onInsert={(comp) => {
+                  const instId = genId("instance");
+
+                  // Approx bounds calculation
+                  let minX = 0, minY = 0, maxX = 200, maxY = 100;
+                  if (comp.elements && comp.elements.length > 0) {
+                    minX = Math.min(...comp.elements.map((e: any) => e.x));
+                    minY = Math.min(...comp.elements.map((e: any) => e.y));
+                    maxX = Math.max(...comp.elements.map((e: any) => e.x + e.width));
+                    maxY = Math.max(...comp.elements.map((e: any) => e.y + e.height));
+                  }
+
+                  const instanceEl: AnyEl = {
+                    id: instId,
+                    type: "componentInstance",
+                    name: comp.name || "Component",
+                    x: 50,
+                    y: 50,
+                    width: maxX - minX || 200,
+                    height: maxY - minY || 100,
+                    visible: true,
+                    locked: false,
+                    opacity: 1,
+                    componentId: comp.id,
+                    propOverrides: {}
+                  } as any;
+                  setConfig(prev => ({ ...prev, elements: [...prev.elements, instanceEl] }));
+                  setSelectedIds([instId]);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer / Shortcuts */}
@@ -2055,6 +2257,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       element={el as any}
                       layout="fill"
                       elementsById={elementsById}
+                      overlayComponents={overlayComponents}
                       data={renderData}
                       visited={new Set()}
                     />
@@ -2120,6 +2323,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               setTemplateToSave(templateJson);
               setSaveTemplateModalOpen(true);
             }}
+            overlayComponents={overlayComponents}
+            isComponentMaster={isComponentMaster}
+            propsSchema={propsSchema}
+            onUpdateSchema={setPropsSchema}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
@@ -2172,6 +2379,10 @@ interface InspectorProps {
   onLtPreviewChange: (v: { text: string; title: string; subtitle: string }) => void;
   onTestLowerThird: (action: "show" | "hide") => void;
   onSaveTemplate?: () => void;
+  overlayComponents: OverlayComponentDef[];
+  isComponentMaster?: boolean;
+  propsSchema?: any;
+  onUpdateSchema?: (schema: any) => void;
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
@@ -2188,7 +2399,55 @@ function ColorSwatch({ value, onChange, className }: { value: string; onChange: 
   );
 }
 
-function InspectorPanel({ element, onChange, onRename, onPickImage, onPickVideo, ltPreview, onLtPreviewChange, onTestLowerThird, onSaveTemplate }: InspectorProps) {
+function ExposeButton({
+  element, propPath, propsSchema, onUpdateSchema, onChange
+}: {
+  element: AnyEl, propPath: string, propsSchema: any, onUpdateSchema: any, onChange: any
+}) {
+  const isBound = element.bindings && element.bindings[propPath];
+  const boundKey = isBound ? element.bindings![propPath] : null;
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isBound) {
+      // Unbind
+      const nextBindings = { ...element.bindings };
+      delete nextBindings[propPath];
+      onChange({ bindings: Object.keys(nextBindings).length > 0 ? nextBindings : undefined });
+    } else {
+      // Bind
+      const key = prompt("Enter property key for schema (e.g. 'titleColor'):", propPath);
+      if (!key) return;
+
+      const nextBindings = { ...(element.bindings || {}), [propPath]: key };
+      onChange({ bindings: nextBindings });
+
+      if (!propsSchema[key]) {
+        onUpdateSchema({
+          ...propsSchema,
+          [key]: { type: "text", label: key, default: (element as any)[propPath] || "" }
+        });
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      title={isBound ? `Bound to: ${boundKey}` : "Expose as Component Prop"}
+      className={`p-1 rounded ml-1 transition-colors flex-none ${isBound ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-800 hover:text-slate-400"}`}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+    </button>
+  );
+}
+
+function InspectorPanel({
+  element, onChange, onRename, onPickImage, onPickVideo,
+  ltPreview, onLtPreviewChange, onTestLowerThird,
+  onSaveTemplate, overlayComponents,
+  isComponentMaster, propsSchema, onUpdateSchema
+}: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
 
@@ -2291,8 +2550,48 @@ function InspectorPanel({ element, onChange, onRename, onPickImage, onPickVideo,
 
           <div className="h-px bg-slate-800/50 my-2" />
 
-          {/* Type-Specific Controls */}
-
+          {/* COMPONENT INSTANCE */}
+          {element.type === "componentInstance" && (
+            <div className="space-y-4">
+              <label className="text-[10px] uppercase font-bold text-slate-500">Component Properties</label>
+              {(() => {
+                const def = overlayComponents.find(c => c.id === (element as any).componentId);
+                if (!def) return <div className="text-xs text-red-500">Master Definition Missing</div>;
+                if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
+                  return <div className="text-[10px] text-slate-500">No properties exposed by master.</div>;
+                }
+                const schemaKeys = Object.keys(def.propsSchema);
+                return schemaKeys.map(key => {
+                  const fieldDef = (def.propsSchema as any)[key];
+                  const overrides = (element as any).propOverrides || {};
+                  const val = overrides[key] !== undefined ? overrides[key] : fieldDef.default;
+                  return (
+                    <div key={key} className="flex items-center gap-2">
+                      <label className="text-[10px] text-slate-500 w-16 truncate" title={fieldDef.label || key}>{fieldDef.label || key}</label>
+                      {fieldDef.type === "color" ? (
+                        <ColorSwatch value={val} onChange={(v) => onChange({ propOverrides: { ...overrides, [key]: v } } as any)} />
+                      ) : (
+                        <input
+                          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                          value={val}
+                          onChange={(e) => onChange({ propOverrides: { ...overrides, [key]: e.target.value } } as any)}
+                        />
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+              <div className="pt-2">
+                <button
+                  onClick={() => window.location.href = `/dashboard/components/${(element as any).componentId}/edit`}
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-600 hover:border-indigo-500"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  Edit Master Component
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* LOWER THIRD */}
           {element.type === "lower_third" && (
@@ -2471,9 +2770,10 @@ function InspectorPanel({ element, onChange, onRename, onPickImage, onPickVideo,
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <label className="text-[10px] text-slate-500 w-12 flex-none">Fill</label>
-                <div className="flex-1 flex gap-2">
+                <div className="flex-1 flex gap-1 items-center">
                   <ColorSwatch value={(element as any).backgroundColor} onChange={(v) => onChange({ backgroundColor: v } as any)} />
                   <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
+                  {isComponentMaster && <ExposeButton element={element} propPath="backgroundColor" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -2547,7 +2847,10 @@ function InspectorPanel({ element, onChange, onRename, onPickImage, onPickVideo,
           {element.type === "text" && (
             <div className="space-y-3">
               <div>
-                <label className="block mb-1 text-slate-400 text-xs">Content</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-400 text-xs">Content</label>
+                  {isComponentMaster && <ExposeButton element={element} propPath="text" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
+                </div>
                 <textarea
                   className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs min-h-[60px] font-mono text-slate-200"
                   value={(element as any).text ?? ""}
@@ -3131,8 +3434,10 @@ function CreationToolbar({
   onInsertTemplate,
   onGroup,
   onUngroup,
+  onCreateComponent,
   canGroup,
   canUngroup,
+  canCreateComponent,
   onSave,
   saving,
   saveOk,
@@ -3149,8 +3454,10 @@ function CreationToolbar({
   onInsertTemplate: () => void;
   onGroup: () => void;
   onUngroup: () => void;
+  onCreateComponent: () => void;
   canGroup: boolean;
   canUngroup: boolean;
+  canCreateComponent: boolean;
   onSave: () => void;
   saving?: boolean;
   saveOk?: boolean;
@@ -3178,6 +3485,14 @@ function CreationToolbar({
             title="Ungroup (Ctrl+Shift+G)"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+          </button>
+          <button
+            onClick={onCreateComponent}
+            disabled={!canCreateComponent}
+            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded ml-2"
+            title="Create Component (Convert group to reusable master component)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
           </button>
         </div>
       </div>
@@ -3380,6 +3695,37 @@ function LayersPanel({
     <div ref={containerRef} className="flex flex-col h-full bg-slate-900 overflow-y-auto pb-10 custom-scrollbar">
       {roots.length === 0 && <div className="p-4 text-xs text-slate-600 text-center italic">No layers</div>}
       {roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))}
+    </div>
+  );
+}
+
+function ComponentLibraryPanel({ components, onInsert }: { components: OverlayComponentDef[], onInsert: (c: OverlayComponentDef) => void }) {
+  if (!components || components.length === 0) {
+    return (
+      <div className="p-4 text-center">
+        <div className="text-slate-400 text-sm mb-2">No Components Found</div>
+        <div className="text-slate-600 text-xs">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-2">
+      {components.map((comp: OverlayComponentDef) => (
+        <div
+          key={comp.id}
+          className="group relative flex items-center justify-between p-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors"
+          onClick={() => onInsert(comp)}
+        >
+          <div className="flex flex-col truncate">
+            <span className="text-sm font-semibold text-slate-200 truncate pr-2">{comp.name}</span>
+            <span className="text-[10px] text-slate-500 mt-0.5">{comp.elements?.length || 0} nodes</span>
+          </div>
+          <button className="text-slate-400 hover:text-white p-1 rounded-full bg-slate-700 group-hover:bg-indigo-600 transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          </button>
+        </div>
+      ))}
     </div>
   );
 }

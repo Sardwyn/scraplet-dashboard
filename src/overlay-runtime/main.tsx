@@ -186,31 +186,58 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
             "lower_third.subtitle": subtitle,
           }));
 
-          // 4. Determine Duration
+          // 4. Update Component Overrides (Phase 4)
+          // Find any componentInstance that is a preset_lower_third
+          const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
+
+          if (ltInstances.length > 0) {
+            setOverrides(prev => {
+              const next = { ...prev };
+              ltInstances.forEach(inst => {
+                next[inst.id] = {
+                  ...next[inst.id],
+                  visible: true,
+                  propOverrides: {
+                    ...(inst as any).propOverrides,
+                    title: title || text,
+                    subtitle: subtitle
+                  }
+                };
+              });
+              return next;
+            });
+          }
+
+          // 5. Determine Duration
           // Priority: payload.duration_ms -> element default -> 8000
           let duration = typeof p.duration_ms === 'number' ? p.duration_ms : undefined;
 
           if (duration === undefined) {
             // Try to find ANY lower_third element to steal its default
-            const ltEl = elements.find(e => e.type === "lower_third") as any; // Cast to avoid strict type error if not full Updated
+            const ltEl = elements.find(e => e.type === "lower_third" || (e.type === "componentInstance" && (e as any).componentId === "preset_lower_third")) as any;
             if (ltEl && typeof ltEl.defaultDurationMs === 'number') {
               duration = ltEl.defaultDurationMs;
             }
           }
           if (duration === undefined) duration = 8000;
 
-          // 5. Set Auto-Hide Timer
+          // 6. Set Auto-Hide Timer
           window.setTimeout(() => {
             setData((prev) => {
-              // Only clear if the sequence token matches (meaning no NEW show event came in)
+              // Only clear if the sequence token matches
               if (prev["lower_third._seq"] !== seqToken) return prev;
 
-              // Clear active state - MUST set to "0" to override hasContent fallback
+              // Hide component instances
+              setOverrides(oprev => {
+                const next = { ...oprev };
+                ltInstances.forEach(inst => {
+                  next[inst.id] = { ...next[inst.id], visible: false };
+                });
+                return next;
+              });
+
               const next = { ...prev };
               next["lower_third.active"] = "0";
-
-              // We can strip content keys or leave them for out-animation.
-              // We leave them so it doesn't pop empty.
               return next;
             });
           }, duration);
@@ -220,6 +247,15 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
           setData((prev) => {
             const next = { ...prev };
             next["lower_third.active"] = "0";
+            return next;
+          });
+          // Hide instances
+          const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
+          setOverrides(prev => {
+            const next = { ...prev };
+            ltInstances.forEach(inst => {
+              next[inst.id] = { ...next[inst.id], visible: false };
+            });
             return next;
           });
         }

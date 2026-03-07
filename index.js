@@ -31,6 +31,7 @@ import dashboardScrapbotRoutes from './routes/dashboardScrapbot.js';
 import widgetsLoaderRoutes from './routes/widgets-loader.js';
 import overlaysApiRouter from "./routes/api/overlays.js";
 import lowerThirdTemplatesRouter from "./routes/api/lowerThirdTemplates.js";
+import overlayComponentsRouter from "./routes/api/overlayComponents.js";
 import discordIntegrationRoutes from "./routes/integrations/discord.js";
 // import publicOverlayRouter from "./routes/publicOverlay.js";
 import publicOverlayServing from "./routes/publicOverlayServing.js";
@@ -288,6 +289,7 @@ app.use('/', widgetsLoaderRoutes);
 app.use("/dashboard", overlaysRouter);
 app.use("/dashboard/api", overlaysApiRouter);
 app.use("/dashboard/api", lowerThirdTemplatesRouter);
+app.use("/dashboard/api", overlayComponentsRouter);
 // app.use("/", publicOverlayRouter);
 app.use("/", publicOverlayServing);
 // Phase 11: Public Overlay Event Gate (SSE)
