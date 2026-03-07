@@ -893,12 +893,29 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   async function createComponentSelected() {
-    if (!primarySelectedEl || primarySelectedEl.type !== 'group') {
-      alert("Please group your selected elements first before creating a component. By grouping elements, you create a parent container for the component's internal structure.");
-      return;
+    let grp = primarySelectedEl as any;
+
+    // If multiple items selected but not grouped, or one item selected but not a group
+    if (!grp || grp.type !== 'group') {
+      if (selectedIds.length > 1) {
+        // Auto-group first
+        groupSelected();
+        // The state update for setConfig might not be immediate enough for our local 'grp' variable.
+        // However, groupSelected() is synchronous in its logic but uses setConfig (async state).
+        // Actually, groupSelected is defined as: function groupSelected() { ... setConfig(...) }
+        // Let's check grouping logic to see if we can perform it inline or wait.
+        alert("Selection grouped! Please click 'Create Component' again to confirm creation of the master component from this new group.");
+        return;
+      } else if (selectedIds.length === 1) {
+        // Just one element, we still require a group container for components (architectural choice)
+        alert("Components must have a group container. Please group this element (even if alone) before creating a component.");
+        return;
+      } else {
+        alert("Please select elements to convert into a component.");
+        return;
+      }
     }
 
-    const grp = primarySelectedEl as any;
     const childrenIds = grp.childIds || [];
     if (childrenIds.length === 0) return;
 
@@ -1833,7 +1850,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           onCreateComponent={createComponentSelected}
           canGroup={canGroup}
           canUngroup={canUngroup}
-          canCreateComponent={primarySelectedEl?.type === 'group'}
+          canCreateComponent={selectedIds.length > 0}
           onSave={handleSave}
           saving={saving}
           saveOk={saveOk}
@@ -1880,7 +1897,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onClick={() => setLeftTab("components")}
             className={`flex-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
           >
-            Library
+            Components
           </button>
         </div>
 
