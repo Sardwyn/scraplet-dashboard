@@ -481,8 +481,10 @@ export function ElementRenderer({
     // --- PROGRESS BAR ---
     if (element.type === "progressBar") {
         const bar = element as OverlayProgressBarElement;
-        const val = Math.max(0, Math.min(1, bar.value));
+        const val = Math.max(0, Math.min(1, bar.value ?? 0));
         const br = bar.borderRadiusPx ?? 0;
+        const w = Math.max(0, element.width || 0);
+        const h = Math.max(0, element.height || 0);
 
         let progressStyle: React.CSSProperties = {
             position: "absolute",
@@ -516,11 +518,13 @@ export function ElementRenderer({
     // --- PROGRESS RING ---
     if (element.type === "progressRing") {
         const ring = element as OverlayProgressRingElement;
-        const val = Math.max(0, Math.min(1, ring.value));
+        const val = Math.max(0, Math.min(1, ring.value ?? 0));
         const sw = ring.strokeWidthPx ?? 4;
-        const r = Math.min(element.width, element.height) / 2 - sw / 2;
-        const cx = element.width / 2;
-        const cy = element.height / 2;
+        const w = element.width || 1;
+        const h = element.height || 1;
+        const r = Math.max(0.1, Math.min(w, h) / 2 - sw / 2);
+        const cx = w / 2;
+        const cy = h / 2;
         const circumference = 2 * Math.PI * r;
         const offset = circumference * (1 - val);
         const startAngle = (ring.startAngleDeg ?? -90); // default top
@@ -531,7 +535,7 @@ export function ElementRenderer({
                     <svg
                         width="100%"
                         height="100%"
-                        viewBox={`0 0 ${element.width} ${element.height}`}
+                        viewBox={`0 0 ${w} ${h}`}
                         style={{ transform: `rotate(${startAngle}deg)` }}
                     >
                         {/* Track */}

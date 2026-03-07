@@ -450,8 +450,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setTemplatePickerOpen(false);
   }
 
-  function enterIsolationMode(componentId: string) {
-    const def = overlayComponents.find(c => c.id === componentId);
+  function enterIsolationMode(componentId: string, directDef?: OverlayComponentDef) {
+    const def = directDef || overlayComponents.find(c => c.id === componentId);
     if (!def) {
       alert("Component definition not found.");
       return;
@@ -935,47 +935,55 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   async function createComponentSelected() {
-    let grp = primarySelectedEl as any;
+    let grp = (primarySelectedEl as any);
+    let childrenIds: string[] = [];
+    let bounds = { x: 0, y: 0, width: 0, height: 0 };
+    let childElements: AnyEl[] = [];
 
-    // If multiple items selected but not grouped, or one item selected but not a group
+    // 1. Determine the logical grouping/container
     if (!grp || grp.type !== 'group') {
-      if (selectedIds.length > 1) {
-        // Auto-group first
-        groupSelected();
-        // The state update for setConfig might not be immediate enough for our local 'grp' variable.
-        // However, groupSelected() is synchronous in its logic but uses setConfig (async state).
-        // Actually, groupSelected is defined as: function groupSelected() { ... setConfig(...) }
-        // Let's check grouping logic to see if we can perform it inline or wait.
-        alert("Selection grouped! Please click 'Create Component' again to confirm creation of the master component from this new group.");
-        return;
-      } else if (selectedIds.length === 1) {
-        // Just one element, we still require a group container for components (architectural choice)
-        alert("Components must have a group container. Please group this element (even if alone) before creating a component.");
-        return;
-      } else {
+      if (selectedIds.length === 0) {
         alert("Please select elements to convert into a component.");
         return;
       }
-    }
 
-    const childrenIds = grp.childIds || [];
-    if (childrenIds.length === 0) return;
+      // Local calculation for grouping (don't rely on groupSelected state update)
+      const selectedElementsInOrder = config.elements.filter(e => selectedIds.includes(e.id));
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      selectedElementsInOrder.forEach(el => {
+        minX = Math.min(minX, el.x);
+        minY = Math.min(minY, el.y);
+        maxX = Math.max(maxX, el.x + (el.width || 0));
+        maxY = Math.max(maxY, el.y + (el.height || 0));
+      });
+
+      bounds = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+      childrenIds = selectedIds;
+      childElements = selectedElementsInOrder;
+    } else {
+      childrenIds = grp.childIds || [];
+      if (childrenIds.length === 0) {
+        alert("Selected group is empty.");
+        return;
+      }
+      bounds = { x: grp.x, y: grp.y, width: grp.width, height: grp.height };
+      childElements = config.elements.filter(e => childrenIds.includes(e.id));
+    }
 
     const componentName = prompt("Enter a name for this new component:", "My Component");
     if (!componentName) return;
 
-    const childElements = config.elements
-      .filter(e => childrenIds.includes(e.id))
-      .map(e => ({
-        ...e,
-        x: e.x - grp.x,
-        y: e.y - grp.y
-      }));
+    // Relative offset of children
+    const elementsForMaster = childElements.map(e => ({
+      ...e,
+      x: e.x - bounds.x,
+      y: e.y - bounds.y
+    }));
 
     const payload = {
       name: componentName,
       schemaVersion: 1,
-      elements: childElements,
+      elements: elementsForMaster,
       propsSchema: {},
       metadata: {}
     };
@@ -993,10 +1001,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         id: data.public_id,
         name: componentName,
         schemaVersion: 1,
-        elements: payload.elements,
+        elements: payload.elements as any,
         propsSchema: {},
         metadata: {}
       };
+
+      // Sync master definitions in state IMMEDIATELY
       setOverlayComponents(prev => [...prev, newDef]);
 
       const instId = genId("instance");
@@ -1004,10 +1014,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         id: instId,
         type: "componentInstance",
         name: componentName,
-        x: grp.x,
-        y: grp.y,
-        width: grp.width,
-        height: grp.height,
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
         visible: true,
         locked: false,
         opacity: 1,
@@ -1016,16 +1026,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       } as any;
 
       setConfig((prev) => {
-        const withoutOld = prev.elements.filter(e => e.id !== grp.id && !childrenIds.includes(e.id));
-        let insertIndex = prev.elements.findIndex(e => e.id === grp.id);
-        if (insertIndex < 0) insertIndex = withoutOld.length;
+        // Remove children (and/or the group we used as anchor)
+        const toRemove = new Set([...childrenIds, grp?.id].filter(Boolean));
+        const withoutOld = prev.elements.filter(e => !toRemove.has(e.id));
+
+        // Try to insert at a reasonable index
         return { ...prev, elements: [...withoutOld, instanceEl] };
       });
 
       setSelectedIds([instId]);
 
-      // Proactive: Enter isolation mode immediately to edit the master
-      enterIsolationMode(data.public_id);
+      // Proactive: Use the direct newDef to avoid state reconciliation lag
+      enterIsolationMode(data.public_id, newDef);
 
     } catch (err) {
       console.error(err);
@@ -1405,12 +1417,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [isPanning, updatePan, endPan]);
 
   // ===== Wheel zoom =====
-  const onCanvasWheel = useCallback(
-    (e: React.WheelEvent) => {
-      if (!canvasOuterRef.current) return;
+  useEffect(() => {
+    const outer = canvasOuterRef.current;
+    if (!outer) return;
+
+    const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
 
-      const rect = canvasOuterRef.current.getBoundingClientRect();
+      const rect = outer.getBoundingClientRect();
       const relMouse = {
         x: e.clientX - rect.left - rect.width / 2,
         y: e.clientY - rect.top - rect.height / 2,
@@ -1428,9 +1442,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const nextPanX = relMouse.x * (1 - ratio) + ratio * panPx.x;
       const nextPanY = relMouse.y * (1 - ratio) + ratio * panPx.y;
       setPanPx({ x: nextPanX, y: nextPanY });
-    },
-    [scale, panPx.x, panPx.y]
-  );
+    };
+
+    outer.addEventListener("wheel", handleWheel, { passive: false });
+    return () => outer.removeEventListener("wheel", handleWheel);
+  }, [scale, panPx.x, panPx.y]);
 
   // ===== marquee coordinate mapping =====
   const clientToStage = useCallback(
@@ -2084,7 +2100,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           style={{
             cursor: isPanning ? "grabbing" : spaceDown ? "grab" : marquee.active ? "crosshair" : "default"
           }}
-          onWheel={onCanvasWheel}
           onMouseDown={(e) => {
             const isMiddle = e.button === 1;
             const isSpaceLeft = spaceDown && e.button === 0;
