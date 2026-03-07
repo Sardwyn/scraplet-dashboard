@@ -561,6 +561,31 @@ router.get("/dashboard/scrapbot", requireAuth, async (req, res, next) => {
     const discordIntegration = await getActiveDiscordIntegrationForUser(db, sessionUser.id);
     const discordConnected = !!discordIntegration?.guild_id;
 
+    // Collect connected platforms
+    const { rows: allExtAcc } = await db.query(
+      `
+      SELECT platform
+      FROM public.external_accounts
+      WHERE user_id = $1 AND enabled = true
+      `,
+      [sessionUser.id]
+    );
+
+    const connectedPlatforms = {
+      kick: false,
+      twitch: false,
+      youtube: false,
+      tiktok: false,
+      discord: discordConnected,
+    };
+
+    for (const acc of allExtAcc) {
+      if (acc.platform === "kick") connectedPlatforms.kick = true;
+      if (acc.platform === "twitch") connectedPlatforms.twitch = true;
+      if (acc.platform === "youtube") connectedPlatforms.youtube = true;
+      if (acc.platform === "tiktok") connectedPlatforms.tiktok = true;
+    }
+
     const scrapbotStatus = {
       online: false,
       ingest_ok: false,
@@ -726,6 +751,7 @@ router.get("/dashboard/scrapbot", requireAuth, async (req, res, next) => {
       scrapbotStatus,
       scrapbotAccount,
       discordConnected,
+      connectedPlatforms,
       moderationReviews,
     });
 

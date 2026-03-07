@@ -104,6 +104,36 @@
           <div class="text-xs text-white/30 mt-2 font-mono">
             Last check: <%= scrapbotLastCheck ? formatTimestamp(scrapbotLastCheck) : '-' %>
           </div>
+
+          <!-- Connected Platforms List -->
+          <div class="mt-4 flex flex-wrap gap-2 justify-center">
+            <% if (locals.connectedPlatforms?.kick) { %>
+              <div
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#53fc18]/10 text-[#53fc18] border border-[#53fc18]/20">
+                Kick</div>
+              <% } %>
+                <% if (locals.connectedPlatforms?.twitch) { %>
+                  <div
+                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#9146FF]/10 text-[#9146FF] border border-[#9146FF]/20">
+                    Twitch</div>
+                  <% } %>
+                    <% if (locals.connectedPlatforms?.youtube) { %>
+                      <div
+                        class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#FF0000]/10 text-[#FF0000] border border-[#FF0000]/20">
+                        YouTube</div>
+                      <% } %>
+                        <% if (locals.connectedPlatforms?.tiktok) { %>
+                          <div
+                            class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/20">
+                            TikTok</div>
+                          <% } %>
+                            <% if (locals.connectedPlatforms?.discord) { %>
+                              <div
+                                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#5865F2]/10 text-[#5865F2] border border-[#5865F2]/20">
+                                Discord</div>
+                              <% } %>
+          </div>
+
           <% if (scrapbot.error) { %>
             <div class="text-xs text-red-400 mt-2 font-mono bg-red-500/10 p-1 rounded">
               <%= scrapbot.error %>
