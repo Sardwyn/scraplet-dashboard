@@ -272,32 +272,37 @@ export function ElementRenderer({
             clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${mcr}px)`;
         }
 
-        // DEBUG — open browser console to see these values
-        console.log("[MASK DEBUG]", {
-            maskGroupId: element.id,
-            maskShapeId, contentId,
-            group: { gx, gy, gw, gh },
-            maskShape: { x: maskEl.x, y: maskEl.y, w: mw, h: mh, shape },
-            relativeToGroup: { mx, my },
-            content: { x: contentEl.x, y: contentEl.y, cx, cy },
-            clipPath,
-        });
-
+        // Remove debug log now that we understand the values
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {/* Clip wrapper covers the full group area. clip-path cuts to shape coords. */}
+                    {/*
+                     * ─── HOW THIS WORKS ──────────────────────────────────────────
+                     * The clip wrapper fills the mask group container (left:0, top:0, 100%x100%).
+                     * clip-path is expressed in group-relative coords, cutting to the mask shape.
+                     *
+                     * The content element is rendered at its ORIGINAL absolute coordinates —
+                     * we do NOT override x/y. Instead, the clip wrapper is translated by
+                     * (-gx, -gy) and sized to the full overlay, so the content element's
+                     * absolute positioning lands exactly where it should within the clip space.
+                     *
+                     * This avoids the bug where group renderers subtract element.x from children
+                     * using the wrong (modified) x value.
+                     * ─────────────────────────────────────────────────────────────
+                     */}
                     <div style={{
                         position: "absolute",
-                        left: 0,
-                        top: 0,
-                        width: "100%",
-                        height: "100%",
+                        // Shift to align with overlay origin so children's absolute coords work
+                        left: -gx,
+                        top: -gy,
+                        // Size to the full overlay (or at least large enough)
+                        width: 1920,
+                        height: 1080,
                         clipPath,
                         WebkitClipPath: clipPath,
                     }}>
                         <ElementRenderer
-                            element={{ ...contentEl, x: cx, y: cy }}
+                            element={contentEl}
                             elementsById={elementsById}
                             overlayComponents={overlayComponents}
                             data={data}
