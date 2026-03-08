@@ -3546,7 +3546,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex flex-col items-center justify-center p-2 rounded-lg transition-all border
+        flex items-center justify-center p-2 rounded-lg transition-all border
         ${active
           ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
           : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -3555,8 +3555,7 @@ function ToolButton({
       `}
       title={label}
     >
-      <div className="text-xl mb-1">{icon}</div>
-      <div className="text-[10px] font-medium truncate w-full text-center">{label}</div>
+      <div className="text-xl">{icon}</div>
     </button>
   );
 }
@@ -3641,36 +3640,34 @@ function CreationToolbar({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
-        {/* Primary Creation Tools */}
-        <ToolButton icon={TOOLBAR_ICONS.text} label="Text" onClick={onAddText} />
-        <ToolButton icon={TOOLBAR_ICONS.box} label="Box" onClick={onAddBox} />
-        <ToolButton icon={TOOLBAR_ICONS.image} label="Image" onClick={onAddImage} />
-        <ToolButton icon={TOOLBAR_ICONS.video} label="Video" onClick={onAddVideo} />
-        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Lower Third" onClick={onAddLowerThird} />
+      <div className="grid grid-cols-6 gap-1">
+        {/* Creation Tools */}
+        <ToolButton icon={TOOLBAR_ICONS.text} label="Add Text" onClick={onAddText} />
+        <ToolButton icon={TOOLBAR_ICONS.box} label="Add Box" onClick={onAddBox} />
+        <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
+        <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
+        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
-          label="Component"
+          label="Conversion Selection to Component"
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
         />
         <ToolButton
           icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>}
-          label="Template"
+          label="Insert Template"
           onClick={onInsertTemplate}
         />
-      </div>
 
-      <div className="h-px bg-slate-800/50 my-1" />
+        <div className="col-span-1 border-r border-slate-800/50" />
 
-      <div className="grid grid-cols-6 gap-1">
         {/* Secondary Tools & Shapes */}
-        <ToolButton icon={TOOLBAR_ICONS.bar} label="Progress Bar" onClick={() => onAddProgress("bar")} />
-        <ToolButton icon={TOOLBAR_ICONS.ring} label="Progress Ring" onClick={() => onAddProgress("ring")} />
-        <ToolButton icon={TOOLBAR_ICONS.rect} label="Rectangle" onClick={() => onAddShape("rect")} />
-        <ToolButton icon={TOOLBAR_ICONS.circle} label="Circle" onClick={() => onAddShape("circle")} />
-        <ToolButton icon={TOOLBAR_ICONS.triangle} label="Triangle" onClick={() => onAddShape("triangle")} />
-        <ToolButton icon={TOOLBAR_ICONS.line} label="Line" onClick={() => onAddShape("line")} />
+        <ToolButton icon={TOOLBAR_ICONS.bar} label="Add Progress Bar" onClick={() => onAddProgress("bar")} />
+        <ToolButton icon={TOOLBAR_ICONS.ring} label="Add Progress Ring" onClick={() => onAddProgress("ring")} />
+        <ToolButton icon={TOOLBAR_ICONS.rect} label="Add Rectangle" onClick={() => onAddShape("rect")} />
+        <ToolButton icon={TOOLBAR_ICONS.circle} label="Add Circle" onClick={() => onAddShape("circle")} />
+        <ToolButton icon={TOOLBAR_ICONS.triangle} label="Add Triangle" onClick={() => onAddShape("triangle")} />
+        <ToolButton icon={TOOLBAR_ICONS.line} label="Add Line" onClick={() => onAddShape("line")} />
       </div>
 
       <div className="pt-3 mt-1 border-t border-slate-800 flex gap-2">
