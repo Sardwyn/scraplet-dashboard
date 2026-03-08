@@ -238,8 +238,9 @@ export function ElementRenderer({
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // Unique ID for SVG clipPath
-        const clipPathId = `mask-clip-${element.id}`;
+        // Sanitize ID for SVG reference
+        const safeId = element.id.replace(/[^a-zA-Z0-9]/g, '');
+        const clipPathId = `mask-clip-${safeId}`;
 
         // Relative geometry for mask shape (standardized to group origin)
         const mx = (maskEl.x ?? 0) - (element.x ?? 0);
@@ -248,11 +249,26 @@ export function ElementRenderer({
         const mh = maskEl.height ?? 0;
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
 
+        // Determine clipping method
+        let cssClipPath = `url(#${clipPathId})`;
+
+        // Use CSS basic shapes for standard properties if no rotation
+        // This is more performant and robust than SVG clipPath in most browsers
+        if (!maskEl.rotationDeg) {
+            if (maskEl.shape === "rect") {
+                const right = (element.width ?? 0) - mx - mw;
+                const bottom = (element.height ?? 0) - my - mh;
+                cssClipPath = `inset(${my}px ${right}px ${bottom}px ${mx}px round ${mcr}px)`;
+            } else if (maskEl.shape === "circle") {
+                cssClipPath = `ellipse(${mw / 2}px ${mh / 2}px at ${mx + mw / 2}px ${my + mh / 2}px)`;
+            }
+        }
+
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {/* SVG Clip Definition */}
-                    <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }}>
+                    {/* SVG Clip Definition (Fallback/Triangle) */}
+                    <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none", visibility: "hidden" }}>
                         <defs>
                             <clipPath id={clipPathId} clipPathUnits="userSpaceOnUse">
                                 {maskEl.shape === "rect" && (
@@ -272,7 +288,7 @@ export function ElementRenderer({
                     </svg>
 
                     {/* Content (Clipped) */}
-                    <div style={{ clipPath: `url(#${clipPathId})`, width: "100%", height: "100%" }}>
+                    <div style={{ clipPath: cssClipPath, WebkitClipPath: cssClipPath, position: "absolute", inset: 0 }}>
                         <ElementRenderer
                             element={{ ...contentEl, x: (contentEl.x ?? 0) - (element.x ?? 0), y: (contentEl.y ?? 0) - (element.y ?? 0) }}
                             elementsById={elementsById}
@@ -283,15 +299,17 @@ export function ElementRenderer({
                         />
                     </div>
 
-                    {/* Mask Shape (Rendered as a subtle guide if needed, usually hidden) */}
-                    <ElementRenderer
-                        element={{ ...maskEl, x: mx, y: my, opacity: (maskEl.opacity ?? 1) * 0.1 }}
-                        elementsById={elementsById}
-                        overlayComponents={overlayComponents}
-                        data={data}
-                        layout="absolute"
-                        visited={nextVisited}
-                    />
+                    {/* Mask Shape (Rendered as a subtle guide in editor only) */}
+                    {layout === "fill" && (
+                        <ElementRenderer
+                            element={{ ...maskEl, x: mx, y: my, opacity: (maskEl.opacity ?? 1) * 0.15 }}
+                            elementsById={elementsById}
+                            overlayComponents={overlayComponents}
+                            data={data}
+                            layout="absolute"
+                            visited={nextVisited}
+                        />
+                    )}
                 </div>
             </div>
         );
