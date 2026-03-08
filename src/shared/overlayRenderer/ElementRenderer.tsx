@@ -225,10 +225,10 @@ export function ElementRenderer({
     // --- MASK ---
     if (element.type === "mask") {
         const maskGroup = element as OverlayMaskElement;
-        const maskId = maskGroup.childIds[0];
+        const maskShapeId = maskGroup.childIds[0];
         const contentId = maskGroup.childIds[1];
 
-        const maskEl = elementsById?.[maskId] as OverlayShapeElement;
+        const maskEl = elementsById?.[maskShapeId] as OverlayShapeElement;
         const contentEl = elementsById?.[contentId];
 
         if (!maskEl || !contentEl) return null;
@@ -238,59 +238,51 @@ export function ElementRenderer({
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // Sanitize ID for SVG reference
-        const safeId = element.id.replace(/[^a-zA-Z0-9]/g, '');
-        const clipPathId = `mask-clip-${safeId}`;
-
-        // Relative geometry for mask shape (standardized to group origin)
-        const mx = (maskEl.x ?? 0) - (element.x ?? 0);
-        const my = (maskEl.y ?? 0) - (element.y ?? 0);
+        // All coordinates are in absolute overlay space.
+        // The mask shape defines the clip region. We position a clip div exactly at the
+        // mask shape's absolute position+size, then render the content offset inside it.
         const mw = maskEl.width ?? 0;
         const mh = maskEl.height ?? 0;
+        const mx = maskEl.x ?? 0;
+        const my = maskEl.y ?? 0;
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
 
-        // Determine clipping method
-        let cssClipPath = `url(#${clipPathId})`;
+        // Build clip-path for the clip container (which has size mw x mh, so shapes are at 0,0)
+        let clipPathStyle: string;
+        const shape = maskEl.shape ?? "rect";
 
-        // Use CSS basic shapes for standard properties if no rotation
-        // This is more performant and robust than SVG clipPath in most browsers
-        if (!maskEl.rotationDeg) {
-            if (maskEl.shape === "rect") {
-                const right = (element.width ?? 0) - mx - mw;
-                const bottom = (element.height ?? 0) - my - mh;
-                cssClipPath = `inset(${my}px ${right}px ${bottom}px ${mx}px round ${mcr}px)`;
-            } else if (maskEl.shape === "circle") {
-                cssClipPath = `ellipse(${mw / 2}px ${mh / 2}px at ${mx + mw / 2}px ${my + mh / 2}px)`;
-            }
+        if (shape === "circle") {
+            clipPathStyle = `ellipse(${mw / 2}px ${mh / 2}px at 50% 50%)`;
+        } else if (shape === "triangle") {
+            clipPathStyle = `polygon(50% 0%, 100% 100%, 0% 100%)`;
+        } else {
+            // rect (default) — use border-radius instead, more reliable
+            clipPathStyle = "";
         }
+
+        // The clip container sits at mask shape position, sized to mask shape
+        const clipContainerStyle: React.CSSProperties = {
+            position: "absolute",
+            left: mx,
+            top: my,
+            width: mw,
+            height: mh,
+            overflow: "hidden", // primary clipping for rect
+            borderRadius: shape === "rect" ? mcr : undefined,
+            clipPath: clipPathStyle || undefined,
+            WebkitClipPath: clipPathStyle || undefined,
+        };
+
+        // Content is rendered at its own absolute coords, offset relative to the clip container
+        const contentX = (contentEl.x ?? 0) - mx;
+        const contentY = (contentEl.y ?? 0) - my;
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {/* SVG Clip Definition (Fallback/Triangle) */}
-                    <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none", visibility: "hidden" }}>
-                        <defs>
-                            <clipPath id={clipPathId} clipPathUnits="userSpaceOnUse">
-                                {maskEl.shape === "rect" && (
-                                    <rect x={mx} y={my} width={mw} height={mh} rx={mcr} ry={mcr} />
-                                )}
-                                {maskEl.shape === "circle" && (
-                                    <ellipse cx={mx + mw / 2} cy={my + mh / 2} rx={mw / 2} ry={mh / 2} />
-                                )}
-                                {maskEl.shape === "triangle" && (
-                                    <polygon points={`${mx + mw / 2},${my} ${mx + mw},${my + mh} ${mx},${my + mh}`} />
-                                )}
-                                {maskEl.shape === "line" && (
-                                    <rect x={mx} y={my} width={mw} height={mh} />
-                                )}
-                            </clipPath>
-                        </defs>
-                    </svg>
-
-                    {/* Content (Clipped) */}
-                    <div style={{ clipPath: cssClipPath, WebkitClipPath: cssClipPath, position: "absolute", inset: 0 }}>
+                    <div style={clipContainerStyle}>
                         <ElementRenderer
-                            element={{ ...contentEl, x: (contentEl.x ?? 0) - (element.x ?? 0), y: (contentEl.y ?? 0) - (element.y ?? 0) }}
+                            element={{ ...contentEl, x: contentX, y: contentY }}
                             elementsById={elementsById}
                             overlayComponents={overlayComponents}
                             data={data}
@@ -299,16 +291,18 @@ export function ElementRenderer({
                         />
                     </div>
 
-                    {/* Mask Shape (Rendered as a subtle guide in editor only) */}
+                    {/* Editor-only: ghost outline of the mask shape */}
                     {layout === "fill" && (
-                        <ElementRenderer
-                            element={{ ...maskEl, x: mx, y: my, opacity: (maskEl.opacity ?? 1) * 0.15 }}
-                            elementsById={elementsById}
-                            overlayComponents={overlayComponents}
-                            data={data}
-                            layout="absolute"
-                            visited={nextVisited}
-                        />
+                        <div style={{
+                            position: "absolute",
+                            left: mx,
+                            top: my,
+                            width: mw,
+                            height: mh,
+                            border: "1px dashed rgba(99,102,241,0.5)",
+                            borderRadius: shape === "rect" ? mcr : undefined,
+                            pointerEvents: "none",
+                        }} />
                     )}
                 </div>
             </div>
