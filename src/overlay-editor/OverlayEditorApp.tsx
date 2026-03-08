@@ -2213,7 +2213,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Grid */}
               {showGrid && (
                 <div
-                  className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                  className="absolute inset-0 opacity-[0.015] pointer-events-none"
                   style={{
                     backgroundImage:
                       "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
@@ -2331,7 +2331,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                 // Custom resize handle styles
                 const handleStyle = {
-                  width: 8, height: 8, background: "white", border: "1px solid #3b82f6", borderRadius: 1
+                  width: 6, height: 6, background: "white", border: "1px solid #3b82f6", borderRadius: 1
                 };
 
                 return (
@@ -2346,10 +2346,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     enableResizing={!isLocked && !isPanning && !marquee.active}
                     resizeHandleStyles={{
                       topLeft: handleStyle, topRight: handleStyle, bottomLeft: handleStyle, bottomRight: handleStyle,
-                      top: { ...handleStyle, width: 8, height: 8, left: '50%', cursor: 'n-resize' },
-                      bottom: { ...handleStyle, width: 8, height: 8, left: '50%', cursor: 's-resize' },
-                      left: { ...handleStyle, width: 8, height: 8, top: '50%', cursor: 'w-resize' },
-                      right: { ...handleStyle, width: 8, height: 8, top: '50%', cursor: 'e-resize' },
+                      top: { ...handleStyle, left: '50%', marginLeft: -3, cursor: 'n-resize' },
+                      bottom: { ...handleStyle, left: '50%', marginLeft: -3, cursor: 's-resize' },
+                      left: { ...handleStyle, top: '50%', marginTop: -3, cursor: 'w-resize' },
+                      right: { ...handleStyle, top: '50%', marginTop: -3, cursor: 'e-resize' },
                     }}
                     onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
                     onDragStop={(e, d) => handleDragStop(e, d, el.id)}
@@ -3546,7 +3546,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex items-center justify-center p-2 rounded-lg transition-all border
+        flex items-center justify-center w-10 h-10 rounded-lg transition-all border
         ${active
           ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
           : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -3555,7 +3555,7 @@ function ToolButton({
       `}
       title={label}
     >
-      <div className="text-xl">{icon}</div>
+      <div className="flex items-center justify-center">{icon}</div>
     </button>
   );
 }
