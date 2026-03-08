@@ -10,6 +10,7 @@ import {
     OverlayProgressBarElement,
     OverlayProgressRingElement,
     OverlayLowerThirdElement,
+    OverlayMaskElement,
     OverlayMediaFit,
     OverlayComponentDef,
     OverlayComponentInstanceElement
@@ -216,6 +217,82 @@ export function ElementRenderer({
                             visited={nextVisited}
                         />
                     ))}
+                </div>
+            </div>
+        );
+    }
+
+    // --- MASK ---
+    if (element.type === "mask") {
+        const maskGroup = element as OverlayMaskElement;
+        const maskId = maskGroup.childIds[0];
+        const contentId = maskGroup.childIds[1];
+
+        const maskEl = elementsById?.[maskId] as OverlayShapeElement;
+        const contentEl = elementsById?.[contentId];
+
+        if (!maskEl || !contentEl) return null;
+
+        // Unique ID for SVG clipPath
+        const clipPathId = `mask-clip-${element.id}`;
+
+        // Relative geometry for mask shape (standardized to group origin)
+        const mx = maskEl.x - element.x;
+        const my = maskEl.y - element.y;
+        const mw = maskEl.width;
+        const mh = maskEl.height;
+        const mcr = maskEl.cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
+        const mStroke = maskEl.strokeWidthPx ?? (maskEl as any).strokeWidth ?? 0;
+
+        return (
+            <div style={baseStyle}>
+                <div style={{ ...innerStyle, position: "relative" }}>
+                    {/* SVG Clip Definition */}
+                    <svg width="0" height="0" style={{ position: "absolute" }}>
+                        <defs>
+                            <clipPath id={clipPathId} clipPathUnits="userSpaceOnUse">
+                                {maskEl.shape === "rect" && (
+                                    <rect x={mx} y={my} width={mw} height={mh} rx={mcr} ry={mcr} />
+                                )}
+                                {maskEl.shape === "circle" && (
+                                    <ellipse cx={mx + mw / 2} cy={my + mh / 2} rx={mw / 2} ry={mh / 2} />
+                                )}
+                                {maskEl.shape === "triangle" && (
+                                    <polygon points={`${mx + mw / 2},${my} ${mx + mw},${my + mh} ${mx},${my + mh}`} />
+                                )}
+                                {maskEl.shape === "line" && (
+                                    <rect x={mx} y={my} width={mw} height={mh} />
+                                )}
+                            </clipPath>
+                        </defs>
+                    </svg>
+
+                    {/* Content (Clipped) */}
+                    <div style={{ clipPath: `url(#${clipPathId})`, width: "100%", height: "100%" }}>
+                        <ElementRenderer
+                            element={{ ...contentEl, x: contentEl.x - element.x, y: contentEl.y - element.y }}
+                            elementsById={elementsById}
+                            overlayComponents={overlayComponents}
+                            data={data}
+                            layout="absolute"
+                            visited={visited}
+                        />
+                    </div>
+
+                    {/* Mask Shape (Rendered normally underneath or on top? Standard is hidden, 
+                        but we render it at low opacity/stroke if user wants to see bounds in editor?)
+                        V1 Requirement: Mask is structural. We generally don't render the mask shape itself 
+                        unless it has a visible stroke/fill the user wants to keep.
+                        However, the plan says "first child is mask, second is content". 
+                        If we want to allow visible strokes on masks, we render child[0] here: */}
+                    <ElementRenderer
+                        element={{ ...maskEl, x: mx, y: my }}
+                        elementsById={elementsById}
+                        overlayComponents={overlayComponents}
+                        data={data}
+                        layout="absolute"
+                        visited={visited}
+                    />
                 </div>
             </div>
         );

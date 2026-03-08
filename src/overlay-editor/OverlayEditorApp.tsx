@@ -894,6 +894,53 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([id]);
   }
 
+  function handleMaskElement(shapeId: string) {
+    setConfig(prev => {
+      const els = [...prev.elements];
+      const shapeIdx = els.findIndex(e => e.id === shapeId);
+      if (shapeIdx <= 0) return prev;
+
+      const contentEl = els[shapeIdx - 1];
+      const shapeEl = els[shapeIdx];
+      const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
+
+      const x = Math.min(shapeEl.x, contentEl.x);
+      const y = Math.min(shapeEl.y, contentEl.y);
+      const w = Math.max(shapeEl.x + shapeEl.width, contentEl.x + contentEl.width) - x;
+      const h = Math.max(shapeEl.y + shapeEl.height, contentEl.y + contentEl.height) - y;
+
+      const maskGroup: any = {
+        id: maskId,
+        type: "mask",
+        name: `Mask (${shapeEl.name || "Shape"})`,
+        x, y, width: w, height: h,
+        visible: true, locked: false, opacity: 1,
+        childIds: [shapeId, contentEl.id]
+      };
+
+      const withoutThese = els.filter(e => e.id !== shapeId && e.id !== contentEl.id);
+      const newElements = [...withoutThese];
+      // Insert where the content was
+      const targetIdx = Math.max(0, shapeIdx - 1);
+      newElements.splice(targetIdx, 0, maskGroup);
+
+      return { ...prev, elements: newElements };
+    });
+  }
+
+  function handleReleaseMask(maskId: string) {
+    setConfig(prev => {
+      const els = [...prev.elements];
+      const maskIdx = els.findIndex(e => e.id === maskId);
+      if (maskIdx === -1) return prev;
+      const mask = els[maskIdx] as any;
+      if (mask.type !== "mask") return prev;
+
+      const withoutMask = els.filter(e => e.id !== maskId);
+      return { ...prev, elements: withoutMask };
+    });
+  }
+
   async function createComponentSelected() {
     let grp = (primarySelectedEl as any);
     let childrenIds: string[] = [];
@@ -1932,6 +1979,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onSelect={onSelectElement}
                 onToggleVisible={(id) => updateElement(id, { visible: !(elementsById[id]?.visible !== false) })}
                 onToggleLock={(id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) })}
+                onMask={handleMaskElement}
+                onReleaseMask={handleReleaseMask}
               />
             </div>
           )}
@@ -2390,6 +2439,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             propsSchema={propsSchema}
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
+            onReleaseMask={handleReleaseMask}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
@@ -2446,6 +2496,7 @@ interface InspectorProps {
   propsSchema?: any;
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
+  onReleaseMask?: (id: string) => void;
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
@@ -2510,7 +2561,7 @@ function InspectorPanel({
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster
+  onEditMaster, onReleaseMask
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
@@ -3107,6 +3158,41 @@ function InspectorPanel({
             </div>
           )}
 
+          {/* MASK */}
+          {element.type === "mask" && (
+            <div className="space-y-3">
+              <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xl">🎭</span>
+                  <div>
+                    <div className="text-xs font-bold text-indigo-300">Mask Group</div>
+                    <div className="text-[10px] text-slate-500">Clips second child to first child geometry.</div>
+                  </div>
+                </div>
+
+                <div className="space-y-1 mt-3">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Mask Shape:</span>
+                    <span className="text-slate-300 font-mono">{(element as any).childIds?.[0]}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-slate-500">Content Layer:</span>
+                    <span className="text-slate-300 font-mono">{(element as any).childIds?.[1]}</span>
+                  </div>
+                </div>
+
+                {onReleaseMask && (
+                  <button
+                    onClick={() => onReleaseMask(element.id)}
+                    className="w-full mt-4 py-1.5 bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-200 text-xs font-semibold rounded border border-slate-700 hover:border-red-500/50 transition-all"
+                  >
+                    Release Mask
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </AccordionSection >
 
@@ -3657,6 +3743,7 @@ const LAYERS_PANEL_ICONS: Record<string, React.ReactNode> = {
   video: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
   box: <div className="w-2.5 h-2.5 border border-current rounded-sm" />,
   shape: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l10 20H2L12 2z" /></svg>, // Default shape
+  mask: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18" /><path d="M3 12h18" /><circle cx="12" cy="12" r="9" /></svg>,
   progress: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
 };
 
@@ -3666,7 +3753,9 @@ function LayersPanel({
   selectedIds,
   onSelect,
   onToggleVisible,
-  onToggleLock
+  onToggleLock,
+  onMask,
+  onReleaseMask
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -3674,6 +3763,8 @@ function LayersPanel({
   onSelect: (id: string, additive: boolean) => void;
   onToggleVisible: (id: string) => void;
   onToggleLock: (id: string) => void;
+  onMask?: (id: string) => void;
+  onReleaseMask?: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -3690,7 +3781,7 @@ function LayersPanel({
   // Build hierarchy map for rendering
   const allChildIds = new Set<string>();
   elements.forEach(el => {
-    if (el.type === 'group' && Array.isArray((el as any).childIds)) {
+    if ((el.type === 'group' || el.type === 'mask') && Array.isArray((el as any).childIds)) {
       (el as any).childIds.forEach((cid: string) => allChildIds.add(cid));
     }
   });
@@ -3704,9 +3795,9 @@ function LayersPanel({
     const isLocked = el.locked === true;
 
     // Find children
-    const isGroup = el.type === 'group';
+    const isContainer = el.type === 'group' || el.type === 'mask';
     let children: OverlayElement[] = [];
-    if (isGroup) {
+    if (isContainer) {
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
     }
 
@@ -3770,6 +3861,24 @@ function LayersPanel({
             >
               {isVisible ? "👁️" : "🙈"}
             </button>
+            {el.type === 'shape' && onMask && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
+                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-indigo-400"
+                title="Use as Mask"
+              >
+                🎭
+              </button>
+            )}
+            {el.type === 'mask' && onReleaseMask && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onReleaseMask(el.id); }}
+                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-red-400"
+                title="Release Mask"
+              >
+                🔓
+              </button>
+            )}
           </div>
         </div>
 

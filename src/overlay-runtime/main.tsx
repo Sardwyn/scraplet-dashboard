@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   OverlayElement,
@@ -443,9 +443,21 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const baseW = overlay?.baseResolution?.width ?? 1920;
   const baseH = overlay?.baseResolution?.height ?? 1080;
 
-  // elements is now the MERGED list from above
-  const pinnedElements = elements.filter((el: any) => el.pinned === true);
-  const normalElements = elements.filter((el: any) => el.pinned !== true);
+  // IMPORTANT: Filter out children of Groups/Masks so they don't double-render at root
+  const allChildIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    elements.forEach(el => {
+      if ((el.type === 'group' || el.type === 'mask') && (el as any).childIds) {
+        (el as any).childIds.forEach((cid: string) => ids.add(cid));
+      }
+    });
+    return ids;
+  }, [elements]);
+
+  const rootElements = React.useMemo(() => elements.filter(el => !allChildIds.has(el.id)), [elements, allChildIds]);
+
+  const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
+  const normalElements = rootElements.filter((el: any) => el.pinned !== true);
 
   // IMPORTANT: COVER scale (fills viewport; crops overflow) — NO GAPS
   const scale = Math.max(viewport.w / baseW, viewport.h / baseH);

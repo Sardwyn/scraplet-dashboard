@@ -10,6 +10,7 @@ export type OverlayElementType =
   | "progressBar"
   | "progressRing"
   | "lower_third"
+  | "mask"
   | "componentInstance";
 
 /**
@@ -120,6 +121,18 @@ export interface OverlayGroupElement extends OverlayElementBase {
   borderRadiusPx?: number;
   borderColor?: string;
   borderWidth?: number;
+}
+
+/* =========================
+   MASKING
+ ========================= */
+export interface OverlayMaskElement extends OverlayElementBase {
+  type: "mask";
+  childIds: string[]; // [maskShape, content]
+}
+
+export function isMaskElement(el: OverlayElement): el is OverlayMaskElement {
+  return el.type === "mask";
 }
 
 export function isGroupElement(el: OverlayElement): el is OverlayGroupElement {
@@ -367,6 +380,7 @@ export type OverlayElement =
   | OverlayProgressBarElement
   | OverlayProgressRingElement
   | OverlayLowerThirdElement
+  | OverlayMaskElement
   | OverlayComponentInstanceElement;
 
 /* =========================
@@ -409,6 +423,7 @@ export interface OverlayConfigV0 {
     | OverlayProgressBarElement
     | OverlayProgressRingElement
     | OverlayLowerThirdElement
+    | OverlayMaskElement
     | OverlayComponentInstanceElement
   >;
 }
