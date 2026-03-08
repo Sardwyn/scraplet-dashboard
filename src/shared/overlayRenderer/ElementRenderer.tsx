@@ -237,10 +237,10 @@ export function ElementRenderer({
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // All coordinates below:
-        // mx, my = mask shape position relative to mask group container
         const gx = element.x ?? 0;
         const gy = element.y ?? 0;
+
+        // Mask shape position relative to the mask group container
         const mx = (maskEl.x ?? 0) - gx;
         const my = (maskEl.y ?? 0) - gy;
         const mw = maskEl.width ?? 0;
@@ -248,7 +248,16 @@ export function ElementRenderer({
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
         const shape = maskEl.shape ?? "rect";
 
-        // Shape-specific clip for circle/triangle (applied to the clip box itself, which is mw x mh)
+        // Content offset relative to the clip box
+        // The clip box is at (maskEl.x, maskEl.y) in overlay space.
+        // The content is at (contentEl.x, contentEl.y) in overlay space.
+        // So inside the clip box, the content starts at (contentEl.x - maskEl.x, contentEl.y - maskEl.y).
+        const offsetX = (contentEl.x ?? 0) - (maskEl.x ?? 0);
+        const offsetY = (contentEl.y ?? 0) - (maskEl.y ?? 0);
+        const contentW = contentEl.width ?? mw;
+        const contentH = contentEl.height ?? mh;
+
+        // Shape-specific clip for non-rect shapes
         let clipPathOnBox: string | undefined;
         if (shape === "circle") {
             clipPathOnBox = "ellipse(50% 50% at 50% 50%)";
@@ -256,19 +265,22 @@ export function ElementRenderer({
             clipPathOnBox = "polygon(50% 0%, 100% 100%, 0% 100%)";
         }
 
-        // The clip box sits at (mx, my) relative to the mask group container,
-        // sized to the mask shape (mw x mh), overflow:hidden.
+        // Structure:
+        // 1. Clip box — at mask shape's position, sized mw × mh, overflow:hidden
+        // 2. Offset div — inside clip box, positioned at (offsetX, offsetY) = (content.x - mask.x, content.y - mask.y)
+        //                  sized to content dimensions
+        // 3. Content via layout="fill" — fills the offset div
         //
-        // Inside is a "coordinate reset" div at (-maskEl.x, -maskEl.y) relative to the clip box.
-        // Since the clip box is at overlay position (maskEl.x, maskEl.y),
-        // this inner div's left edge sits at overlay x=0 and top at overlay y=0.
-        // Therefore, all content rendered inside with layout="absolute" uses absolute
-        // overlay coordinates directly — no x/y overriding needed.
-        // Groups work correctly because element.x is unchanged and child relX = child.x - group.x.
+        // Groups: group.x is still contentEl.x (unchanged), group renders children at
+        //   child.x - element.x = child.x - contentEl.x from the offset div's top-left.
+        //   Offset div is at (contentEl.x - maskEl.x) from clip box.
+        //   → child appears at (contentEl.x - maskEl.x) + (child.x - contentEl.x) = child.x - maskEl.x from clip box.
+        //   Clip box is at maskEl.x in overlay → child at child.x in overlay. ✓
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
+                    {/* Clip box: the mask shape's window */}
                     <div style={{
                         position: "absolute",
                         left: mx,
@@ -280,18 +292,20 @@ export function ElementRenderer({
                         clipPath: clipPathOnBox,
                         WebkitClipPath: clipPathOnBox,
                     }}>
-                        {/* Reset to overlay-absolute coordinate space */}
+                        {/* Offset div: positions content at correct overlay location within clip box */}
                         <div style={{
                             position: "absolute",
-                            left: -(maskEl.x ?? 0),
-                            top: -(maskEl.y ?? 0),
+                            left: offsetX,
+                            top: offsetY,
+                            width: contentW,
+                            height: contentH,
                         }}>
                             <ElementRenderer
                                 element={contentEl}
                                 elementsById={elementsById}
                                 overlayComponents={overlayComponents}
                                 data={data}
-                                layout="absolute"
+                                layout="fill"
                                 visited={nextVisited}
                             />
                         </div>
