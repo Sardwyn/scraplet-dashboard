@@ -138,6 +138,7 @@ router.get('/overlay-components', requireAuth, async (req, res) => {
 });
 
 /**
+ * /**
  * PUT /dashboard/api/overlay-components/:id
  * Updates an existing overlay component definition.
  */
@@ -170,6 +171,37 @@ router.put('/overlay-components/:id', requireAuth, async (req, res) => {
         console.error('Error updating overlay component:', err);
         res.status(500).json({
             error: 'Failed to update component.',
+            details: err.message,
+            code: err.code
+        });
+    }
+});
+
+/**
+ * DELETE /dashboard/api/overlay-components/:id
+ * Deletes an overlay component definition.
+ */
+router.delete('/overlay-components/:id', requireAuth, async (req, res) => {
+    const userId = req.session.user.id;
+    const id = req.params.id;
+
+    try {
+        const result = await db.query(
+            `DELETE FROM overlay_components 
+             WHERE (id::text = $1 OR public_id = $1) AND user_id = $2
+             RETURNING id, public_id, name`,
+            [id, userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Component not found or not owned by user.' });
+        }
+
+        res.json({ message: 'Component deleted successfully.', deleted: result.rows[0] });
+    } catch (err) {
+        console.error('Error deleting overlay component:', err);
+        res.status(500).json({
+            error: 'Failed to delete component.',
             details: err.message,
             code: err.code
         });
