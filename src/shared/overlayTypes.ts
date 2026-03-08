@@ -68,9 +68,44 @@ export interface OverlayElementBase extends OverlayEditorFields {
     radius?: number; // used if type="roundRect"
   };
 
-  // Component Props / Dynamic Bindings
-  // e.g. { "text": "titleKey", "backgroundColor": "accentColor" }
-  bindings?: Record<string, string>;
+  /**
+   * Dynamic property bindings.
+   * Maps property name (e.g. "text", "src") to a binding configuration.
+   */
+  bindings?: Record<string, DynamicBinding>;
+}
+
+/* =========================
+   DYNAMIC BINDINGS
+========================= */
+
+export interface BindingFormat {
+  type: "text" | "number" | "currency";
+  prefix?: string;
+  suffix?: string;
+  precision?: number;
+  casing?: "none" | "upper" | "lower";
+}
+
+export interface DynamicBinding {
+  mode: "dynamic";
+  sourceId: string;
+  fieldId: string;
+  fallback: any;
+  format?: BindingFormat;
+}
+
+export interface SourceFieldDef {
+  id: string;
+  label: string;
+  type: "text" | "number" | "image";
+  path: string; // Internal canonical resolution path (e.g. "event.author.display")
+}
+
+export interface SourceDef {
+  id: string;
+  label: string;
+  fields: SourceFieldDef[];
 }
 
 /* =========================

@@ -16,6 +16,8 @@ import {
 } from "../overlayTypes";
 import { getFontStack } from "../FontManager";
 
+import { resolveBinding } from "../bindingEngine";
+
 function fitToObjectFit(fit?: OverlayMediaFit) {
     if (fit === "contain") return "contain";
     if (fit === "fill") return "fill";
@@ -52,10 +54,13 @@ export function ElementRenderer({
     let el = element as any;
     if (el.bindings && data) {
         const overrides: any = {};
-        for (const [propPath, dataKey] of Object.entries(el.bindings)) {
-            const val = data[dataKey as string];
-            if (val !== undefined) {
-                overrides[propPath] = val;
+        for (const [propPath, binding] of Object.entries(el.bindings)) {
+            if (binding && typeof binding === 'object' && (binding as any).mode === 'dynamic') {
+                overrides[propPath] = resolveBinding(binding as any, data);
+            } else if (typeof binding === 'string') {
+                // Back-compat for legacy string-based bindings
+                const val = data[binding];
+                if (val !== undefined) overrides[propPath] = val;
             }
         }
         if (Object.keys(overrides).length > 0) {

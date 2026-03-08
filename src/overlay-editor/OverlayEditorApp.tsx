@@ -15,6 +15,8 @@ import {
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
+import { BindingPicker } from "./BindingPicker";
+import { SourceCatalog } from "../shared/bindingEngine";
 import { FontPicker } from "./FontPicker";
 
 
@@ -2902,14 +2904,34 @@ function InspectorPanel({
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-slate-400 text-xs">Content</label>
-                  {isComponentMaster && <ExposeButton element={element} propPath="text" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
+                  <label className="text-slate-400 text-xs font-semibold">Content</label>
+                  <div className="flex items-center gap-2">
+                    <BindingPicker
+                      propName="text"
+                      type="text"
+                      binding={element.bindings?.["text"]}
+                      onUpdate={(b) => {
+                        const newBindings = { ...element.bindings };
+                        if (b) newBindings["text"] = b;
+                        else delete newBindings["text"];
+                        onChange({ bindings: newBindings } as any);
+                      }}
+                    />
+                    {isComponentMaster && <ExposeButton element={element} propPath="text" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
+                  </div>
                 </div>
-                <textarea
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs min-h-[60px] font-mono text-slate-200"
-                  value={(element as any).text ?? ""}
-                  onChange={(e) => onChange({ text: e.target.value } as any)}
-                />
+                {!element.bindings?.["text"] ? (
+                  <textarea
+                    className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs min-h-[60px] font-mono text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    value={(element as any).text ?? ""}
+                    onChange={(e) => onChange({ text: e.target.value } as any)}
+                    placeholder="Enter static text..."
+                  />
+                ) : (
+                  <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic">
+                    Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["text"]?.sourceId)?.label}</span>.
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -2976,10 +2998,33 @@ function InspectorPanel({
           {/* IMAGE/VIDEO */}
           {(element.type === "image" || element.type === "video") && (
             <div className="space-y-3">
-              <div className="flex gap-2">
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
-                <button onClick={element.type === "image" ? onPickImage : onPickVideo} className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700">📂</button>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-slate-400 text-xs font-semibold">Source</label>
+                  <BindingPicker
+                    propName="src"
+                    type="image"
+                    binding={element.bindings?.["src"]}
+                    onUpdate={(b) => {
+                      const newBindings = { ...element.bindings };
+                      if (b) newBindings["src"] = b;
+                      else delete newBindings["src"];
+                      onChange({ bindings: newBindings } as any);
+                    }}
+                  />
+                </div>
+                {!element.bindings?.["src"] ? (
+                  <div className="flex gap-2">
+                    <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none" value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
+                    <button onClick={element.type === "image" ? onPickImage : onPickVideo} className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700 transition-colors">📂</button>
+                  </div>
+                ) : (
+                  <div className="p-2.5 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic flex items-center justify-between">
+                    <span>Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["src"]?.sourceId)?.label}</span></span>
+                  </div>
+                )}
               </div>
+
               <div className="flex items-center gap-2">
                 <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
                 <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).fit ?? "cover"} onChange={(e) => onChange({ fit: e.target.value } as any)}>
@@ -3063,7 +3108,7 @@ function InspectorPanel({
           )}
 
         </div>
-      </AccordionSection>
+      </AccordionSection >
 
       {/* Effects Section (Collapsed by default) */}
       {/* Effects Section (Collapsed by default) */}
@@ -3133,31 +3178,33 @@ function InspectorPanel({
       </AccordionSection>
 
       {/* Data / Behavior Section (Collapsed by default) */}
-      {(element.type === "text" || element.type === "progressBar" || element.type === "progressRing") && (
-        <AccordionSection title="Data & Binding" defaultOpen={false}>
-          <div className="space-y-3">
-            {(element.type === "progressBar" || element.type === "progressRing") && (
-              <div>
-                <label className="block mb-1 text-slate-400 text-xs">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
-                <input
-                  type="range" min="0" max="1" step="0.01"
-                  className="w-full h-1 bg-slate-800 rounded-full"
-                  value={(element as any).value ?? 0}
-                  onChange={(e) => onChange({ value: Number(e.target.value) } as any)}
-                />
-              </div>
-            )}
-            {element.type === "text" && (
-              <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                <div className="mb-1 text-slate-300 font-semibold">Variable Injection</div>
-                Use <code>{`{{variable}}`}</code> in the text content to bind data from the Test Data panel.
-              </div>
-            )}
-          </div>
-        </AccordionSection>
-      )}
+      {
+        (element.type === "text" || element.type === "progressBar" || element.type === "progressRing") && (
+          <AccordionSection title="Data & Binding" defaultOpen={false}>
+            <div className="space-y-3">
+              {(element.type === "progressBar" || element.type === "progressRing") && (
+                <div>
+                  <label className="block mb-1 text-slate-400 text-xs">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
+                  <input
+                    type="range" min="0" max="1" step="0.01"
+                    className="w-full h-1 bg-slate-800 rounded-full"
+                    value={(element as any).value ?? 0}
+                    onChange={(e) => onChange({ value: Number(e.target.value) } as any)}
+                  />
+                </div>
+              )}
+              {element.type === "text" && (
+                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800/50">
+                  <div className="mb-1 text-slate-300 font-semibold">Variable Injection</div>
+                  Use <code>{`{{variable}}`}</code> in the text content to bind data from the Test Data panel.
+                </div>
+              )}
+            </div>
+          </AccordionSection>
+        )
+      }
 
-    </div>
+    </div >
   );
 }
 
