@@ -577,7 +577,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
     config.elements.forEach(e => {
-      if (e.type === 'group') {
+      if (e.type === 'group' || e.type === 'mask') {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
@@ -895,6 +895,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function handleMaskElement(shapeId: string) {
+    const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
     setConfig(prev => {
       const els = [...prev.elements];
       const shapeIdx = els.findIndex(e => e.id === shapeId);
@@ -902,7 +903,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const contentEl = els[shapeIdx - 1];
       const shapeEl = els[shapeIdx];
-      const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
 
       const x = Math.min(shapeEl.x, contentEl.x);
       const y = Math.min(shapeEl.y, contentEl.y);
@@ -918,14 +918,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         childIds: [shapeId, contentEl.id]
       };
 
-      const withoutThese = els.filter(e => e.id !== shapeId && e.id !== contentEl.id);
-      const newElements = [...withoutThese];
-      // Insert where the content was
-      const targetIdx = Math.max(0, shapeIdx - 1);
-      newElements.splice(targetIdx, 0, maskGroup);
-
+      // Keep ALL elements, just add the mask group.
+      const newElements = [...els, maskGroup];
       return { ...prev, elements: newElements };
     });
+    // Select the mask group
+    setSelectedIds([maskId]);
   }
 
   function handleReleaseMask(maskId: string) {

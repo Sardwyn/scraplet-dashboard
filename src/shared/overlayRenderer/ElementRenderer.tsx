@@ -233,22 +233,26 @@ export function ElementRenderer({
 
         if (!maskEl || !contentEl) return null;
 
+        // Cycle Check
+        if (visited && visited.has(element.id)) return null;
+        const nextVisited = new Set(visited);
+        nextVisited.add(element.id);
+
         // Unique ID for SVG clipPath
         const clipPathId = `mask-clip-${element.id}`;
 
         // Relative geometry for mask shape (standardized to group origin)
-        const mx = maskEl.x - element.x;
-        const my = maskEl.y - element.y;
-        const mw = maskEl.width;
-        const mh = maskEl.height;
-        const mcr = maskEl.cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
-        const mStroke = maskEl.strokeWidthPx ?? (maskEl as any).strokeWidth ?? 0;
+        const mx = (maskEl.x ?? 0) - (element.x ?? 0);
+        const my = (maskEl.y ?? 0) - (element.y ?? 0);
+        const mw = maskEl.width ?? 0;
+        const mh = maskEl.height ?? 0;
+        const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
                     {/* SVG Clip Definition */}
-                    <svg width="0" height="0" style={{ position: "absolute" }}>
+                    <svg width="0" height="0" style={{ position: "absolute", pointerEvents: "none" }}>
                         <defs>
                             <clipPath id={clipPathId} clipPathUnits="userSpaceOnUse">
                                 {maskEl.shape === "rect" && (
@@ -270,28 +274,23 @@ export function ElementRenderer({
                     {/* Content (Clipped) */}
                     <div style={{ clipPath: `url(#${clipPathId})`, width: "100%", height: "100%" }}>
                         <ElementRenderer
-                            element={{ ...contentEl, x: contentEl.x - element.x, y: contentEl.y - element.y }}
+                            element={{ ...contentEl, x: (contentEl.x ?? 0) - (element.x ?? 0), y: (contentEl.y ?? 0) - (element.y ?? 0) }}
                             elementsById={elementsById}
                             overlayComponents={overlayComponents}
                             data={data}
                             layout="absolute"
-                            visited={visited}
+                            visited={nextVisited}
                         />
                     </div>
 
-                    {/* Mask Shape (Rendered normally underneath or on top? Standard is hidden, 
-                        but we render it at low opacity/stroke if user wants to see bounds in editor?)
-                        V1 Requirement: Mask is structural. We generally don't render the mask shape itself 
-                        unless it has a visible stroke/fill the user wants to keep.
-                        However, the plan says "first child is mask, second is content". 
-                        If we want to allow visible strokes on masks, we render child[0] here: */}
+                    {/* Mask Shape (Rendered as a subtle guide if needed, usually hidden) */}
                     <ElementRenderer
-                        element={{ ...maskEl, x: mx, y: my }}
+                        element={{ ...maskEl, x: mx, y: my, opacity: (maskEl.opacity ?? 1) * 0.1 }}
                         elementsById={elementsById}
                         overlayComponents={overlayComponents}
                         data={data}
                         layout="absolute"
-                        visited={visited}
+                        visited={nextVisited}
                     />
                 </div>
             </div>
