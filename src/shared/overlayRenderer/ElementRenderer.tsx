@@ -272,6 +272,17 @@ export function ElementRenderer({
             clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${mcr}px)`;
         }
 
+        // DEBUG — open browser console to see these values
+        console.log("[MASK DEBUG]", {
+            maskGroupId: element.id,
+            maskShapeId, contentId,
+            group: { gx, gy, gw, gh },
+            maskShape: { x: maskEl.x, y: maskEl.y, w: mw, h: mh, shape },
+            relativeToGroup: { mx, my },
+            content: { x: contentEl.x, y: contentEl.y, cx, cy },
+            clipPath,
+        });
+
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
