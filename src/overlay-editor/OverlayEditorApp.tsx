@@ -2331,7 +2331,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                 // Custom resize handle styles
                 const handleStyle = {
-                  width: 6, height: 6, background: "white", border: "1px solid #3b82f6", borderRadius: 1
+                  width: 4, height: 4, background: "white", border: "1px solid #3b82f6", borderRadius: 1,
+                  pointerEvents: 'auto' as const
                 };
 
                 return (
@@ -2345,11 +2346,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     disableDragging={isLocked || isPanning || marquee.active}
                     enableResizing={!isLocked && !isPanning && !marquee.active}
                     resizeHandleStyles={{
-                      topLeft: handleStyle, topRight: handleStyle, bottomLeft: handleStyle, bottomRight: handleStyle,
-                      top: { ...handleStyle, left: '50%', marginLeft: -3, cursor: 'n-resize' },
-                      bottom: { ...handleStyle, left: '50%', marginLeft: -3, cursor: 's-resize' },
-                      left: { ...handleStyle, top: '50%', marginTop: -3, cursor: 'w-resize' },
-                      right: { ...handleStyle, top: '50%', marginTop: -3, cursor: 'e-resize' },
+                      topLeft: { ...handleStyle, left: -2, top: -2 },
+                      topRight: { ...handleStyle, left: '100%', top: -2, marginLeft: -2 },
+                      bottomLeft: { ...handleStyle, left: -2, top: '100%', marginTop: -2 },
+                      bottomRight: { ...handleStyle, left: '100%', top: '100%', marginLeft: -2, marginTop: -2 },
+                      top: { ...handleStyle, left: '50%', top: -2, marginLeft: -2, cursor: 'n-resize' },
+                      bottom: { ...handleStyle, left: '50%', top: '100%', marginLeft: -2, marginTop: -2, cursor: 's-resize' },
+                      left: { ...handleStyle, top: '50%', left: -2, marginTop: -2, cursor: 'w-resize' },
+                      right: { ...handleStyle, top: '50%', left: '100%', marginLeft: -2, marginTop: -2, cursor: 'e-resize' },
                     }}
                     onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
                     onDragStop={(e, d) => handleDragStop(e, d, el.id)}
@@ -3546,7 +3550,7 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex items-center justify-center w-10 h-10 rounded-lg transition-all border
+        flex items-center justify-center w-9 h-9 rounded-lg transition-all border
         ${active
           ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
           : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
@@ -3555,7 +3559,7 @@ function ToolButton({
       `}
       title={label}
     >
-      <div className="flex items-center justify-center">{icon}</div>
+      <div className="flex items-center justify-center scale-90">{icon}</div>
     </button>
   );
 }
@@ -3640,7 +3644,7 @@ function CreationToolbar({
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-1">
+      <div className="grid grid-cols-6 gap-2">
         {/* Creation Tools */}
         <ToolButton icon={TOOLBAR_ICONS.text} label="Add Text" onClick={onAddText} />
         <ToolButton icon={TOOLBAR_ICONS.box} label="Add Box" onClick={onAddBox} />
@@ -3659,7 +3663,7 @@ function CreationToolbar({
           onClick={onInsertTemplate}
         />
 
-        <div className="col-span-1 border-r border-slate-800/50" />
+        <div className="col-span-1" />
 
         {/* Secondary Tools & Shapes */}
         <ToolButton icon={TOOLBAR_ICONS.bar} label="Add Progress Bar" onClick={() => onAddProgress("bar")} />
