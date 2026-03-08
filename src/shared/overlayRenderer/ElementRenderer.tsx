@@ -233,55 +233,60 @@ export function ElementRenderer({
 
         if (!maskEl || !contentEl) return null;
 
-        // Cycle Check
         if (visited && visited.has(element.id)) return null;
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // All coords below are in OVERLAY SPACE (absolute px).
-        // The mask group element's baseStyle already positions it at (element.x, element.y).
-        // Everything inside is RELATIVE to that origin.
+        // All offsets are relative to the mask group's top-left (which baseStyle places for us)
+        const gx = element.x ?? 0;
+        const gy = element.y ?? 0;
+        const gw = element.width ?? 0;
+        const gh = element.height ?? 0;
 
-        const shape = maskEl.shape ?? "rect";
+        // Mask shape position and size, relative to group origin
+        const mx = (maskEl.x ?? 0) - gx;
+        const my = (maskEl.y ?? 0) - gy;
         const mw = maskEl.width ?? 0;
         const mh = maskEl.height ?? 0;
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
 
-        // Relative to the mask group container (element.x / element.y = 0,0 inside)
-        const relMx = (maskEl.x ?? 0) - (element.x ?? 0);
-        const relMy = (maskEl.y ?? 0) - (element.y ?? 0);
+        // Content position relative to group origin
+        const cx = (contentEl.x ?? 0) - gx;
+        const cy = (contentEl.y ?? 0) - gy;
 
-        // Content position relative to the clip container (which starts at relMx, relMy)
-        const contentX = (contentEl.x ?? 0) - (maskEl.x ?? 0);
-        const contentY = (contentEl.y ?? 0) - (maskEl.y ?? 0);
-
-        // Clip shape — applied to a container that is exactly mw x mh at (0,0)
-        let clipPathValue: string | undefined;
+        // Build clip-path in group-relative space
+        // The clip wrapper is position:absolute, left:0, top:0, 100% x 100% of the group.
+        // So clip-path coords are relative to the group origin. Simple.
+        const shape = maskEl.shape ?? "rect";
+        let clipPath: string;
         if (shape === "circle") {
-            clipPathValue = `ellipse(${mw / 2}px ${mh / 2}px at 50% 50%)`;
+            clipPath = `ellipse(${mw / 2}px ${mh / 2}px at ${mx + mw / 2}px ${my + mh / 2}px)`;
         } else if (shape === "triangle") {
-            clipPathValue = `polygon(50% 0%, 100% 100%, 0% 100%)`;
+            clipPath = `polygon(${mx + mw / 2}px ${my}px, ${mx + mw}px ${my + mh}px, ${mx}px ${my + mh}px)`;
+        } else {
+            // rect: inset from edges of the group to the shape edges
+            const top = my;
+            const right = gw - mx - mw;
+            const bottom = gh - my - mh;
+            const left = mx;
+            clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${mcr}px)`;
         }
-        // rect uses overflow:hidden + borderRadius — no clip-path needed
-
-        const clipContainerStyle: React.CSSProperties = {
-            position: "absolute",
-            left: relMx,
-            top: relMy,
-            width: mw,
-            height: mh,
-            overflow: "hidden",
-            borderRadius: shape === "rect" ? mcr : undefined,
-            clipPath: clipPathValue,
-            WebkitClipPath: clipPathValue,
-        };
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    <div style={clipContainerStyle}>
+                    {/* Clip wrapper covers the full group area. clip-path cuts to shape coords. */}
+                    <div style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        width: "100%",
+                        height: "100%",
+                        clipPath,
+                        WebkitClipPath: clipPath,
+                    }}>
                         <ElementRenderer
-                            element={{ ...contentEl, x: contentX, y: contentY }}
+                            element={{ ...contentEl, x: cx, y: cy }}
                             elementsById={elementsById}
                             overlayComponents={overlayComponents}
                             data={data}
