@@ -237,78 +237,64 @@ export function ElementRenderer({
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // All offsets are relative to the mask group's top-left (which baseStyle places for us)
+        // All coordinates below:
+        // mx, my = mask shape position relative to mask group container
         const gx = element.x ?? 0;
         const gy = element.y ?? 0;
-        const gw = element.width ?? 0;
-        const gh = element.height ?? 0;
-
-        // Mask shape position and size, relative to group origin
         const mx = (maskEl.x ?? 0) - gx;
         const my = (maskEl.y ?? 0) - gy;
         const mw = maskEl.width ?? 0;
         const mh = maskEl.height ?? 0;
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
-
-        // Content position relative to group origin
-        const cx = (contentEl.x ?? 0) - gx;
-        const cy = (contentEl.y ?? 0) - gy;
-
-        // Build clip-path in group-relative space
-        // The clip wrapper is position:absolute, left:0, top:0, 100% x 100% of the group.
-        // So clip-path coords are relative to the group origin. Simple.
         const shape = maskEl.shape ?? "rect";
-        let clipPath: string;
+
+        // Shape-specific clip for circle/triangle (applied to the clip box itself, which is mw x mh)
+        let clipPathOnBox: string | undefined;
         if (shape === "circle") {
-            clipPath = `ellipse(${mw / 2}px ${mh / 2}px at ${mx + mw / 2}px ${my + mh / 2}px)`;
+            clipPathOnBox = "ellipse(50% 50% at 50% 50%)";
         } else if (shape === "triangle") {
-            clipPath = `polygon(${mx + mw / 2}px ${my}px, ${mx + mw}px ${my + mh}px, ${mx}px ${my + mh}px)`;
-        } else {
-            // rect: inset from edges of the group to the shape edges
-            const top = my;
-            const right = gw - mx - mw;
-            const bottom = gh - my - mh;
-            const left = mx;
-            clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round ${mcr}px)`;
+            clipPathOnBox = "polygon(50% 0%, 100% 100%, 0% 100%)";
         }
 
-        // Remove debug log now that we understand the values
+        // The clip box sits at (mx, my) relative to the mask group container,
+        // sized to the mask shape (mw x mh), overflow:hidden.
+        //
+        // Inside is a "coordinate reset" div at (-maskEl.x, -maskEl.y) relative to the clip box.
+        // Since the clip box is at overlay position (maskEl.x, maskEl.y),
+        // this inner div's left edge sits at overlay x=0 and top at overlay y=0.
+        // Therefore, all content rendered inside with layout="absolute" uses absolute
+        // overlay coordinates directly — no x/y overriding needed.
+        // Groups work correctly because element.x is unchanged and child relX = child.x - group.x.
+
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {/*
-                     * ─── HOW THIS WORKS ──────────────────────────────────────────
-                     * The clip wrapper fills the mask group container (left:0, top:0, 100%x100%).
-                     * clip-path is expressed in group-relative coords, cutting to the mask shape.
-                     *
-                     * The content element is rendered at its ORIGINAL absolute coordinates —
-                     * we do NOT override x/y. Instead, the clip wrapper is translated by
-                     * (-gx, -gy) and sized to the full overlay, so the content element's
-                     * absolute positioning lands exactly where it should within the clip space.
-                     *
-                     * This avoids the bug where group renderers subtract element.x from children
-                     * using the wrong (modified) x value.
-                     * ─────────────────────────────────────────────────────────────
-                     */}
                     <div style={{
                         position: "absolute",
-                        // Shift to align with overlay origin so children's absolute coords work
-                        left: -gx,
-                        top: -gy,
-                        // Size to the full overlay (or at least large enough)
-                        width: 1920,
-                        height: 1080,
-                        clipPath,
-                        WebkitClipPath: clipPath,
+                        left: mx,
+                        top: my,
+                        width: mw,
+                        height: mh,
+                        overflow: "hidden",
+                        borderRadius: shape === "rect" ? mcr : undefined,
+                        clipPath: clipPathOnBox,
+                        WebkitClipPath: clipPathOnBox,
                     }}>
-                        <ElementRenderer
-                            element={contentEl}
-                            elementsById={elementsById}
-                            overlayComponents={overlayComponents}
-                            data={data}
-                            layout="absolute"
-                            visited={nextVisited}
-                        />
+                        {/* Reset to overlay-absolute coordinate space */}
+                        <div style={{
+                            position: "absolute",
+                            left: -(maskEl.x ?? 0),
+                            top: -(maskEl.y ?? 0),
+                        }}>
+                            <ElementRenderer
+                                element={contentEl}
+                                elementsById={elementsById}
+                                overlayComponents={overlayComponents}
+                                data={data}
+                                layout="absolute"
+                                visited={nextVisited}
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
