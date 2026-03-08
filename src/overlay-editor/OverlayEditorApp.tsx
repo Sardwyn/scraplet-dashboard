@@ -376,8 +376,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }>({ open: false, kind: "images", scope: "overlays", title: "Pick asset", onPick: () => { } });
 
   // Template Picker State
-  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
-  const [templates, setTemplates] = useState<any[]>([]);
+  // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
@@ -405,50 +404,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       .catch((e: Error) => console.error("Failed to load components:", e));
   }, []);
 
-  // Save Template State
-  const [saveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false);
-  const [templateName, setTemplateName] = useState("");
-  const [templateToSave, setTemplateToSave] = useState<any>(null);
+  // (legacy template state removed)
 
-  const fetchTemplates = useCallback(async () => {
-    try {
-      const res = await fetch("/dashboard/api/lower-third-templates");
-      if (res.ok) {
-        const data = await res.json();
-        setTemplates(data.templates || []);
-      }
-    } catch (e) {
-      console.error("Failed to fetch templates:", e);
-    }
-  }, []);
-
-  function insertTemplate(template: any) {
-    const tJson = template.template_json || {};
-    const id = genId("lt_tpl");
-
-    const el: OverlayLowerThirdElement = {
-      type: "lower_third",
-      id,
-      x: 0,
-      y: baseResolution.height - 300,
-      width: tJson.width || baseResolution.width,
-      height: tJson.height || 250,
-      bind: tJson.bind || {
-        activeKey: "lower_third.active",
-        textKey: "lower_third",
-        titleKey: "lower_third.title",
-        subtitleKey: "lower_third.subtitle"
-      },
-      layout: tJson.layout,
-      style: tJson.style,
-      animation: tJson.animation,
-      defaultDurationMs: tJson.defaultDurationMs || 8000
-    };
-
-    setConfig(prev => ({ ...prev, elements: [...prev.elements, el] }));
-    setSelectedIds([id]);
-    setTemplatePickerOpen(false);
-  }
+  // (legacy template functions removed)
 
   function enterIsolationMode(componentId: string, directDef?: OverlayComponentDef) {
     const def = directDef || overlayComponents.find(c => c.id === componentId);
@@ -1874,38 +1832,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         />
       )}
 
-      {/* Save Template Modal */}
-      {saveTemplateModalOpen && (
-        <SaveTemplateModal
-          onClose={() => setSaveTemplateModalOpen(false)}
-          onSave={async (name) => {
-            if (!templateToSave) return;
-            try {
-              const res = await fetch("/dashboard/api/lower-third-templates", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  name,
-                  template_json: templateToSave
-                })
-              });
-
-              if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                alert(err.error || "Failed to save template");
-                return;
-              }
-
-              setSaveTemplateModalOpen(false);
-              setTemplateName("");
-              alert("Template saved successfully!");
-            } catch (err) {
-              console.error(err);
-              alert("Error saving template");
-            }
-          }}
-        />
-      )}
+      {/* (legacy SaveTemplateModal removed) */}
 
 
 
@@ -1935,7 +1862,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           onAddVideo={addVideo}
           onAddProgress={(t) => t === 'bar' ? addProgressBar() : addProgressRing()}
           onAddLowerThird={addLowerThird}
-          onInsertTemplate={() => { fetchTemplates(); setTemplatePickerOpen(true); }}
           onGroup={groupSelected}
           onUngroup={ungroupSelected}
           onCreateComponent={createComponentSelected}
@@ -2457,20 +2383,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 alert("Failed to send test event");
               }
             }}
-            onSaveTemplate={() => {
-              const el = elementsById[selectedIds[0]];
-              const templateJson = {
-                type: "lower_third",
-                width: el.width,
-                height: el.height,
-                layout: (el as any).layout,
-                style: (el as any).style,
-                animation: (el as any).animation,
-                bind: (el as any).bind
-              };
-              setTemplateToSave(templateJson);
-              setSaveTemplateModalOpen(true);
-            }}
             overlayComponents={overlayComponents}
             isComponentMaster={isComponentMaster}
             propsSchema={propsSchema}
@@ -2527,7 +2439,6 @@ interface InspectorProps {
   ltPreview: { text: string; title: string; subtitle: string };
   onLtPreviewChange: (v: { text: string; title: string; subtitle: string }) => void;
   onTestLowerThird: (action: "show" | "hide") => void;
-  onSaveTemplate?: () => void;
   overlayComponents: OverlayComponentDef[];
   isComponentMaster?: boolean;
   propsSchema?: any;
@@ -2595,7 +2506,7 @@ function ExposeButton({
 function InspectorPanel({
   element, onChange, onRename, onPickImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
-  onSaveTemplate, overlayComponents,
+  overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
   onEditMaster
 }: InspectorProps) {
@@ -2825,15 +2736,7 @@ function InspectorPanel({
                   Auto-preview active when selected.
                 </div>
 
-                {onSaveTemplate && (
-                  <button
-                    onClick={onSaveTemplate}
-                    className="w-full mb-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-1.5 rounded shadow-sm transition-colors flex items-center justify-center gap-2"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                    Save as Template...
-                  </button>
-                )}
+                {/* (Save Template button removed) */}
 
                 <div className="flex gap-2 mb-2">
                   <button
@@ -3586,7 +3489,6 @@ function CreationToolbar({
   onAddVideo,
   onAddProgress,
   onAddLowerThird,
-  onInsertTemplate,
   onGroup,
   onUngroup,
   onCreateComponent,
@@ -3606,7 +3508,6 @@ function CreationToolbar({
   onAddVideo: () => void;
   onAddProgress: (type: "bar" | "ring") => void;
   onAddLowerThird: () => void;
-  onInsertTemplate: () => void;
   onGroup: () => void;
   onUngroup: () => void;
   onCreateComponent: () => void;
@@ -3645,7 +3546,7 @@ function CreationToolbar({
       </div>
 
       <div className="grid grid-cols-6 gap-2">
-        {/* Creation Tools */}
+        {/* Creation Tools (Row 1) */}
         <ToolButton icon={TOOLBAR_ICONS.text} label="Add Text" onClick={onAddText} />
         <ToolButton icon={TOOLBAR_ICONS.box} label="Add Box" onClick={onAddBox} />
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
@@ -3657,15 +3558,8 @@ function CreationToolbar({
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
         />
-        <ToolButton
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>}
-          label="Insert Template"
-          onClick={onInsertTemplate}
-        />
 
-        <div className="col-span-1" />
-
-        {/* Secondary Tools & Shapes */}
+        {/* Secondary Tools & Shapes (Row 2) */}
         <ToolButton icon={TOOLBAR_ICONS.bar} label="Add Progress Bar" onClick={() => onAddProgress("bar")} />
         <ToolButton icon={TOOLBAR_ICONS.ring} label="Add Progress Ring" onClick={() => onAddProgress("ring")} />
         <ToolButton icon={TOOLBAR_ICONS.rect} label="Add Rectangle" onClick={() => onAddShape("rect")} />
