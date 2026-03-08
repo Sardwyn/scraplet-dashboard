@@ -238,44 +238,43 @@ export function ElementRenderer({
         const nextVisited = new Set(visited);
         nextVisited.add(element.id);
 
-        // All coordinates are in absolute overlay space.
-        // The mask shape defines the clip region. We position a clip div exactly at the
-        // mask shape's absolute position+size, then render the content offset inside it.
+        // All coords below are in OVERLAY SPACE (absolute px).
+        // The mask group element's baseStyle already positions it at (element.x, element.y).
+        // Everything inside is RELATIVE to that origin.
+
+        const shape = maskEl.shape ?? "rect";
         const mw = maskEl.width ?? 0;
         const mh = maskEl.height ?? 0;
-        const mx = maskEl.x ?? 0;
-        const my = maskEl.y ?? 0;
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
 
-        // Build clip-path for the clip container (which has size mw x mh, so shapes are at 0,0)
-        let clipPathStyle: string;
-        const shape = maskEl.shape ?? "rect";
+        // Relative to the mask group container (element.x / element.y = 0,0 inside)
+        const relMx = (maskEl.x ?? 0) - (element.x ?? 0);
+        const relMy = (maskEl.y ?? 0) - (element.y ?? 0);
 
+        // Content position relative to the clip container (which starts at relMx, relMy)
+        const contentX = (contentEl.x ?? 0) - (maskEl.x ?? 0);
+        const contentY = (contentEl.y ?? 0) - (maskEl.y ?? 0);
+
+        // Clip shape — applied to a container that is exactly mw x mh at (0,0)
+        let clipPathValue: string | undefined;
         if (shape === "circle") {
-            clipPathStyle = `ellipse(${mw / 2}px ${mh / 2}px at 50% 50%)`;
+            clipPathValue = `ellipse(${mw / 2}px ${mh / 2}px at 50% 50%)`;
         } else if (shape === "triangle") {
-            clipPathStyle = `polygon(50% 0%, 100% 100%, 0% 100%)`;
-        } else {
-            // rect (default) — use border-radius instead, more reliable
-            clipPathStyle = "";
+            clipPathValue = `polygon(50% 0%, 100% 100%, 0% 100%)`;
         }
+        // rect uses overflow:hidden + borderRadius — no clip-path needed
 
-        // The clip container sits at mask shape position, sized to mask shape
         const clipContainerStyle: React.CSSProperties = {
             position: "absolute",
-            left: mx,
-            top: my,
+            left: relMx,
+            top: relMy,
             width: mw,
             height: mh,
-            overflow: "hidden", // primary clipping for rect
+            overflow: "hidden",
             borderRadius: shape === "rect" ? mcr : undefined,
-            clipPath: clipPathStyle || undefined,
-            WebkitClipPath: clipPathStyle || undefined,
+            clipPath: clipPathValue,
+            WebkitClipPath: clipPathValue,
         };
-
-        // Content is rendered at its own absolute coords, offset relative to the clip container
-        const contentX = (contentEl.x ?? 0) - mx;
-        const contentY = (contentEl.y ?? 0) - my;
 
         return (
             <div style={baseStyle}>
@@ -290,20 +289,6 @@ export function ElementRenderer({
                             visited={nextVisited}
                         />
                     </div>
-
-                    {/* Editor-only: ghost outline of the mask shape */}
-                    {layout === "fill" && (
-                        <div style={{
-                            position: "absolute",
-                            left: mx,
-                            top: my,
-                            width: mw,
-                            height: mh,
-                            border: "1px dashed rgba(99,102,241,0.5)",
-                            borderRadius: shape === "rect" ? mcr : undefined,
-                            pointerEvents: "none",
-                        }} />
-                    )}
                 </div>
             </div>
         );
