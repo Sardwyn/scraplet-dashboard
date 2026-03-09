@@ -899,10 +899,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setConfig(prev => {
       const els = [...prev.elements];
       const shapeIdx = els.findIndex(e => e.id === shapeId);
-      if (shapeIdx <= 0) return prev;
+      if (shapeIdx < 0) return prev;
 
-      const contentEl = els[shapeIdx - 1];
       const shapeEl = els[shapeIdx];
+
+      // Prefer the OTHER currently selected element as content.
+      // This lets the user explicitly select mask shape + content before clicking mask.
+      const otherSelectedId = selectedIds.find(id => id !== shapeId);
+      let contentEl = otherSelectedId
+        ? els.find(e => e.id === otherSelectedId)
+        : undefined;
+
+      // Fall back to the element below in z-order if nothing else selected.
+      if (!contentEl) {
+        if (shapeIdx <= 0) return prev;
+        contentEl = els[shapeIdx - 1];
+      }
+
+      if (!contentEl) return prev;
 
       const x = Math.min(shapeEl.x, contentEl.x);
       const y = Math.min(shapeEl.y, contentEl.y);
@@ -918,11 +932,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         childIds: [shapeId, contentEl.id]
       };
 
-      // Keep ALL elements, just add the mask group.
       const newElements = [...els, maskGroup];
       return { ...prev, elements: newElements };
     });
-    // Select the mask group
     setSelectedIds([maskId]);
   }
 
