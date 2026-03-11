@@ -2880,14 +2880,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onClick={() => setLeftTab("layers")}
             className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "layers" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
             <span>Layers</span>
           </button>
           <button
             onClick={() => setLeftTab("components")}
             className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span>Components</span>
           </button>
         </div>
@@ -2969,11 +2969,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             {/* Grid / Snap Controls */}
             <div className="flex items-center gap-2">
               <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
-                <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
+                <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" />
                 <span>Snap</span>
               </label>
               <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
-                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
+                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" />
                 <span>Grid</span>
               </label>
               <select
@@ -3051,17 +3051,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           }}
         >
           {editingMasterId && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] flex items-center gap-3 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 text-indigo-100">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                <span className="text-[10px] font-black uppercase tracking-[0.15em]">Isolation Mode</span>
+            <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-500/40 bg-[#161618] px-4 py-2 text-white shadow-xl">
+              <div className="flex items-center gap-2 text-indigo-200">
+                <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Isolation Mode</span>
               </div>
               <div className="w-px h-3 bg-indigo-400/50" />
-              <div className="text-xs font-bold truncate max-w-[200px]">{name}</div>
+              <div className="max-w-[200px] truncate text-[13px] leading-[1.4] font-semibold">{name}</div>
               <div className="w-px h-3 bg-indigo-400/50" />
               <button
                 onClick={exitIsolationMode}
-                className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-[10px] font-black transition-colors uppercase tracking-widest"
+                className={uiClasses.buttonGhost}
               >
                 Exit
               </button>
@@ -3087,7 +3087,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }}
           >
             <div
-              className="bg-slate-800 relative"
+              className="relative bg-[#0f1012]"
               style={{
                 width: baseResolution.width,
                 height: baseResolution.height,
@@ -3168,7 +3168,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                           style={{ left: g.end, top: g.y - 3 }}
                         />
                         <div
-                          className="absolute -translate-x-1/2 -translate-y-full px-1.5 py-0.5 rounded bg-fuchsia-400 text-[10px] font-mono text-white"
+                          className="absolute -translate-x-1/2 -translate-y-full rounded-md border border-fuchsia-200/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-fuchsia-200"
                           style={{ left: (g.start + g.end) / 2, top: g.y - 6 }}
                         >
                           {g.label}
@@ -3189,7 +3189,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                           style={{ left: g.x - 3, top: g.end }}
                         />
                         <div
-                          className="absolute -translate-y-1/2 px-1.5 py-0.5 rounded bg-fuchsia-400 text-[10px] font-mono text-white"
+                          className="absolute -translate-y-1/2 rounded-md border border-fuchsia-200/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-fuchsia-200"
                           style={{ left: g.x + 8, top: (g.start + g.end) / 2 }}
                         >
                           {g.label}
@@ -3217,7 +3217,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Resize Dimensions Overlay */}
               {resizeStatus && (
                 <div
-                  className="absolute z-50 pointer-events-none bg-sky-500 text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-sm"
+                  className="absolute z-50 pointer-events-none rounded-md border border-sky-300/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-sky-200 shadow-sm"
                   style={{
                     left: (resizeStatus.x ?? 0) + (resizeStatus.width ?? 0) / 2,
                     top: (resizeStatus.y ?? 0) + (resizeStatus.height ?? 0) + 10,
@@ -3244,7 +3244,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   className="cursor-move border border-sky-400 border-dashed"
                 >
                   <div className="w-full h-full bg-transparent">
-                    <div className="absolute -top-6 left-0 text-[10px] px-2 py-1 rounded-md bg-black/60 text-white border border-white/10">
+                    <div className="absolute -top-6 left-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] text-slate-200">
                       Group ({selectedIds.length})
                     </div>
                   </div>
@@ -3254,11 +3254,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Empty State Hint */}
               {config.elements.length === 0 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
-                  <div className="w-16 h-16 border-2 border-dashed border-slate-500 rounded-xl mb-4 flex items-center justify-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-[rgba(255,255,255,0.12)]">
                     <span className="text-3xl text-slate-500">+</span>
                   </div>
-                  <p className="text-slate-400 font-medium">Canvas is empty</p>
-                  <p className="text-slate-600 text-xs mt-1">Select a tool to add content</p>
+                  <p className="text-[13px] leading-[1.4] font-medium text-slate-400">Canvas is empty</p>
+                  <p className="mt-1 text-[12px] leading-[1.4] text-slate-600">Select a tool to add content</p>
                 </div>
               )}
 
@@ -3395,9 +3395,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     />
 
                     {isPrimary && !resizeStatus && (
-                      <div className="absolute -top-6 left-0 text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white font-medium shadow-sm">
+                      <div className="absolute -top-6 left-0 rounded-md border border-sky-300/20 bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] font-medium text-sky-200 shadow-sm">
                         {el.name || defaultElementLabel(el)}
-                        {isLocked ? " 🔒" : ""}
+                        {isLocked ? " (Locked)" : ""}
                       </div>
                     )}
                     {isPrimary && !isLocked && !isPanning && !marquee.active && (
@@ -3507,7 +3507,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
+          <div className="flex h-40 flex-col items-center justify-center text-[12px] leading-[1.4] text-slate-500">
             <p>Select an element to edit</p>
           </div>
         )}
@@ -3661,9 +3661,9 @@ function ExposeButton({
     <button
       onClick={toggle}
       title={isBound ? `Bound to: ${boundKey}` : "Expose as Component Prop"}
-      className={`p-1 rounded ml-1 transition-colors flex-none ${isBound ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-800 hover:text-slate-400"}`}
+      className={`ml-1 flex-none ${uiClasses.iconButton} ${isBound ? "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white" : ""}`}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      <LinkIcon />
     </button>
   );
 }
@@ -3711,6 +3711,32 @@ function MaskIcon() {
     <svg {...TOOL_ICON_PROPS}>
       <path d="M12 3a9 9 0 1 0 0 18c2.3 0 4.3-.9 5.9-2.4A9 9 0 0 1 12 3Z" />
       <path d="M12 3a9 9 0 0 1 0 18" />
+    </svg>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M3 7h6l2 2h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      <path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function BoltIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7" />
+      <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7" />
     </svg>
   );
 }
@@ -3796,7 +3822,7 @@ function PatternFillControls({
           className={uiClasses.button}
           title="Pick pattern image"
         >
-          📂
+          <FolderIcon />
         </button>
       </div>
 
@@ -3966,17 +3992,17 @@ function InspectorPanel({
             </div>
           </div>
 
-          <div className="h-px bg-slate-800/50 my-2" />
+          <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
             <div className="space-y-4">
-              <label className="text-[10px] uppercase font-bold text-slate-500">Component Properties</label>
+              <label className={uiClasses.label}>Component Properties</label>
               {(() => {
                 const def = overlayComponents.find(c => c.id === (element as any).componentId);
-                if (!def) return <div className="text-xs text-red-500">Master Definition Missing</div>;
+                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Master Definition Missing</div>;
                 if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
-                  return <div className="text-[10px] text-slate-500">No properties exposed by master.</div>;
+                  return <div className="text-[11px] leading-[1.4] text-slate-500">No properties exposed by master.</div>;
                 }
                 const schemaKeys = Object.keys(def.propsSchema);
                 return schemaKeys.map(key => {
@@ -3985,12 +4011,12 @@ function InspectorPanel({
                   const val = overrides[key] !== undefined ? overrides[key] : fieldDef.default;
                   return (
                     <div key={key} className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-16 truncate" title={fieldDef.label || key}>{fieldDef.label || key}</label>
+                      <label className="w-16 truncate text-[11px] leading-[1.4] text-slate-500" title={fieldDef.label || key}>{fieldDef.label || key}</label>
                       {fieldDef.type === "color" ? (
                         <ColorSwatch value={val} onChange={(v) => onChange({ propOverrides: { ...overrides, [key]: v } } as any)} />
                       ) : (
                         <input
-                          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                          className={`flex-1 ${fieldClass}`}
                           value={val}
                           onChange={(e) => onChange({ propOverrides: { ...overrides, [key]: e.target.value } } as any)}
                         />
@@ -4002,9 +4028,9 @@ function InspectorPanel({
               <div className="pt-2">
                 <button
                   onClick={() => onEditMaster?.((element as any).componentId)}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-600 hover:border-indigo-500"
+                  className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                   Edit Master Component
                 </button>
               </div>
@@ -4015,11 +4041,11 @@ function InspectorPanel({
           {element.type === "lower_third" && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Layout</label>
+                <label className={uiClasses.label}>Layout</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Mode</label>
+                  <label className={`${fieldLabelClass} w-12`}>Mode</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).layout?.mode ?? "stacked"}
                     onChange={(e) => onChange({ layout: { ...(element as any).layout, mode: e.target.value } } as any)}
                   >
@@ -4030,10 +4056,10 @@ function InspectorPanel({
                 </div>
                 {(element as any).layout?.mode === "split" && (
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-slate-500 w-12">Ratio</label>
+                    <label className={`${fieldLabelClass} w-12`}>Ratio</label>
                     <input
                       type="range" min="0.2" max="0.8" step="0.05"
-                      className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                      className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                       value={(element as any).layout?.splitRatio ?? 0.6}
                       onChange={(e) => onChange({ layout: { ...(element as any).layout, splitRatio: parseFloat(e.target.value) } } as any)}
                     />
@@ -4041,14 +4067,14 @@ function InspectorPanel({
                 )}
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Style</label>
+                <label className={uiClasses.label}>Style</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Variant</label>
+                  <label className={`${fieldLabelClass} w-12`}>Variant</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).style?.variant ?? "solid"}
                     onChange={(e) => onChange({ style: { ...(element as any).style, variant: e.target.value } } as any)}
                   >
@@ -4059,36 +4085,36 @@ function InspectorPanel({
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Bg</label>
+                  <label className={`${fieldLabelClass} w-12`}>Bg</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.bgColor} onChange={(v) => onChange({ style: { ...(element as any).style, bgColor: v } } as any)} />
                     <ColorSwatch value={(element as any).style?.accentColor} onChange={(v) => onChange({ style: { ...(element as any).style, accentColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Title</label>
+                  <label className={`${fieldLabelClass} w-12`}>Title</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.titleColor} onChange={(v) => onChange({ style: { ...(element as any).style, titleColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Sub</label>
+                  <label className={`${fieldLabelClass} w-12`}>Sub</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.subtitleColor} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Pad/Rad</label>
+                  <label className={`${fieldLabelClass} w-12`}>Pad/Rad</label>
                   <NumberField label="" value={(element as any).style?.paddingPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, paddingPx: v } } as any)} noLabel className="flex-1" />
                   <NumberField label="" value={(element as any).style?.cornerRadiusPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, cornerRadiusPx: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Preview (Editor Only)</label>
-                <div className="text-[10px] text-slate-500 mb-2">
+                <label className={uiClasses.label}>Preview (Editor Only)</label>
+                <div className="mb-2 text-[11px] leading-[1.4] text-slate-500">
                   Auto-preview active when selected.
                 </div>
 
@@ -4097,13 +4123,13 @@ function InspectorPanel({
                 <div className="flex gap-2 mb-2">
                   <button
                     onClick={() => onTestLowerThird("show")}
-                    className="flex-1 bg-green-900/40 hover:bg-green-800/60 text-green-200 text-[10px] py-1 rounded border border-green-800 transition-colors"
+                    className="h-7 flex-1 rounded-md border border-emerald-800 bg-emerald-900/30 text-[12px] leading-[1.4] text-emerald-200 transition-colors hover:bg-emerald-800/40"
                   >
                     Test Show (5s)
                   </button>
                   <button
                     onClick={() => onTestLowerThird("hide")}
-                    className="flex-1 bg-red-900/40 hover:bg-red-800/60 text-red-200 text-[10px] py-1 rounded border border-red-800 transition-colors"
+                    className="h-7 flex-1 rounded-md border border-red-800 bg-red-900/30 text-[12px] leading-[1.4] text-red-200 transition-colors hover:bg-red-800/40"
                   >
                     Test Hide
                   </button>
@@ -4111,9 +4137,9 @@ function InspectorPanel({
 
                 {(element as any).layout?.mode === "single" ? (
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-slate-500 w-12">Text</label>
+                    <label className={`${fieldLabelClass} w-12`}>Text</label>
                     <input
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                      className={`flex-1 ${fieldClass}`}
                       value={ltPreview.text}
                       onChange={(e) => onLtPreviewChange({ ...ltPreview, text: e.target.value })}
                     />
@@ -4121,17 +4147,17 @@ function InspectorPanel({
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-12">Title</label>
+                      <label className={`${fieldLabelClass} w-12`}>Title</label>
                       <input
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                        className={`flex-1 ${fieldClass}`}
                         value={ltPreview.title}
                         onChange={(e) => onLtPreviewChange({ ...ltPreview, title: e.target.value })}
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-12">Sub</label>
+                      <label className={`${fieldLabelClass} w-12`}>Sub</label>
                       <input
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                        className={`flex-1 ${fieldClass}`}
                         value={ltPreview.subtitle}
                         onChange={(e) => onLtPreviewChange({ ...ltPreview, subtitle: e.target.value })}
                       />
@@ -4140,14 +4166,14 @@ function InspectorPanel({
                 )}
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Animation</label>
+                <label className={uiClasses.label}>Animation</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">In/Out</label>
+                  <label className={`${fieldLabelClass} w-12`}>In/Out</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).animation?.in ?? "slideUp"}
                     onChange={(e) => onChange({ animation: { ...(element as any).animation, in: e.target.value } } as any)}
                   >
@@ -4157,7 +4183,7 @@ function InspectorPanel({
                     <option value="scale">Scale</option>
                   </select>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).animation?.out ?? "slideDown"}
                     onChange={(e) => onChange({ animation: { ...(element as any).animation, out: e.target.value } } as any)}
                   >
@@ -4168,7 +4194,7 @@ function InspectorPanel({
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Dur (ms)</label>
+                  <label className={`${fieldLabelClass} w-12`}>Dur (ms)</label>
                   <NumberField label="" value={(element as any).animation?.durationMs ?? 400} onChange={(v) => onChange({ animation: { ...(element as any).animation, durationMs: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
@@ -4179,17 +4205,17 @@ function InspectorPanel({
           {element.type === "box" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fill</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
                 <div className="flex-1 flex gap-1 items-center">
                   <ColorSwatch value={(element as any).backgroundColor} onChange={(v) => onChange({ backgroundColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
                   {isComponentMaster && <ExposeButton element={element} propPath="backgroundColor" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Type</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  className={`flex-1 ${fieldClass}`}
                   value={(element as any).pattern ? "pattern" : "solid"}
                   onChange={(e) =>
                     onChange({
@@ -4209,7 +4235,7 @@ function InspectorPanel({
                 />
               )}
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Radius</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -4219,9 +4245,9 @@ function InspectorPanel({
           {element.type === "shape" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Shape</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  className={`flex-1 ${fieldClass}`}
                   value={(element as any).shape ?? "rect"}
                   onChange={(e) => onChange({ shape: e.target.value } as any)}
                 >
@@ -4233,23 +4259,23 @@ function InspectorPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fill</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).fillColor} onChange={(v) => onChange({ fillColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-14">
-                <label className="text-[10px] text-slate-500 w-8 flex-none">Opac.</label>
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Opac.</label>
                 <div className="w-16 relative">
                   <NumberField label="" value={Math.round(((element as any).fillOpacity ?? 1) * 100)} onChange={(v) => onChange({ fillOpacity: v / 100 } as any)} noLabel />
-                  <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+                  <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Type</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  className={`flex-1 ${fieldClass}`}
                   value={(element as any).pattern ? "pattern" : "solid"}
                   onChange={(e) =>
                     onChange({
@@ -4269,24 +4295,24 @@ function InspectorPanel({
                 />
               )}
               {(element as any).shape === "line" && (element as any).pattern && (
-                <div className="ml-14 text-[10px] text-slate-500">
+                <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
                   Pattern fill is ignored for line shapes in this pass.
                 </div>
               )}
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Stroke</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-14">
                 <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v, strokeWidth: v } as any)} noLabel className="w-16" />
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs h-[26px]"
+                  className={`flex-1 ${fieldClass}`}
                   value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
                   onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
                 >
@@ -4296,7 +4322,7 @@ function InspectorPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Radius</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -4307,7 +4333,7 @@ function InspectorPanel({
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-slate-400 text-xs font-semibold">Content</label>
+                  <label className="text-[12px] leading-[1.4] font-semibold text-slate-300">Content</label>
                   <div className="flex items-center gap-2">
                     <BindingPicker
                       propName="text"
@@ -4325,20 +4351,20 @@ function InspectorPanel({
                 </div>
                 {!element.bindings?.["text"] ? (
                   <textarea
-                    className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs min-h-[60px] font-mono text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    className={`min-h-[60px] w-full font-mono ${fieldClass}`}
                     value={(element as any).text ?? ""}
                     onChange={(e) => onChange({ text: e.target.value } as any)}
                     placeholder="Enter static text..."
                   />
                 ) : (
-                  <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic">
+                  <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300">
                     Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["text"]?.sourceId)?.label}</span>.
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Font</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Font</label>
                 <div className="flex-1">
                   <FontPicker
                     value={(element as any).fontFamily}
@@ -4350,12 +4376,12 @@ function InspectorPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-8 flex-none">Size</label>
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Size</label>
                   <NumberField label="" value={(element as any).fontSize ?? 24} onChange={(v) => onChange({ fontSize: v } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-8 flex-none">Wgt</label>
-                  <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-xs" value={(element as any).fontWeight ?? "normal"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Wgt</label>
+                  <select className={`flex-1 ${fieldClass}`} value={(element as any).fontWeight ?? "normal"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
                     <option value="normal">Reg</option>
                     <option value="bold">Bold</option>
                     <option value="100">Thin</option>
@@ -4364,12 +4390,14 @@ function InspectorPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Align</label>
-                <div className="flex-1 flex border border-slate-700 rounded overflow-hidden">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Align</label>
+                <div className="flex flex-1 overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]">
                   {["left", "center", "right"].map(a => (
                     <button
                       key={a}
-                      className={`flex-1 py-1 text-[10px] uppercase ${(element as any).textAlign === a ? "bg-slate-700 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800"}`}
+                      className={`h-7 flex-1 text-[11px] leading-[1.4] uppercase ${(
+                        element as any
+                      ).textAlign === a ? "bg-[#1d1d20] text-white" : "bg-[#161618] text-slate-400 hover:bg-[#1d1d20]"}`}
                       onClick={() => onChange({ textAlign: a } as any)}
                     >
                       {a === 'left' ? '|<' : a === 'right' ? '>|' : '=|='}
@@ -4378,20 +4406,20 @@ function InspectorPanel({
                 </div>
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Color</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).color} onChange={(v) => onChange({ color: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).color ?? ""} onChange={(e) => onChange({ color: e.target.value } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).color ?? ""} onChange={(e) => onChange({ color: e.target.value } as any)} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Stroke</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                   <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-12" />
                 </div>
               </div>
@@ -4403,7 +4431,7 @@ function InspectorPanel({
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-slate-400 text-xs font-semibold">Source</label>
+                  <label className="text-[12px] leading-[1.4] font-semibold text-slate-300">Source</label>
                   <BindingPicker
                     propName="src"
                     type="image"
@@ -4418,34 +4446,34 @@ function InspectorPanel({
                 </div>
                 {!element.bindings?.["src"] ? (
                   <div className="flex gap-2">
-                    <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none" value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
-                    <button onClick={element.type === "image" ? onPickImage : onPickVideo} className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700 transition-colors">📂</button>
+                    <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
+                    <button onClick={element.type === "image" ? onPickImage : onPickVideo} className={uiClasses.button}><FolderIcon /></button>
                   </div>
                 ) : (
-                  <div className="p-2.5 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300">
                     <span>Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["src"]?.sourceId)?.label}</span></span>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
-                <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).fit ?? "cover"} onChange={(e) => onChange({ fit: e.target.value } as any)}>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fit</label>
+                <select className={`flex-1 ${fieldClass}`} value={(element as any).fit ?? "cover"} onChange={(e) => onChange({ fit: e.target.value } as any)}>
                   <option value="cover">Cover</option>
                   <option value="contain">Contain</option>
                   <option value="fill">Fill</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
 
               {element.type === "video" && (
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).autoplay !== false} onChange={(e) => onChange({ autoplay: e.target.checked } as any)} /> Auto</label>
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).loop !== false} onChange={(e) => onChange({ loop: e.target.checked } as any)} /> Loop</label>
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).muted !== false} onChange={(e) => onChange({ muted: e.target.checked } as any)} /> Mute</label>
+                <div className="grid grid-cols-2 gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).autoplay !== false} onChange={(e) => onChange({ autoplay: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Auto</label>
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).loop !== false} onChange={(e) => onChange({ loop: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Loop</label>
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).muted !== false} onChange={(e) => onChange({ muted: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Mute</label>
                 </div>
               )}
             </div>
@@ -4455,30 +4483,30 @@ function InspectorPanel({
           {(element.type === "progressBar" || element.type === "progressRing") && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Fill</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).fillColor} onChange={e => onChange({ fillColor: e.target.value } as any)} />
+                <label className={`${fieldLabelClass} w-12`}>Fill</label>
+                <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor} onChange={e => onChange({ fillColor: e.target.value } as any)} />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Track</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).backgroundColor} onChange={e => onChange({ backgroundColor: e.target.value } as any)} />
+                <label className={`${fieldLabelClass} w-12`}>Track</label>
+                <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor} onChange={e => onChange({ backgroundColor: e.target.value } as any)} />
               </div>
               {element.type === "progressRing" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Stroke</label>
+                  <label className={`${fieldLabelClass} w-12`}>Stroke</label>
                   <NumberField label="" value={(element as any).strokeWidthPx ?? 4} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="flex-1" />
                 </div>
               )}
               {element.type === "progressBar" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                  <label className={`${fieldLabelClass} w-12`}>Radius</label>
                   <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
                 </div>
               )}
 
               {element.type === "progressBar" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Dir</label>
-                  <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).direction ?? "ltr"} onChange={(e) => onChange({ direction: e.target.value } as any)}>
+                  <label className={`${fieldLabelClass} w-12`}>Dir</label>
+                  <select className={`flex-1 ${fieldClass}`} value={(element as any).direction ?? "ltr"} onChange={(e) => onChange({ direction: e.target.value } as any)}>
                     <option value="ltr">L → R</option>
                     <option value="rtl">R → L</option>
                     <option value="ttb">T → B</option>
@@ -4493,18 +4521,18 @@ function InspectorPanel({
           {element.type === "group" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Bg</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="Transparent" />
+                <label className={`${fieldLabelClass} w-12`}>Bg</label>
+                <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="Transparent" />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Border</label>
+                <label className={`${fieldLabelClass} w-12`}>Border</label>
                 <div className="flex-1 flex gap-2">
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).borderColor ?? ""} onChange={(e) => onChange({ borderColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).borderColor ?? ""} onChange={(e) => onChange({ borderColor: e.target.value } as any)} placeholder="None" />
                   <NumberField label="" value={(element as any).borderWidth ?? 0} onChange={(v) => onChange({ borderWidth: v } as any)} noLabel className="w-12" />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -4513,14 +4541,16 @@ function InspectorPanel({
           {/* MASK */}
           {element.type === "mask" && (
             <div className="space-y-3">
-              <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded">
+              <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">🎭</span>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-indigo-400/20 bg-[#161618] text-indigo-300">
+                    <MaskIcon />
+                  </div>
                   <div>
-                    <div className="text-xs font-bold text-indigo-300">
+                    <div className="text-[12px] leading-[1.4] font-semibold text-indigo-300">
                       {(element as any).invert ? "Inverse Mask" : "Mask Group"}
                     </div>
-                    <div className="text-[10px] text-slate-500">
+                    <div className="text-[11px] leading-[1.4] text-slate-500">
                       {(element as any).invert
                         ? "Hides content inside the mask shape and shows content outside it."
                         : "Shows content inside the mask shape and hides content outside it."}
@@ -4529,11 +4559,11 @@ function InspectorPanel({
                 </div>
 
                 <div className="space-y-1 mt-3">
-                  <div className="flex justify-between text-[10px]">
+                  <div className="flex justify-between text-[11px] leading-[1.4]">
                     <span className="text-slate-500">Mask Shape:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[0]}</span>
                   </div>
-                  <div className="flex justify-between text-[10px]">
+                  <div className="flex justify-between text-[11px] leading-[1.4]">
                     <span className="text-slate-500">Content Layer:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[1]}</span>
                   </div>
@@ -4542,8 +4572,8 @@ function InspectorPanel({
                 <div className="mt-4 pt-3 border-t border-indigo-500/10">
                   <label className="flex items-center justify-between gap-3 cursor-pointer">
                     <div>
-                      <div className="text-xs font-semibold text-slate-200">Invert Mask</div>
-                      <div className="text-[10px] text-slate-500">
+                      <div className="text-[12px] leading-[1.4] font-semibold text-slate-200">Invert Mask</div>
+                      <div className="text-[11px] leading-[1.4] text-slate-500">
                         Cut a hole instead of clipping to the shape
                       </div>
                     </div>
@@ -4552,7 +4582,7 @@ function InspectorPanel({
                       type="checkbox"
                       checked={!!(element as any).invert}
                       onChange={(e) => onChange({ invert: e.target.checked } as any)}
-                      className="rounded border-slate-700 bg-slate-800 accent-indigo-500"
+                      className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
                     />
                   </label>
                 </div>
@@ -4560,7 +4590,7 @@ function InspectorPanel({
                 {onReleaseMask && (
                   <button
                     onClick={() => onReleaseMask(element.id)}
-                    className="w-full mt-4 py-1.5 bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-200 text-xs font-semibold rounded border border-slate-700 hover:border-red-500/50 transition-all"
+                    className="mt-4 h-8 w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-300 transition-all hover:border-red-500/50 hover:bg-red-900/30 hover:text-red-200"
                   >
                     Release Mask
                   </button>
@@ -4575,7 +4605,7 @@ function InspectorPanel({
       {element.type !== "lower_third" && (
         <AccordionSection title="Animation" defaultOpen={true}>
           <div className="space-y-3">
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[11px] leading-[1.4] text-slate-500">
               Delay is in milliseconds. Start always resets the element to its hidden baseline first, then runs the configured enter animation without saving visibility changes.
             </div>
 
@@ -4583,34 +4613,34 @@ function InspectorPanel({
               <button
                 type="button"
                 onClick={() => onPreviewVisibilityAction?.("enter")}
-                className="flex-1 bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-200 text-[10px] py-1 rounded border border-emerald-800 transition-colors"
+                className="h-7 flex-1 rounded-md border border-emerald-800 bg-emerald-900/30 text-[12px] leading-[1.4] text-emerald-200 transition-colors hover:bg-emerald-800/40"
               >
                 Start
               </button>
               <button
                 type="button"
                 onClick={() => onPreviewVisibilityAction?.("exit")}
-                className="flex-1 bg-amber-900/30 hover:bg-amber-800/50 text-amber-200 text-[10px] py-1 rounded border border-amber-800 transition-colors"
+                className="h-7 flex-1 rounded-md border border-amber-800 bg-amber-900/30 text-[12px] leading-[1.4] text-amber-200 transition-colors hover:bg-amber-800/40"
               >
                 Test Exit
               </button>
               <button
                 type="button"
                 onClick={() => onPreviewVisibilityAction?.("reset")}
-                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] py-1 rounded border border-slate-700 transition-colors"
+                className="h-7 flex-1 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] text-slate-200 transition-colors hover:bg-[#1d1d20]"
               >
                 Reset
               </button>
             </div>
 
-            <div className="text-[10px] text-slate-500">
+            <div className="text-[11px] leading-[1.4] text-slate-500">
               Preview state: <span className="text-slate-300">{previewVisible ? "Visible" : "Hidden"}</span>
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-12 flex-none">Enter</label>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Enter</label>
               <select
-                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                className={`flex-1 ${fieldClass}`}
                 value={(element as any).animation?.enter ?? "none"}
                 onChange={(e) =>
                   onChange({
@@ -4630,9 +4660,9 @@ function InspectorPanel({
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-12 flex-none">Exit</label>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Exit</label>
               <select
-                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                className={`flex-1 ${fieldClass}`}
                 value={(element as any).animation?.exit ?? "none"}
                 onChange={(e) =>
                   onChange({
@@ -4652,7 +4682,7 @@ function InspectorPanel({
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-12 flex-none">Dur</label>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Dur</label>
               <NumberField
                 label=""
                 value={(element as any).animation?.durationMs ?? 400}
@@ -4670,7 +4700,7 @@ function InspectorPanel({
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-12 flex-none">Delay</label>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Delay</label>
               <NumberField
                 label=""
                 value={(element as any).animation?.delayMs ?? 0}
@@ -4688,9 +4718,9 @@ function InspectorPanel({
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-12 flex-none">Ease</label>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Ease</label>
               <select
-                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                className={`flex-1 ${fieldClass}`}
                 value={(element as any).animation?.easing ?? "ease-out"}
                 onChange={(e) =>
                   onChange({
@@ -4724,43 +4754,43 @@ function InspectorPanel({
                   const s = (element as any).shadow || { color: "#000000", blur: 10, x: 0, y: 4 };
                   onChange({ shadow: { ...s, enabled: e.target.checked } } as any);
                 }}
-                className="rounded border-slate-700 bg-slate-800 accent-indigo-500"
+                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
               />
-              <span className="text-xs font-medium text-slate-300">Shadow / Glow</span>
+              <span className="text-[12px] leading-[1.4] font-medium text-slate-300">Shadow / Glow</span>
             </label>
             {(element as any).shadow?.enabled && (
-              <div className="space-y-2 pl-2 border-l-2 border-slate-800 ml-1">
+              <div className="ml-1 space-y-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Color</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).shadow?.color} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, color: v } } as any)} />
-                    <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
+                    <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Blur</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Blur</label>
                   <NumberField label="" value={(element as any).shadow?.blur} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, blur: v } } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Offset X</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset X</label>
                   <NumberField label="" value={(element as any).shadow?.x} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, x: v } } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Offset Y</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset Y</label>
                   <NumberField label="" value={(element as any).shadow?.y} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, y: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="h-px bg-slate-800/50" />
+          <div className="h-px bg-[rgba(255,255,255,0.06)]" />
 
           {/* Clip */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <label className="text-xs font-semibold text-slate-300 flex-1">Masking</label>
+              <label className="flex-1 text-[12px] leading-[1.4] font-semibold text-slate-300">Masking</label>
               <select
-                className="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-[10px] w-24"
+                className={`w-24 ${fieldClass}`}
                 value={(element as any).clip?.type ?? "none"}
                 onChange={(e) => onChange({ clip: { ...(element as any).clip, type: e.target.value } } as any)}
               >
@@ -4770,8 +4800,8 @@ function InspectorPanel({
               </select>
             </div>
             {(element as any).clip?.type === "roundRect" && (
-              <div className="flex items-center gap-2 pl-2 border-l-2 border-slate-800 ml-1 mt-2">
-                <label className="text-[10px] text-slate-500 w-10 flex-none">Radius</label>
+              <div className="mt-2 ml-1 flex items-center gap-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
+                <label className="w-10 flex-none text-[11px] leading-[1.4] text-slate-500">Radius</label>
                 <NumberField label="" value={(element as any).clip?.radius ?? 0} onChange={(v) => onChange({ clip: { ...(element as any).clip, radius: v } } as any)} noLabel className="flex-1" />
               </div>
             )}
@@ -4786,18 +4816,18 @@ function InspectorPanel({
             <div className="space-y-3">
               {(element.type === "progressBar" || element.type === "progressRing") && (
                 <div>
-                  <label className="block mb-1 text-slate-400 text-xs">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
+                  <label className="mb-1 block text-[12px] leading-[1.4] text-slate-400">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
                   <input
                     type="range" min="0" max="1" step="0.01"
-                    className="w-full h-1 bg-slate-800 rounded-full"
+                    className="h-1 w-full rounded-full bg-[#161618]"
                     value={(element as any).value ?? 0}
                     onChange={(e) => onChange({ value: Number(e.target.value) } as any)}
                   />
                 </div>
               )}
               {element.type === "text" && (
-                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                  <div className="mb-1 text-slate-300 font-semibold">Variable Injection</div>
+                <div className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-2 text-[12px] leading-[1.4] text-slate-400">
+                  <div className="mb-1 text-[12px] leading-[1.4] font-semibold text-slate-300">Variable Injection</div>
                   Use <code>{`{{variable}}`}</code> in the text content to bind data from the Test Data panel.
                 </div>
               )}
@@ -4920,13 +4950,13 @@ function AssetPickerModal({
       <div className="absolute inset-0 bg-black/70" onMouseDown={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-3xl rounded-xl border border-slate-800 bg-slate-950 shadow-xl"
+          className="w-full max-w-3xl rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] shadow-xl"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-            <div className="text-sm font-semibold text-slate-100">{title}</div>
+          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+            <div className="text-[14px] leading-[1.4] font-semibold text-slate-100">{title}</div>
             <button
-              className="rounded-md bg-slate-900 border border-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+              className={uiClasses.buttonGhost}
               onClick={onClose}
             >
               Close
@@ -4935,7 +4965,7 @@ function AssetPickerModal({
 
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-xs text-slate-400">
+              <div className="text-[12px] leading-[1.4] text-slate-400">
                 Scope: <span className="text-slate-200">{scope}</span> • Kind:{" "}
                 <span className="text-slate-200">{kind}</span>
               </div>
@@ -4956,29 +4986,30 @@ function AssetPickerModal({
                 <button
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-60"
+                  className="flex h-8 items-center justify-center gap-2 rounded-md border border-sky-500 bg-sky-600 px-3 text-[12px] leading-[1.4] font-medium text-white hover:bg-sky-500 disabled:opacity-60"
                 >
+                  <FolderIcon />
                   {busy ? "Uploading..." : "Upload file"}
                 </button>
               </div>
             </div>
 
-            {err && <div className="text-xs text-red-400">{err}</div>}
+            {err && <div className="text-[12px] leading-[1.4] text-red-400">{err}</div>}
 
-            <div className="border border-slate-800 rounded-lg overflow-hidden">
-              <div className="px-3 py-2 bg-slate-900/60 border-b border-slate-800">
-                <div className="text-[11px] uppercase tracking-wide text-slate-400">Recent</div>
+            <div className="overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]">
+              <div className="border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2">
+                <div className="text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400">Recent</div>
               </div>
 
               {recent.length === 0 ? (
-                <div className="p-4 text-xs text-slate-500">No recent uploads yet. Upload something.</div>
+                <div className="p-4 text-[12px] leading-[1.4] text-slate-500">No recent uploads yet. Upload something.</div>
               ) : (
                 <div className="p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
                   {recent.map((a) => (
                     <button
                       key={a.url}
                       onClick={() => onPick(a.url)}
-                      className="group rounded-lg border border-slate-800 bg-slate-900/40 hover:bg-slate-900/70 overflow-hidden text-left"
+                      className="group overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-left transition-colors hover:bg-[#1d1d20]"
                       title={a.url}
                     >
                       <div className="aspect-video bg-black/30 flex items-center justify-center overflow-hidden">
@@ -4989,8 +5020,8 @@ function AssetPickerModal({
                         )}
                       </div>
                       <div className="p-2">
-                        <div className="text-xs text-slate-200 truncate">{a.name || a.url.split("/").pop() || a.url}</div>
-                        <div className="text-[10px] text-slate-500 truncate">{a.url}</div>
+                        <div className="truncate text-[12px] leading-[1.4] text-slate-200">{a.name || a.url.split("/").pop() || a.url}</div>
+                        <div className="truncate text-[11px] leading-[1.4] text-slate-500">{a.url}</div>
                       </div>
                     </button>
                   ))}
@@ -4998,7 +5029,7 @@ function AssetPickerModal({
               )}
             </div>
 
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] leading-[1.4] text-slate-500">
               Phase 1: “recent” is localStorage-based (no DB, no server directory listing yet).
             </div>
           </div>
@@ -5235,7 +5266,7 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
         <ToolButton
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
+          icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
           label="Conversion Selection to Component"
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
@@ -5256,7 +5287,7 @@ function CreationToolbar({
           className={`${uiClasses.button} w-8 flex-none px-0`}
           title="Send Test Event"
         >
-          ⚡
+          <BoltIcon />
         </button>
 
         <button
@@ -5278,7 +5309,7 @@ function CreationToolbar({
             <><span>Save Changes</span></>
           )}
 
-          {saveError && <span className="ml-1 text-[10px] opacity-80">(Error)</span>}
+          {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
         </button>
       </div>
     </div>
@@ -5375,18 +5406,18 @@ function LayersPanel({
                 hasNextSibling && (
                   <div
                     key={idx}
-                    className="absolute bg-slate-700/30 w-px top-0 bottom-0"
-                    style={{ left: `${idx * 16 + 15}px` }}
+                    className="absolute top-0 bottom-0 w-px bg-[rgba(255,255,255,0.08)]"
+                    style={{ left: `${idx * 16 + 11}px` }}
                   />
                 )
               ))}
               <div
-                className="absolute bg-slate-700/50 w-px top-0 h-4"
-                style={{ left: `${depth * 16 - 1}px` }}
+                className="absolute top-0 h-3 w-px bg-[rgba(255,255,255,0.12)]"
+                style={{ left: `${depth * 16 - 5}px` }}
               />
               <div
-                className="absolute bg-slate-700/50 h-px w-2 top-4"
-                style={{ left: `${depth * 16 - 1}px` }}
+                className="absolute top-3 h-px w-3 bg-[rgba(255,255,255,0.12)]"
+                style={{ left: `${depth * 16 - 5}px` }}
               />
             </div>
           )}

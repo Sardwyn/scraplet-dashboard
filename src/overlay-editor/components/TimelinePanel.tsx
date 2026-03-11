@@ -103,7 +103,7 @@ function TimelineTrackRow({
 
   return (
     <div className="flex items-center border-b border-[rgba(255,255,255,0.06)]" style={{ height: TRACK_HEIGHT }}>
-      <div className="flex-none px-3 text-[11px] leading-[1.4] text-slate-400 uppercase tracking-[0.08em]" style={{ width: HEADER_WIDTH }}>
+      <div className="flex-none px-3 text-[11px] leading-[1.4] text-slate-300 uppercase tracking-[0.08em]" style={{ width: HEADER_WIDTH }}>
         {track.property}
       </div>
       <div
@@ -248,11 +248,11 @@ export function TimelinePanel({
         >
           Delete Keyframe
         </button>
-        <div className="ml-2 text-[11px] leading-[1.4] text-slate-400 font-mono">
+        <div className="ml-2 text-[12px] leading-[1.4] text-slate-300 font-mono">
           {formatMs(playheadMs)}
         </div>
         <div className="text-[11px] leading-[1.4] text-slate-600">/</div>
-        <div className="text-[11px] leading-[1.4] text-slate-400 font-mono flex items-center gap-2">
+        <div className="text-[12px] leading-[1.4] text-slate-300 font-mono flex items-center gap-2">
           <span>Duration</span>
           <input
             type="number"
@@ -264,7 +264,7 @@ export function TimelinePanel({
           />
           <span>ms</span>
         </div>
-        <div className={`ml-auto text-[11px] leading-[1.4] ${isPlaying ? "text-emerald-400" : "text-slate-500"}`}>
+        <div className={`ml-auto text-[12px] leading-[1.4] ${isPlaying ? "text-emerald-400" : "text-slate-500"}`}>
           {isPlaying ? "Playing" : "Paused"}
         </div>
       </div>
@@ -287,7 +287,7 @@ export function TimelinePanel({
                   className="absolute top-0 bottom-0 border-l border-[rgba(255,255,255,0.06)]"
                   style={{ left: `${ratio * 100}%` }}
                 >
-                  <div className="absolute top-1 left-2 text-[11px] leading-[1.4] text-slate-600">
+                  <div className="absolute top-1 left-2 text-[12px] leading-[1.4] text-slate-500">
                     {formatMs(ratio * timeline.durationMs)}
                   </div>
                 </div>
@@ -332,7 +332,7 @@ export function TimelinePanel({
               </div>
 
               {tracks.length === 0 && (
-                <div className="px-3 py-3 text-[11px] leading-[1.4] text-slate-600">
+                <div className="px-3 py-3 text-[12px] leading-[1.4] text-slate-500">
                   No tracks yet for this element.
                 </div>
               )}
