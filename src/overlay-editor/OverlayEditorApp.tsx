@@ -537,6 +537,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
   const [showShortcutModal, setShowShortcutModal] = useState(false);
+  const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const [selectedTimelineTrackId, setSelectedTimelineTrackId] = useState<string | null>(null);
@@ -552,6 +553,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
   const [previewAnimationResetKeys, setPreviewAnimationResetKeys] = useState<Record<string, number>>({});
   const previewStartTimersRef = useRef<Record<string, number[]>>({});
+  const statusTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -559,7 +561,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         timerIds.forEach((timerId) => window.clearTimeout(timerId));
       }
       previewStartTimersRef.current = {};
+      if (statusTimerRef.current) window.clearTimeout(statusTimerRef.current);
     };
+  }, []);
+
+  const showEditorStatus = useCallback((title: string, detail?: string) => {
+    if (statusTimerRef.current) window.clearTimeout(statusTimerRef.current);
+    setEditorStatus({ title, detail });
+    statusTimerRef.current = window.setTimeout(() => {
+      setEditorStatus(null);
+      statusTimerRef.current = null;
+    }, 3200);
   }, []);
 
   // Fetch components
@@ -802,6 +814,31 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!primarySelectedId) return null;
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
+
+  const selectedTimelineState = useMemo(() => {
+    if (!primarySelectedId) {
+      return {
+        playheadMs: timelinePlayheadMs,
+        hasAnimatedProperties: false,
+        properties: {} as Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>,
+      };
+    }
+
+    const properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>> = {};
+    let hasAnimatedProperties = false;
+
+    for (const property of TIMELINE_PROPERTIES) {
+      const track = timeline.tracks.find((candidate) => candidate.elementId === primarySelectedId && candidate.property === property);
+      if (!track) continue;
+      hasAnimatedProperties = true;
+      properties[property] = {
+        hasTrack: true,
+        hasKeyframeAtPlayhead: track.keyframes.some((keyframe) => Math.abs(keyframe.t - timelinePlayheadMs) <= KEYFRAME_TIME_EPSILON_MS),
+      };
+    }
+
+    return { playheadMs: timelinePlayheadMs, hasAnimatedProperties, properties };
+  }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
 
   const canGroup = selectedIds.length > 0;
   const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
@@ -1048,6 +1085,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function updateElement(id: string, patch: Partial<AnyEl>) {
+    const touchedTimelineProperties = TIMELINE_PROPERTIES.filter((property) => patch[property] !== undefined);
     setConfig((prev) => {
       const nextEls = [...prev.elements];
       const idx = nextEls.findIndex(e => e.id === id);
@@ -1113,6 +1151,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       }
       return { ...prev, elements: nextEls, timeline: nextTimeline };
     });
+    if (touchedTimelineProperties.length > 0) {
+      showEditorStatus(
+        `Timeline edit at ${formatTimelineTime(timelinePlayheadMs)}`,
+        `Updated ${touchedTimelineProperties.join(", ")} keyframe${touchedTimelineProperties.length > 1 ? "s" : ""}.`
+      );
+    }
   }
 
   function deleteElement(id: string) {
@@ -1421,6 +1465,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   function handleMaskElement(shapeId: string) {
     const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
+    let createdContentLabel = "content";
 
     setConfig(prev => {
       const els = [...prev.elements];
@@ -1436,6 +1481,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       if (contentIds.length === 1) {
         contentNode = els.find(e => e.id === contentIds[0]) as AnyEl | undefined;
+        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode as AnyEl);
       } else if (contentIds.length > 1) {
         const contentEls = els.filter(e => contentIds.includes(e.id)) as AnyEl[];
         if (!contentEls.length) return prev;
@@ -1462,10 +1508,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
         els.push(groupEl);
         contentNode = groupEl;
+        createdContentLabel = "Masked Content";
       } else {
         // No explicit content selected: fall back to the layer below in z-order.
         if (shapeIdx <= 0) return prev;
         contentNode = els[shapeIdx - 1] as AnyEl | undefined;
+        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode as AnyEl);
       }
 
       if (!contentNode) return prev;
@@ -1503,6 +1551,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     });
 
     setSelectedIds([maskId]);
+    const shapeLabel = elementsById[shapeId]?.name || defaultElementLabel((elementsById[shapeId] as AnyEl) ?? ({ type: "shape" } as AnyEl));
+    showEditorStatus("Mask created", `${shapeLabel} is now the mask shape. ${createdContentLabel} is now the masked content.`);
   }
 
   function handleReleaseMask(maskId: string) {
@@ -3130,6 +3180,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
+        {editorStatus && (
+          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[rgba(99,102,241,0.08)] px-4 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">{editorStatus.title}</div>
+            {editorStatus.detail && (
+              <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">{editorStatus.detail}</div>
+            )}
+          </div>
+        )}
 
         {/* Canvas Inner */}
         <div
@@ -3509,7 +3567,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                     {isPrimary && !resizeStatus && (
                       <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
-                        {el.name || defaultElementLabel(el)}
+                        {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
                         {isLocked ? " (Locked)" : ""}
                       </div>
                     )}
@@ -3618,6 +3676,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onReleaseMask={handleReleaseMask}
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
+            timelineState={selectedTimelineState}
           />
         ) : (
           <div className="flex h-40 flex-col items-center justify-center text-[12px] leading-[1.4] text-slate-500">
@@ -3723,6 +3782,50 @@ interface InspectorProps {
   onReleaseMask?: (id: string) => void;
   previewVisible?: boolean;
   onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
+  timelineState?: {
+    playheadMs: number;
+    hasAnimatedProperties: boolean;
+    properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>;
+  };
+}
+
+function formatTimelineTime(ms: number) {
+  return `${(Math.max(0, ms) / 1000).toFixed(2)}s`;
+}
+
+function TimelinePropertyMarker({
+  state,
+}: {
+  state?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+}) {
+  if (!state?.hasTrack) {
+    return <span className="inline-block h-2.5 w-2.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-transparent rotate-45" />;
+  }
+
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] border ${
+        state.hasKeyframeAtPlayhead
+          ? "border-indigo-200 bg-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.22)]"
+          : "border-indigo-300/60 bg-indigo-500/20"
+      }`}
+    />
+  );
+}
+
+function TimelineFieldLabel({
+  label,
+  timelineState,
+}: {
+  label: string;
+  timelineState?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <TimelinePropertyMarker state={timelineState} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
@@ -4003,6 +4106,7 @@ function InspectorPanel({
   onEditMaster, onReleaseMask,
   previewVisible,
   onPreviewVisibilityAction,
+  timelineState,
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
@@ -4037,6 +4141,24 @@ function InspectorPanel({
             {isLocked ? <LockIcon /> : <UnlockIcon />}
           </button>
         </div>
+        {timelineState?.hasAnimatedProperties && element.type !== "lower_third" && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">
+              Editing animated state at {formatTimelineTime(timelineState.playheadMs)}
+            </div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              Marked properties have timeline tracks. Editing them here updates keyframes at the current playhead.
+            </div>
+          </div>
+        )}
+        {element.type === "mask" && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Mask group selected</div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              This container uses its first child as the mask shape and clips the content child beneath it.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transform Section */}
@@ -4044,27 +4166,27 @@ function InspectorPanel({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-3`}>X</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="X" timelineState={timelineState?.properties.x} /></label>
               <NumberField label="" value={element.x ?? 0} onChange={(v) => onChange({ x: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-3`}>Y</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="Y" timelineState={timelineState?.properties.y} /></label>
               <NumberField label="" value={element.y ?? 0} onChange={(v) => onChange({ y: v })} noLabel className="flex-1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-3`}>W</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="W" timelineState={timelineState?.properties.width} /></label>
               <NumberField label="" value={element.width ?? 0} onChange={(v) => onChange({ width: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-3`}>H</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} /></label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
             </div>
           </div>
 
           <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1">
-            <label className={`${fieldLabelClass} w-12 flex-none`}>Rotation</label>
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Rotation" timelineState={timelineState?.properties.rotationDeg} /></label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="-180" max="180"
@@ -4086,7 +4208,7 @@ function InspectorPanel({
 
           {/* Opacity (Global) */}
           <div className="flex items-center gap-2">
-            <label className={`${fieldLabelClass} w-12 flex-none`}>Opacity</label>
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Opacity" timelineState={timelineState?.properties.opacity} /></label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="0" max="1" step="0.01"
@@ -4666,13 +4788,19 @@ function InspectorPanel({
                     </div>
                     <div className="text-[11px] leading-[1.4] text-slate-500">
                       {(element as any).invert
-                        ? "Hides content inside the mask shape and shows content outside it."
-                        : "Shows content inside the mask shape and hides content outside it."}
+                        ? "The shape cuts a hole through the content so only the outside remains visible."
+                        : "The shape clips the content so only the area inside the mask stays visible."}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-1 mt-3">
+                <div className="space-y-2 mt-3">
+                  <div className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] px-3 py-2">
+                    <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">Mask workflow</div>
+                    <div className="mt-1 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200">
+                      Child 1 is the mask shape. Child 2 is the clipped content.
+                    </div>
+                  </div>
                   <div className="flex justify-between text-[11px] leading-[1.4]">
                     <span className="text-slate-500">Mask Shape:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[0]}</span>
@@ -4702,12 +4830,17 @@ function InspectorPanel({
                 </div>
 
                 {onReleaseMask && (
-                  <button
-                    onClick={() => onReleaseMask(element.id)}
-                    className="mt-4 h-8 w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-300 transition-all hover:border-red-500/50 hover:bg-red-900/30 hover:text-red-200"
-                  >
-                    Release Mask
-                  </button>
+                  <div className="mt-4 space-y-2">
+                    <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                      Release keeps the underlying layers and removes this mask container.
+                    </div>
+                    <button
+                      onClick={() => onReleaseMask(element.id)}
+                      className="h-8 w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-300 transition-all hover:border-red-500/50 hover:bg-red-900/30 hover:text-red-200"
+                    >
+                      Release Mask Group
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -5500,7 +5633,13 @@ function LayersPanel({
   const roots = layersTopToBottom.filter(el => !allChildIds.has(el.id));
 
   // Recursive render function
-  const renderItem = (el: OverlayElement, depth: number, isLastChild: boolean, parentTree: boolean[]) => {
+  const renderItem = (
+    el: OverlayElement,
+    depth: number,
+    isLastChild: boolean,
+    parentTree: boolean[],
+    roleLabel?: string
+  ) => {
     const isSelected = selectedIds.includes(el.id);
     const isVisible = el.visible !== false;
     const isLocked = el.locked === true;
@@ -5616,9 +5755,16 @@ function LayersPanel({
               className={`min-w-0 flex-1 ${uiClasses.field} h-6`}
             />
           ) : (
-            <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
-              {el.name || defaultElementLabel(el)}
-            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
+                {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
+              </div>
+              {roleLabel && (
+                <div className="truncate text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  {roleLabel}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Controls (Hover/Selected) */}
@@ -5675,7 +5821,15 @@ function LayersPanel({
         {/* Render children if group */}
         {children.length > 0 && (
           <div className="relative">
-            {children.map((c, idx) => renderItem(c, depth + 1, idx === children.length - 1, [...parentTree, !isLastChild]))}
+            {children.map((c, idx) =>
+              renderItem(
+                c,
+                depth + 1,
+                idx === children.length - 1,
+                [...parentTree, !isLastChild],
+                el.type === "mask" ? (idx === 0 ? "Mask Shape" : "Mask Content") : undefined
+              )
+            )}
           </div>
         )}
       </React.Fragment>
