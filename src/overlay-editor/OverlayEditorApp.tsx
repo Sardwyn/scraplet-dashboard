@@ -2709,6 +2709,64 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setZoomMode("manual");
     setManualScale((s) => clamp(s + 0.1, 0.1, 2));
   }
+
+  function reorderLayerRelative(id: string, targetId: string, placement: "before" | "after") {
+    if (id === targetId) return;
+
+    setConfig((prev) => {
+      const picked = prev.elements.find((el) => el.id === id);
+      const target = prev.elements.find((el) => el.id === targetId);
+      if (!picked || !target) return prev;
+
+      const maskFor = (elementId: string) =>
+        prev.elements.find(
+          (el) => el.type === "mask" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+        ) as any | undefined;
+      if (maskFor(id) || maskFor(targetId)) return prev;
+
+      const groupFor = (elementId: string) =>
+        prev.elements.find(
+          (el) => el.type === "group" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+        ) as any | undefined;
+
+      const parentGroup = groupFor(id);
+      const targetParentGroup = groupFor(targetId);
+      const pickedParentId = parentGroup?.id ?? null;
+      const targetParentId = targetParentGroup?.id ?? null;
+      if (pickedParentId !== targetParentId) return prev;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const fromIndex = childIds.indexOf(id);
+        const targetIndex = childIds.indexOf(targetId);
+        if (fromIndex === -1 || targetIndex === -1) return prev;
+
+        childIds.splice(fromIndex, 1);
+        const insertIndex = placement === "before"
+          ? (fromIndex < targetIndex ? targetIndex - 1 : targetIndex)
+          : (fromIndex < targetIndex ? targetIndex : targetIndex + 1);
+        childIds.splice(Math.max(0, Math.min(childIds.length, insertIndex)), 0, id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const next = prev.elements.slice();
+      const fromIndex = next.findIndex((el) => el.id === id);
+      const targetIndex = next.findIndex((el) => el.id === targetId);
+      if (fromIndex === -1 || targetIndex === -1) return prev;
+
+      const [moved] = next.splice(fromIndex, 1);
+      const adjustedTargetIndex = next.findIndex((el) => el.id === targetId);
+      const insertIndex = placement === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
+      next.splice(Math.max(0, Math.min(next.length, insertIndex)), 0, moved);
+      return { ...prev, elements: next };
+    });
+  }
   function zoomOut() {
     setZoomAnimating(true);
     setZoomMode("manual");
@@ -2911,6 +2969,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onMoveDown={(id) => moveLayerBy(id, -1)}
                 onBringToFront={bringLayerToFront}
                 onSendToBack={sendLayerToBack}
+                onReorderLayer={reorderLayerRelative}
               />
             </div>
           )}
@@ -5328,10 +5387,10 @@ function CreationToolbar({
 
 const LAYERS_PANEL_ICONS: Record<string, React.ReactNode> = {
   group: <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>,
-  text: <span className="font-serif text-[13px] font-bold leading-none">T</span>,
+  text: <svg {...TOOL_ICON_PROPS}><path d="M5 6h14" /><path d="M12 6v12" /></svg>,
   image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
   video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  box: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1.5" /></svg>,
   shape: <svg {...TOOL_ICON_PROPS}><path d="M12 2l10 20H2L12 2z" /></svg>,
   mask: <MaskIcon />,
   progress: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
@@ -5349,7 +5408,8 @@ function LayersPanel({
   onMoveUp,
   onMoveDown,
   onBringToFront,
-  onSendToBack
+  onSendToBack,
+  onReorderLayer
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -5363,8 +5423,10 @@ function LayersPanel({
   onMoveDown: (id: string) => void;
   onBringToFront: (id: string) => void;
   onSendToBack: (id: string) => void;
+  onReorderLayer: (id: string, targetId: string, placement: "before" | "after") => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dragState, setDragState] = useState<{ draggedId: string; overId: string; placement: "before" | "after" } | null>(null);
 
   // Scroll to selection
   useEffect(() => {
@@ -5405,10 +5467,50 @@ function LayersPanel({
       <React.Fragment key={el.id}>
         <div
           data-layer-id={el.id}
+          draggable={el.locked !== true}
           className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-500/15 text-indigo-50" : "text-slate-400 hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-200"}`}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", el.id);
+            setDragState({ draggedId: el.id, overId: el.id, placement: "after" });
+          }}
+          onDragOver={(e) => {
+            const draggedId = e.dataTransfer.getData("text/plain");
+            if (!draggedId || draggedId === el.id) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const placement = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+            setDragState({ draggedId, overId: el.id, placement });
+          }}
+          onDragLeave={(e) => {
+            if (!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node | null)) {
+              setDragState((prev) => (prev?.overId === el.id ? null : prev));
+            }
+          }}
+          onDrop={(e) => {
+            const draggedId = e.dataTransfer.getData("text/plain");
+            if (!draggedId || draggedId === el.id) {
+              setDragState(null);
+              return;
+            }
+            e.preventDefault();
+            const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const placement = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+            onReorderLayer(draggedId, el.id, placement);
+            setDragState(null);
+          }}
+          onDragEnd={() => setDragState(null)}
         >
+          {dragState?.overId === el.id && dragState.draggedId !== el.id && (
+            <div
+              className="absolute left-1 right-1 h-px bg-indigo-300 pointer-events-none"
+              style={{ top: dragState.placement === "before" ? 0 : undefined, bottom: dragState.placement === "after" ? 0 : undefined }}
+            />
+          )}
           {/* Tree Guides */}
           {depth > 0 && (
             <div className="absolute left-0 top-0 bottom-0 w-full pointer-events-none overflow-hidden">
@@ -5433,7 +5535,7 @@ function LayersPanel({
           )}
 
           {/* Icon */}
-          <span className={`relative -top-px flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-indigo-100" : "text-slate-500"}`}>
+          <span className={`relative -top-[1.5px] flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-indigo-100" : "text-slate-500"}`}>
             {icon}
           </span>
 
