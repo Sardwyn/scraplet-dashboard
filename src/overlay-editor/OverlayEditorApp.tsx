@@ -3049,114 +3049,6 @@ function InspectorPanel({
             </div>
           )}
 
-          {element.type !== "lower_third" && (
-            <div className="space-y-3">
-              <label className="text-[10px] uppercase font-bold text-slate-500">Animation</label>
-
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Enter</label>
-                <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
-                  value={(element as any).animation?.enter ?? "none"}
-                  onChange={(e) =>
-                    onChange({
-                      animation: {
-                        ...(element as any).animation,
-                        enter: e.target.value as OverlayMotionPreset,
-                      },
-                    } as any)
-                  }
-                >
-                  {GENERIC_MOTION_OPTIONS.map((option) => (
-                    <option key={`enter-${option.value}`} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Exit</label>
-                <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
-                  value={(element as any).animation?.exit ?? "none"}
-                  onChange={(e) =>
-                    onChange({
-                      animation: {
-                        ...(element as any).animation,
-                        exit: e.target.value as OverlayMotionPreset,
-                      },
-                    } as any)
-                  }
-                >
-                  {GENERIC_MOTION_OPTIONS.map((option) => (
-                    <option key={`exit-${option.value}`} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Dur</label>
-                <NumberField
-                  label=""
-                  value={(element as any).animation?.durationMs ?? 400}
-                  onChange={(v) =>
-                    onChange({
-                      animation: {
-                        ...(element as any).animation,
-                        durationMs: v,
-                      },
-                    } as any)
-                  }
-                  noLabel
-                  className="flex-1"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Delay</label>
-                <NumberField
-                  label=""
-                  value={(element as any).animation?.delayMs ?? 0}
-                  onChange={(v) =>
-                    onChange({
-                      animation: {
-                        ...(element as any).animation,
-                        delayMs: v,
-                      },
-                    } as any)
-                  }
-                  noLabel
-                  className="flex-1"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Ease</label>
-                <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
-                  value={(element as any).animation?.easing ?? "ease-out"}
-                  onChange={(e) =>
-                    onChange({
-                      animation: {
-                        ...(element as any).animation,
-                        easing: e.target.value as NonNullable<OverlayAnimation["easing"]>,
-                      },
-                    } as any)
-                  }
-                >
-                  {GENERIC_EASING_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
@@ -3504,6 +3396,114 @@ function InspectorPanel({
 
         </div>
       </AccordionSection >
+
+      {element.type !== "lower_third" && (
+        <AccordionSection title="Animation" defaultOpen={true}>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-slate-500 w-12 flex-none">Enter</label>
+              <select
+                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                value={(element as any).animation?.enter ?? "none"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      enter: e.target.value as OverlayMotionPreset,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_MOTION_OPTIONS.map((option) => (
+                  <option key={`enter-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-slate-500 w-12 flex-none">Exit</label>
+              <select
+                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                value={(element as any).animation?.exit ?? "none"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      exit: e.target.value as OverlayMotionPreset,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_MOTION_OPTIONS.map((option) => (
+                  <option key={`exit-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-slate-500 w-12 flex-none">Dur</label>
+              <NumberField
+                label=""
+                value={(element as any).animation?.durationMs ?? 400}
+                onChange={(v) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      durationMs: v,
+                    },
+                  } as any)
+                }
+                noLabel
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-slate-500 w-12 flex-none">Delay</label>
+              <NumberField
+                label=""
+                value={(element as any).animation?.delayMs ?? 0}
+                onChange={(v) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      delayMs: v,
+                    },
+                  } as any)
+                }
+                noLabel
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] text-slate-500 w-12 flex-none">Ease</label>
+              <select
+                className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                value={(element as any).animation?.easing ?? "ease-out"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      easing: e.target.value as NonNullable<OverlayAnimation["easing"]>,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_EASING_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </AccordionSection>
+      )}
 
       {/* Effects Section (Collapsed by default) */}
       {/* Effects Section (Collapsed by default) */}
