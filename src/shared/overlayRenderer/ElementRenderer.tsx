@@ -60,8 +60,15 @@ function getAnimationStyle(
     phase: OverlayAnimationPhase | undefined
 ): React.CSSProperties {
     if (phase === "hidden") {
+        if (!animation) {
+            return {
+                opacity: 0,
+                pointerEvents: "none",
+            };
+        }
+
         return {
-            opacity: 0,
+            ...getMotionPresetStyle(animation.enter),
             pointerEvents: "none",
         };
     }
@@ -71,7 +78,7 @@ function getAnimationStyle(
     }
 
     if (phase === "entering") {
-        return getMotionPresetStyle(animation.enter);
+        return {};
     }
 
     if (phase === "exiting") {
