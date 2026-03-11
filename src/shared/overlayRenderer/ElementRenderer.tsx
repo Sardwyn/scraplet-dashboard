@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useId } from "react";
 import {
     OverlayAnimation,
     OverlayAnimationPhase,
@@ -14,6 +14,7 @@ import {
     OverlayLowerThirdElement,
     OverlayMaskElement,
     OverlayMediaFit,
+    OverlayPatternFill,
     OverlayComponentDef,
     OverlayComponentInstanceElement,
 } from "../overlayTypes";
@@ -21,6 +22,103 @@ import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
+
+function sanitizeSvgId(value: string) {
+    return value.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function getPatternScale(pattern?: OverlayPatternFill) {
+    return Math.max(1, pattern?.scale ?? 100);
+}
+
+function getPatternOpacity(pattern?: OverlayPatternFill) {
+    return Math.max(0, Math.min(1, pattern?.opacity ?? 1));
+}
+
+function hasPatternSource(pattern?: OverlayPatternFill) {
+    return typeof pattern?.src === "string" && pattern.src.trim().length > 0;
+}
+
+function getBoxPatternStyle(pattern?: OverlayPatternFill): React.CSSProperties | null {
+    if (!hasPatternSource(pattern)) return null;
+
+    const fit = pattern?.fit ?? "tile";
+    const scale = getPatternScale(pattern);
+    const opacity = getPatternOpacity(pattern);
+
+    const style: React.CSSProperties = {
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        opacity,
+        backgroundImage: `url("${pattern!.src}")`,
+        backgroundPosition: "center",
+    };
+
+    if (fit === "tile") {
+        style.backgroundRepeat = "repeat";
+        style.backgroundSize = `${scale}% auto`;
+        return style;
+    }
+
+    style.backgroundRepeat = "no-repeat";
+    style.backgroundSize = fit;
+    return style;
+}
+
+function renderShapeGeometry(
+    shape: OverlayShapeElement,
+    width: number,
+    height: number,
+    strokeWidth: number,
+    props: Record<string, any>
+) {
+    if (shape.shape === "rect") {
+        const radius = shape.cornerRadiusPx ?? (shape as any).cornerRadius ?? 0;
+        return (
+            <rect
+                x={strokeWidth / 2}
+                y={strokeWidth / 2}
+                width={Math.max(0, width - strokeWidth)}
+                height={Math.max(0, height - strokeWidth)}
+                rx={radius}
+                ry={radius}
+                {...props}
+            />
+        );
+    }
+
+    if (shape.shape === "circle") {
+        return (
+            <ellipse
+                cx={width / 2}
+                cy={height / 2}
+                rx={Math.max(0, width / 2 - strokeWidth / 2)}
+                ry={Math.max(0, height / 2 - strokeWidth / 2)}
+                {...props}
+            />
+        );
+    }
+
+    if (shape.shape === "line") {
+        return (
+            <line
+                x1={shape.line ? shape.line.x1 * width : 0}
+                y1={shape.line ? shape.line.y1 * height : height / 2}
+                x2={shape.line ? shape.line.x2 * width : width}
+                y2={shape.line ? shape.line.y2 * height : height / 2}
+                {...props}
+            />
+        );
+    }
+
+    return (
+        <polygon
+            points={`${width / 2},${strokeWidth / 2} ${width - strokeWidth / 2},${height - strokeWidth / 2} ${strokeWidth / 2},${height - strokeWidth / 2}`}
+            {...props}
+        />
+    );
+}
 
 function getAnimationTransition(
     animation: OverlayAnimation | undefined,
@@ -199,6 +297,7 @@ export function ElementRenderer({
     layout?: "absolute" | "fill";
     visited?: Set<string>;
 }) {
+    const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
 
     if (el.bindings && data) {
@@ -540,6 +639,7 @@ export function ElementRenderer({
     if (el.type === "box") {
         const box = el as OverlayBoxElement;
         const br = box.borderRadiusPx ?? (box as any).borderRadius ?? 16;
+        const patternStyle = getBoxPatternStyle(box.pattern);
 
         const effectiveBr =
             el.clip && el.clip.type !== "none"
@@ -551,10 +651,21 @@ export function ElementRenderer({
                 <div
                     style={{
                         ...innerStyle,
+                        position: "relative",
+                        overflow: "hidden",
                         background: box.backgroundColor || "rgba(15,23,42,0.8)",
                         borderRadius: effectiveBr,
                     }}
-                />
+                >
+                    {patternStyle && (
+                        <div
+                            style={{
+                                ...patternStyle,
+                                borderRadius: effectiveBr,
+                            }}
+                        />
+                    )}
+                </div>
             </div>
         );
     }
@@ -620,12 +731,16 @@ export function ElementRenderer({
             typeof s.strokeOpacity === "number" ? s.strokeOpacity : 1;
         const dash =
             Array.isArray(s.strokeDash) && s.strokeDash.length ? s.strokeDash : undefined;
+        const patternEnabled = hasPatternSource(s.pattern) && s.shape !== "line";
+        const patternId = `shape-pattern-${patternScopeId}-${s.id}`;
+        const patternFit = s.pattern?.fit ?? "tile";
+        const patternScale = getPatternScale(s.pattern);
+        const patternOpacity = getPatternOpacity(s.pattern);
+        const tileWidth = Math.max(1, w * (patternScale / 100));
+        const tileHeight = Math.max(1, h * (patternScale / 100));
 
-        const cr = s.cornerRadiusPx ?? (s as any).cornerRadius ?? 0;
-
-        const common = {
-            fill,
-            fillOpacity,
+        const strokeProps = {
+            fill: "none",
             stroke,
             strokeWidth,
             strokeOpacity,
@@ -641,45 +756,46 @@ export function ElementRenderer({
                         viewBox={`0 0 ${w} ${h}`}
                         preserveAspectRatio="none"
                     >
-                        {s.shape === "rect" && (
-                            <rect
-                                x={strokeWidth / 2}
-                                y={strokeWidth / 2}
-                                width={Math.max(0, w - strokeWidth)}
-                                height={Math.max(0, h - strokeWidth)}
-                                rx={cr}
-                                ry={cr}
-                                {...common}
-                            />
+                        {patternEnabled && (
+                            <defs>
+                                <pattern
+                                    id={patternId}
+                                    patternUnits="userSpaceOnUse"
+                                    width={patternFit === "tile" ? tileWidth : w}
+                                    height={patternFit === "tile" ? tileHeight : h}
+                                >
+                                    <image
+                                        href={s.pattern!.src}
+                                        x="0"
+                                        y="0"
+                                        width={patternFit === "tile" ? tileWidth : w}
+                                        height={patternFit === "tile" ? tileHeight : h}
+                                        preserveAspectRatio={
+                                            patternFit === "cover"
+                                                ? "xMidYMid slice"
+                                                : patternFit === "contain"
+                                                    ? "xMidYMid meet"
+                                                    : "none"
+                                        }
+                                        opacity={patternOpacity}
+                                    />
+                                </pattern>
+                            </defs>
                         )}
 
-                        {s.shape === "circle" && (
-                            <ellipse
-                                cx={w / 2}
-                                cy={h / 2}
-                                rx={Math.max(0, w / 2 - strokeWidth / 2)}
-                                ry={Math.max(0, h / 2 - strokeWidth / 2)}
-                                {...common}
-                            />
-                        )}
+                        {renderShapeGeometry(s, w, h, strokeWidth, {
+                            fill,
+                            fillOpacity,
+                            stroke: "none",
+                        })}
 
-                        {s.shape === "line" && (
-                            <line
-                                x1={s.line ? s.line.x1 * w : 0}
-                                y1={s.line ? s.line.y1 * h : h / 2}
-                                x2={s.line ? s.line.x2 * w : w}
-                                y2={s.line ? s.line.y2 * h : h / 2}
-                                {...common}
-                                fill="none"
-                            />
-                        )}
+                        {patternEnabled &&
+                            renderShapeGeometry(s, w, h, strokeWidth, {
+                                fill: `url(#${patternId})`,
+                                stroke: "none",
+                            })}
 
-                        {s.shape === "triangle" && (
-                            <polygon
-                                points={`${w / 2},${strokeWidth / 2} ${w - strokeWidth / 2},${h - strokeWidth / 2} ${strokeWidth / 2},${h - strokeWidth / 2}`}
-                                {...common}
-                            />
-                        )}
+                        {renderShapeGeometry(s, w, h, strokeWidth, strokeProps)}
                     </svg>
                 </div>
             </div>

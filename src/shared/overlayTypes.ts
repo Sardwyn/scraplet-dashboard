@@ -148,6 +148,19 @@ export interface OverlayAnimation {
 }
 
 /* =========================
+   PATTERN FILLS
+========================= */
+
+export type OverlayPatternFit = "tile" | "cover" | "contain";
+
+export interface OverlayPatternFill {
+  src: string;
+  fit?: OverlayPatternFit;
+  scale?: number;
+  opacity?: number;
+}
+
+/* =========================
    TEXT
 ========================= */
 
@@ -184,6 +197,7 @@ export interface OverlayTextElement extends OverlayElementBase {
 export interface OverlayBoxElement extends OverlayElementBase {
   type: "box";
   backgroundColor?: string;
+  pattern?: OverlayPatternFill;
 
   borderRadiusPx?: number;
   borderRadiusRel?: number; // V1: 0..1 of min(viewportW, viewportH)
@@ -206,6 +220,7 @@ export type OverlayStrokeLineJoin = "miter" | "round" | "bevel";
 export interface OverlayShapeElement extends OverlayElementBase {
   type: "shape";
   shape: OverlayShapeKind;
+  pattern?: OverlayPatternFill;
 
   // Fill
   fillColor?: string;     // if omitted => transparent

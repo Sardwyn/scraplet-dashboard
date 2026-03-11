@@ -4,6 +4,8 @@ import {
   OverlayAnimation,
   OverlayConfigV0,
   OverlayElement,
+  OverlayPatternFill,
+  OverlayPatternFit,
   OverlayTextElement,
   OverlayBoxElement,
   OverlayShapeElement,
@@ -2648,6 +2650,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onPick: (url) => updateElement(selectedIds[0], { url } as any)
               });
             }}
+            onPickPatternImage={() => {
+              const currentElement = elementsById[selectedIds[0]] as AnyEl | undefined;
+              setAssetPicker({
+                open: true,
+                kind: "images",
+                scope: "overlays",
+                title: "Pick Pattern",
+                onPick: (url) =>
+                  updateElement(selectedIds[0], {
+                    pattern: {
+                      ...ensurePatternFill(currentElement?.pattern as OverlayPatternFill | undefined),
+                      src: url,
+                    },
+                  } as any),
+              });
+            }}
             onPickVideo={() => {
               setAssetPicker({
                 open: true,
@@ -2736,6 +2754,7 @@ interface InspectorProps {
   onChange: (patch: Partial<AnyEl>) => void;
   onRename: (name: string) => void;
   onPickImage: () => void;
+  onPickPatternImage: () => void;
   onPickVideo: () => void;
   ltPreview: { text: string; title: string; subtitle: string };
   onLtPreviewChange: (v: { text: string; title: string; subtitle: string }) => void;
@@ -2823,8 +2842,102 @@ const GENERIC_EASING_OPTIONS: Array<NonNullable<OverlayAnimation["easing"]>> = [
   "linear",
 ];
 
+const PATTERN_FIT_OPTIONS: Array<{ value: OverlayPatternFit; label: string }> = [
+  { value: "tile", label: "Tile" },
+  { value: "cover", label: "Cover" },
+  { value: "contain", label: "Contain" },
+];
+
+function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
+  return {
+    src: pattern?.src ?? "",
+    fit: pattern?.fit ?? "tile",
+    scale: pattern?.scale ?? 100,
+    opacity: pattern?.opacity ?? 1,
+  };
+}
+
+function PatternFillControls({
+  pattern,
+  onChange,
+  onPickImage,
+}: {
+  pattern?: OverlayPatternFill;
+  onChange: (pattern: OverlayPatternFill) => void;
+  onPickImage: () => void;
+}) {
+  const nextPattern = ensurePatternFill(pattern);
+
+  return (
+    <div className="ml-14 space-y-3 rounded border border-slate-800 bg-slate-950/40 p-3">
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-slate-500 w-12 flex-none">Image</label>
+        <input
+          type="text"
+          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono"
+          value={nextPattern.src}
+          onChange={(e) => onChange({ ...nextPattern, src: e.target.value })}
+          placeholder="/uploads/pattern.png"
+        />
+        <button
+          type="button"
+          onClick={onPickImage}
+          className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700 transition-colors"
+          title="Pick pattern image"
+        >
+          📂
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
+        <select
+          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+          value={nextPattern.fit}
+          onChange={(e) => onChange({ ...nextPattern, fit: e.target.value as OverlayPatternFit })}
+        >
+          {PATTERN_FIT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-slate-500 w-12 flex-none">Scale</label>
+        <div className="w-20 relative">
+          <NumberField
+            label=""
+            value={Math.round(nextPattern.scale ?? 100)}
+            onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
+            noLabel
+          />
+          <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+        </div>
+        <div className="text-[10px] text-slate-600 flex-1">
+          Tile uses scale directly. Cover/contain keep native fit.
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="text-[10px] text-slate-500 w-12 flex-none">Opacity</label>
+        <div className="w-20 relative">
+          <NumberField
+            label=""
+            value={Math.round((nextPattern.opacity ?? 1) * 100)}
+            onChange={(v) => onChange({ ...nextPattern, opacity: Math.max(0, Math.min(1, v / 100)) })}
+            noLabel
+          />
+          <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InspectorPanel({
-  element, onChange, onRename, onPickImage, onPickVideo,
+  element, onChange, onRename, onPickImage, onPickPatternImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
@@ -3153,6 +3266,28 @@ function InspectorPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Type</label>
+                <select
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  value={(element as any).pattern ? "pattern" : "solid"}
+                  onChange={(e) =>
+                    onChange({
+                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
+                    } as any)
+                  }
+                >
+                  <option value="solid">Solid</option>
+                  <option value="pattern">Pattern</option>
+                </select>
+              </div>
+              {(element as any).pattern && (
+                <PatternFillControls
+                  pattern={(element as any).pattern}
+                  onChange={(pattern) => onChange({ pattern } as any)}
+                  onPickImage={onPickPatternImage}
+                />
+              )}
+              <div className="flex items-center gap-2">
                 <label className="text-[10px] text-slate-500 w-12 flex-none">Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
@@ -3190,6 +3325,33 @@ function InspectorPanel({
                   <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Type</label>
+                <select
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  value={(element as any).pattern ? "pattern" : "solid"}
+                  onChange={(e) =>
+                    onChange({
+                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
+                    } as any)
+                  }
+                >
+                  <option value="solid">Solid</option>
+                  <option value="pattern">Pattern</option>
+                </select>
+              </div>
+              {(element as any).pattern && (
+                <PatternFillControls
+                  pattern={(element as any).pattern}
+                  onChange={(pattern) => onChange({ pattern } as any)}
+                  onPickImage={onPickPatternImage}
+                />
+              )}
+              {(element as any).shape === "line" && (element as any).pattern && (
+                <div className="ml-14 text-[10px] text-slate-500">
+                  Pattern fill is ignored for line shapes in this pass.
+                </div>
+              )}
 
               <div className="h-px bg-slate-800/50 my-2" />
 
