@@ -9,6 +9,7 @@ type ElementPhaseState = {
 };
 
 export type ElementAnimationPhaseMap = Record<string, ElementPhaseState>;
+export type ElementAnimationResetMap = Record<string, number>;
 
 function isElementVisible(element: OverlayElement) {
   return element.visible !== false;
@@ -37,7 +38,10 @@ function buildInitialPhases(elements: OverlayElement[]): ElementAnimationPhaseMa
   return next;
 }
 
-export function useElementAnimationPhases(elements: OverlayElement[]) {
+export function useElementAnimationPhases(
+  elements: OverlayElement[],
+  resetMap?: ElementAnimationResetMap
+) {
   const [phases, setPhases] = useState<ElementAnimationPhaseMap>(() =>
     buildInitialPhases(elements)
   );
@@ -45,6 +49,7 @@ export function useElementAnimationPhases(elements: OverlayElement[]) {
   const previousVisibilityRef = useRef<Record<string, boolean>>({});
   const timerRef = useRef<Record<string, number>>({});
   const sequenceRef = useRef<Record<string, number>>({});
+  const resetRef = useRef<ElementAnimationResetMap>({});
 
   useEffect(() => {
     for (const element of elements) {
@@ -75,6 +80,7 @@ export function useElementAnimationPhases(elements: OverlayElement[]) {
 
         delete previousVisibilityRef.current[id];
         delete sequenceRef.current[id];
+        delete resetRef.current[id];
       }
 
       for (const element of elements) {
@@ -83,11 +89,29 @@ export function useElementAnimationPhases(elements: OverlayElement[]) {
         const priorVisible = previousVisibilityRef.current[id];
         const currentPhase = next[id]?.phase;
         const animated = hasAnimationConfig(element);
+        const resetToken = resetMap?.[id] ?? 0;
+        const priorResetToken = resetRef.current[id] ?? 0;
+
+        if (resetToken !== priorResetToken) {
+          const activeTimer = timerRef.current[id];
+          if (activeTimer) {
+            window.clearTimeout(activeTimer);
+            delete timerRef.current[id];
+          }
+
+          if (next === current) next = { ...next };
+          next[id] = { phase: getStaticPhase(element) };
+          previousVisibilityRef.current[id] = visible;
+          sequenceRef.current[id] = (sequenceRef.current[id] ?? 0) + 1;
+          resetRef.current[id] = resetToken;
+          continue;
+        }
 
         if (priorVisible === undefined) {
           if (next === current) next = { ...next };
           next[id] = { phase: getStaticPhase(element) };
           previousVisibilityRef.current[id] = visible;
+          resetRef.current[id] = resetToken;
           continue;
         }
 
@@ -156,7 +180,7 @@ export function useElementAnimationPhases(elements: OverlayElement[]) {
 
       return next;
     });
-  }, [elements]);
+  }, [elements, resetMap]);
 
   useEffect(() => {
     return () => {

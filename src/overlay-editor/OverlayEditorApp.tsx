@@ -391,6 +391,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [originalName, setOriginalName] = useState("");
   const [originalSlug, setOriginalSlug] = useState("");
   const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
+  const [previewAnimationResetKeys, setPreviewAnimationResetKeys] = useState<Record<string, number>>({});
 
   // Fetch components
   useEffect(() => {
@@ -482,7 +483,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [previewElements]);
 
   const previewAnimationPhases = useElementAnimationPhases(
-    previewElements as OverlayElement[]
+    previewElements as OverlayElement[],
+    previewAnimationResetKeys
   );
 
   // Test Data for variable substitution ({{var}})
@@ -685,9 +687,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
 
     setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
-    window.setTimeout(() => {
+    setPreviewAnimationResetKeys((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+    window.requestAnimationFrame(() => {
       setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
-    }, 20);
+    });
   }
 
   function addText() {
