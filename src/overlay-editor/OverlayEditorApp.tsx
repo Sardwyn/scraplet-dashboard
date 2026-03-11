@@ -446,6 +446,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const [selectedTimelineTrackId, setSelectedTimelineTrackId] = useState<string | null>(null);
   const [selectedTimelineKeyframeId, setSelectedTimelineKeyframeId] = useState<string | null>(null);
+  const timelinePlaybackStartRef = useRef<number | null>(null);
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
   const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
@@ -580,30 +581,28 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!isTimelinePlaying) return;
 
     let frameId = 0;
-    let lastAt = performance.now();
+    const startOffset = timelinePlayheadMs;
+    timelinePlaybackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
-      const delta = now - lastAt;
-      lastAt = now;
+      const startedAt = timelinePlaybackStartRef.current ?? now;
+      const next = Math.min(timeline.durationMs, now - startedAt);
+      setTimelinePlayheadMs(next);
 
-      let shouldContinue = true;
-      setTimelinePlayheadMs((prev) => {
-        const next = Math.min(timeline.durationMs, prev + delta);
-        if (next >= timeline.durationMs) {
-          shouldContinue = false;
-          setIsTimelinePlaying(false);
-        }
-        return next;
-      });
-
-      if (shouldContinue) {
+      if (next >= timeline.durationMs) {
+        setIsTimelinePlaying(false);
+        timelinePlaybackStartRef.current = null;
+      } else {
         frameId = window.requestAnimationFrame(tick);
       }
     };
 
     frameId = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(frameId);
-  }, [isTimelinePlaying, timeline.durationMs]);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      timelinePlaybackStartRef.current = null;
+    };
+  }, [isTimelinePlaying, timeline.durationMs, timelinePlayheadMs]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -3028,7 +3027,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           setSelectedTimelineTrackId(trackId);
           setSelectedTimelineKeyframeId(keyframeId);
         }}
-        onPlay={() => setIsTimelinePlaying(true)}
+        onPlay={() => {
+          if (timelinePlayheadMs >= timeline.durationMs) {
+            setTimelinePlayheadMs(0);
+          }
+          setIsTimelinePlaying(true);
+        }}
         onPause={() => setIsTimelinePlaying(false)}
         onStop={() => {
           setIsTimelinePlaying(false);

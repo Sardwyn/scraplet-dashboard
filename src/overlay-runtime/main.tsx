@@ -372,6 +372,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [state, setState] = useState<OverlayStateV0 | null>(null);
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const playbackStartRef = useRef<number | null>(null);
 
   // ... (existing refs/state) ...
   const pinnedMeasureRef = useRef<HTMLDivElement>(null);
@@ -437,30 +438,28 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     }
 
     let frameId = 0;
-    let lastAt = performance.now();
+    const startOffset = playheadMs;
+    playbackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
-      const delta = now - lastAt;
-      lastAt = now;
+      const startedAt = playbackStartRef.current ?? now;
+      const next = Math.min(durationMs, now - startedAt);
+      setPlayheadMs(next);
 
-      let shouldContinue = true;
-      setPlayheadMs((prev) => {
-        const next = Math.min(durationMs, prev + delta);
-        if (next >= durationMs) {
-          shouldContinue = false;
-          setIsTimelinePlaying(false);
-        }
-        return next;
-      });
-
-      if (shouldContinue) {
+      if (next >= durationMs) {
+        setIsTimelinePlaying(false);
+        playbackStartRef.current = null;
+      } else {
         frameId = window.requestAnimationFrame(tick);
       }
     };
 
     frameId = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(frameId);
-  }, [isTimelinePlaying, overlay?.timeline?.durationMs]);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      playbackStartRef.current = null;
+    };
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs, playheadMs]);
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {
