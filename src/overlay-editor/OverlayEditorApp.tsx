@@ -392,12 +392,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [originalSlug, setOriginalSlug] = useState("");
   const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
   const [previewAnimationResetKeys, setPreviewAnimationResetKeys] = useState<Record<string, number>>({});
-  const previewStartTimersRef = useRef<Record<string, number>>({});
+  const previewStartTimersRef = useRef<Record<string, number[]>>({});
 
   useEffect(() => {
     return () => {
-      for (const timerId of Object.values(previewStartTimersRef.current)) {
-        window.clearTimeout(timerId);
+      for (const timerIds of Object.values(previewStartTimersRef.current)) {
+        timerIds.forEach((timerId) => window.clearTimeout(timerId));
       }
       previewStartTimersRef.current = {};
     };
@@ -681,9 +681,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function triggerPreviewVisibility(id: string, action: "enter" | "exit" | "reset") {
-    const activeTimer = previewStartTimersRef.current[id];
-    if (activeTimer) {
-      window.clearTimeout(activeTimer);
+    const activeTimers = previewStartTimersRef.current[id];
+    if (activeTimers) {
+      activeTimers.forEach((timerId) => window.clearTimeout(timerId));
       delete previewStartTimersRef.current[id];
     }
 
@@ -704,10 +704,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
     setPreviewAnimationResetKeys((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
-    previewStartTimersRef.current[id] = window.setTimeout(() => {
-      setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
-      delete previewStartTimersRef.current[id];
-    }, 0);
+
+    const frameTimer = window.setTimeout(() => {
+      const startTimer = window.setTimeout(() => {
+        setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
+        delete previewStartTimersRef.current[id];
+      }, 16);
+
+      previewStartTimersRef.current[id] = [frameTimer, startTimer];
+    }, 16);
+
+    previewStartTimersRef.current[id] = [frameTimer];
   }
 
   function addText() {
