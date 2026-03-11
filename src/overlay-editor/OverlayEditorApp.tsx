@@ -2134,46 +2134,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize]);
 
-  useEffect(() => {
-    if (!rotationDragRef.current) return;
-
-    const onMove = (e: MouseEvent) => {
-      const active = rotationDragRef.current;
-      if (!active) return;
-      const stagePoint = clientToStage(e.clientX, e.clientY);
-      if (!stagePoint) return;
-
-      const rawDeg = Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90;
-      const nextDeg = snapRotationValue(rawDeg, e.altKey);
-      setDraftRotationDegs((prev) => ({ ...prev, [active.id]: nextDeg }));
-    };
-
-    const onUp = (e: MouseEvent) => {
-      const active = rotationDragRef.current;
-      rotationDragRef.current = null;
-      if (!active) return;
-
-      const stagePoint = clientToStage(e.clientX, e.clientY);
-      const draft = draftRotationDegs[active.id];
-      const resolvedDeg =
-        draft ?? (stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0);
-
-      updateElement(active.id, { rotationDeg: resolvedDeg } as any);
-      setDraftRotationDegs((prev) => {
-        const next = { ...prev };
-        delete next[active.id];
-        return next;
-      });
-    };
-
-    window.addEventListener("mousemove", onMove, { passive: false } as any);
-    window.addEventListener("mouseup", onUp, { passive: false } as any);
-    return () => {
-      window.removeEventListener("mousemove", onMove as any);
-      window.removeEventListener("mouseup", onUp as any);
-    };
-  }, [clientToStage, draftRotationDegs]);
-
   // ===== Pan handlers =====
   const beginPan = useCallback(
     (clientX: number, clientY: number) => {
@@ -2283,6 +2243,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     },
     [baseResolution.width, baseResolution.height, panPx.x, panPx.y, scale]
   );
+
+  useEffect(() => {
+    if (!rotationDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const rawDeg = Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90;
+      const nextDeg = snapRotationValue(rawDeg, e.altKey);
+      setDraftRotationDegs((prev) => ({ ...prev, [active.id]: nextDeg }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      rotationDragRef.current = null;
+      if (!active) return;
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const draft = draftRotationDegs[active.id];
+      const resolvedDeg =
+        draft ?? (stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0);
+
+      updateElement(active.id, { rotationDeg: resolvedDeg } as any);
+      setDraftRotationDegs((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRotationDegs]);
 
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
