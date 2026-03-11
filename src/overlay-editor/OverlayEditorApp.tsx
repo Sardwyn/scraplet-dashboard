@@ -390,6 +390,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [originalIsMaster, setOriginalIsMaster] = useState(false);
   const [originalName, setOriginalName] = useState("");
   const [originalSlug, setOriginalSlug] = useState("");
+  const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
 
   // Fetch components
   useEffect(() => {
@@ -497,7 +498,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     title: "Preview Title",
     subtitle: "Preview Subtitle"
   });
-  const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
 
   // Merge preview data if active
   const renderData = useMemo(() => {
