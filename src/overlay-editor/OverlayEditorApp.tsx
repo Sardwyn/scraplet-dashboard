@@ -5385,17 +5385,6 @@ function CreationToolbar({
   );
 }
 
-const LAYERS_PANEL_ICONS: Record<string, React.ReactNode> = {
-  group: <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>,
-  text: <svg {...TOOL_ICON_PROPS}><path d="M5 6h14" /><path d="M12 6v12" /></svg>,
-  image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
-  video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  box: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1.5" /></svg>,
-  shape: <svg {...TOOL_ICON_PROPS}><path d="M12 2l10 20H2L12 2z" /></svg>,
-  mask: <MaskIcon />,
-  progress: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
-};
-
 function LayersPanel({
   elements,
   layersTopToBottom,
@@ -5426,6 +5415,7 @@ function LayersPanel({
   onReorderLayer: (id: string, targetId: string, placement: "before" | "after") => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const draggedIdRef = useRef<string | null>(null);
   const [dragState, setDragState] = useState<{ draggedId: string; overId: string; placement: "before" | "after" } | null>(null);
 
   // Scroll to selection
@@ -5461,8 +5451,6 @@ function LayersPanel({
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
     }
 
-    const icon = LAYERS_PANEL_ICONS[el.type] || LAYERS_PANEL_ICONS[el.type.startsWith('progress') ? 'progress' : 'box'];
-
     return (
       <React.Fragment key={el.id}>
         <div
@@ -5475,10 +5463,11 @@ function LayersPanel({
             e.stopPropagation();
             e.dataTransfer.effectAllowed = "move";
             e.dataTransfer.setData("text/plain", el.id);
+            draggedIdRef.current = el.id;
             setDragState({ draggedId: el.id, overId: el.id, placement: "after" });
           }}
           onDragOver={(e) => {
-            const draggedId = e.dataTransfer.getData("text/plain");
+            const draggedId = draggedIdRef.current;
             if (!draggedId || draggedId === el.id) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
@@ -5492,18 +5481,24 @@ function LayersPanel({
             }
           }}
           onDrop={(e) => {
-            const draggedId = e.dataTransfer.getData("text/plain");
+            const draggedId = draggedIdRef.current;
             if (!draggedId || draggedId === el.id) {
+              draggedIdRef.current = null;
               setDragState(null);
               return;
             }
             e.preventDefault();
+            e.stopPropagation();
             const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
             const placement = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
             onReorderLayer(draggedId, el.id, placement);
+            draggedIdRef.current = null;
             setDragState(null);
           }}
-          onDragEnd={() => setDragState(null)}
+          onDragEnd={() => {
+            draggedIdRef.current = null;
+            setDragState(null);
+          }}
         >
           {dragState?.overId === el.id && dragState.draggedId !== el.id && (
             <div
@@ -5534,11 +5529,6 @@ function LayersPanel({
             </div>
           )}
 
-          {/* Icon */}
-          <span className={`relative -top-[1.5px] flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-indigo-100" : "text-slate-500"}`}>
-            {icon}
-          </span>
-
           {/* Label */}
           <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
             {el.name || defaultElementLabel(el)}
@@ -5554,7 +5544,9 @@ function LayersPanel({
               className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
               title={isLocked ? "Unlock" : "Lock"}
             >
-              {isLocked ? <LockIcon /> : <UnlockIcon />}
+              <span className="relative -top-px flex items-center justify-center">
+                {isLocked ? <LockIcon /> : <UnlockIcon />}
+              </span>
             </button>
 
             <button
@@ -5562,7 +5554,9 @@ function LayersPanel({
               className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
               title={isVisible ? "Hide" : "Show"}
             >
-              {isVisible ? <EyeIcon /> : <EyeOffIcon />}
+              <span className="relative -top-px flex items-center justify-center">
+                {isVisible ? <EyeIcon /> : <EyeOffIcon />}
+              </span>
             </button>
 
             {el.type === "shape" && onMask && (
@@ -5571,7 +5565,9 @@ function LayersPanel({
                 className={`${uiClasses.iconButton} hover:text-indigo-400`}
                 title="Use as Mask"
               >
-                <MaskIcon />
+                <span className="relative -top-px flex items-center justify-center">
+                  <MaskIcon />
+                </span>
               </button>
             )}
 
@@ -5581,7 +5577,9 @@ function LayersPanel({
                 className={`${uiClasses.iconButton} hover:text-red-400`}
                 title="Release Mask"
               >
-                <UnlockIcon />
+                <span className="relative -top-px flex items-center justify-center">
+                  <UnlockIcon />
+                </span>
               </button>
             )}
           </div>
