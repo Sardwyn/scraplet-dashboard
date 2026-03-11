@@ -3180,15 +3180,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
-        {editorStatus && (
-          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-[rgba(99,102,241,0.08)] px-4 py-2">
-            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">{editorStatus.title}</div>
-            {editorStatus.detail && (
-              <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">{editorStatus.detail}</div>
-            )}
-          </div>
-        )}
-
         {/* Canvas Inner */}
         <div
           ref={canvasOuterRef}
@@ -3218,6 +3209,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           }}
         >
+          {editorStatus && (
+            <div className="absolute right-4 top-4 z-[70] max-w-[360px] rounded-md border border-indigo-400/15 bg-[#161618]/95 px-3 py-2 shadow-xl shadow-black/35 backdrop-blur-sm">
+              <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">{editorStatus.title}</div>
+              {editorStatus.detail && (
+                <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">{editorStatus.detail}</div>
+              )}
+            </div>
+          )}
           {editingMasterId && (
             <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30">
               <div className="flex items-center gap-2 text-indigo-200">
