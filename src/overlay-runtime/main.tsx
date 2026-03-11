@@ -373,6 +373,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const playbackStartRef = useRef<number | null>(null);
+  const overlayConfigHashRef = useRef<string>("");
 
   // ... (existing refs/state) ...
   const pinnedMeasureRef = useRef<HTMLDivElement>(null);
@@ -403,22 +404,37 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const animationPhases = useElementAnimationPhases(elements);
 
 
-  // Load config (static-ish)
+  // Load config and refresh it periodically so persistent OBS browser sources
+  // pick up saved timeline changes without needing a manual source refresh.
   useEffect(() => {
     let cancelled = false;
+    let timer: number | null = null;
 
-    (async () => {
-      const res = await fetch(`/api/overlays/public/${encodeURIComponent(publicId)}`);
+    const loadConfig = async () => {
+      const res = await fetch(`/api/overlays/public/${encodeURIComponent(publicId)}`, {
+        cache: "no-store",
+      });
       if (!res.ok) {
         console.error("Failed to load overlay config", res.status);
         return;
       }
       const data = (await res.json()) as OverlayConfigV0;
-      if (!cancelled) setOverlay(data);
-    })().catch((e) => console.error("Failed to load overlay config", e));
+      const nextHash = JSON.stringify(data);
+      if (cancelled) return;
+      if (nextHash === overlayConfigHashRef.current) return;
+
+      overlayConfigHashRef.current = nextHash;
+      setOverlay(data);
+    };
+
+    loadConfig().catch((e) => console.error("Failed to load overlay config", e));
+    timer = window.setInterval(() => {
+      loadConfig().catch((e) => console.error("Failed to refresh overlay config", e));
+    }, 2000);
 
     return () => {
       cancelled = true;
+      if (timer) window.clearInterval(timer);
     };
   }, [publicId]);
 
