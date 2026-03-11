@@ -3064,22 +3064,34 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
               <button onClick={() => alignSelection("left")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Left">
-                <span className="text-[11px] leading-none">|&lt;</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="6" y1="5" x2="6" y2="19" /><line x1="10" y1="7" x2="10" y2="17" /><line x1="14" y1="9" x2="14" y2="15" /></svg>
+                </span>
               </button>
               <button onClick={() => alignSelection("hcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Center">
-                <span className="text-[11px] leading-none">|</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="8" y1="7" x2="8" y2="17" /><line x1="16" y1="7" x2="16" y2="17" /></svg>
+                </span>
               </button>
               <button onClick={() => alignSelection("right")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Right">
-                <span className="text-[11px] leading-none">&gt;|</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="18" y1="5" x2="18" y2="19" /><line x1="14" y1="7" x2="14" y2="17" /><line x1="10" y1="9" x2="10" y2="15" /></svg>
+                </span>
               </button>
               <button onClick={() => alignSelection("top")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Top">
-                <span className="text-[11px] leading-none">T</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="6" x2="19" y2="6" /><line x1="7" y1="10" x2="17" y2="10" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
+                </span>
               </button>
               <button onClick={() => alignSelection("vcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Middle">
-                <span className="text-[11px] leading-none">-</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="12" x2="19" y2="12" /><line x1="7" y1="8" x2="17" y2="8" /><line x1="7" y1="16" x2="17" y2="16" /></svg>
+                </span>
               </button>
               <button onClick={() => alignSelection("bottom")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Bottom">
-                <span className="text-[11px] leading-none">_</span>
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="18" x2="19" y2="18" /><line x1="7" y1="14" x2="17" y2="14" /><line x1="9" y1="10" x2="15" y2="10" /></svg>
+                </span>
               </button>
             </div>
           </div>
