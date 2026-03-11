@@ -180,6 +180,11 @@ function applyTimelineOverridesToElement(
   } as OverlayElement;
 }
 
+function snapRotationValue(value: number, allowFreeform: boolean) {
+  if (allowFreeform) return value;
+  return Math.round(value / 15) * 15;
+}
+
 function rectFromEl(el: AnyEl) {
   const x = el.x ?? 0;
   const y = el.y ?? 0;
@@ -415,9 +420,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit");
   const [manualScale, setManualScale] = useState(1);
+  const [zoomAnimating, setZoomAnimating] = useState(false);
 
   // PAN (space/middle-mouse)
   const [spaceDown, setSpaceDown] = useState(false);
+  const [shiftDown, setShiftDown] = useState(false);
+  const [altDown, setAltDown] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const [panPx, setPanPx] = useState({ x: 0, y: 0 });
@@ -425,6 +433,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Marquee
   const [marquee, setMarquee] = useState<MarqueeState>({ active: false, shift: false, start: null, cur: null });
   const marqueeStartSelectedRef = useRef<string[]>([]);
+  const clickCycleRef = useRef<{ x: number; y: number; ids: string[]; index: number } | null>(null);
+  const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
+  const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
+  const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
 
   // Layers rename UX
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -874,6 +886,62 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         };
       }),
     }));
+  }
+
+  function addTimelineKeyframeAtTime(trackId: string, timeMs: number) {
+    setTimeline((currentTimeline) => {
+      const ensured = ensureTimeline(currentTimeline);
+      return {
+        ...ensured,
+        tracks: ensured.tracks.map((track) => {
+          if (track.id !== trackId) return track;
+          const sorted = [...track.keyframes].sort((a, b) => a.t - b.t);
+          const clampedTime = clamp(Math.round(timeMs), 0, ensured.durationMs);
+          let value = sorted[0]?.value ?? 0;
+          for (const keyframe of sorted) {
+            if (keyframe.t <= clampedTime) value = keyframe.value;
+          }
+          return {
+            ...track,
+            keyframes: [...track.keyframes, {
+              id: genId("kf"),
+              t: clampedTime,
+              value,
+              easing: "linear",
+            }].sort((a, b) => a.t - b.t),
+          };
+        }),
+      };
+    });
+  }
+
+  function duplicateTimelineKeyframe(trackId: string, keyframeId: string, nextTimeMs: number) {
+    let createdId: string | null = null;
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        const source = track.keyframes.find((keyframe) => keyframe.id === keyframeId);
+        if (!source) return track;
+        createdId = genId("kf");
+        return {
+          ...track,
+          keyframes: [
+            ...track.keyframes,
+            {
+              ...source,
+              id: createdId,
+              t: clamp(Math.round(nextTimeMs), 0, currentTimeline.durationMs),
+            },
+          ].sort((a, b) => a.t - b.t),
+        };
+      }),
+    }));
+    if (createdId) {
+      setSelectedTimelineTrackId(trackId);
+      setSelectedTimelineKeyframeId(createdId);
+    }
+    return createdId;
   }
 
   function deleteSelectedTimelineKeyframe() {
@@ -1825,6 +1893,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Space key tracking + hotkeys
   useEffect(() => {
+    if (!zoomAnimating) return;
+    const timer = window.setTimeout(() => setZoomAnimating(false), 180);
+    return () => window.clearTimeout(timer);
+  }, [zoomAnimating]);
+
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (isTypingTarget(document.activeElement)) return;
 
@@ -1832,6 +1906,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         e.preventDefault();
         setSpaceDown(true);
       }
+      if (e.key === "Shift") setShiftDown(true);
+      if (e.key === "Alt") setAltDown(true);
 
       if (e.key.toLowerCase() === "g") {
         e.preventDefault();
@@ -1841,6 +1917,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") setSpaceDown(false);
+      if (e.key === "Shift") setShiftDown(false);
+      if (e.key === "Alt") setAltDown(false);
     };
 
     window.addEventListener("keydown", onKeyDown, { passive: false } as any);
@@ -1870,21 +1948,43 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "=" || e.key === "+") {
           e.preventDefault();
+          setZoomAnimating(true);
           setZoomMode("manual");
           setManualScale((s) => clamp(s + 0.1, 0.1, 2));
           return;
         }
         if (e.key === "-" || e.key === "_") {
           e.preventDefault();
+          setZoomAnimating(true);
           setZoomMode("manual");
           setManualScale((s) => clamp(s - 0.1, 0.1, 2));
           return;
         }
         if (e.key === "0") {
           e.preventDefault();
-          setZoomMode("fit");
+          zoomFit();
           return;
         }
+        if (e.key === "1") {
+          e.preventDefault();
+          zoom100();
+          return;
+        }
+        if (e.altKey && e.key.toLowerCase() === "a" && primarySelectedEl) {
+          e.preventDefault();
+          const matchType = primarySelectedEl.type;
+          const nextIds = config.elements
+            .filter((el) => el.type === matchType && el.locked !== true)
+            .map((el) => el.id);
+          setSelectedIds(nextIds);
+          return;
+        }
+      }
+
+      if (e.shiftKey && e.code === "Digit2") {
+        e.preventDefault();
+        zoomToSelection();
+        return;
       }
 
       // Delete (primary selection)
@@ -2058,6 +2158,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     const hits = elementsAny
       .filter((el) => el.visible !== false)
+      .filter((el) => el.locked !== true)
       .filter((el) => rectsIntersect(rect, rectFromEl(el)))
       .map((el) => el.id);
 
@@ -2084,7 +2185,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const onMove = (e: MouseEvent) => {
       const p = clientToStage(e.clientX, e.clientY);
       if (!p) return;
-      setMarquee((m) => (m.active ? { ...m, cur: p } : m));
+      setMarquee((m) => {
+        if (!m.active) return m;
+        return { ...m, cur: p };
+      });
+      window.requestAnimationFrame(() => applyMarqueeSelection());
     };
 
     const onUp = (e: MouseEvent) => {
@@ -2151,6 +2256,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     let ny = Math.round(pos.y);
     let nw = Math.round(ref.offsetWidth);
     let nh = Math.round(ref.offsetHeight);
+    const origin = resizeOriginRef.current[elId];
+
+    if (altDown && origin) {
+      const dw = nw - origin.width;
+      const dh = nh - origin.height;
+      nx = Math.round(origin.x - dw / 2);
+      ny = Math.round(origin.y - dh / 2);
+    }
 
     if (snapEnabled) {
       nx = roundToGrid(nx, gridSize);
@@ -2162,6 +2275,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     updateElement(elId, { x: nx, y: ny, width: nw, height: nh });
     clearGuides();
     setResizeStatus(null);
+    delete resizeOriginRef.current[elId];
     setDraftRects((prev) => {
       const next = { ...prev };
       delete next[elId];
@@ -2176,6 +2290,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       let nx = x;
       let ny = y;
+      const start = dragStartRef.current[id] ?? { x: el.x ?? 0, y: el.y ?? 0 };
+      if (shiftDown) {
+        const dx = x - start.x;
+        const dy = y - start.y;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          ny = start.y;
+        } else {
+          nx = start.x;
+        }
+      }
 
       if (guideSnapEnabled) {
         const exclude = new Set<string>([id]);
@@ -2183,14 +2307,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
         const rect = {
           ...rectFromEl(el),
-          x,
-          y,
-          l: x,
-          r: x + (el.width ?? 0),
-          t: y,
-          b: y + (el.height ?? 0),
-          cx: x + (el.width ?? 0) / 2,
-          cy: y + (el.height ?? 0) / 2,
+          x: nx,
+          y: ny,
+          l: nx,
+          r: nx + (el.width ?? 0),
+          t: ny,
+          b: ny + (el.height ?? 0),
+          cx: nx + (el.width ?? 0) / 2,
+          cy: ny + (el.height ?? 0) / 2,
           w: el.width ?? 0,
           h: el.height ?? 0,
         };
@@ -2218,7 +2342,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         },
       }));
     },
-    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled]
+    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled, shiftDown]
   );
 
   // Group drag (selection bounds Rnd)
@@ -2244,6 +2368,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     let gx = d.x;
     let gy = d.y;
+    if (shiftDown) {
+      const dx = gx - start.startX;
+      const dy = gy - start.startY;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        gy = start.startY;
+      } else {
+        gx = start.startX;
+      }
+    }
 
     if (guideSnapEnabled) {
       const exclude = new Set<string>(selectedIds);
@@ -2360,19 +2493,41 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   };
 
   function zoomIn() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale((s) => clamp(s + 0.1, 0.1, 2));
   }
   function zoomOut() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale((s) => clamp(s - 0.1, 0.1, 2));
   }
   function zoom100() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale(1);
   }
   function zoomFit() {
+    setZoomAnimating(true);
     setZoomMode("fit");
+  }
+
+  function zoomToSelection() {
+    if (!selectionBounds) return;
+    const pad = 80;
+    const fit = Math.min(
+      Math.max(0.1, (canvasBox.w - pad * 2) / Math.max(1, selectionBounds.w)),
+      Math.max(0.1, (canvasBox.h - pad * 2) / Math.max(1, selectionBounds.h))
+    );
+    setZoomAnimating(true);
+    setZoomMode("manual");
+    setManualScale(clamp(fit, 0.1, 2));
+    const cx = baseResolution.width / 2;
+    const cy = baseResolution.height / 2;
+    setPanPx({
+      x: (cx - selectionBounds.cx) * fit,
+      y: (cy - selectionBounds.cy) * fit,
+    });
   }
 
   const onSelectElement = useCallback((id: string, additive: boolean) => {
@@ -2382,6 +2537,36 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       return [...prev, id];
     });
   }, []);
+
+  const cycleSelectAtPoint = useCallback((clientX: number, clientY: number, additive: boolean, includeChildren = false) => {
+    const stagePoint = clientToStage(clientX, clientY);
+    if (!stagePoint) return null;
+
+    const hits = config.elements
+      .filter((el) => includeChildren || !allChildIds.has(el.id))
+      .filter((el) => el.visible !== false && el.locked !== true)
+      .filter((el) => pointInRect(stagePoint.x, stagePoint.y, rectFromEl(el as AnyEl)))
+      .map((el) => el.id)
+      .reverse();
+
+    if (!hits.length) {
+      clickCycleRef.current = null;
+      return null;
+    }
+
+    const prev = clickCycleRef.current;
+    const samePoint =
+      prev &&
+      Math.abs(prev.x - stagePoint.x) < 4 &&
+      Math.abs(prev.y - stagePoint.y) < 4 &&
+      prev.ids.join(",") === hits.join(",");
+
+    const index = samePoint ? (prev.index + 1) % hits.length : 0;
+    clickCycleRef.current = { x: stagePoint.x, y: stagePoint.y, ids: hits, index };
+    const nextId = hits[index];
+    onSelectElement(nextId, additive);
+    return nextId;
+  }, [allChildIds, clientToStage, config.elements, onSelectElement]);
 
   const openPicker = useCallback((kind: AssetKind, onPick: (url: string) => void) => {
     setAssetPicker({
@@ -2681,6 +2866,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: baseResolution.height * scale,
               transform: `translate(-50%, -50%) translate(${panPx.x}px, ${panPx.y}px)`,
               transformOrigin: "center",
+              transition: zoomAnimating ? "transform 160ms ease-out, width 160ms ease-out, height 160ms ease-out" : undefined,
             }}
             onMouseDown={(e) => {
               const isMiddle = (e as any).button === 1;
@@ -2698,6 +2884,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 height: baseResolution.height,
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
+                transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
               }}
               onMouseDown={(e) => {
                 if (spaceDown || (e as any).button === 1) return;
@@ -2745,14 +2932,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   {(guides.v || []).map((g, idx) => (
                     <div
                       key={`gv_${idx}_${g.kind}_${g.pos}`}
-                      className={"absolute top-0 bottom-0 w-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-sky-400/80")}
+                      className={"absolute top-0 bottom-0 w-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-fuchsia-400/80")}
                       style={{ left: g.pos }}
                     />
                   ))}
                   {(guides.h || []).map((g, idx) => (
                     <div
                       key={`gh_${idx}_${g.kind}_${g.pos}`}
-                      className={"absolute left-0 right-0 h-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-sky-400/80")}
+                      className={"absolute left-0 right-0 h-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-fuchsia-400/80")}
                       style={{ top: g.pos }}
                     />
                   ))}
@@ -2823,10 +3010,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
               {previewElements.map((raw) => {
                 const el = raw as AnyEl;
-                if (allChildIds.has(el.id)) return null;
+                if (allChildIds.has(el.id) && !selectedIds.includes(el.id)) return null;
 
                 const isLocked = el.locked === true;
                 const isSelected = selectedIds.includes(el.id);
+                const isPrimary = selectedIds[0] === el.id;
                 const animationPhase = previewAnimationPhases[el.id]?.phase;
                 if (animationPhase === "hidden" && !isSelected) return null;
 
@@ -2838,9 +3026,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const h = draft?.height ?? el.height;
 
                 // Figma-style high-contrast selection border
-                const selectionStyle = isSelected
+                const selectionStyle = isPrimary
                   ? { boxShadow: "0 0 0 1px #3b82f6, 0 0 0 2px white inset" }
-                  : {};
+                  : isSelected
+                    ? { boxShadow: "0 0 0 1px rgba(96,165,250,0.9)" }
+                    : {};
 
                 // Custom resize handle styles
                 const handleStyle = {
@@ -2857,8 +3047,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     bounds="parent"
                     scale={scale}
                     disableDragging={isLocked || isPanning || marquee.active}
-                    enableResizing={!isLocked && !isPanning && !marquee.active}
-                    resizeHandleStyles={{
+                    enableResizing={isPrimary && !isLocked && !isPanning && !marquee.active}
+                    lockAspectRatio={shiftDown}
+                    resizeHandleStyles={isPrimary ? {
                       topLeft: { ...handleStyle, left: -2, top: -2 },
                       topRight: { ...handleStyle, left: '100%', top: -2, marginLeft: -2 },
                       bottomLeft: { ...handleStyle, left: -2, top: '100%', marginTop: -2 },
@@ -2867,16 +3058,54 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       bottom: { ...handleStyle, left: '50%', top: '100%', marginLeft: -2, marginTop: -2, cursor: 's-resize' },
                       left: { ...handleStyle, top: '50%', left: -2, marginTop: -2, cursor: 'w-resize' },
                       right: { ...handleStyle, top: '50%', left: '100%', marginLeft: -2, marginTop: -2, cursor: 'e-resize' },
+                    } : undefined}
+                    onDragStart={(e) => {
+                      dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+                      if ((e as any).altKey === true) {
+                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: "" };
+                      } else {
+                        dragDuplicateRef.current = null;
+                      }
                     }}
                     onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
-                    onDragStop={(e, d) => handleDragStop(e, d, el.id)}
+                    onDragStop={(e, d) => {
+                      handleDragStop(e, d, el.id);
+                      const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
+                      dragDuplicateRef.current = null;
+                      delete dragStartRef.current[el.id];
+                      if (duplicateRequested) {
+                        const source = elementsById[el.id];
+                        if (source) {
+                          const copyId = genId(source.type === "box" ? "box" : source.type);
+                          const copy: AnyEl = {
+                            ...(source as any),
+                            id: copyId,
+                            name: `${source.name || defaultElementLabel(source as AnyEl)} copy`,
+                            x: d.x,
+                            y: d.y,
+                          };
+                          setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy as any] }));
+                          setSelectedIds([copyId]);
+                        }
+                      }
+                    }}
 
-                    onResizeStart={() => setResizeStatus({ x: el.x, y: el.y, width: el.width, height: el.height })}
+                    onResizeStart={() => {
+                      resizeOriginRef.current[el.id] = { x: el.x, y: el.y, width: el.width, height: el.height };
+                      setResizeStatus({ x: el.x, y: el.y, width: el.width, height: el.height });
+                    }}
                     onResize={(e, dir, ref, delta, pos) => {
-                      const nw = ref.offsetWidth;
-                      const nh = ref.offsetHeight;
-                      const nx = pos.x;
-                      const ny = pos.y;
+                      let nw = ref.offsetWidth;
+                      let nh = ref.offsetHeight;
+                      let nx = pos.x;
+                      let ny = pos.y;
+                      const origin = resizeOriginRef.current[el.id];
+                      if (altDown && origin) {
+                        const dw = nw - origin.width;
+                        const dh = nh - origin.height;
+                        nx = origin.x - dw / 2;
+                        ny = origin.y - dh / 2;
+                      }
                       setResizeStatus({
                         x: nx, y: ny,
                         width: nw, height: nh
@@ -2890,7 +3119,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     onMouseDown={(e) => {
                       if (spaceDown || (e as any).button === 1) return;
                       if (marquee.active) return;
-                      onSelectElement(el.id, (e as any).shiftKey === true);
+                      if ((e as any).ctrlKey || (e as any).metaKey) {
+                        cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                        return;
+                      }
+                      if ((e as any).shiftKey === true) {
+                        onSelectElement(el.id, true);
+                        return;
+                      }
+                      cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
                     }}
                     className={
                       (isLocked ? "cursor-not-allowed " : "cursor-move ") +
@@ -2909,7 +3146,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       visited={new Set()}
                     />
 
-                    {isSelected && !resizeStatus && (
+                    {isPrimary && !resizeStatus && (
                       <div className="absolute -top-6 left-0 text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white font-medium shadow-sm">
                         {el.name || defaultElementLabel(el)}
                         {isLocked ? " 🔒" : ""}
@@ -3050,10 +3287,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
         onAddTrack={addTimelineTrack}
         onMoveKeyframe={moveTimelineKeyframe}
+        onDuplicateKeyframe={duplicateTimelineKeyframe}
+        onAddKeyframeAtTime={addTimelineKeyframeAtTime}
       />
       </div>
     </div>
   );
+}
+
+function pointInRect(x: number, y: number, rect: { l: number; r: number; t: number; b: number }) {
+  return x >= rect.l && x <= rect.r && y >= rect.t && y <= rect.b;
 }
 
 function defaultElementLabel(el: AnyEl) {
@@ -3366,10 +3609,10 @@ function InspectorPanel({
                 type="range" min="-180" max="180"
                 className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
                 value={(element as any).rotationDeg ?? 0}
-                onChange={(e) => onChange({ rotationDeg: Number(e.target.value) } as any)}
+                onChange={(e) => onChange({ rotationDeg: snapRotationValue(Number(e.target.value), altDown) } as any)}
               />
               <div className="w-12">
-                <NumberField label="" value={(element as any).rotationDeg ?? 0} onChange={(v) => onChange({ rotationDeg: v } as any)} noLabel />
+                <NumberField label="" value={(element as any).rotationDeg ?? 0} onChange={(v) => onChange({ rotationDeg: snapRotationValue(v, altDown) } as any)} noLabel />
               </div>
             </div>
           </div>
@@ -4247,15 +4490,51 @@ function InspectorPanel({
 }
 
 
+function resolveRelativeNumberInput(currentValue: number, raw: string) {
+  const trimmed = raw.trim();
+  if (!trimmed) return currentValue;
+
+  if (/^[+\-*/]\s*-?\d+(\.\d+)?$/.test(trimmed)) {
+    const op = trimmed[0];
+    const operand = Number(trimmed.slice(1).trim());
+    if (!Number.isFinite(operand)) return currentValue;
+    if (op === "+") return currentValue + operand;
+    if (op === "-") return currentValue - operand;
+    if (op === "*") return currentValue * operand;
+    if (op === "/") return operand === 0 ? currentValue : currentValue / operand;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : currentValue;
+}
+
 function NumberField({ label, value, onChange, className, noLabel }: { label: string; value: number; onChange: (v: number) => void, className?: string; noLabel?: boolean }) {
+  const [draft, setDraft] = useState<string>(String(Number.isFinite(value) ? value : 0));
+
+  useEffect(() => {
+    setDraft(String(Number.isFinite(value) ? value : 0));
+  }, [value]);
+
   return (
     <div className={className}>
       {!noLabel && <label className="block mb-1 text-slate-400 text-[10px]">{label}</label>}
       <input
-        type="number"
+        type="text"
         className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
-        value={Number.isFinite(value) ? value : 0}
-        onChange={(e) => onChange(Number(e.target.value))}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const next = resolveRelativeNumberInput(value, draft);
+          setDraft(String(next));
+          onChange(next);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const next = resolveRelativeNumberInput(value, draft);
+            setDraft(String(next));
+            onChange(next);
+          }
+        }}
       />
     </div>
   );

@@ -45,6 +45,8 @@ type TrackRowProps = {
   playheadMs: number;
   onSelectKeyframe: (trackId: string, keyframeId: string) => void;
   onMoveKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => void;
+  onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
+  onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
 };
 
 function TimelineTrackRow({
@@ -54,6 +56,8 @@ function TimelineTrackRow({
   playheadMs,
   onSelectKeyframe,
   onMoveKeyframe,
+  onDuplicateKeyframe,
+  onAddKeyframeAtTime,
 }: TrackRowProps) {
   const laneRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -71,13 +75,21 @@ function TimelineTrackRow({
     event.stopPropagation();
     onSelectKeyframe(track.id, keyframeId);
     setDraggingId(keyframeId);
+    const duplicateMode = event.altKey;
+    let activeKeyframeId = keyframeId;
+    if (duplicateMode) {
+      const rect = laneRef.current?.getBoundingClientRect();
+      const ratio = rect ? Math.max(0, Math.min(1, (event.clientX - rect.left) / Math.max(1, rect.width))) : 0;
+      const nextTimeMs = ratio * durationMs;
+      activeKeyframeId = onDuplicateKeyframe(track.id, keyframeId, nextTimeMs) ?? keyframeId;
+    }
 
     const onMove = (moveEvent: MouseEvent) => {
-      commitDrag(keyframeId, moveEvent.clientX);
+      commitDrag(activeKeyframeId, moveEvent.clientX);
     };
 
     const onUp = (upEvent: MouseEvent) => {
-      commitDrag(keyframeId, upEvent.clientX);
+      commitDrag(activeKeyframeId, upEvent.clientX);
       setDraggingId(null);
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
@@ -95,6 +107,12 @@ function TimelineTrackRow({
       <div
         ref={laneRef}
         className="relative flex-1 h-full bg-slate-950/40"
+        onDoubleClick={(event) => {
+          const rect = laneRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / Math.max(1, rect.width)));
+          onAddKeyframeAtTime(track.id, ratio * durationMs);
+        }}
       >
         <div
           className="absolute top-0 bottom-0 w-px bg-indigo-500/70"
@@ -143,6 +161,8 @@ type Props = {
   onDeleteSelectedKeyframe: () => void;
   onAddTrack: (elementId: string, property: OverlayTimelineProperty) => void;
   onMoveKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => void;
+  onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
+  onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
 };
 
 export function TimelinePanel({
@@ -161,6 +181,8 @@ export function TimelinePanel({
   onDeleteSelectedKeyframe,
   onAddTrack,
   onMoveKeyframe,
+  onDuplicateKeyframe,
+  onAddKeyframeAtTime,
 }: Props) {
   const scrubberRef = useRef<HTMLDivElement>(null);
 
@@ -322,6 +344,8 @@ export function TimelinePanel({
                   playheadMs={playheadMs}
                   onSelectKeyframe={(trackId, keyframeId) => onSelectKeyframe(trackId, keyframeId)}
                   onMoveKeyframe={onMoveKeyframe}
+                  onDuplicateKeyframe={onDuplicateKeyframe}
+                  onAddKeyframeAtTime={onAddKeyframeAtTime}
                 />
               ))}
             </div>
