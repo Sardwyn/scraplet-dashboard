@@ -20,6 +20,7 @@ import { FontLoader } from "../shared/FontManager";
 import { BindingPicker } from "./BindingPicker";
 import { SourceCatalog } from "../shared/bindingEngine";
 import { FontPicker } from "./FontPicker";
+import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
 
 
 interface ServerOverlay {
@@ -451,15 +452,37 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const { baseResolution } = config;
 
+  const previewElements = useMemo(
+    () =>
+      config.elements.map((el) => {
+        const overrideVisible = previewVisibilityOverrides[el.id];
+        if (typeof overrideVisible !== "boolean") return el;
+        return { ...el, visible: overrideVisible } as AnyEl;
+      }),
+    [config.elements, previewVisibilityOverrides]
+  );
+
   // Memoize elementsById using the SAME logic as runtime
   // This allows O(1) lookup for recursive rendering
   const elementsById = useMemo(() => {
     const map: Record<string, AnyEl> = {};
     for (const el of config.elements) {
-      map[el.id] = el;
+      map[el.id] = el as AnyEl;
     }
     return map;
   }, [config.elements]);
+
+  const previewElementsById = useMemo(() => {
+    const map: Record<string, AnyEl> = {};
+    for (const el of previewElements) {
+      map[el.id] = el as AnyEl;
+    }
+    return map;
+  }, [previewElements]);
+
+  const previewAnimationPhases = useElementAnimationPhases(
+    previewElements as OverlayElement[]
+  );
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -474,6 +497,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     title: "Preview Title",
     subtitle: "Preview Subtitle"
   });
+  const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
 
   // Merge preview data if active
   const renderData = useMemo(() => {
@@ -490,6 +514,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       "lower_third.subtitle": ltPreview.subtitle,
     };
   }, [testData, ltPreview, primarySelectedId, config.elements]);
+
+  useEffect(() => {
+    if (!primarySelectedId) return;
+
+    setPreviewVisibilityOverrides((prev) => {
+      if (!(primarySelectedId in prev)) return prev;
+      const next = { ...prev };
+      delete next[primarySelectedId];
+      return next;
+    });
+  }, [primarySelectedId]);
   const canvasOuterRef = useRef<HTMLDivElement | null>(null);
   const [canvasBox, setCanvasBox] = useState({ w: 1000, h: 700 });
 
@@ -538,7 +573,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const scale = zoomMode === "fit" ? fitScale : clamp(manualScale, 0.1, 2);
 
   const elementsAny = useMemo(() => config.elements.map((e) => e as AnyEl), [config.elements]);
-
   const selectedEls = useMemo(() => {
     const set = new Set(selectedIds);
     return elementsAny
@@ -578,13 +612,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
-    config.elements.forEach(e => {
+    previewElements.forEach(e => {
       if (e.type === 'group' || e.type === 'mask') {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
     return s;
-  }, [config.elements]);
+  }, [previewElements]);
 
   function updateElement(id: string, patch: Partial<AnyEl>) {
     setConfig((prev) => {
@@ -632,6 +666,28 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   function deleteElement(id: string) {
     setConfig((prev) => ({ ...prev, elements: prev.elements.filter((e) => e.id !== id) }));
     setSelectedIds((prevSel) => prevSel.filter((x) => x !== id));
+  }
+
+  function triggerPreviewVisibility(id: string, action: "enter" | "exit" | "reset") {
+    if (action === "reset") {
+      setPreviewVisibilityOverrides((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+
+    if (action === "exit") {
+      setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
+      return;
+    }
+
+    setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
+    window.setTimeout(() => {
+      setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
+    }, 20);
   }
 
   function addText() {
@@ -2447,13 +2503,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 </div>
               )}
 
-              {config.elements.map((raw) => {
+              {previewElements.map((raw) => {
                 const el = raw as AnyEl;
-                if (el.visible === false) return null;
                 if (allChildIds.has(el.id)) return null;
 
                 const isLocked = el.locked === true;
                 const isSelected = selectedIds.includes(el.id);
+                const animationPhase = previewAnimationPhases[el.id]?.phase;
+                if (animationPhase === "hidden" && !isSelected) return null;
 
                 // Draft state
                 const draft = draftRects[el.id];
@@ -2526,8 +2583,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     <ElementRenderer
                       element={el as any}
                       layout="fill"
-                      elementsById={elementsById}
+                      elementsById={previewElementsById}
                       overlayComponents={overlayComponents}
+                      animationPhase={animationPhase}
+                      animationPhases={previewAnimationPhases}
                       data={renderData}
                       visited={new Set()}
                     />
@@ -2601,6 +2660,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
+            previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
+            onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
@@ -2658,6 +2719,8 @@ interface InspectorProps {
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  previewVisible?: boolean;
+  onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
@@ -2738,7 +2801,9 @@ function InspectorPanel({
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask
+  onEditMaster, onReleaseMask,
+  previewVisible,
+  onPreviewVisibilityAction,
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
@@ -3400,6 +3465,38 @@ function InspectorPanel({
       {element.type !== "lower_third" && (
         <AccordionSection title="Animation" defaultOpen={true}>
           <div className="space-y-3">
+            <div className="text-[10px] text-slate-500">
+              Delay is in milliseconds. Use the preview controls below to test enter and exit without saving visibility changes.
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("enter")}
+                className="flex-1 bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-200 text-[10px] py-1 rounded border border-emerald-800 transition-colors"
+              >
+                Test Enter
+              </button>
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("exit")}
+                className="flex-1 bg-amber-900/30 hover:bg-amber-800/50 text-amber-200 text-[10px] py-1 rounded border border-amber-800 transition-colors"
+              >
+                Test Exit
+              </button>
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("reset")}
+                className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] py-1 rounded border border-slate-700 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="text-[10px] text-slate-500">
+              Preview state: <span className="text-slate-300">{previewVisible ? "Visible" : "Hidden"}</span>
+            </div>
+
             <div className="flex items-center gap-2">
               <label className="text-[10px] text-slate-500 w-12 flex-none">Enter</label>
               <select
