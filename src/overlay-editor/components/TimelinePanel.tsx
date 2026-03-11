@@ -58,8 +58,6 @@ function TimelineTrackRow({
   const laneRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
-  const pixelsPerMs = durationMs > 0 ? 1000 / durationMs : 0;
-
   const commitDrag = (keyframeId: string, clientX: number) => {
     const lane = laneRef.current;
     if (!lane) return;
@@ -116,7 +114,7 @@ function TimelineTrackRow({
                   : "bg-slate-300 border-slate-950"
             }`}
             style={{
-              left: `${keyframe.t * pixelsPerMs}px`,
+              left: `${(keyframe.t / Math.max(1, durationMs)) * 100}%`,
               width: KEYFRAME_SIZE,
               height: KEYFRAME_SIZE,
               marginLeft: -(KEYFRAME_SIZE / 2),
