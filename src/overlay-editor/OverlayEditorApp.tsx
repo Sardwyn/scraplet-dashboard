@@ -29,6 +29,8 @@ import { FontPicker } from "./FontPicker";
 import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
+import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
+import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
 
 
@@ -534,6 +536,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Template Picker State
   // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const [selectedTimelineTrackId, setSelectedTimelineTrackId] = useState<string | null>(null);
@@ -2022,6 +2025,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const onKeyDown = (e: KeyboardEvent) => {
       if (isTypingTarget(document.activeElement)) return;
 
+      if (shortcutMatchesEvent("show-shortcuts", e)) {
+        e.preventDefault();
+        setShowShortcutModal(true);
+        return;
+      }
+
       if (e.code === "Space") {
         e.preventDefault();
         setSpaceDown(true);
@@ -2029,9 +2038,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (e.key === "Shift") setShiftDown(true);
       if (e.key === "Alt") setAltDown(true);
 
-      if (e.key.toLowerCase() === "g") {
+      if (shortcutMatchesEvent("toggle-grid", e)) {
         e.preventDefault();
         setShowGrid((v) => !v);
+        return;
+      }
+
+      if (shortcutMatchesEvent("group", e)) {
+        e.preventDefault();
+        groupSelected();
+        return;
+      }
+
+      if (shortcutMatchesEvent("ungroup", e)) {
+        e.preventDefault();
+        ungroupSelected();
+        return;
       }
     };
 
@@ -2052,13 +2074,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Keyboard UX (nudge, delete, duplicate, zoom)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (showShortcutModal && e.key === "Escape") {
+        e.preventDefault();
+        setShowShortcutModal(false);
+        return;
+      }
       if (isTypingTarget(document.activeElement)) return;
 
       const hasSel = !!primarySelectedEl;
       const step = e.shiftKey ? 10 : 1;
 
       // Duplicate: Ctrl/Cmd + D
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+      if (shortcutMatchesEvent("duplicate", e)) {
         e.preventDefault();
         duplicateSelected();
         return;
@@ -2080,17 +2107,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           setManualScale((s) => clamp(s - 0.1, 0.1, 2));
           return;
         }
-        if (e.key === "0") {
+        if (shortcutMatchesEvent("zoom-fit", e)) {
           e.preventDefault();
           zoomFit();
           return;
         }
-        if (e.key === "1") {
+        if (shortcutMatchesEvent("zoom-100", e)) {
           e.preventDefault();
           zoom100();
           return;
         }
-        if (e.altKey && e.key.toLowerCase() === "a" && primarySelectedEl) {
+        if (shortcutMatchesEvent("select-matching", e) && primarySelectedEl) {
           e.preventDefault();
           const matchType = primarySelectedEl.type;
           const nextIds = config.elements
@@ -2101,7 +2128,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         }
       }
 
-      if (e.shiftKey && e.code === "Digit2") {
+      if (shortcutMatchesEvent("zoom-selection", e)) {
         e.preventDefault();
         zoomToSelection();
         return;
@@ -2146,7 +2173,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize]);
+  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
@@ -3025,7 +3052,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         {/* Footer / Shortcuts */}
         <div className="flex justify-between border-t border-[rgba(255,255,255,0.08)] p-2 text-[11px] leading-[1.4] text-slate-600">
           <span>Ctrl+D Duplicate</span>
-          <span>Del Delete</span>
+          <span>? Shortcuts</span>
         </div>
       </div>
 
@@ -3097,10 +3124,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={zoomOut} className={uiClasses.iconButton}>－</button>
+            <button onClick={zoomOut} className={uiClasses.iconButton} title={formatShortcutTooltip("zoom-canvas", "Zoom Out")}>－</button>
             <span className="w-10 text-center font-mono text-[12px] leading-[1.4] text-slate-300">{Math.round(scale * 100)}%</span>
-            <button onClick={zoomIn} className={uiClasses.iconButton}>＋</button>
-            <button onClick={zoomFit} className={uiClasses.button}>Fit</button>
+            <button onClick={zoomIn} className={uiClasses.iconButton} title={formatShortcutTooltip("zoom-canvas", "Zoom In")}>＋</button>
+            <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
 
@@ -3648,6 +3675,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onDuplicateKeyframe={duplicateTimelineKeyframe}
         onAddKeyframeAtTime={addTimelineKeyframeAtTime}
       />
+      <ShortcutCheatsheetModal open={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
       </div>
     </div>
   );
@@ -5333,7 +5361,7 @@ function CreationToolbar({
             onClick={onGroup}
             disabled={!canGroup}
             className={`${uiClasses.iconButton} disabled:opacity-20`}
-            title="Group Selection (Ctrl+G)"
+            title={formatShortcutTooltip("group")}
           >
             <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>
           </button>
@@ -5341,7 +5369,7 @@ function CreationToolbar({
             onClick={onUngroup}
             disabled={!canUngroup}
             className={`${uiClasses.iconButton} disabled:opacity-20`}
-            title="Ungroup (Ctrl+Shift+G)"
+            title={formatShortcutTooltip("ungroup")}
           >
             <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
           </button>
