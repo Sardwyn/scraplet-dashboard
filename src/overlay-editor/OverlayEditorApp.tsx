@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Rnd, RndDragCallback, RndResizeCallback } from "react-rnd";
 import {
+  OverlayAnimation,
   OverlayConfigV0,
   OverlayElement,
   OverlayTextElement,
@@ -11,7 +12,8 @@ import {
   OverlayShapeKind,
   OverlayMediaFit,
   OverlayLowerThirdElement,
-  OverlayComponentDef
+  OverlayComponentDef,
+  OverlayMotionPreset
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
@@ -896,6 +898,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   function handleMaskElement(shapeId: string) {
     const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
+
     setConfig(prev => {
       const els = [...prev.elements];
       const shapeIdx = els.findIndex(e => e.id === shapeId);
@@ -903,38 +906,79 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const shapeEl = els[shapeIdx];
 
-      // Prefer the OTHER currently selected element as content.
-      // This lets the user explicitly select mask shape + content before clicking mask.
-      const otherSelectedId = selectedIds.find(id => id !== shapeId);
-      let contentEl = otherSelectedId
-        ? els.find(e => e.id === otherSelectedId)
-        : undefined;
+      // Use ALL selected ids except the shape itself as content candidates.
+      const contentIds = selectedIds.filter(id => id !== shapeId);
 
-      // Fall back to the element below in z-order if nothing else selected.
-      if (!contentEl) {
+      let contentNode: AnyEl | undefined;
+
+      if (contentIds.length === 1) {
+        contentNode = els.find(e => e.id === contentIds[0]) as AnyEl | undefined;
+      } else if (contentIds.length > 1) {
+        const contentEls = els.filter(e => contentIds.includes(e.id)) as AnyEl[];
+        if (!contentEls.length) return prev;
+
+        const minX = Math.min(...contentEls.map(e => e.x ?? 0));
+        const minY = Math.min(...contentEls.map(e => e.y ?? 0));
+        const maxX = Math.max(...contentEls.map(e => (e.x ?? 0) + (e.width ?? 0)));
+        const maxY = Math.max(...contentEls.map(e => (e.y ?? 0) + (e.height ?? 0)));
+
+        const groupId = genId("group");
+        const groupEl: AnyEl = {
+          id: groupId,
+          type: "group",
+          name: "Masked Content",
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          visible: true,
+          locked: false,
+          opacity: 1,
+          childIds: contentEls.map(e => e.id),
+        } as any;
+
+        els.push(groupEl);
+        contentNode = groupEl;
+      } else {
+        // No explicit content selected: fall back to the layer below in z-order.
         if (shapeIdx <= 0) return prev;
-        contentEl = els[shapeIdx - 1];
+        contentNode = els[shapeIdx - 1] as AnyEl | undefined;
       }
 
-      if (!contentEl) return prev;
+      if (!contentNode) return prev;
 
-      const x = Math.min(shapeEl.x, contentEl.x);
-      const y = Math.min(shapeEl.y, contentEl.y);
-      const w = Math.max(shapeEl.x + shapeEl.width, contentEl.x + contentEl.width) - x;
-      const h = Math.max(shapeEl.y + shapeEl.height, contentEl.y + contentEl.height) - y;
+      const x = Math.min(shapeEl.x ?? 0, contentNode.x ?? 0);
+      const y = Math.min(shapeEl.y ?? 0, contentNode.y ?? 0);
+      const w = Math.max(
+        (shapeEl.x ?? 0) + (shapeEl.width ?? 0),
+        (contentNode.x ?? 0) + (contentNode.width ?? 0)
+      ) - x;
+      const h = Math.max(
+        (shapeEl.y ?? 0) + (shapeEl.height ?? 0),
+        (contentNode.y ?? 0) + (contentNode.height ?? 0)
+      ) - y;
 
-      const maskGroup: any = {
+      const maskGroup: AnyEl = {
         id: maskId,
         type: "mask",
         name: `Mask (${shapeEl.name || "Shape"})`,
-        x, y, width: w, height: h,
-        visible: true, locked: false, opacity: 1,
-        childIds: [shapeId, contentEl.id]
-      };
+        x,
+        y,
+        width: w,
+        height: h,
+        visible: true,
+        locked: false,
+        opacity: 1,
+        invert: false,
+        childIds: [shapeId, contentNode.id],
+      } as any;
 
-      const newElements = [...els, maskGroup];
-      return { ...prev, elements: newElements };
+      return {
+        ...prev,
+        elements: [...els, maskGroup as any],
+      };
     });
+
     setSelectedIds([maskId]);
   }
 
@@ -1127,18 +1171,121 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([copyId]);
   }
 
-  function moveLayer(id: string, dir: "up" | "down") {
+  function moveLayerBy(id: string, delta: number) {
     setConfig((prev) => {
       const idx = prev.elements.findIndex((e) => e.id === id);
       if (idx < 0) return prev;
 
-      const target = dir === "up" ? idx + 1 : idx - 1;
-      if (target < 0 || target >= prev.elements.length) return prev;
+      const el = prev.elements[idx] as any;
+
+      // V1 rule: do not reorder children inside masks.
+      // Mask child order is structural: [maskShape, content]
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+      if (parentMask) return prev;
 
       const next = prev.elements.slice();
+
+      // If this element is inside a group, reorder within group.childIds only.
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const childIdx = childIds.indexOf(id);
+        if (childIdx === -1) return prev;
+
+        const targetIdx = Math.max(0, Math.min(childIds.length - 1, childIdx + delta));
+        if (targetIdx === childIdx) return prev;
+
+        childIds.splice(childIdx, 1);
+        childIds.splice(targetIdx, 0, id);
+
+        return {
+          ...prev,
+          elements: next.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      // Otherwise reorder at root level in the flat elements array.
+      const target = idx + delta;
+      if (target < 0 || target >= next.length) return prev;
+
       const [picked] = next.splice(idx, 1);
       next.splice(target, 0, picked);
       return { ...prev, elements: next };
+    });
+  }
+
+  function bringLayerToFront(id: string) {
+    setConfig((prev) => {
+      const el = prev.elements.find((e) => e.id === id) as any;
+      if (!el) return prev;
+
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      );
+      if (parentMask) return prev;
+
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const idx = childIds.indexOf(id);
+        if (idx === -1 || idx === childIds.length - 1) return prev;
+        childIds.splice(idx, 1);
+        childIds.push(id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const kept = prev.elements.filter((e) => e.id !== id);
+      return { ...prev, elements: [...kept, el] };
+    });
+  }
+
+  function sendLayerToBack(id: string) {
+    setConfig((prev) => {
+      const el = prev.elements.find((e) => e.id === id) as any;
+      if (!el) return prev;
+
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      );
+      if (parentMask) return prev;
+
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const idx = childIds.indexOf(id);
+        if (idx <= 0) return prev;
+        childIds.splice(idx, 1);
+        childIds.unshift(id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const kept = prev.elements.filter((e) => e.id !== id);
+      return { ...prev, elements: [el, ...kept] };
     });
   }
 
@@ -1991,6 +2138,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onToggleLock={(id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) })}
                 onMask={handleMaskElement}
                 onReleaseMask={handleReleaseMask}
+                onMoveUp={(id) => moveLayerBy(id, 1)}
+                onMoveDown={(id) => moveLayerBy(id, -1)}
+                onBringToFront={bringLayerToFront}
+                onSendToBack={sendLayerToBack}
               />
             </div>
           )}
@@ -2566,6 +2717,22 @@ function ExposeButton({
   );
 }
 
+const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string }> = [
+  { value: "none", label: "None" },
+  { value: "fade", label: "Fade" },
+  { value: "slideUp", label: "Slide Up" },
+  { value: "slideDown", label: "Slide Down" },
+  { value: "slideLeft", label: "Slide Left" },
+  { value: "slideRight", label: "Slide Right" },
+];
+
+const GENERIC_EASING_OPTIONS: Array<NonNullable<OverlayAnimation["easing"]>> = [
+  "ease-out",
+  "ease-in",
+  "ease-in-out",
+  "linear",
+];
+
 function InspectorPanel({
   element, onChange, onRename, onPickImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
@@ -2882,6 +3049,114 @@ function InspectorPanel({
             </div>
           )}
 
+          {element.type !== "lower_third" && (
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase font-bold text-slate-500">Animation</label>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Enter</label>
+                <select
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  value={(element as any).animation?.enter ?? "none"}
+                  onChange={(e) =>
+                    onChange({
+                      animation: {
+                        ...(element as any).animation,
+                        enter: e.target.value as OverlayMotionPreset,
+                      },
+                    } as any)
+                  }
+                >
+                  {GENERIC_MOTION_OPTIONS.map((option) => (
+                    <option key={`enter-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Exit</label>
+                <select
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  value={(element as any).animation?.exit ?? "none"}
+                  onChange={(e) =>
+                    onChange({
+                      animation: {
+                        ...(element as any).animation,
+                        exit: e.target.value as OverlayMotionPreset,
+                      },
+                    } as any)
+                  }
+                >
+                  {GENERIC_MOTION_OPTIONS.map((option) => (
+                    <option key={`exit-${option.value}`} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Dur</label>
+                <NumberField
+                  label=""
+                  value={(element as any).animation?.durationMs ?? 400}
+                  onChange={(v) =>
+                    onChange({
+                      animation: {
+                        ...(element as any).animation,
+                        durationMs: v,
+                      },
+                    } as any)
+                  }
+                  noLabel
+                  className="flex-1"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Delay</label>
+                <NumberField
+                  label=""
+                  value={(element as any).animation?.delayMs ?? 0}
+                  onChange={(v) =>
+                    onChange({
+                      animation: {
+                        ...(element as any).animation,
+                        delayMs: v,
+                      },
+                    } as any)
+                  }
+                  noLabel
+                  className="flex-1"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] text-slate-500 w-12 flex-none">Ease</label>
+                <select
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  value={(element as any).animation?.easing ?? "ease-out"}
+                  onChange={(e) =>
+                    onChange({
+                      animation: {
+                        ...(element as any).animation,
+                        easing: e.target.value as NonNullable<OverlayAnimation["easing"]>,
+                      },
+                    } as any)
+                  }
+                >
+                  {GENERIC_EASING_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
@@ -3175,8 +3450,14 @@ function InspectorPanel({
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xl">🎭</span>
                   <div>
-                    <div className="text-xs font-bold text-indigo-300">Mask Group</div>
-                    <div className="text-[10px] text-slate-500">Clips second child to first child geometry.</div>
+                    <div className="text-xs font-bold text-indigo-300">
+                      {(element as any).invert ? "Inverse Mask" : "Mask Group"}
+                    </div>
+                    <div className="text-[10px] text-slate-500">
+                      {(element as any).invert
+                        ? "Hides content inside the mask shape and shows content outside it."
+                        : "Shows content inside the mask shape and hides content outside it."}
+                    </div>
                   </div>
                 </div>
 
@@ -3189,6 +3470,24 @@ function InspectorPanel({
                     <span className="text-slate-500">Content Layer:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[1]}</span>
                   </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-indigo-500/10">
+                  <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-200">Invert Mask</div>
+                      <div className="text-[10px] text-slate-500">
+                        Cut a hole instead of clipping to the shape
+                      </div>
+                    </div>
+
+                    <input
+                      type="checkbox"
+                      checked={!!(element as any).invert}
+                      onChange={(e) => onChange({ invert: e.target.checked } as any)}
+                      className="rounded border-slate-700 bg-slate-800 accent-indigo-500"
+                    />
+                  </label>
                 </div>
 
                 {onReleaseMask && (
@@ -3765,7 +4064,11 @@ function LayersPanel({
   onToggleVisible,
   onToggleLock,
   onMask,
-  onReleaseMask
+  onReleaseMask,
+  onMoveUp,
+  onMoveDown,
+  onBringToFront,
+  onSendToBack
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -3775,6 +4078,10 @@ function LayersPanel({
   onToggleLock: (id: string) => void;
   onMask?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onBringToFront: (id: string) => void;
+  onSendToBack: (id: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -3853,25 +4160,32 @@ function LayersPanel({
           </span>
 
           {/* Label */}
-          <span className="flex-1 text-xs truncate font-medium">
+          <span className="min-w-0 flex-1 text-xs truncate font-medium">
             {el.name || defaultElementLabel(el)}
           </span>
 
           {/* Controls (Hover/Selected) */}
-          <div className={`flex items-center gap-1 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          <div
+            className={`flex items-center gap-1 flex-shrink-0 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+          >
             <button
               onClick={(e) => { e.stopPropagation(); onToggleLock(el.id); }}
               className={`p-1 rounded hover:bg-white/10 ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
+              title={isLocked ? "Unlock" : "Lock"}
             >
               {isLocked ? "🔒" : "🔓"}
             </button>
+
             <button
               onClick={(e) => { e.stopPropagation(); onToggleVisible(el.id); }}
               className={`p-1 rounded hover:bg-white/10 ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
+              title={isVisible ? "Hide" : "Show"}
             >
               {isVisible ? "👁️" : "🙈"}
             </button>
-            {el.type === 'shape' && onMask && (
+
+            {el.type === "shape" && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
                 className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-indigo-400"
@@ -3880,7 +4194,8 @@ function LayersPanel({
                 🎭
               </button>
             )}
-            {el.type === 'mask' && onReleaseMask && (
+
+            {el.type === "mask" && onReleaseMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onReleaseMask(el.id); }}
                 className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-red-400"

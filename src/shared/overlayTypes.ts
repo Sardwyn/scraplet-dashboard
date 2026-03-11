@@ -33,47 +33,28 @@ export type OverlayClipType = "none" | "roundRect" | "circle";
 export interface OverlayElementBase extends OverlayEditorFields {
   id: string;
   type: OverlayElementType;
-
-  // V1 only; V0 should omit this.
   unit?: OverlayUnit;
-
-  // Position + size:
-  // - V0: px in baseResolution space
-  // - V1: 0..1 normalized
   x: number;
   y: number;
   width: number;
   height: number;
-
   pinned?: boolean;
-
-  // Optional: consistent across all element types
-  opacity?: number; // 0..1
-
-  // Advanced Transforms
-  rotationDeg?: number; // -180..180
-
-  // Effects
+  opacity?: number;
+  rotationDeg?: number;
   shadow?: {
     enabled: boolean;
     color: string;
     blur: number;
     x: number;
-    y: number; // offset
-    spread?: number; // optional (box-shadow only)
+    y: number;
+    spread?: number;
   };
-
-  // Clipping / Masking
   clip?: {
     type: OverlayClipType;
-    radius?: number; // used if type="roundRect"
+    radius?: number;
   };
-
-  /**
-   * Dynamic property bindings.
-   * Maps property name (e.g. "text", "src") to a binding configuration.
-   */
   bindings?: Record<string, DynamicBinding>;
+  animation?: OverlayAnimation;
 }
 
 /* =========================
@@ -129,6 +110,7 @@ export interface OverlayGroupElement extends OverlayElementBase {
 export interface OverlayMaskElement extends OverlayElementBase {
   type: "mask";
   childIds: string[]; // [maskShape, content]
+  invert?: boolean;
 }
 
 export function isMaskElement(el: OverlayElement): el is OverlayMaskElement {
@@ -137,6 +119,32 @@ export function isMaskElement(el: OverlayElement): el is OverlayMaskElement {
 
 export function isGroupElement(el: OverlayElement): el is OverlayGroupElement {
   return el.type === "group";
+}
+
+/* =========================
+   ANIMATION
+========================= */
+
+export type OverlayMotionPreset =
+  | "none"
+  | "fade"
+  | "slideUp"
+  | "slideDown"
+  | "slideLeft"
+  | "slideRight";
+
+export type OverlayAnimationPhase =
+  | "hidden"
+  | "entering"
+  | "visible"
+  | "exiting";
+
+export interface OverlayAnimation {
+  enter?: OverlayMotionPreset;
+  exit?: OverlayMotionPreset;
+  durationMs?: number;
+  delayMs?: number;
+  easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
 }
 
 /* =========================
@@ -340,7 +348,7 @@ export interface OverlayLowerThirdElement extends OverlayElementBase {
     in?: LowerThirdAnim;                      // default "slideUp"
     out?: LowerThirdAnimOut;                  // default "slideDown"
     durationMs?: number;                      // default 450
-    easing?: string;                          // default "cubic-bezier(0.2, 0.9, 0.2, 1)"
+    easing?: OverlayAnimation["easing"];      // runtime may still default custom easing
   };
   defaultDurationMs?: number;                 // default 8000
 }

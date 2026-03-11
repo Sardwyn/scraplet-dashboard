@@ -6,6 +6,7 @@ import {
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
+import { useElementAnimationPhases } from "./useElementAnimationPhases";
 
 
 declare global {
@@ -353,6 +354,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     });
   }, [baseElements, overrides]);
 
+  const animationPhases = useElementAnimationPhases(elements);
+
 
   // Load config (static-ish)
   useEffect(() => {
@@ -555,6 +558,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                     y: 0,
                   }}
                   elementsById={elementsById}
+                  animationPhase={animationPhases[el.id]?.phase}
+                  animationPhases={animationPhases}
                   data={{}} // Test data placeholder
                   visited={new Set()}
                 />
@@ -570,6 +575,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 element={el}
                 yOffset={pinnedHeight}
                 elementsById={elementsById}
+                animationPhase={animationPhases[el.id]?.phase}
+                animationPhases={animationPhases}
                 data={eventData}
                 visited={new Set()}
               />
