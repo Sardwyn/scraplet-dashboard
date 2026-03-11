@@ -3,10 +3,12 @@ import { createRoot } from "react-dom/client";
 import {
   OverlayElement,
   OverlayConfigV0,
+  OverlayTimelineProperty,
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
 import { useElementAnimationPhases } from "./useElementAnimationPhases";
+import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 
 
 declare global {
@@ -37,6 +39,43 @@ type OverlayStateV0 = {
   events: any[];
   triggers: any[];
 };
+
+const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
+  "x",
+  "y",
+  "width",
+  "height",
+  "opacity",
+  "rotationDeg",
+];
+
+function applyTimelineOverrides(
+  element: OverlayElement,
+  timelineValues?: Partial<Record<OverlayTimelineProperty, number>>
+) {
+  if (!timelineValues) return element;
+
+  const nextBindings = element.bindings ? { ...element.bindings } : undefined;
+  let removedBinding = false;
+
+  for (const property of TIMELINE_PROPERTIES) {
+    if (timelineValues[property] === undefined) continue;
+    if (nextBindings && property in nextBindings) {
+      delete nextBindings[property];
+      removedBinding = true;
+    }
+  }
+
+  return {
+    ...element,
+    ...timelineValues,
+    bindings: removedBinding
+      ? Object.keys(nextBindings || {}).length > 0
+        ? nextBindings
+        : undefined
+      : element.bindings,
+  } as OverlayElement;
+}
 
 
 
@@ -331,6 +370,8 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
   const [state, setState] = useState<OverlayStateV0 | null>(null);
+  const [playheadMs, setPlayheadMs] = useState(0);
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
 
   // ... (existing refs/state) ...
   const pinnedMeasureRef = useRef<HTMLDivElement>(null);
@@ -344,15 +385,19 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // We need the elements list to find targets
   const baseElements = overlay?.elements ?? [];
   const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements);
+  const timelineValues = useMemo(
+    () => evaluateTimeline(overlay?.timeline, playheadMs),
+    [overlay?.timeline, playheadMs]
+  );
 
   // Apply Overrides Merge
   const elements = React.useMemo(() => {
     return baseElements.map(el => {
       const ov = overrides[el.id];
-      if (ov) return { ...el, ...ov } as OverlayElement;
-      return el;
+      const merged = ov ? ({ ...el, ...ov } as OverlayElement) : el;
+      return applyTimelineOverrides(merged, timelineValues[el.id]);
     });
-  }, [baseElements, overrides]);
+  }, [baseElements, overrides, timelineValues]);
 
   const animationPhases = useElementAnimationPhases(elements);
 
@@ -375,6 +420,47 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       cancelled = true;
     };
   }, [publicId]);
+
+  useEffect(() => {
+    const durationMs = overlay?.timeline?.durationMs ?? 0;
+    setPlayheadMs(0);
+    setIsTimelinePlaying(durationMs > 0);
+  }, [overlay?.timeline?.durationMs, overlay?.timeline?.tracks]);
+
+  useEffect(() => {
+    if (!isTimelinePlaying) return;
+
+    const durationMs = overlay?.timeline?.durationMs ?? 0;
+    if (durationMs <= 0) {
+      setIsTimelinePlaying(false);
+      return;
+    }
+
+    let frameId = 0;
+    let lastAt = performance.now();
+
+    const tick = (now: number) => {
+      const delta = now - lastAt;
+      lastAt = now;
+
+      let shouldContinue = true;
+      setPlayheadMs((prev) => {
+        const next = Math.min(durationMs, prev + delta);
+        if (next >= durationMs) {
+          shouldContinue = false;
+          setIsTimelinePlaying(false);
+        }
+        return next;
+      });
+
+      if (shouldContinue) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs]);
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {

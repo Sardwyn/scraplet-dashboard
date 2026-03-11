@@ -161,6 +161,43 @@ export interface OverlayPatternFill {
 }
 
 /* =========================
+   TIMELINE
+========================= */
+
+export type OverlayTimelineProperty =
+  | "x"
+  | "y"
+  | "width"
+  | "height"
+  | "opacity"
+  | "rotationDeg";
+
+export type OverlayTimelineEasing =
+  | "linear"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out";
+
+export interface OverlayTimelineKeyframe {
+  id: string;
+  t: number;
+  value: number;
+  easing?: OverlayTimelineEasing;
+}
+
+export interface OverlayTimelineTrack {
+  id: string;
+  elementId: string;
+  property: OverlayTimelineProperty;
+  keyframes: OverlayTimelineKeyframe[];
+}
+
+export interface OverlayTimeline {
+  durationMs: number;
+  tracks: OverlayTimelineTrack[];
+}
+
+/* =========================
    TEXT
 ========================= */
 
@@ -420,6 +457,7 @@ export interface OverlayConfigV0 {
 
   // IMPORTANT: make this optional to allow transparent default
   backgroundColor?: string;
+  timeline?: OverlayTimeline;
 
   elements: Array<
     | (Omit<OverlayTextElement, "fontSizePx" | "fontSizeRel" | "unit"> & {
@@ -457,6 +495,7 @@ export interface OverlayConfigV0 {
 export interface OverlayConfigV1 {
   version: 1;
   backgroundColor?: string; // optional => transparent default
+  timeline?: OverlayTimeline;
   elements: OverlayElement[];
 }
 

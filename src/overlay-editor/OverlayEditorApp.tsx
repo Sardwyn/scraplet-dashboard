@@ -6,6 +6,10 @@ import {
   OverlayElement,
   OverlayPatternFill,
   OverlayPatternFit,
+  OverlayTimeline,
+  OverlayTimelineKeyframe,
+  OverlayTimelineProperty,
+  OverlayTimelineTrack,
   OverlayTextElement,
   OverlayBoxElement,
   OverlayShapeElement,
@@ -23,6 +27,8 @@ import { BindingPicker } from "./BindingPicker";
 import { SourceCatalog } from "../shared/bindingEngine";
 import { FontPicker } from "./FontPicker";
 import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
+import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
+import { TimelinePanel } from "./components/TimelinePanel";
 
 
 interface ServerOverlay {
@@ -94,6 +100,18 @@ type AssetItem = {
   addedAt: number;
 };
 
+const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
+  "x",
+  "y",
+  "width",
+  "height",
+  "opacity",
+  "rotationDeg",
+];
+
+const DEFAULT_TIMELINE_DURATION_MS = 5000;
+const KEYFRAME_TIME_EPSILON_MS = 10;
+
 function genId(prefix: string) {
   const rand =
     typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -121,6 +139,45 @@ function isTypingTarget(el: Element | null) {
 
 function uniq<T>(arr: T[]) {
   return Array.from(new Set(arr));
+}
+
+function ensureTimeline(timeline?: OverlayTimeline): OverlayTimeline {
+  return {
+    durationMs: Math.max(100, timeline?.durationMs ?? DEFAULT_TIMELINE_DURATION_MS),
+    tracks: [...(timeline?.tracks ?? [])],
+  };
+}
+
+function isTimelineEligibleElement(element: OverlayElement) {
+  return element.type !== "lower_third";
+}
+
+function applyTimelineOverridesToElement(
+  element: OverlayElement,
+  timelineValues?: Partial<Record<OverlayTimelineProperty, number>>
+) {
+  if (!timelineValues) return element;
+
+  const nextBindings = element.bindings ? { ...element.bindings } : undefined;
+  let removedBinding = false;
+
+  for (const property of TIMELINE_PROPERTIES) {
+    if (timelineValues[property] === undefined) continue;
+    if (nextBindings && property in nextBindings) {
+      delete nextBindings[property];
+      removedBinding = true;
+    }
+  }
+
+  return {
+    ...element,
+    ...timelineValues,
+    bindings: removedBinding
+      ? Object.keys(nextBindings || {}).length > 0
+        ? nextBindings
+        : undefined
+      : element.bindings,
+  } as OverlayElement;
 }
 
 function rectFromEl(el: AnyEl) {
@@ -385,6 +442,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Template Picker State
   // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const [selectedTimelineTrackId, setSelectedTimelineTrackId] = useState<string | null>(null);
+  const [selectedTimelineKeyframeId, setSelectedTimelineKeyframeId] = useState<string | null>(null);
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
   const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
@@ -465,15 +526,26 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   const { baseResolution } = config;
+  const timeline = useMemo(() => ensureTimeline(config.timeline), [config.timeline]);
+  const timelineValues = useMemo(
+    () => evaluateTimeline(timeline, timelinePlayheadMs),
+    [timeline, timelinePlayheadMs]
+  );
 
   const previewElements = useMemo(
     () =>
       config.elements.map((el) => {
         const overrideVisible = previewVisibilityOverrides[el.id];
-        if (typeof overrideVisible !== "boolean") return el;
-        return { ...el, visible: overrideVisible } as AnyEl;
+        const visibilityResolved =
+          typeof overrideVisible === "boolean"
+            ? ({ ...el, visible: overrideVisible } as OverlayElement)
+            : el;
+        return applyTimelineOverridesToElement(
+          visibilityResolved,
+          timelineValues[el.id]
+        ) as AnyEl;
       }),
-    [config.elements, previewVisibilityOverrides]
+    [config.elements, previewVisibilityOverrides, timelineValues]
   );
 
   // Memoize elementsById using the SAME logic as runtime
@@ -498,6 +570,40 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     previewElements as OverlayElement[],
     previewAnimationResetKeys
   );
+
+  useEffect(() => {
+    const durationMs = timeline.durationMs;
+    setTimelinePlayheadMs((prev) => clamp(prev, 0, durationMs));
+  }, [timeline.durationMs]);
+
+  useEffect(() => {
+    if (!isTimelinePlaying) return;
+
+    let frameId = 0;
+    let lastAt = performance.now();
+
+    const tick = (now: number) => {
+      const delta = now - lastAt;
+      lastAt = now;
+
+      let shouldContinue = true;
+      setTimelinePlayheadMs((prev) => {
+        const next = Math.min(timeline.durationMs, prev + delta);
+        if (next >= timeline.durationMs) {
+          shouldContinue = false;
+          setIsTimelinePlaying(false);
+        }
+        return next;
+      });
+
+      if (shouldContinue) {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isTimelinePlaying, timeline.durationMs]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -634,6 +740,163 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return s;
   }, [previewElements]);
 
+  function setTimeline(nextTimelineOrUpdater: OverlayTimeline | ((current: OverlayTimeline) => OverlayTimeline)) {
+    setConfig((prev) => {
+      const currentTimeline = ensureTimeline(prev.timeline);
+      const nextTimeline =
+        typeof nextTimelineOrUpdater === "function"
+          ? nextTimelineOrUpdater(currentTimeline)
+          : nextTimelineOrUpdater;
+      return { ...prev, timeline: nextTimeline };
+    });
+  }
+
+  function upsertKeyframeAtPlayhead(
+    currentTimeline: OverlayTimeline,
+    elementId: string,
+    property: OverlayTimelineProperty,
+    value: number
+  ) {
+    const nextTimeline = ensureTimeline(currentTimeline);
+    const nextTracks = [...nextTimeline.tracks];
+    const trackIndex = nextTracks.findIndex(
+      (track) => track.elementId === elementId && track.property === property
+    );
+
+    const nextKeyframe: OverlayTimelineKeyframe = {
+      id: genId("kf"),
+      t: clamp(Math.round(timelinePlayheadMs), 0, nextTimeline.durationMs),
+      value,
+      easing: "linear",
+    };
+
+    if (trackIndex === -1) {
+      const nextTrack: OverlayTimelineTrack = {
+        id: genId("track"),
+        elementId,
+        property,
+        keyframes: [nextKeyframe],
+      };
+      nextTracks.push(nextTrack);
+      return {
+        timeline: { ...nextTimeline, tracks: nextTracks },
+        keyframeId: nextKeyframe.id,
+        trackId: nextTrack.id,
+      };
+    }
+
+    const track = nextTracks[trackIndex];
+    const keyframes = [...track.keyframes];
+    const existingIndex = keyframes.findIndex(
+      (keyframe) => Math.abs(keyframe.t - nextKeyframe.t) <= KEYFRAME_TIME_EPSILON_MS
+    );
+
+    if (existingIndex >= 0) {
+      const currentKeyframe = keyframes[existingIndex];
+      keyframes[existingIndex] = {
+        ...currentKeyframe,
+        t: nextKeyframe.t,
+        value,
+      };
+      nextTracks[trackIndex] = {
+        ...track,
+        keyframes: keyframes.sort((a, b) => a.t - b.t),
+      };
+      return {
+        timeline: { ...nextTimeline, tracks: nextTracks },
+        keyframeId: currentKeyframe.id,
+        trackId: track.id,
+      };
+    }
+
+    nextTracks[trackIndex] = {
+      ...track,
+      keyframes: [...keyframes, nextKeyframe].sort((a, b) => a.t - b.t),
+    };
+
+    return {
+      timeline: { ...nextTimeline, tracks: nextTracks },
+      keyframeId: nextKeyframe.id,
+      trackId: track.id,
+    };
+  }
+
+  function addTimelineTrack(elementId: string, property: OverlayTimelineProperty) {
+    const element = previewElementsById[elementId];
+    if (!element) return;
+
+    setConfig((prev) => {
+      const ensured = ensureTimeline(prev.timeline);
+      if (ensured.tracks.some((track) => track.elementId === elementId && track.property === property)) {
+        return prev;
+      }
+
+      const value = Number((element as any)[property] ?? 0);
+      const keyframe: OverlayTimelineKeyframe = {
+        id: genId("kf"),
+        t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
+        value,
+        easing: "linear",
+      };
+
+      const nextTimeline: OverlayTimeline = {
+        ...ensured,
+        tracks: [
+          ...ensured.tracks,
+          {
+            id: genId("track"),
+            elementId,
+            property,
+            keyframes: [keyframe],
+          },
+        ],
+      };
+
+      setSelectedTimelineTrackId(nextTimeline.tracks[nextTimeline.tracks.length - 1].id);
+      setSelectedTimelineKeyframeId(keyframe.id);
+      return { ...prev, timeline: nextTimeline };
+    });
+  }
+
+  function moveTimelineKeyframe(trackId: string, keyframeId: string, nextTimeMs: number) {
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        return {
+          ...track,
+          keyframes: track.keyframes
+            .map((keyframe) =>
+              keyframe.id === keyframeId
+                ? { ...keyframe, t: clamp(Math.round(nextTimeMs), 0, currentTimeline.durationMs) }
+                : keyframe
+            )
+            .sort((a, b) => a.t - b.t),
+        };
+      }),
+    }));
+  }
+
+  function deleteSelectedTimelineKeyframe() {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return;
+
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks
+        .map((track) => {
+          if (track.id !== selectedTimelineTrackId) return track;
+          return {
+            ...track,
+            keyframes: track.keyframes.filter((keyframe) => keyframe.id !== selectedTimelineKeyframeId),
+          };
+        })
+        .filter((track) => track.keyframes.length > 0),
+    }));
+
+    setSelectedTimelineTrackId(null);
+    setSelectedTimelineKeyframeId(null);
+  }
+
   function updateElement(id: string, patch: Partial<AnyEl>) {
     setConfig((prev) => {
       const nextEls = [...prev.elements];
@@ -642,6 +905,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const oldEl = nextEls[idx];
       nextEls[idx] = { ...oldEl, ...patch } as any;
+      let nextTimeline = prev.timeline;
+      const timelineElement = nextEls[idx] as OverlayElement;
+      let timelineKeyframeId: string | null = null;
+      let timelineTrackId: string | null = null;
+
+      if (isTimelineEligibleElement(timelineElement)) {
+        for (const property of TIMELINE_PROPERTIES) {
+          if (patch[property] === undefined) continue;
+          const numericValue = Number(patch[property]);
+          if (!Number.isFinite(numericValue)) continue;
+          const result = upsertKeyframeAtPlayhead(
+            ensureTimeline(nextTimeline),
+            id,
+            property,
+            numericValue
+          );
+          nextTimeline = result.timeline;
+          timelineKeyframeId = result.keyframeId;
+          timelineTrackId = result.trackId;
+        }
+      }
 
       // Propagate group movement to children (recursive)
       if (oldEl.type === 'group' && (patch.x !== undefined || patch.y !== undefined)) {
@@ -673,7 +957,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           });
         }
       }
-      return { ...prev, elements: nextEls };
+      if (timelineKeyframeId) {
+        setSelectedTimelineTrackId(timelineTrackId);
+        setSelectedTimelineKeyframeId(timelineKeyframeId);
+      }
+      return { ...prev, elements: nextEls, timeline: nextTimeline };
     });
   }
 
@@ -2277,6 +2565,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         </div>
       </div>
 
+      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-h-0 flex min-w-0">
       {/* CENTER: Canvas */}
       <div className="flex-1 flex flex-col relative min-w-0 bg-[#0f172a]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
 
@@ -2638,7 +2928,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col overflow-y-auto">
         {primarySelectedEl ? (
           <InspectorPanel
-            element={elementsById[selectedIds[0]]}
+            element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
             onChange={(u) => updateElement(selectedIds[0], u)}
             onRename={(n) => updateElement(selectedIds[0], { name: n })}
             onPickImage={() => {
@@ -2724,6 +3014,39 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           }}
         />
+      </div>
+      </div>
+
+      <TimelinePanel
+        timeline={timeline}
+        elements={config.elements}
+        selectedIds={selectedIds}
+        playheadMs={timelinePlayheadMs}
+        isPlaying={isTimelinePlaying}
+        selectedKeyframeId={selectedTimelineKeyframeId}
+        onSelectKeyframe={(trackId, keyframeId) => {
+          setSelectedTimelineTrackId(trackId);
+          setSelectedTimelineKeyframeId(keyframeId);
+        }}
+        onPlay={() => setIsTimelinePlaying(true)}
+        onPause={() => setIsTimelinePlaying(false)}
+        onStop={() => {
+          setIsTimelinePlaying(false);
+          setTimelinePlayheadMs(0);
+        }}
+        onSetPlayhead={(timeMs) => {
+          setIsTimelinePlaying(false);
+          setTimelinePlayheadMs(clamp(timeMs, 0, timeline.durationMs));
+        }}
+        onSetDuration={(durationMs) => {
+          const nextDuration = Math.max(100, durationMs);
+          setTimeline((currentTimeline) => ({ ...currentTimeline, durationMs: nextDuration }));
+          setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
+        }}
+        onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
+        onAddTrack={addTimelineTrack}
+        onMoveKeyframe={moveTimelineKeyframe}
+      />
       </div>
     </div>
   );
