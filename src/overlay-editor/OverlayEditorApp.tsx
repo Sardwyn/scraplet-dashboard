@@ -392,6 +392,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [originalSlug, setOriginalSlug] = useState("");
   const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
   const [previewAnimationResetKeys, setPreviewAnimationResetKeys] = useState<Record<string, number>>({});
+  const previewStartTimersRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    return () => {
+      for (const timerId of Object.values(previewStartTimersRef.current)) {
+        window.clearTimeout(timerId);
+      }
+      previewStartTimersRef.current = {};
+    };
+  }, []);
 
   // Fetch components
   useEffect(() => {
@@ -671,6 +681,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function triggerPreviewVisibility(id: string, action: "enter" | "exit" | "reset") {
+    const activeTimer = previewStartTimersRef.current[id];
+    if (activeTimer) {
+      window.clearTimeout(activeTimer);
+      delete previewStartTimersRef.current[id];
+    }
+
     if (action === "reset") {
       setPreviewVisibilityOverrides((prev) => {
         if (!(id in prev)) return prev;
@@ -688,9 +704,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
     setPreviewAnimationResetKeys((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
-    window.requestAnimationFrame(() => {
+    previewStartTimersRef.current[id] = window.setTimeout(() => {
       setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
-    });
+      delete previewStartTimersRef.current[id];
+    }, 0);
   }
 
   function addText() {
@@ -3469,7 +3486,7 @@ function InspectorPanel({
         <AccordionSection title="Animation" defaultOpen={true}>
           <div className="space-y-3">
             <div className="text-[10px] text-slate-500">
-              Delay is in milliseconds. Use the preview controls below to test enter and exit without saving visibility changes.
+              Delay is in milliseconds. Start always resets the element to its hidden baseline first, then runs the configured enter animation without saving visibility changes.
             </div>
 
             <div className="flex gap-2">
@@ -3478,7 +3495,7 @@ function InspectorPanel({
                 onClick={() => onPreviewVisibilityAction?.("enter")}
                 className="flex-1 bg-emerald-900/30 hover:bg-emerald-800/50 text-emerald-200 text-[10px] py-1 rounded border border-emerald-800 transition-colors"
               >
-                Test Enter
+                Start
               </button>
               <button
                 type="button"

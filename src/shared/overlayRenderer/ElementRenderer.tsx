@@ -39,7 +39,7 @@ function getAnimationTransition(
         .join(", ");
 }
 
-function getMotionPresetStyle(
+function getEnterMotionPresetStyle(
     preset?: OverlayAnimation["enter"]
 ): React.CSSProperties {
     switch (preset) {
@@ -59,6 +59,26 @@ function getMotionPresetStyle(
     }
 }
 
+function getExitMotionPresetStyle(
+    preset?: OverlayAnimation["exit"]
+): React.CSSProperties {
+    switch (preset) {
+        case "fade":
+            return { opacity: 0 };
+        case "slideUp":
+            return { transform: "translateY(-32px)", opacity: 0 };
+        case "slideDown":
+            return { transform: "translateY(32px)", opacity: 0 };
+        case "slideLeft":
+            return { transform: "translateX(-32px)", opacity: 0 };
+        case "slideRight":
+            return { transform: "translateX(32px)", opacity: 0 };
+        case "none":
+        default:
+            return {};
+    }
+}
+
 function getAnimationStyle(
     animation: OverlayAnimation | undefined,
     phase: OverlayAnimationPhase | undefined
@@ -72,7 +92,7 @@ function getAnimationStyle(
         }
 
         return {
-            ...getMotionPresetStyle(animation.enter),
+            ...getEnterMotionPresetStyle(animation.enter),
             pointerEvents: "none",
         };
     }
@@ -87,7 +107,7 @@ function getAnimationStyle(
 
     if (phase === "exiting") {
         return {
-            ...getMotionPresetStyle(animation.exit),
+            ...getExitMotionPresetStyle(animation.exit),
             pointerEvents: "none",
         };
     }
