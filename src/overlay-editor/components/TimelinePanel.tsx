@@ -103,7 +103,7 @@ function TimelineTrackRow({
 
   return (
     <div className="flex items-center border-b border-[rgba(255,255,255,0.06)]" style={{ height: TRACK_HEIGHT }}>
-      <div className="flex-none px-3 text-[11px] leading-[1.4] text-slate-300 uppercase tracking-[0.08em]" style={{ width: HEADER_WIDTH }}>
+      <div className="flex-none px-3 text-[11px] leading-[1.4] text-slate-300 uppercase tracking-[0.06em]" style={{ width: HEADER_WIDTH }}>
         {track.property}
       </div>
       <div
@@ -128,10 +128,10 @@ function TimelineTrackRow({
             onClick={() => onSelectKeyframe(track.id, keyframe.id)}
             className={`absolute top-1/2 -translate-y-1/2 rotate-45 border transition-colors ${
               selectedKeyframeId === keyframe.id
-                ? "bg-indigo-400 border-white"
+                ? "bg-indigo-300 border-white"
                 : draggingId === keyframe.id
                   ? "bg-amber-400 border-white"
-                  : "bg-slate-300 border-[#0f1012]"
+                  : "bg-slate-200 border-[#0f1012]"
             }`}
             style={{
               left: `${(keyframe.t / Math.max(1, durationMs)) * 100}%`,
@@ -229,9 +229,9 @@ export function TimelinePanel({
   };
 
   return (
-    <div className="h-64 border-t border-[rgba(255,255,255,0.08)] bg-[#111113] flex flex-col">
+    <div className="flex h-64 flex-col border-t border-[rgba(255,255,255,0.08)] bg-[#111113]">
       <div className="h-8 border-b border-[rgba(255,255,255,0.08)] flex items-center gap-2 px-3">
-        <button type="button" onClick={onPlay} className="h-7 rounded-md border border-emerald-800 bg-emerald-900/30 px-3 text-[12px] leading-[1.4] font-medium text-emerald-100 transition-colors hover:bg-emerald-800/40">
+        <button type="button" onClick={onPlay} className="h-7 rounded-md border border-emerald-500/30 bg-emerald-500/12 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/18">
           Play
         </button>
         <button type="button" onClick={onPause} className={uiClasses.button}>
@@ -244,15 +244,15 @@ export function TimelinePanel({
           type="button"
           onClick={onDeleteSelectedKeyframe}
           disabled={!selectedKeyframeId}
-          className="h-7 rounded-md border border-red-900 bg-red-900/25 px-3 text-[12px] leading-[1.4] font-medium text-red-100 transition-colors hover:bg-red-900/35 disabled:opacity-40"
+          className="h-7 rounded-md border border-red-500/30 bg-red-500/12 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-red-100 transition-colors hover:bg-red-500/18 disabled:opacity-40"
         >
           Delete Keyframe
         </button>
-        <div className="ml-2 text-[12px] leading-[1.4] text-slate-300 font-mono">
+        <div className="ml-2 font-mono text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200">
           {formatMs(playheadMs)}
         </div>
-        <div className="text-[11px] leading-[1.4] text-slate-600">/</div>
-        <div className="text-[12px] leading-[1.4] text-slate-300 font-mono flex items-center gap-2">
+        <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-600">/</div>
+        <div className="flex items-center gap-2 font-mono text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-300">
           <span>Duration</span>
           <input
             type="number"
@@ -264,7 +264,7 @@ export function TimelinePanel({
           />
           <span>ms</span>
         </div>
-        <div className={`ml-auto text-[12px] leading-[1.4] ${isPlaying ? "text-emerald-400" : "text-slate-500"}`}>
+        <div className={`ml-auto text-[12px] leading-[1.4] tracking-[-0.02em] ${isPlaying ? "text-emerald-300" : "text-slate-500"}`}>
           {isPlaying ? "Playing" : "Paused"}
         </div>
       </div>
@@ -287,7 +287,7 @@ export function TimelinePanel({
                   className="absolute top-0 bottom-0 border-l border-[rgba(255,255,255,0.06)]"
                   style={{ left: `${ratio * 100}%` }}
                 >
-                  <div className="absolute top-1 left-2 text-[12px] leading-[1.4] text-slate-500">
+                  <div className="absolute top-1 left-2 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-400">
                     {formatMs(ratio * timeline.durationMs)}
                   </div>
                 </div>
@@ -301,7 +301,7 @@ export function TimelinePanel({
         </div>
 
         {visibleElements.length === 0 && (
-          <div className="px-4 py-5 text-[13px] leading-[1.4] text-slate-500">
+          <div className="px-4 py-5 text-[13px] leading-[1.4] tracking-[-0.01em] text-slate-500">
             Select an element or add a keyframed property to start building the timeline.
           </div>
         )}
@@ -312,18 +312,18 @@ export function TimelinePanel({
 
           return (
             <div key={element.id} className="border-b border-[rgba(255,255,255,0.06)]">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[rgba(255,255,255,0.03)]">
-                <div className="flex-none text-[13px] leading-[1.4] font-semibold text-slate-200" style={{ width: HEADER_WIDTH }}>
+              <div className="flex items-center gap-3 bg-[rgba(255,255,255,0.03)] px-3 py-2">
+                <div className="flex-none text-[13px] leading-[1.4] tracking-[-0.01em] font-semibold text-slate-200" style={{ width: HEADER_WIDTH }}>
                   {element.name || element.type}
                 </div>
-                <div className="flex flex-wrap gap-2 text-[11px] leading-[1.4]">
+                <div className="flex flex-wrap gap-2 text-[11px] leading-[1.4] tracking-[-0.02em]">
                   {TIMELINE_PROPERTIES.map((property) => (
                     <button
                       key={property}
                       type="button"
                       onClick={() => onAddTrack(element.id, property)}
                       disabled={existing.has(property)}
-                      className="h-6 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-[1.4] text-slate-300 transition-colors hover:bg-[#1d1d20] disabled:opacity-40"
+                      className="h-6 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-300 transition-colors hover:bg-[#1d1d20] disabled:opacity-40"
                     >
                       + {property}
                     </button>
@@ -332,7 +332,7 @@ export function TimelinePanel({
               </div>
 
               {tracks.length === 0 && (
-                <div className="px-3 py-3 text-[12px] leading-[1.4] text-slate-500">
+                <div className="px-3 py-3 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-500">
                   No tracks yet for this element.
                 </div>
               )}

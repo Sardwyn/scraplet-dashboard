@@ -126,6 +126,9 @@ const TOOL_ICON_PROPS = {
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
 };
+const ACCENT_TINT = "#818cf8";
+const ACCENT_TINT_SOFT = "rgba(129,140,248,0.2)";
+const ACCENT_FILL_SOFT = "rgba(129,140,248,0.12)";
 
 function genId(prefix: string) {
   const rand =
@@ -3051,9 +3054,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           }}
         >
           {editingMasterId && (
-            <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-500/40 bg-[#161618] px-4 py-2 text-white shadow-xl">
+            <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30">
               <div className="flex items-center gap-2 text-indigo-200">
-                <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span className="relative -top-px"><svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
                 <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Isolation Mode</span>
               </div>
               <div className="w-px h-3 bg-indigo-400/50" />
@@ -3168,7 +3171,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                           style={{ left: g.end, top: g.y - 3 }}
                         />
                         <div
-                          className="absolute -translate-x-1/2 -translate-y-full rounded-md border border-fuchsia-200/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-fuchsia-200"
+                          className="absolute -translate-x-1/2 -translate-y-full rounded-md border border-fuchsia-200/15 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] text-fuchsia-100 shadow-sm shadow-black/20"
                           style={{ left: (g.start + g.end) / 2, top: g.y - 6 }}
                         >
                           {g.label}
@@ -3189,7 +3192,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                           style={{ left: g.x - 3, top: g.end }}
                         />
                         <div
-                          className="absolute -translate-y-1/2 rounded-md border border-fuchsia-200/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-fuchsia-200"
+                          className="absolute -translate-y-1/2 rounded-md border border-fuchsia-200/15 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] text-fuchsia-100 shadow-sm shadow-black/20"
                           style={{ left: g.x + 8, top: (g.start + g.end) / 2 }}
                         >
                           {g.label}
@@ -3207,8 +3210,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 return (
                   <div className="absolute inset-0 pointer-events-none">
                     <div
-                      className="absolute border border-sky-300/90 bg-sky-500/10"
-                      style={{ left: r.l, top: r.t, width: r.w, height: r.h }}
+                      className="absolute border bg-transparent"
+                      style={{ left: r.l, top: r.t, width: r.w, height: r.h, borderColor: ACCENT_TINT, background: ACCENT_FILL_SOFT }}
                     />
                   </div>
                 );
@@ -3217,8 +3220,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Resize Dimensions Overlay */}
               {resizeStatus && (
                 <div
-                  className="absolute z-50 pointer-events-none rounded-md border border-sky-300/20 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] text-sky-200 shadow-sm"
+                  className="absolute z-50 pointer-events-none rounded-md border bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] shadow-sm shadow-black/20"
                   style={{
+                    borderColor: ACCENT_TINT_SOFT,
+                    color: "#e0e7ff",
                     left: (resizeStatus.x ?? 0) + (resizeStatus.width ?? 0) / 2,
                     top: (resizeStatus.y ?? 0) + (resizeStatus.height ?? 0) + 10,
                     transform: "translateX(-50%)"
@@ -3241,10 +3246,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   onDragStart={onGroupDragStart}
                   onDrag={onGroupDrag}
                   onDragStop={onGroupDragStop}
-                  className="cursor-move border border-sky-400 border-dashed"
+                  className="cursor-move border border-dashed"
+                  style={{ borderColor: ACCENT_TINT }}
                 >
                   <div className="w-full h-full bg-transparent">
-                    <div className="absolute -top-6 left-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] text-slate-200">
+                    <div className="absolute -top-6 left-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-200 shadow-sm shadow-black/20">
                       Group ({selectedIds.length})
                     </div>
                   </div>
@@ -3286,14 +3292,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
-                  ? { boxShadow: "0 0 0 1px #3b82f6, 0 0 0 2px white inset" }
+                  ? { boxShadow: `0 0 0 1px ${ACCENT_TINT}, 0 0 0 1px rgba(255,255,255,0.32) inset` }
                   : isSelected
-                    ? { boxShadow: "0 0 0 1px rgba(96,165,250,0.9)" }
+                    ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
                     : {};
 
                 // Custom resize handle styles
                 const handleStyle = {
-                  width: 4, height: 4, background: "white", border: "1px solid #3b82f6", borderRadius: 1,
+                  width: 4, height: 4, background: "#f8fafc", border: `1px solid ${ACCENT_TINT}`, borderRadius: 1,
                   pointerEvents: 'auto' as const
                 };
 
@@ -3395,17 +3401,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     />
 
                     {isPrimary && !resizeStatus && (
-                      <div className="absolute -top-6 left-0 rounded-md border border-sky-300/20 bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] font-medium text-sky-200 shadow-sm">
+                      <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
                         {el.name || defaultElementLabel(el)}
                         {isLocked ? " (Locked)" : ""}
                       </div>
                     )}
                     {isPrimary && !isLocked && !isPanning && !marquee.active && (
                       <>
-                        <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 bg-sky-400/80 pointer-events-none" />
+                        <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
                         <button
                           type="button"
-                          className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-sky-500 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
+                          className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
                           onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -4986,7 +4992,7 @@ function AssetPickerModal({
                 <button
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex h-8 items-center justify-center gap-2 rounded-md border border-sky-500 bg-sky-600 px-3 text-[12px] leading-[1.4] font-medium text-white hover:bg-sky-500 disabled:opacity-60"
+                  className="flex h-8 items-center justify-center gap-2 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/20 disabled:opacity-60"
                 >
                   <FolderIcon />
                   {busy ? "Uploading..." : "Upload file"}
@@ -5055,7 +5061,9 @@ function TestDataPanel({ data, onChange }: { data: Record<string, string>; onCha
               value={v}
               onChange={e => onChange(k, e.target.value)}
             />
-            <button onClick={() => onChange(k, "")} className="px-1 text-slate-600 hover:text-red-400">×</button>
+            <button onClick={() => onChange(k, "")} className="flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-red-400" aria-label={`Clear ${k}`}>
+              <svg {...TOOL_ICON_PROPS}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+            </button>
           </div>
         ))}
         <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
@@ -5096,7 +5104,9 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
       <div className="flex w-full max-w-sm flex-col overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] shadow-2xl">
         <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
           <h3 className="text-[14px] leading-[1.4] font-semibold text-white">Save Template</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+          <button onClick={onClose} className={uiClasses.iconButton} aria-label="Close">
+            <svg {...TOOL_ICON_PROPS}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+          </button>
         </div>
 
         <div className="p-4 space-y-4">
@@ -5121,7 +5131,7 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
             <button
               onClick={() => val.trim() && onSave(val.trim())}
               disabled={!val.trim()}
-              className="h-8 rounded-md border border-indigo-500 bg-indigo-600 px-3 text-[12px] leading-[1.4] font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-8 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save Template
             </button>
@@ -5168,14 +5178,14 @@ function ToolButton({
       className={`
         flex h-8 w-8 items-center justify-center rounded-md border transition-all
         ${active
-          ? "border-indigo-500/50 bg-indigo-600/15 text-indigo-300 shadow-lg shadow-indigo-500/10"
+          ? "border-indigo-400/30 bg-indigo-500/15 text-indigo-100 shadow-lg shadow-indigo-500/5"
           : "border-[rgba(255,255,255,0.06)] bg-[#161618] text-slate-400 hover:bg-[#1d1d20] hover:text-slate-200"
         }
         ${disabled ? "opacity-20 cursor-not-allowed" : ""}
       `}
       title={label}
     >
-      <div className="flex items-center justify-center">{icon}</div>
+      <div className="relative -top-px flex items-center justify-center">{icon}</div>
     </button>
   );
 }
@@ -5293,9 +5303,9 @@ function CreationToolbar({
         <button
           onClick={onSave}
           disabled={saving}
-          className={`flex h-8 flex-1 items-center justify-center gap-2 rounded-md border text-[12px] leading-[1.4] font-semibold transition-all ${saveOk ? "border-emerald-500 bg-emerald-600 text-white" :
-            saveError ? "bg-red-600 text-white" :
-              "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500"
+          className={`flex h-8 flex-1 items-center justify-center gap-2 rounded-md border text-[12px] leading-[1.4] tracking-[-0.02em] font-semibold transition-all ${saveOk ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" :
+            saveError ? "border-red-500/40 bg-red-500/15 text-red-100" :
+              "border-indigo-400/30 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/20"
             }`}
         >
           {saving ? (
@@ -5304,7 +5314,7 @@ function CreationToolbar({
               <span>Saving...</span>
             </>
           ) : saveOk ? (
-            <><span>✓</span><span>Saved!</span></>
+            <><svg {...TOOL_ICON_PROPS}><polyline points="20 6 9 17 4 12" /></svg><span>Saved</span></>
           ) : (
             <><span>Save Changes</span></>
           )}
@@ -5395,7 +5405,7 @@ function LayersPanel({
       <React.Fragment key={el.id}>
         <div
           data-layer-id={el.id}
-          className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-600/90 text-white" : "text-slate-400 hover:bg-[rgba(255,255,255,0.05)] hover:text-slate-200"}`}
+          className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-500/15 text-indigo-50" : "text-slate-400 hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-200"}`}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
         >
@@ -5423,12 +5433,12 @@ function LayersPanel({
           )}
 
           {/* Icon */}
-          <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-white" : "text-slate-500"}`}>
+          <span className={`relative -top-px flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-indigo-100" : "text-slate-500"}`}>
             {icon}
           </span>
 
           {/* Label */}
-          <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] font-medium">
+          <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
             {el.name || defaultElementLabel(el)}
           </span>
 
@@ -5541,7 +5551,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
                 </button>
               )}
               <button
-                className={`${uiClasses.iconButton} hover:bg-indigo-600 hover:text-white`}
+                className={`${uiClasses.iconButton} hover:bg-indigo-500/15 hover:text-indigo-100`}
                 title="Insert Instance"
               >
                 <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>

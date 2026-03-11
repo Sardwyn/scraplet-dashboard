@@ -46,17 +46,17 @@ export const uiClasses = {
     "h-8 px-3 text-[11px] leading-[1.4] uppercase tracking-[0.08em] font-semibold text-slate-400",
   label:
     "text-[11px] leading-[1.4] text-slate-500 uppercase tracking-[0.08em] font-semibold",
-  fieldLabel: "text-[11px] leading-[1.4] text-slate-500",
+  fieldLabel: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500",
   field:
-    "h-7 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[12px] leading-[1.4] text-slate-200 transition-colors hover:bg-[#1d1d20] focus:border-indigo-500 focus:outline-none",
+    "h-7 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200 transition-colors hover:bg-[#1d1d20] focus:border-indigo-500/70 focus:outline-none",
   button:
-    "h-8 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-3 text-[12px] leading-[1.4] font-medium text-slate-200 transition-colors hover:bg-[#1d1d20]",
+    "h-8 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-200 transition-colors hover:bg-[#1d1d20]",
   buttonGhost:
-    "h-8 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent px-3 text-[12px] leading-[1.4] font-medium text-slate-300 transition-colors hover:bg-[rgba(255,255,255,0.03)]",
+    "h-8 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-300 transition-colors hover:bg-[rgba(255,255,255,0.03)]",
   iconButton:
-    "h-6 w-6 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent text-slate-400 transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-slate-100",
+    "h-6 w-6 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent text-slate-400 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-100",
   layerRow:
-    "group flex h-6 items-center gap-2 border-b border-[rgba(255,255,255,0.06)] pr-2 text-[13px] leading-[1.4] relative",
+    "group relative flex h-6 items-center gap-2 border-b border-[rgba(255,255,255,0.06)] pr-2 text-[13px] leading-[1.4] tracking-[-0.01em]",
   panelInset: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618]",
   timelineLane: "bg-[#0f1012]",
 } as const;
