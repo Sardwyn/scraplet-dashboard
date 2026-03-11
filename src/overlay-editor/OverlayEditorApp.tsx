@@ -29,6 +29,7 @@ import { FontPicker } from "./FontPicker";
 import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
+import { uiClasses } from "./uiTokens";
 
 
 interface ServerOverlay {
@@ -115,6 +116,16 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
 
 const DEFAULT_TIMELINE_DURATION_MS = 5000;
 const KEYFRAME_TIME_EPSILON_MS = 10;
+const TOOL_ICON_PROPS = {
+  width: 16,
+  height: 16,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
 
 function genId(prefix: string) {
   const rand =
@@ -2777,7 +2788,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, []);
 
   return (
-    <div className="flex w-full h-[calc(100vh-2rem)] overflow-hidden bg-slate-950 text-slate-200">
+    <div className="flex h-[calc(100vh-2rem)] w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (
@@ -2798,16 +2809,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
 
       {/* LEFT SIDEBAR: Creation & Layers */}
-      <div className="w-60 flex-none flex flex-col border-r border-slate-800 bg-slate-900/80 backdrop-blur-sm z-10">
+      <div className="z-10 flex w-60 flex-none flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {/* Header */}
-        <div className="p-3 border-b border-slate-800 space-y-2">
+        <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] p-3">
           <input
-            className="w-full bg-transparent border border-transparent hover:border-slate-700 focus:border-indigo-500 rounded px-1 py-0.5 text-sm font-bold text-slate-100 placeholder-slate-500 transition-colors"
+            className="h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[14px] leading-[1.4] font-semibold text-slate-100 placeholder-slate-500 transition-colors hover:border-[rgba(255,255,255,0.08)] focus:border-indigo-500 focus:outline-none"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Untitled Overlay"
           />
-          <div className="flex gap-2 text-[10px] text-slate-500 font-mono pl-1">
+          <div className="flex gap-2 pl-1 font-mono text-[11px] leading-[1.4] text-slate-500">
             <span>{baseResolution.width} x {baseResolution.height}</span>
             <span className="text-slate-700">|</span>
             <span className="truncate max-w-[120px]" title={slug}>/o/{slug}</span>
@@ -2864,17 +2875,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         />
 
         {/* Sidebar Tabs */}
-        <div className="flex border-b border-slate-800 bg-slate-900 border-t mt-2">
+        <div className="mt-2 flex border-b border-t border-[rgba(255,255,255,0.08)] bg-[#111113]">
           <button
             onClick={() => setLeftTab("layers")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "layers" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "layers" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
             <span>Layers</span>
           </button>
           <button
             onClick={() => setLeftTab("components")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span>Components</span>
@@ -2941,7 +2952,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         </div>
 
         {/* Footer / Shortcuts */}
-        <div className="p-2 border-t border-slate-800 text-[10px] text-slate-600 flex justify-between">
+        <div className="flex justify-between border-t border-[rgba(255,255,255,0.08)] p-2 text-[11px] leading-[1.4] text-slate-600">
           <span>Ctrl+D Duplicate</span>
           <span>Del Delete</span>
         </div>
@@ -2950,25 +2961,25 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       <div className="flex-1 min-w-0 flex flex-col">
       <div className="flex-1 min-h-0 flex min-w-0">
       {/* CENTER: Canvas */}
-      <div className="flex-1 flex flex-col relative min-w-0 bg-[#0f172a]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#0b0b0c]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
 
         {/* Top Data Bar / Canvas Settings */}
-        <div className="h-10 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900 z-10">
+        <div className="z-10 flex h-8 items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[#111113] px-4">
           <div className="flex items-center gap-4">
             {/* Grid / Snap Controls */}
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
                 <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
                 <span>Snap</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
                 <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
                 <span>Grid</span>
               </label>
               <select
                 value={gridSize}
                 onChange={e => setGridSize(Number(e.target.value))}
-                className="bg-slate-800 border-none rounded text-[10px] text-slate-300 py-0.5 pl-2 pr-6 disabled:opacity-50"
+                className={`${uiClasses.field} pr-6 text-[12px] disabled:opacity-50`}
                 disabled={!snapEnabled}
               >
                 <option value={8}>8px</option>
@@ -2977,36 +2988,36 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               </select>
             </div>
 
-            <div className="w-px h-4 bg-slate-800" />
+            <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
 
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
-              <button onClick={() => alignSelection("left")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Left">
-                <span className="text-[10px]">|&lt;</span>
+              <button onClick={() => alignSelection("left")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Left">
+                <span className="text-[11px] leading-none">|&lt;</span>
               </button>
-              <button onClick={() => alignSelection("hcenter")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Center">
-                <span className="text-[10px]">|</span>
+              <button onClick={() => alignSelection("hcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Center">
+                <span className="text-[11px] leading-none">|</span>
               </button>
-              <button onClick={() => alignSelection("right")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Right">
-                <span className="text-[10px]">&gt;|</span>
+              <button onClick={() => alignSelection("right")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Right">
+                <span className="text-[11px] leading-none">&gt;|</span>
               </button>
-              <button onClick={() => alignSelection("top")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Top">
-                <span className="text-[10px]">T</span>
+              <button onClick={() => alignSelection("top")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Top">
+                <span className="text-[11px] leading-none">T</span>
               </button>
-              <button onClick={() => alignSelection("vcenter")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Middle">
-                <span className="text-[10px]">-</span>
+              <button onClick={() => alignSelection("vcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Middle">
+                <span className="text-[11px] leading-none">-</span>
               </button>
-              <button onClick={() => alignSelection("bottom")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Bottom">
-                <span className="text-[10px]">_</span>
+              <button onClick={() => alignSelection("bottom")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Bottom">
+                <span className="text-[11px] leading-none">_</span>
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={zoomOut} className="p-1 hover:bg-slate-800 rounded text-slate-400">－</button>
-            <span className="text-xs font-mono w-10 text-center text-slate-300">{Math.round(scale * 100)}%</span>
-            <button onClick={zoomIn} className="p-1 hover:bg-slate-800 rounded text-slate-400">＋</button>
-            <button onClick={zoomFit} className="ml-1 text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300 hover:bg-slate-700">Fit</button>
+            <button onClick={zoomOut} className={uiClasses.iconButton}>－</button>
+            <span className="w-10 text-center font-mono text-[12px] leading-[1.4] text-slate-300">{Math.round(scale * 100)}%</span>
+            <button onClick={zoomIn} className={uiClasses.iconButton}>＋</button>
+            <button onClick={zoomFit} className={uiClasses.button}>Fit</button>
           </div>
         </div>
 
@@ -3422,7 +3433,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       </div> {/* Close Center Column */}
 
       {/* Right Column / Inspector */}
-      <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col overflow-y-auto">
+      <div className="flex w-80 flex-col overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {primarySelectedEl ? (
           <InspectorPanel
             element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
@@ -3602,7 +3613,7 @@ interface InspectorProps {
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
   return (
-    <div className={`relative overflow-hidden rounded border border-slate-600 shadow-sm flex-none ${className || "w-5 h-5"}`}>
+    <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
       <div className="absolute inset-0" style={{ background: value }} />
       <input
         type="color"
@@ -3654,6 +3665,53 @@ function ExposeButton({
     >
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
     </button>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 6.2A10.7 10.7 0 0 1 12 6c6.5 0 10 6 10 6a18.8 18.8 0 0 1-4.2 4.7" />
+      <path d="M6.7 6.7A18.1 18.1 0 0 0 2 12s3.5 6 10 6a9.8 9.8 0 0 0 3.4-.6" />
+      <path d="M9.9 9.9A3 3 0 0 0 14.1 14.1" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+    </svg>
+  );
+}
+
+function UnlockIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 7.2-2.4" />
+    </svg>
+  );
+}
+
+function MaskIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M12 3a9 9 0 1 0 0 18c2.3 0 4.3-.9 5.9-2.4A9 9 0 0 1 12 3Z" />
+      <path d="M12 3a9 9 0 0 1 0 18" />
+    </svg>
   );
 }
 
@@ -3722,12 +3780,12 @@ function PatternFillControls({
   }, [nextPattern.src]);
 
   return (
-    <div className="ml-14 space-y-3 rounded border border-slate-800 bg-slate-950/40 p-3">
+    <div className="ml-14 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
       <div className="flex items-center gap-2">
-        <label className="text-[10px] text-slate-500 w-12 flex-none">Image</label>
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Image</label>
         <input
           type="text"
-          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono"
+          className={`flex-1 font-mono ${uiClasses.field}`}
           value={nextPattern.src}
           onChange={(e) => onChange({ ...nextPattern, src: e.target.value })}
           placeholder="/uploads/pattern.png"
@@ -3735,7 +3793,7 @@ function PatternFillControls({
         <button
           type="button"
           onClick={onPickImage}
-          className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700 transition-colors"
+          className={uiClasses.button}
           title="Pick pattern image"
         >
           📂
@@ -3743,7 +3801,7 @@ function PatternFillControls({
       </div>
 
       {imageState !== "idle" && (
-        <div className={`text-[10px] ${imageState === "ok" ? "text-emerald-400" : "text-amber-400"}`}>
+        <div className={`text-[11px] leading-[1.4] ${imageState === "ok" ? "text-emerald-400" : "text-amber-400"}`}>
           {imageState === "ok"
             ? "Pattern image loaded."
             : "Pattern image could not be loaded. Renderer will fall back to solid fill."}
@@ -3751,9 +3809,9 @@ function PatternFillControls({
       )}
 
       <div className="flex items-center gap-2">
-        <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fit</label>
         <select
-          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+          className={`flex-1 ${uiClasses.field}`}
           value={nextPattern.fit}
           onChange={(e) => onChange({ ...nextPattern, fit: e.target.value as OverlayPatternFit })}
         >
@@ -3766,7 +3824,7 @@ function PatternFillControls({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-[10px] text-slate-500 w-12 flex-none">Scale</label>
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Scale</label>
         <div className="w-20 relative">
           <NumberField
             label=""
@@ -3774,15 +3832,15 @@ function PatternFillControls({
             onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
             noLabel
           />
-          <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
         </div>
-        <div className="text-[10px] text-slate-600 flex-1">
+        <div className="flex-1 text-[11px] leading-[1.4] text-slate-600">
           Scale now applies to tile, cover, and contain.
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-[10px] text-slate-500 w-12 flex-none">Opacity</label>
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Opacity</label>
         <div className="w-20 relative">
           <NumberField
             label=""
@@ -3790,7 +3848,7 @@ function PatternFillControls({
             onChange={(v) => onChange({ ...nextPattern, opacity: Math.max(0, Math.min(1, v / 100)) })}
             noLabel
           />
-          <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
         </div>
       </div>
     </div>
@@ -3808,33 +3866,35 @@ function InspectorPanel({
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
+  const fieldClass = uiClasses.field;
+  const fieldLabelClass = uiClasses.fieldLabel;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-10 custom-scrollbar">
+    <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
       {/* Header: Name & Global Status */}
-      <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900/50">
-        <label className="block text-[10px] text-slate-500 uppercase font-bold tracking-wider">Layer</label>
+      <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3">
+        <label className={`block ${uiClasses.label}`}>Layer</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
-            className="flex-1 bg-slate-950 border border-slate-700 rounded-md px-2 py-1.5 text-xs font-medium text-slate-200 focus:border-indigo-500 focus:outline-none"
+            className={`flex-1 ${fieldClass}`}
             value={element.name ?? ""}
             placeholder={defaultElementLabel(element)}
             onChange={(e) => onRename(e.target.value)}
           />
           <button
             onClick={() => onChange({ visible: !isVisible })}
-            className={`p-1.5 rounded hover:bg-slate-800 ${!isVisible ? "text-slate-600" : "text-slate-400"}`}
+            className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-600" : "text-slate-400"}`}
             title="Toggle Visibility"
           >
-            {isVisible ? "👁️" : "🙈"}
+            {isVisible ? <EyeIcon /> : <EyeOffIcon />}
           </button>
           <button
             onClick={() => onChange({ locked: !isLocked })}
-            className={`p-1.5 rounded hover:bg-slate-800 ${isLocked ? "text-amber-500" : "text-slate-400"}`}
+            className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500" : "text-slate-400"}`}
             title="Toggle Lock"
           >
-            {isLocked ? "🔒" : "🔓"}
+            {isLocked ? <LockIcon /> : <UnlockIcon />}
           </button>
         </div>
       </div>
@@ -3844,31 +3904,31 @@ function InspectorPanel({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">X</label>
+              <label className={`${fieldLabelClass} w-3`}>X</label>
               <NumberField label="" value={element.x ?? 0} onChange={(v) => onChange({ x: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">Y</label>
+              <label className={`${fieldLabelClass} w-3`}>Y</label>
               <NumberField label="" value={element.y ?? 0} onChange={(v) => onChange({ y: v })} noLabel className="flex-1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">W</label>
+              <label className={`${fieldLabelClass} w-3`}>W</label>
               <NumberField label="" value={element.width ?? 0} onChange={(v) => onChange({ width: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">H</label>
+              <label className={`${fieldLabelClass} w-3`}>H</label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/50">
-            <label className="text-[10px] text-slate-500 w-12 flex-none">Rotation</label>
+          <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1">
+            <label className={`${fieldLabelClass} w-12 flex-none`}>Rotation</label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="-180" max="180"
-                className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={(element as any).rotationDeg ?? 0}
                 onChange={(e) => onChange({ rotationDeg: snapRotationValue(Number(e.target.value), altDown) } as any)}
               />
@@ -3886,22 +3946,22 @@ function InspectorPanel({
 
           {/* Opacity (Global) */}
           <div className="flex items-center gap-2">
-            <label className="text-[10px] text-slate-500 w-12 flex-none">Opacity</label>
+            <label className={`${fieldLabelClass} w-12 flex-none`}>Opacity</label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="0" max="1" step="0.01"
-                className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={typeof element.opacity === "number" ? element.opacity : 1}
                 onChange={(e) => onChange({ opacity: clamp(Number(e.target.value), 0, 1) })}
               />
               <div className="w-12 relative">
                 <input
                   type="number"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-xs text-right pr-3"
+                  className={`w-full pr-3 text-right ${fieldClass}`}
                   value={Math.round((typeof element.opacity === "number" ? element.opacity : 1) * 100)}
                   onChange={(e) => onChange({ opacity: clamp(Number(e.target.value) / 100, 0, 1) })}
                 />
-                <span className="absolute right-1 top-1 text-[10px] text-slate-500">%</span>
+                <span className="absolute right-2 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
               </div>
             </div>
           </div>
@@ -4778,10 +4838,10 @@ function NumberField({ label, value, onChange, className, noLabel }: { label: st
 
   return (
     <div className={className}>
-      {!noLabel && <label className="block mb-1 text-slate-400 text-[10px]">{label}</label>}
+      {!noLabel && <label className={`mb-1 block ${uiClasses.fieldLabel}`}>{label}</label>}
       <input
         type="text"
-        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
+        className={`w-full ${uiClasses.field}`}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={() => {
@@ -4952,25 +5012,25 @@ function TestDataPanel({ data, onChange }: { data: Record<string, string>; onCha
   const [newKey, setNewKey] = useState("");
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 mt-2">
-      <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Test Data (Variables)</div>
+    <div className="mt-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-4">
+      <div className="mb-2 text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400">Test Data (Variables)</div>
       <div className="space-y-2">
         {Object.entries(data).map(([k, v]) => (
           <div key={k} className="flex items-center gap-2">
-            <div className="text-xs text-slate-500 font-mono w-1/3 truncate" title={k}>{k}</div>
+            <div className="w-1/3 truncate font-mono text-[12px] leading-[1.4] text-slate-500" title={k}>{k}</div>
             <input
               type="text"
-              className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-200"
+              className={`flex-1 font-mono ${uiClasses.field}`}
               value={v}
               onChange={e => onChange(k, e.target.value)}
             />
-            <button onClick={() => onChange(k, "")} className="text-slate-600 hover:text-red-400 px-1">×</button>
+            <button onClick={() => onChange(k, "")} className="px-1 text-slate-600 hover:text-red-400">×</button>
           </div>
         ))}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+        <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
           <input
             type="text"
-            className="w-1/3 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"
+            className={`w-1/3 ${uiClasses.field}`}
             placeholder="New key..."
             value={newKey}
             onChange={e => setNewKey(e.target.value)}
@@ -4982,12 +5042,12 @@ function TestDataPanel({ data, onChange }: { data: Record<string, string>; onCha
                 setNewKey("");
               }
             }}
-            className="text-xs bg-slate-800 px-2 py-1 rounded hover:bg-slate-700 text-slate-300"
+            className={uiClasses.button}
           >
             Add
           </button>
         </div>
-        <div className="text-[10px] text-slate-500">
+        <div className="text-[11px] leading-[1.4] text-slate-500">
           Use in text as <code>{`{{key}}`}</code>
         </div>
       </div>
@@ -5001,19 +5061,19 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [val, setVal] = useState("");
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-white">Save Template</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-sm flex-col overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+          <h3 className="text-[14px] leading-[1.4] font-semibold text-white">Save Template</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
         </div>
 
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Template Name</label>
+            <label className="mb-1 block text-[12px] leading-[1.4] font-medium text-slate-400">Template Name</label>
             <input
               autoFocus
-              className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+              className={`w-full ${uiClasses.field}`}
               placeholder="My Lower Third"
               value={val}
               onChange={(e) => setVal(e.target.value)}
@@ -5024,16 +5084,13 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
-            <button
-              onClick={onClose}
-              className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
+            <button onClick={onClose} className={uiClasses.buttonGhost}>
               Cancel
             </button>
             <button
               onClick={() => val.trim() && onSave(val.trim())}
               disabled={!val.trim()}
-              className="px-3 py-1.5 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-8 rounded-md border border-indigo-500 bg-indigo-600 px-3 text-[12px] leading-[1.4] font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save Template
             </button>
@@ -5047,15 +5104,15 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
 function AccordionSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-slate-800 last:border-0 border-t first:border-t-0">
+    <div className="border-b border-[rgba(255,255,255,0.06)] last:border-0 border-t first:border-t-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900/40 select-none bg-slate-950/20"
+        className="flex h-8 w-full items-center justify-between bg-[rgba(255,255,255,0.03)] px-3 text-[14px] leading-[1.4] font-medium text-slate-300 select-none transition-colors hover:bg-[rgba(255,255,255,0.05)]"
       >
         <span>{title}</span>
         <span className={`transform transition-transform text-slate-500 ${open ? "rotate-90" : ""}`}>›</span>
       </button>
-      {open && <div className="p-3 bg-slate-900/10 space-y-3">{children}</div>}
+      {open && <div className="space-y-3 bg-[#111113] p-3">{children}</div>}
     </div>
   );
 }
@@ -5078,32 +5135,32 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex items-center justify-center w-9 h-9 rounded-lg transition-all border
+        flex h-8 w-8 items-center justify-center rounded-md border transition-all
         ${active
-          ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
-          : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          ? "border-indigo-500/50 bg-indigo-600/15 text-indigo-300 shadow-lg shadow-indigo-500/10"
+          : "border-[rgba(255,255,255,0.06)] bg-[#161618] text-slate-400 hover:bg-[#1d1d20] hover:text-slate-200"
         }
         ${disabled ? "opacity-20 cursor-not-allowed" : ""}
       `}
       title={label}
     >
-      <div className="flex items-center justify-center scale-90">{icon}</div>
+      <div className="flex items-center justify-center">{icon}</div>
     </button>
   );
 }
 
 const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
-  text: <span className="font-serif font-bold text-lg">T</span>,
-  box: <div className="w-4 h-4 border-2 border-current rounded-sm" />,
-  image: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
-  video: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  bar: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
-  ring: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8" /></svg>,
-  rect: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
-  circle: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /></svg>,
-  triangle: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3l10 18H2L12 3z" /></svg>,
-  line: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="20" x2="20" y2="4" /></svg>,
-  lower_third: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
+  text: <span className="font-serif text-[14px] font-bold leading-none">T</span>,
+  box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
+  video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
+  bar: <svg {...TOOL_ICON_PROPS}><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
+  ring: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="8" /></svg>,
+  rect: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
+  circle: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="9" /></svg>,
+  triangle: <svg {...TOOL_ICON_PROPS}><path d="M12 3l10 18H2L12 3z" /></svg>,
+  line: <svg {...TOOL_ICON_PROPS}><line x1="4" y1="20" x2="20" y2="4" /></svg>,
+  lower_third: <svg {...TOOL_ICON_PROPS}><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
 };
 
 function CreationToolbar({
@@ -5146,26 +5203,26 @@ function CreationToolbar({
   onTestEvent: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 p-3 border-b border-slate-800 bg-slate-900/50">
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tools</label>
+    <div className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3">
+      <div className="mb-1 flex items-center justify-between">
+        <label className={uiClasses.label}>Tools</label>
 
         <div className="flex gap-1">
           <button
             onClick={onGroup}
             disabled={!canGroup}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded"
+            className={`${uiClasses.iconButton} disabled:opacity-20`}
             title="Group Selection (Ctrl+G)"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>
           </button>
           <button
             onClick={onUngroup}
             disabled={!canUngroup}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded"
+            className={`${uiClasses.iconButton} disabled:opacity-20`}
             title="Ungroup (Ctrl+Shift+G)"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
           </button>
         </div>
       </div>
@@ -5193,10 +5250,10 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.line} label="Add Line" onClick={() => onAddShape("line")} />
       </div>
 
-      <div className="pt-3 mt-1 border-t border-slate-800 flex gap-2">
+      <div className="mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">
         <button
           onClick={onTestEvent}
-          className="flex-none px-3 py-2 rounded-lg text-xs font-semibold shadow-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700"
+          className={`${uiClasses.button} w-8 flex-none px-0`}
           title="Send Test Event"
         >
           ⚡
@@ -5205,9 +5262,9 @@ function CreationToolbar({
         <button
           onClick={onSave}
           disabled={saving}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold shadow-md transition-all flex items-center justify-center gap-2 ${saveOk ? "bg-emerald-600 text-white" :
+          className={`flex h-8 flex-1 items-center justify-center gap-2 rounded-md border text-[12px] leading-[1.4] font-semibold transition-all ${saveOk ? "border-emerald-500 bg-emerald-600 text-white" :
             saveError ? "bg-red-600 text-white" :
-              "bg-indigo-600 hover:bg-indigo-500 text-white"
+              "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500"
             }`}
         >
           {saving ? (
@@ -5229,14 +5286,14 @@ function CreationToolbar({
 }
 
 const LAYERS_PANEL_ICONS: Record<string, React.ReactNode> = {
-  group: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>,
-  text: <span className="font-serif font-bold text-[10px]">T</span>,
-  image: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
-  video: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  box: <div className="w-2.5 h-2.5 border border-current rounded-sm" />,
-  shape: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l10 20H2L12 2z" /></svg>, // Default shape
-  mask: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18" /><path d="M3 12h18" /><circle cx="12" cy="12" r="9" /></svg>,
-  progress: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+  group: <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>,
+  text: <span className="font-serif text-[13px] font-bold leading-none">T</span>,
+  image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
+  video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
+  box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  shape: <svg {...TOOL_ICON_PROPS}><path d="M12 2l10 20H2L12 2z" /></svg>,
+  mask: <MaskIcon />,
+  progress: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
 };
 
 function LayersPanel({
@@ -5307,11 +5364,8 @@ function LayersPanel({
       <React.Fragment key={el.id}>
         <div
           data-layer-id={el.id}
-          className={`
-            group flex items-center h-8 pr-2 select-none cursor-pointer border-b border-white/5 relative
-            ${isSelected ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"}
-          `}
-          style={{ paddingLeft: `${depth * 16 + 12}px` }}
+          className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-600/90 text-white" : "text-slate-400 hover:bg-[rgba(255,255,255,0.05)] hover:text-slate-200"}`}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
         >
           {/* Tree Guides */}
@@ -5338,53 +5392,53 @@ function LayersPanel({
           )}
 
           {/* Icon */}
-          <span className={`w-5 flex items-center justify-center opacity-70 mr-2 flex-shrink-0 ${isSelected ? "text-white" : "text-slate-500"}`}>
+          <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center ${isSelected ? "text-white" : "text-slate-500"}`}>
             {icon}
           </span>
 
           {/* Label */}
-          <span className="min-w-0 flex-1 text-xs truncate font-medium">
+          <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] font-medium">
             {el.name || defaultElementLabel(el)}
           </span>
 
           {/* Controls (Hover/Selected) */}
           <div
-            className={`flex items-center gap-1 flex-shrink-0 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            className={`flex flex-shrink-0 items-center gap-1 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
               }`}
           >
             <button
               onClick={(e) => { e.stopPropagation(); onToggleLock(el.id); }}
-              className={`p-1 rounded hover:bg-white/10 ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
+              className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
               title={isLocked ? "Unlock" : "Lock"}
             >
-              {isLocked ? "🔒" : "🔓"}
+              {isLocked ? <LockIcon /> : <UnlockIcon />}
             </button>
 
             <button
               onClick={(e) => { e.stopPropagation(); onToggleVisible(el.id); }}
-              className={`p-1 rounded hover:bg-white/10 ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
+              className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
               title={isVisible ? "Hide" : "Show"}
             >
-              {isVisible ? "👁️" : "🙈"}
+              {isVisible ? <EyeIcon /> : <EyeOffIcon />}
             </button>
 
             {el.type === "shape" && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
-                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-indigo-400"
+                className={`${uiClasses.iconButton} hover:text-indigo-400`}
                 title="Use as Mask"
               >
-                🎭
+                <MaskIcon />
               </button>
             )}
 
             {el.type === "mask" && onReleaseMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onReleaseMask(el.id); }}
-                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-red-400"
+                className={`${uiClasses.iconButton} hover:text-red-400`}
                 title="Release Mask"
               >
-                🔓
+                <UnlockIcon />
               </button>
             )}
           </div>
@@ -5401,8 +5455,8 @@ function LayersPanel({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-slate-900 overflow-y-auto pb-10 custom-scrollbar">
-      {roots.length === 0 && <div className="p-4 text-xs text-slate-600 text-center italic">No layers</div>}
+    <div ref={containerRef} className="flex h-full flex-col overflow-y-auto bg-[#111113] pb-10 custom-scrollbar">
+      {roots.length === 0 && <div className="p-4 text-center text-[12px] leading-[1.4] italic text-slate-600">No layers</div>}
       {roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))}
     </div>
   );
@@ -5417,8 +5471,8 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
   if (!components || components.length === 0) {
     return (
       <div className="p-4 text-center">
-        <div className="text-slate-400 text-sm mb-2">No Components Found</div>
-        <div className="text-slate-600 text-xs">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
+        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Components Found</div>
+        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
       </div>
     );
   }
@@ -5431,35 +5485,35 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
         return (
           <div
             key={comp.id}
-            className="group relative flex items-center justify-between p-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors"
+            className="group relative flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] p-3 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20] cursor-pointer"
             onClick={() => onInsert(comp)}
           >
             <div className="flex flex-col truncate">
-              <span className="text-sm font-semibold text-slate-200 truncate pr-2" title={comp.name}>{comp.name}</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">{comp.elements?.length || 0} nodes</span>
+              <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
+              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">{comp.elements?.length || 0} nodes</span>
             </div>
-            <div className="flex items-center gap-1.5 translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
               <button
-                className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-slate-600 transition-colors border border-slate-700"
+                className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
                 title="Edit Master"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
               {!isBuiltin && (
                 <button
-                  className="text-slate-400 hover:text-red-400 p-1.5 rounded-md bg-slate-900/50 hover:bg-red-900/30 transition-colors border border-slate-700"
+                  className={`${uiClasses.iconButton} hover:text-red-400`}
                   onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
                   title="Delete"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  <svg {...TOOL_ICON_PROPS}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
               )}
               <button
-                className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-indigo-600 transition-colors border border-slate-700"
+                className={`${uiClasses.iconButton} hover:bg-indigo-600 hover:text-white`}
                 title="Insert Instance"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               </button>
             </div>
           </div>
