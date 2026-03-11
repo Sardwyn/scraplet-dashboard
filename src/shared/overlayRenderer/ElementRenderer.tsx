@@ -22,8 +22,12 @@ import { resolveBinding } from "../bindingEngine";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
 
-function getAnimationTransition(animation?: OverlayAnimation) {
+function getAnimationTransition(
+    animation: OverlayAnimation | undefined,
+    phase: OverlayAnimationPhase | undefined
+) {
     if (!animation) return undefined;
+    if (phase === "hidden") return "none";
 
     const duration = Math.max(0, animation.durationMs ?? 400);
     const delay = Math.max(0, animation.delayMs ?? 0);
@@ -203,7 +207,7 @@ export function ElementRenderer({
                 top: 0,
                 width: "100%",
                 height: "100%",
-                transition: getAnimationTransition(el.animation),
+                transition: getAnimationTransition(el.animation, effectiveAnimationPhase),
             }
             : {
                 position: "absolute",
@@ -211,7 +215,7 @@ export function ElementRenderer({
                 top: el.y + yOffset,
                 width: el.width,
                 height: el.height,
-                transition: getAnimationTransition(el.animation),
+                transition: getAnimationTransition(el.animation, effectiveAnimationPhase),
             };
 
     Object.assign(baseStyle, getAnimationStyle(el.animation, effectiveAnimationPhase));
