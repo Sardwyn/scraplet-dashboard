@@ -2970,6 +2970,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onBringToFront={bringLayerToFront}
                 onSendToBack={sendLayerToBack}
                 onReorderLayer={reorderLayerRelative}
+                renamingId={renamingId}
+                renameDraft={renameDraft}
+                onBeginRename={(id) => {
+                  const el = elementsById[id] as AnyEl | undefined;
+                  if (el) beginRename(el);
+                }}
+                onRenameDraftChange={setRenameDraft}
+                onCommitRename={commitRename}
+                onCancelRename={cancelRename}
               />
             </div>
           )}
@@ -5398,7 +5407,13 @@ function LayersPanel({
   onMoveDown,
   onBringToFront,
   onSendToBack,
-  onReorderLayer
+  onReorderLayer,
+  renamingId,
+  renameDraft,
+  onBeginRename,
+  onRenameDraftChange,
+  onCommitRename,
+  onCancelRename
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -5413,6 +5428,12 @@ function LayersPanel({
   onBringToFront: (id: string) => void;
   onSendToBack: (id: string) => void;
   onReorderLayer: (id: string, targetId: string, placement: "before" | "after") => void;
+  renamingId: string | null;
+  renameDraft: string;
+  onBeginRename: (id: string) => void;
+  onRenameDraftChange: (value: string) => void;
+  onCommitRename: () => void;
+  onCancelRename: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const draggedIdRef = useRef<string | null>(null);
@@ -5443,6 +5464,7 @@ function LayersPanel({
     const isSelected = selectedIds.includes(el.id);
     const isVisible = el.visible !== false;
     const isLocked = el.locked === true;
+    const isRenaming = renamingId === el.id;
 
     // Find children
     const isContainer = el.type === 'group' || el.type === 'mask';
@@ -5459,7 +5481,15 @@ function LayersPanel({
           className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-500/15 text-indigo-50" : "text-slate-400 hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-200"}`}
           style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            onBeginRename(el.id);
+          }}
           onDragStart={(e) => {
+            if (isRenaming) {
+              e.preventDefault();
+              return;
+            }
             e.stopPropagation();
             e.dataTransfer.effectAllowed = "move";
             e.dataTransfer.setData("text/plain", el.id);
@@ -5530,9 +5560,26 @@ function LayersPanel({
           )}
 
           {/* Label */}
-          <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
-            {el.name || defaultElementLabel(el)}
-          </span>
+          {isRenaming ? (
+            <input
+              autoFocus
+              value={renameDraft}
+              onChange={(e) => onRenameDraftChange(e.target.value)}
+              onBlur={onCommitRename}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") onCommitRename();
+                if (e.key === "Escape") onCancelRename();
+              }}
+              className={`min-w-0 flex-1 ${uiClasses.field} h-6`}
+            />
+          ) : (
+            <span className="min-w-0 flex-1 truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
+              {el.name || defaultElementLabel(el)}
+            </span>
+          )}
 
           {/* Controls (Hover/Selected) */}
           <div
