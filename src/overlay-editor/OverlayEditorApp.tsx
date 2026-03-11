@@ -2867,6 +2867,28 @@ function PatternFillControls({
   onPickImage: () => void;
 }) {
   const nextPattern = ensurePatternFill(pattern);
+  const [imageState, setImageState] = useState<"idle" | "ok" | "error">("idle");
+
+  useEffect(() => {
+    if (!nextPattern.src.trim()) {
+      setImageState("idle");
+      return;
+    }
+
+    let cancelled = false;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!cancelled) setImageState("ok");
+    };
+    img.onerror = () => {
+      if (!cancelled) setImageState("error");
+    };
+    img.src = nextPattern.src;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nextPattern.src]);
 
   return (
     <div className="ml-14 space-y-3 rounded border border-slate-800 bg-slate-950/40 p-3">
@@ -2888,6 +2910,14 @@ function PatternFillControls({
           📂
         </button>
       </div>
+
+      {imageState !== "idle" && (
+        <div className={`text-[10px] ${imageState === "ok" ? "text-emerald-400" : "text-amber-400"}`}>
+          {imageState === "ok"
+            ? "Pattern image loaded."
+            : "Pattern image could not be loaded. Renderer will fall back to solid fill."}
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
@@ -2916,7 +2946,7 @@ function PatternFillControls({
           <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
         </div>
         <div className="text-[10px] text-slate-600 flex-1">
-          Tile uses scale directly. Cover/contain keep native fit.
+          Scale now applies to tile, cover, and contain.
         </div>
       </div>
 

@@ -63,6 +63,8 @@ function getBoxPatternStyle(pattern?: OverlayPatternFill): React.CSSProperties |
 
     style.backgroundRepeat = "no-repeat";
     style.backgroundSize = fit;
+    style.transform = `scale(${scale / 100})`;
+    style.transformOrigin = "center center";
     return style;
 }
 
@@ -738,6 +740,10 @@ export function ElementRenderer({
         const patternOpacity = getPatternOpacity(s.pattern);
         const tileWidth = Math.max(1, w * (patternScale / 100));
         const tileHeight = Math.max(1, h * (patternScale / 100));
+        const scaledWidth = Math.max(1, w * (patternScale / 100));
+        const scaledHeight = Math.max(1, h * (patternScale / 100));
+        const patternImageX = (w - scaledWidth) / 2;
+        const patternImageY = (h - scaledHeight) / 2;
 
         const strokeProps = {
             fill: "none",
@@ -766,10 +772,10 @@ export function ElementRenderer({
                                 >
                                     <image
                                         href={s.pattern!.src}
-                                        x="0"
-                                        y="0"
-                                        width={patternFit === "tile" ? tileWidth : w}
-                                        height={patternFit === "tile" ? tileHeight : h}
+                                        x={patternFit === "tile" ? 0 : patternImageX}
+                                        y={patternFit === "tile" ? 0 : patternImageY}
+                                        width={patternFit === "tile" ? tileWidth : scaledWidth}
+                                        height={patternFit === "tile" ? tileHeight : scaledHeight}
                                         preserveAspectRatio={
                                             patternFit === "cover"
                                                 ? "xMidYMid slice"
