@@ -75,6 +75,10 @@ type GuideState = {
   show: boolean;
   v?: GuideLine[];
   h?: GuideLine[];
+  spacing?: Array<
+    | { axis: "x"; y: number; start: number; end: number; label: string }
+    | { axis: "y"; x: number; start: number; end: number; label: string }
+  >;
 };
 
 type SnapOptions = {
@@ -183,6 +187,66 @@ function applyTimelineOverridesToElement(
 function snapRotationValue(value: number, allowFreeform: boolean) {
   if (allowFreeform) return value;
   return Math.round(value / 15) * 15;
+}
+
+function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
+  return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
+}
+
+function hasHorizontalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
+  return Math.min(a.r, b.r) - Math.max(a.l, b.l) > 12;
+}
+
+function computeEqualSpacingGuides(
+  rect: ReturnType<typeof rectFromEl>,
+  others: AnyEl[],
+  threshold: number
+): GuideState["spacing"] {
+  const guides: NonNullable<GuideState["spacing"]> = [];
+
+  const horizontal = others
+    .map((el) => ({ el, rect: rectFromEl(el) }))
+    .filter(({ rect: other }) => hasVerticalOverlap(rect, other));
+  const left = horizontal
+    .filter(({ rect: other }) => other.r <= rect.l)
+    .sort((a, b) => b.rect.r - a.rect.r)[0];
+  const right = horizontal
+    .filter(({ rect: other }) => other.l >= rect.r)
+    .sort((a, b) => a.rect.l - b.rect.l)[0];
+
+  if (left && right) {
+    const leftGap = rect.l - left.rect.r;
+    const rightGap = right.rect.l - rect.r;
+    if (leftGap >= 0 && rightGap >= 0 && Math.abs(leftGap - rightGap) <= threshold) {
+      const y = rect.cy;
+      const label = `${Math.round((leftGap + rightGap) / 2)}px`;
+      guides.push({ axis: "x", y, start: left.rect.r, end: rect.l, label });
+      guides.push({ axis: "x", y, start: rect.r, end: right.rect.l, label });
+    }
+  }
+
+  const vertical = others
+    .map((el) => ({ el, rect: rectFromEl(el) }))
+    .filter(({ rect: other }) => hasHorizontalOverlap(rect, other));
+  const top = vertical
+    .filter(({ rect: other }) => other.b <= rect.t)
+    .sort((a, b) => b.rect.b - a.rect.b)[0];
+  const bottom = vertical
+    .filter(({ rect: other }) => other.t >= rect.b)
+    .sort((a, b) => a.rect.t - b.rect.t)[0];
+
+  if (top && bottom) {
+    const topGap = rect.t - top.rect.b;
+    const bottomGap = bottom.rect.t - rect.b;
+    if (topGap >= 0 && bottomGap >= 0 && Math.abs(topGap - bottomGap) <= threshold) {
+      const x = rect.cx;
+      const label = `${Math.round((topGap + bottomGap) / 2)}px`;
+      guides.push({ axis: "y", x, start: top.rect.b, end: rect.t, label });
+      guides.push({ axis: "y", x, start: rect.b, end: bottom.rect.t, label });
+    }
+  }
+
+  return guides;
 }
 
 function rectFromEl(el: AnyEl) {
@@ -437,6 +501,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
   const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
+  const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
+  const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
 
   // Layers rename UX
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -661,21 +727,21 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Throttle guide updates
   const rafRef = useRef<number | null>(null);
-  const lastGuideRef = useRef<{ v: GuideLine[]; h: GuideLine[] } | null>(null);
+  const lastGuideRef = useRef<{ v: GuideLine[]; h: GuideLine[]; spacing?: GuideState["spacing"] } | null>(null);
 
   const clearGuides = useCallback(() => {
     lastGuideRef.current = null;
-    setGuides({ show: false, v: [], h: [] });
+    setGuides({ show: false, v: [], h: [], spacing: [] });
   }, []);
 
-  const updateGuidesThrottled = useCallback((next: { v: GuideLine[]; h: GuideLine[] }) => {
+  const updateGuidesThrottled = useCallback((next: { v: GuideLine[]; h: GuideLine[]; spacing?: GuideState["spacing"] }) => {
     lastGuideRef.current = next;
     if (rafRef.current != null) return;
     rafRef.current = window.requestAnimationFrame(() => {
       rafRef.current = null;
       const g = lastGuideRef.current;
       if (!g) return;
-      setGuides({ show: true, v: g.v, h: g.h });
+      setGuides({ show: true, v: g.v, h: g.h, spacing: g.spacing ?? [] });
     });
   }, []);
 
@@ -1611,6 +1677,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([copyId]);
   }
 
+  function createDragDuplicate(source: AnyEl) {
+    const prefix =
+      source.type === "text"
+        ? "text"
+        : source.type === "box"
+          ? "box"
+          : source.type === "shape"
+            ? "shape"
+            : source.type === "image"
+              ? "image"
+              : source.type === "video"
+                ? "video"
+                : source.type === "lower_third"
+                  ? "lt"
+                  : source.type === "componentInstance"
+                    ? "instance"
+                    : "el";
+
+    const duplicateId = genId(prefix);
+    const copy: AnyEl = {
+      ...(source as any),
+      id: duplicateId,
+      name: `${source.name || defaultElementLabel(source)} copy`,
+      x: source.x ?? 0,
+      y: source.y ?? 0,
+    };
+
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy as any] }));
+    setDraftRects((prev) => ({
+      ...prev,
+      [duplicateId]: {
+        x: source.x ?? 0,
+        y: source.y ?? 0,
+        width: source.width ?? 0,
+        height: source.height ?? 0,
+      },
+    }));
+    return duplicateId;
+  }
+
   function moveLayerBy(id: string, delta: number) {
     setConfig((prev) => {
       const idx = prev.elements.findIndex((e) => e.id === id);
@@ -2028,6 +2134,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize]);
 
+  useEffect(() => {
+    if (!rotationDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const rawDeg = Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90;
+      const nextDeg = snapRotationValue(rawDeg, e.altKey);
+      setDraftRotationDegs((prev) => ({ ...prev, [active.id]: nextDeg }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      rotationDragRef.current = null;
+      if (!active) return;
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const draft = draftRotationDegs[active.id];
+      const resolvedDeg =
+        draft ?? (stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0);
+
+      updateElement(active.id, { rotationDeg: resolvedDeg } as any);
+      setDraftRotationDegs((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRotationDegs]);
+
   // ===== Pan handlers =====
   const beginPan = useCallback(
     (clientX: number, clientY: number) => {
@@ -2212,8 +2358,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const elId = String(id);
     const el = elementsAny.find((x) => x.id === elId);
     if (!el) return;
+    const duplicate = dragDuplicateRef.current?.sourceId === elId ? dragDuplicateRef.current : null;
+    const commitId = duplicate?.duplicateId || elId;
 
     const exclude = new Set<string>([elId]);
+    if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
     const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
 
     const rect = {
@@ -2240,11 +2389,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       ny = roundToGrid(ny, gridSize);
     }
 
-    updateElement(elId, { x: nx, y: ny });
+    updateElement(commitId, { x: nx, y: ny });
     clearGuides();
     setDraftRects((prev) => {
       const next = { ...prev };
       delete next[elId];
+      if (duplicate?.duplicateId) {
+        delete next[duplicate.duplicateId];
+      }
       return next;
     });
   };
@@ -2287,6 +2439,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     (id: string, x: number, y: number) => {
       const el = elementsAny.find((e) => e.id === id);
       if (!el) return;
+      const duplicate = dragDuplicateRef.current?.sourceId === id ? dragDuplicateRef.current : null;
+      const draftId = duplicate?.duplicateId || id;
 
       let nx = x;
       let ny = y;
@@ -2303,6 +2457,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       if (guideSnapEnabled) {
         const exclude = new Set<string>([id]);
+        if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
         const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
 
         const rect = {
@@ -2322,7 +2477,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         const snap = snapRectToLines(rect, lines, { enabled: true, threshold: 6 });
         nx += snap.dx;
         ny += snap.dy;
-        updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h });
+        const spacing = computeEqualSpacingGuides(
+          {
+            ...rect,
+            x: nx,
+            y: ny,
+            l: nx,
+            r: nx + rect.w,
+            t: ny,
+            b: ny + rect.h,
+            cx: nx + rect.w / 2,
+            cy: ny + rect.h / 2,
+          },
+          elementsAny.filter((candidate) => candidate.id !== id && (!duplicate || candidate.id !== duplicate.duplicateId)),
+          6
+        );
+        updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h, spacing });
       } else {
         clearGuides();
       }
@@ -2334,11 +2504,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       setDraftRects((prev) => ({
         ...prev,
-        [id]: {
+        [id]: duplicate
+          ? {
+              x: start.x,
+              y: start.y,
+              width: prev[id]?.width ?? el.width ?? 0,
+              height: prev[id]?.height ?? el.height ?? 0,
+            }
+          : {
+              x: nx,
+              y: ny,
+              width: prev[id]?.width ?? el.width ?? 0,
+              height: prev[id]?.height ?? el.height ?? 0,
+            },
+        [draftId]: {
           x: nx,
           y: ny,
-          width: prev[id]?.width ?? el.width ?? 0,
-          height: prev[id]?.height ?? el.height ?? 0,
+          width: prev[draftId]?.width ?? el.width ?? 0,
+          height: prev[draftId]?.height ?? el.height ?? 0,
         },
       }));
     },
@@ -2399,7 +2582,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const snap = snapRectToLines(rect, lines, { enabled: true, threshold: 6 });
       gx += snap.dx;
       gy += snap.dy;
-      updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h });
+      const spacing = computeEqualSpacingGuides(
+        {
+          ...rect,
+          x: gx,
+          y: gy,
+          l: gx,
+          r: gx + rect.w,
+          t: gy,
+          b: gy + rect.h,
+          cx: gx + rect.w / 2,
+          cy: gy + rect.h / 2,
+        },
+        elementsAny.filter((candidate) => !selectedIds.includes(candidate.id)),
+        6
+      );
+      updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h, spacing });
     } else {
       clearGuides();
     }
@@ -2943,6 +3141,51 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       style={{ top: g.pos }}
                     />
                   ))}
+                  {(guides.spacing || []).map((g, idx) =>
+                    g.axis === "x" ? (
+                      <React.Fragment key={`gsx_${idx}_${g.start}_${g.end}_${g.y}`}>
+                        <div
+                          className="absolute h-px bg-fuchsia-300/90"
+                          style={{ left: g.start, top: g.y, width: Math.max(0, g.end - g.start) }}
+                        />
+                        <div
+                          className="absolute w-px h-2 bg-fuchsia-300/90"
+                          style={{ left: g.start, top: g.y - 3 }}
+                        />
+                        <div
+                          className="absolute w-px h-2 bg-fuchsia-300/90"
+                          style={{ left: g.end, top: g.y - 3 }}
+                        />
+                        <div
+                          className="absolute -translate-x-1/2 -translate-y-full px-1.5 py-0.5 rounded bg-fuchsia-400 text-[10px] font-mono text-white"
+                          style={{ left: (g.start + g.end) / 2, top: g.y - 6 }}
+                        >
+                          {g.label}
+                        </div>
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment key={`gsy_${idx}_${g.start}_${g.end}_${g.x}`}>
+                        <div
+                          className="absolute w-px bg-fuchsia-300/90"
+                          style={{ left: g.x, top: g.start, height: Math.max(0, g.end - g.start) }}
+                        />
+                        <div
+                          className="absolute h-px w-2 bg-fuchsia-300/90"
+                          style={{ left: g.x - 3, top: g.start }}
+                        />
+                        <div
+                          className="absolute h-px w-2 bg-fuchsia-300/90"
+                          style={{ left: g.x - 3, top: g.end }}
+                        />
+                        <div
+                          className="absolute -translate-y-1/2 px-1.5 py-0.5 rounded bg-fuchsia-400 text-[10px] font-mono text-white"
+                          style={{ left: g.x + 8, top: (g.start + g.end) / 2 }}
+                        >
+                          {g.label}
+                        </div>
+                      </React.Fragment>
+                    )
+                  )}
                 </div>
               )}
 
@@ -3024,6 +3267,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const y = draft?.y ?? el.y;
                 const w = draft?.width ?? el.width;
                 const h = draft?.height ?? el.height;
+                const renderedEl = (
+                  draftRotationDegs[el.id] !== undefined
+                    ? ({ ...el, rotationDeg: draftRotationDegs[el.id] } as AnyEl)
+                    : el
+                );
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
@@ -3062,7 +3310,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     onDragStart={(e) => {
                       dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
                       if ((e as any).altKey === true) {
-                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: "" };
+                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
                       } else {
                         dragDuplicateRef.current = null;
                       }
@@ -3071,22 +3319,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     onDragStop={(e, d) => {
                       handleDragStop(e, d, el.id);
                       const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
+                      const duplicateId = dragDuplicateRef.current?.duplicateId;
                       dragDuplicateRef.current = null;
                       delete dragStartRef.current[el.id];
-                      if (duplicateRequested) {
-                        const source = elementsById[el.id];
-                        if (source) {
-                          const copyId = genId(source.type === "box" ? "box" : source.type);
-                          const copy: AnyEl = {
-                            ...(source as any),
-                            id: copyId,
-                            name: `${source.name || defaultElementLabel(source as AnyEl)} copy`,
-                            x: d.x,
-                            y: d.y,
-                          };
-                          setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy as any] }));
-                          setSelectedIds([copyId]);
-                        }
+                      if (duplicateRequested && duplicateId) {
+                        setSelectedIds([duplicateId]);
                       }
                     }}
 
@@ -3136,7 +3373,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     style={isSelected ? selectionStyle : undefined}
                   >
                     <ElementRenderer
-                      element={el as any}
+                      element={renderedEl as any}
                       layout="fill"
                       elementsById={previewElementsById}
                       overlayComponents={overlayComponents}
@@ -3151,6 +3388,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         {el.name || defaultElementLabel(el)}
                         {isLocked ? " 🔒" : ""}
                       </div>
+                    )}
+                    {isPrimary && !isLocked && !isPanning && !marquee.active && (
+                      <>
+                        <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 bg-sky-400/80 pointer-events-none" />
+                        <button
+                          type="button"
+                          className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-sky-500 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const centerX = (x ?? 0) + (w ?? 0) / 2;
+                            const centerY = (y ?? 0) + (h ?? 0) / 2;
+                            rotationDragRef.current = { id: el.id, cx: centerX, cy: centerY };
+                            const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                            if (!stagePoint) return;
+                            const rawDeg = Math.atan2(stagePoint.y - centerY, stagePoint.x - centerX) * (180 / Math.PI) + 90;
+                            setDraftRotationDegs((prev) => ({
+                              ...prev,
+                              [el.id]: snapRotationValue(rawDeg, (e as any).altKey === true),
+                            }));
+                          }}
+                          title="Rotate (snaps to 15deg, hold Alt for free rotate)"
+                        />
+                      </>
                     )}
                   </Rnd>
                 );
