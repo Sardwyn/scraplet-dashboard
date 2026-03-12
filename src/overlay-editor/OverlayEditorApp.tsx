@@ -2214,8 +2214,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             const el = raw as AnyEl;
             const nx = (el.x ?? 0) + dx;
             const ny = (el.y ?? 0) + dy;
-            const nextX = snapEnabled ? roundToGrid(nx, gridSize) : Math.round(nx);
-            const nextY = snapEnabled ? roundToGrid(ny, gridSize) : Math.round(ny);
+            const nextX = Math.round(nx);
+            const nextY = Math.round(ny);
 
             if (isTimelineEligibleElement(el as OverlayElement)) {
               if (dx !== 0) {
