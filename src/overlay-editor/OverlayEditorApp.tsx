@@ -685,13 +685,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     startStage: { x: number; y: number };
     origin: { x: number; y: number };
   } | null>(null);
-  const resizeDragRef = useRef<{
+  const [resizeDragSession, setResizeDragSession] = useState<{
     id: string;
     handle: ResizeHandleKind;
     startStage: { x: number; y: number };
     origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
   } | null>(null);
-  const radiusDragRef = useRef<{
+  const [radiusDragSession, setRadiusDragSession] = useState<{
     id: string;
     origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
   } | null>(null);
@@ -2593,12 +2593,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [clientToStage, draftRotationDegs]);
 
   useEffect(() => {
-    if (!resizeDragRef.current) return;
+    if (!resizeDragSession) return;
 
     const onMove = (e: MouseEvent) => {
       e.preventDefault();
-      const active = resizeDragRef.current;
-      if (!active) return;
+      const active = resizeDragSession;
       const stagePoint = clientToStage(e.clientX, e.clientY);
       if (!stagePoint) return;
 
@@ -2616,9 +2615,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
 
     const onUp = (e: MouseEvent) => {
-      const active = resizeDragRef.current;
-      resizeDragRef.current = null;
-      if (!active) return;
+      const active = resizeDragSession;
+      setResizeDragSession(null);
 
       const stagePoint = clientToStage(e.clientX, e.clientY);
       const draft =
@@ -2659,15 +2657,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.removeEventListener("mousemove", onMove as any);
       window.removeEventListener("mouseup", onUp as any);
     };
-  }, [clientToStage, draftRects, gridSize, snapEnabled]);
+  }, [clientToStage, draftRects, gridSize, resizeDragSession, snapEnabled]);
 
   useEffect(() => {
-    if (!radiusDragRef.current) return;
+    if (!radiusDragSession) return;
 
     const onMove = (e: MouseEvent) => {
       e.preventDefault();
-      const active = radiusDragRef.current;
-      if (!active) return;
+      const active = radiusDragSession;
       const stagePoint = clientToStage(e.clientX, e.clientY);
       if (!stagePoint) return;
 
@@ -2688,9 +2685,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
 
     const onUp = (e: MouseEvent) => {
-      const active = radiusDragRef.current;
-      radiusDragRef.current = null;
-      if (!active) return;
+      const active = radiusDragSession;
+      setRadiusDragSession(null);
 
       const stagePoint = clientToStage(e.clientX, e.clientY);
       let radius = draftRadiusValues[active.id];
@@ -2724,7 +2720,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.removeEventListener("mousemove", onMove as any);
       window.removeEventListener("mouseup", onUp as any);
     };
-  }, [clientToStage, draftRadiusValues, elementsById]);
+  }, [clientToStage, draftRadiusValues, elementsById, radiusDragSession]);
 
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
@@ -3912,7 +3908,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 e.stopPropagation();
                                 const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                                 if (!stagePoint) return;
-                                resizeDragRef.current = {
+                                setResizeDragSession({
                                   id: el.id,
                                   handle,
                                   startStage: stagePoint,
@@ -3923,7 +3919,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                     height: h ?? 0,
                                     rotationDeg,
                                   },
-                                };
+                                });
                                 setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
                               }}
                               aria-label={`Resize ${handle}`}
@@ -3942,7 +3938,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                radiusDragRef.current = {
+                                setRadiusDragSession({
                                   id: el.id,
                                   origin: {
                                     x: x ?? 0,
@@ -3951,7 +3947,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                     height: h ?? 0,
                                     rotationDeg,
                                   },
-                                };
+                                });
                                 setDraftRadiusValues((prev) => ({ ...prev, [el.id]: radiusValue }));
                               }}
                               aria-label="Adjust corner radius"
