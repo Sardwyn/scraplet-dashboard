@@ -675,6 +675,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const clickCycleRef = useRef<{ x: number; y: number; ids: string[]; index: number } | null>(null);
   const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
   const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
+  const rndRefs = useRef<Record<string, any>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
@@ -2603,14 +2604,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
       );
 
+      rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
+      rndRefs.current[active.id]?.updateSize?.({ width: draft.width, height: draft.height });
       setResizeStatus(draft);
       setDraftRects((prev) => ({ ...prev, [active.id]: draft }));
-      updateElement(active.id, {
-        x: Math.round(draft.x),
-        y: Math.round(draft.y),
-        width: Math.round(draft.width),
-        height: Math.round(draft.height),
-      } as any);
     };
 
     const onUp = (e: MouseEvent) => {
@@ -3823,6 +3820,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   <Rnd
                     key={el.id}
                     id={el.id}
+                    ref={(node) => {
+                      if (node) rndRefs.current[el.id] = node;
+                      else delete rndRefs.current[el.id];
+                    }}
                     size={{ width: w, height: h }}
                     position={{ x, y }}
                     bounds="parent"
