@@ -2878,16 +2878,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   };
 
   const handleDragLive = useCallback(
-    (id: string, x: number, y: number) => {
+    (id: string, x: number, y: number, options?: { shiftKey?: boolean }) => {
       const el = elementsAny.find((e) => e.id === id);
       if (!el) return;
       const duplicate = dragDuplicateRef.current?.sourceId === id ? dragDuplicateRef.current : null;
       const draftId = duplicate?.duplicateId || id;
+      const axisLock = options?.shiftKey === true;
 
       let nx = x;
       let ny = y;
       const start = dragStartRef.current[id] ?? { x: el.x ?? 0, y: el.y ?? 0 };
-      if (shiftDown) {
+      if (axisLock) {
         const dx = x - start.x;
         const dy = y - start.y;
         if (Math.abs(dx) >= Math.abs(dy)) {
@@ -2967,7 +2968,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         },
       }));
     },
-    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled, shiftDown]
+    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled]
   );
 
   useEffect(() => {
@@ -2980,7 +2981,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (!stagePoint) return;
       const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
       const nextY = active.origin.y + (stagePoint.y - active.startStage.y);
-      handleDragLive(active.id, nextX, nextY);
+      handleDragLive(active.id, nextX, nextY, { shiftKey: e.shiftKey });
     };
 
     const onUp = (e: MouseEvent) => {
@@ -4040,7 +4041,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         dragDuplicateRef.current = null;
                       }
                     }}
-                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
+                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y, { shiftKey: (e as any).shiftKey === true })}
                     onDragStop={(e, d) => {
                       handleDragStop(e, d, el.id);
                       const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
