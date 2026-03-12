@@ -4089,7 +4089,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 kind: "images",
                 scope: "profiles",
                 title: "Pick Image",
-                onPick: (url) => updateElement(selectedIds[0], { url } as any)
+                onPick: (url) => updateElement(selectedIds[0], { src: url } as any)
               });
             }}
             onPickPatternImage={() => {
