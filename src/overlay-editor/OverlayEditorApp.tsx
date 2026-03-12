@@ -3808,6 +3808,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   Math.min(Math.max(1, w), Math.max(1, h)) / 2
                 );
                 const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marquee.active && selectedIds.length === 1;
+                const rndKey = showTransformOverlay
+                  ? `${el.id}:${Math.round(x ?? 0)}:${Math.round(y ?? 0)}:${Math.round(w ?? 0)}:${Math.round(h ?? 0)}:${Math.round(rotationDeg)}:${Math.round(radiusValue)}`
+                  : el.id;
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
@@ -3818,7 +3821,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                 return (
                   <Rnd
-                    key={el.id}
+                    key={rndKey}
                     id={el.id}
                     ref={(node) => {
                       if (node) rndRefs.current[el.id] = node;
