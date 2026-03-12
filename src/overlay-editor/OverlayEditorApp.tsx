@@ -2593,46 +2593,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [clientToStage, draftRotationDegs]);
 
   useEffect(() => {
-    if (!primaryDragRef.current) return;
-
-    const onMove = (e: MouseEvent) => {
-      e.preventDefault();
-      const active = primaryDragRef.current;
-      if (!active) return;
-      const stagePoint = clientToStage(e.clientX, e.clientY);
-      if (!stagePoint) return;
-      const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
-      const nextY = active.origin.y + (stagePoint.y - active.startStage.y);
-      handleDragLive(active.id, nextX, nextY);
-    };
-
-    const onUp = (e: MouseEvent) => {
-      const active = primaryDragRef.current;
-      primaryDragRef.current = null;
-      if (!active) return;
-      const draft = draftRects[active.id];
-      const stagePoint = clientToStage(e.clientX, e.clientY);
-      const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
-      const fallbackY = active.origin.y + ((stagePoint?.y ?? active.startStage.y) - active.startStage.y);
-      handleDragStop(e, { x: draft?.x ?? fallbackX, y: draft?.y ?? fallbackY }, active.id);
-      const duplicateRequested = dragDuplicateRef.current?.sourceId === active.id;
-      const duplicateId = dragDuplicateRef.current?.duplicateId;
-      dragDuplicateRef.current = null;
-      delete dragStartRef.current[active.id];
-      if (duplicateRequested && duplicateId) {
-        setSelectedIds([duplicateId]);
-      }
-    };
-
-    window.addEventListener("mousemove", onMove, { passive: false } as any);
-    window.addEventListener("mouseup", onUp, { passive: false } as any);
-    return () => {
-      window.removeEventListener("mousemove", onMove as any);
-      window.removeEventListener("mouseup", onUp as any);
-    };
-  }, [clientToStage, draftRects, handleDragLive]);
-
-  useEffect(() => {
     if (!resizeDragRef.current) return;
 
     const onMove = (e: MouseEvent) => {
@@ -3009,6 +2969,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     },
     [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled, shiftDown]
   );
+
+  useEffect(() => {
+    if (!primaryDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = primaryDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
+      const nextY = active.origin.y + (stagePoint.y - active.startStage.y);
+      handleDragLive(active.id, nextX, nextY);
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = primaryDragRef.current;
+      primaryDragRef.current = null;
+      if (!active) return;
+      const draft = draftRects[active.id];
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
+      const fallbackY = active.origin.y + ((stagePoint?.y ?? active.startStage.y) - active.startStage.y);
+      handleDragStop(e, { x: draft?.x ?? fallbackX, y: draft?.y ?? fallbackY }, active.id);
+      const duplicateRequested = dragDuplicateRef.current?.sourceId === active.id;
+      const duplicateId = dragDuplicateRef.current?.duplicateId;
+      dragDuplicateRef.current = null;
+      delete dragStartRef.current[active.id];
+      if (duplicateRequested && duplicateId) {
+        setSelectedIds([duplicateId]);
+      }
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRects, handleDragLive]);
 
   // Group drag (selection bounds Rnd)
   const groupDragStartRef = useRef<{
