@@ -680,6 +680,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
+  const primaryDragRef = useRef<{
+    id: string;
+    startStage: { x: number; y: number };
+    origin: { x: number; y: number };
+  } | null>(null);
   const resizeDragRef = useRef<{
     id: string;
     handle: ResizeHandleKind;
@@ -2588,6 +2593,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [clientToStage, draftRotationDegs]);
 
   useEffect(() => {
+    if (!primaryDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = primaryDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
+      const nextY = active.origin.y + (stagePoint.y - active.startStage.y);
+      handleDragLive(active.id, nextX, nextY);
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = primaryDragRef.current;
+      primaryDragRef.current = null;
+      if (!active) return;
+      const draft = draftRects[active.id];
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
+      const fallbackY = active.origin.y + ((stagePoint?.y ?? active.startStage.y) - active.startStage.y);
+      handleDragStop(e, { x: draft?.x ?? fallbackX, y: draft?.y ?? fallbackY }, active.id);
+      const duplicateRequested = dragDuplicateRef.current?.sourceId === active.id;
+      const duplicateId = dragDuplicateRef.current?.duplicateId;
+      dragDuplicateRef.current = null;
+      delete dragStartRef.current[active.id];
+      if (duplicateRequested && duplicateId) {
+        setSelectedIds([duplicateId]);
+      }
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRects, handleDragLive]);
+
+  useEffect(() => {
     if (!resizeDragRef.current) return;
 
     const onMove = (e: MouseEvent) => {
@@ -3816,58 +3861,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
                     : {};
 
-                return (
-                  <Rnd
-                    key={el.id}
-                    id={el.id}
-                    ref={(node) => {
-                      if (node) rndRefs.current[el.id] = node;
-                      else delete rndRefs.current[el.id];
-                    }}
-                    size={{ width: w, height: h }}
-                    position={{ x, y }}
-                    bounds="parent"
-                    scale={scale}
-                    disableDragging={isLocked || isPanning || marquee.active}
-                    enableResizing={false}
-                    onDragStart={(e) => {
-                      dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
-                      if ((e as any).altKey === true) {
-                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
-                      } else {
-                        dragDuplicateRef.current = null;
-                      }
-                    }}
-                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
-                    onDragStop={(e, d) => {
-                      handleDragStop(e, d, el.id);
-                      const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
-                      const duplicateId = dragDuplicateRef.current?.duplicateId;
-                      dragDuplicateRef.current = null;
-                      delete dragStartRef.current[el.id];
-                      if (duplicateRequested && duplicateId) {
-                        setSelectedIds([duplicateId]);
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      if (spaceDown || (e as any).button === 1) return;
-                      if (marquee.active) return;
-                      if ((e as any).ctrlKey || (e as any).metaKey) {
-                        cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
-                        return;
-                      }
-                      if ((e as any).shiftKey === true) {
-                        onSelectElement(el.id, true);
-                        return;
-                      }
-                      cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
-                    }}
-                    className={
-                      (isLocked ? "cursor-not-allowed " : "cursor-move ") +
-                      (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
-                    }
-                    style={isSelected ? selectionStyle : undefined}
-                  >
+                const contentNode = (
+                  <>
                     <ElementRenderer
                       element={renderedEl as any}
                       layout="fill"
@@ -3987,6 +3982,101 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         </div>
                       </div>
                     )}
+                  </>
+                );
+
+                if (showTransformOverlay) {
+                  return (
+                    <div
+                      key={el.id}
+                      className={(isLocked ? "cursor-not-allowed " : "cursor-move ") + "absolute"}
+                      style={{ left: x, top: y, width: w, height: h }}
+                      onMouseDown={(e) => {
+                        if (spaceDown || (e as any).button === 1) return;
+                        if (marquee.active || isLocked) return;
+                        if ((e as any).ctrlKey || (e as any).metaKey) {
+                          cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                          return;
+                        }
+                        if ((e as any).shiftKey === true) {
+                          onSelectElement(el.id, true);
+                          return;
+                        }
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+                        if ((e as any).altKey === true) {
+                          dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
+                        } else {
+                          dragDuplicateRef.current = null;
+                        }
+                        const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                        if (!stagePoint) return;
+                        primaryDragRef.current = {
+                          id: el.id,
+                          startStage: stagePoint,
+                          origin: { x: x ?? 0, y: y ?? 0 },
+                        };
+                      }}
+                    >
+                      {contentNode}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Rnd
+                    key={el.id}
+                    id={el.id}
+                    ref={(node) => {
+                      if (node) rndRefs.current[el.id] = node;
+                      else delete rndRefs.current[el.id];
+                    }}
+                    size={{ width: w, height: h }}
+                    position={{ x, y }}
+                    bounds="parent"
+                    scale={scale}
+                    disableDragging={isLocked || isPanning || marquee.active}
+                    enableResizing={false}
+                    onDragStart={(e) => {
+                      dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+                      if ((e as any).altKey === true) {
+                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
+                      } else {
+                        dragDuplicateRef.current = null;
+                      }
+                    }}
+                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
+                    onDragStop={(e, d) => {
+                      handleDragStop(e, d, el.id);
+                      const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
+                      const duplicateId = dragDuplicateRef.current?.duplicateId;
+                      dragDuplicateRef.current = null;
+                      delete dragStartRef.current[el.id];
+                      if (duplicateRequested && duplicateId) {
+                        setSelectedIds([duplicateId]);
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      if (spaceDown || (e as any).button === 1) return;
+                      if (marquee.active) return;
+                      if ((e as any).ctrlKey || (e as any).metaKey) {
+                        cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                        return;
+                      }
+                      if ((e as any).shiftKey === true) {
+                        onSelectElement(el.id, true);
+                        return;
+                      }
+                      cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
+                    }}
+                    className={
+                      (isLocked ? "cursor-not-allowed " : "cursor-move ") +
+                      (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
+                    }
+                    style={isSelected ? selectionStyle : undefined}
+                  >
+                    {contentNode}
                   </Rnd>
                 );
               })}
