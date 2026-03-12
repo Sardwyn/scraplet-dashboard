@@ -680,7 +680,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
-  const primaryDragRef = useRef<{
+  const [primaryDragSession, setPrimaryDragSession] = useState<{
     id: string;
     startStage: { x: number; y: number };
     origin: { x: number; y: number };
@@ -2971,12 +2971,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   );
 
   useEffect(() => {
-    if (!primaryDragRef.current) return;
+    if (!primaryDragSession) return;
 
     const onMove = (e: MouseEvent) => {
       e.preventDefault();
-      const active = primaryDragRef.current;
-      if (!active) return;
+      const active = primaryDragSession;
       const stagePoint = clientToStage(e.clientX, e.clientY);
       if (!stagePoint) return;
       const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
@@ -2985,9 +2984,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
 
     const onUp = (e: MouseEvent) => {
-      const active = primaryDragRef.current;
-      primaryDragRef.current = null;
-      if (!active) return;
+      const active = primaryDragSession;
+      setPrimaryDragSession(null);
       const draft = draftRects[active.id];
       const stagePoint = clientToStage(e.clientX, e.clientY);
       const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
@@ -3008,7 +3006,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.removeEventListener("mousemove", onMove as any);
       window.removeEventListener("mouseup", onUp as any);
     };
-  }, [clientToStage, draftRects, handleDragLive]);
+  }, [clientToStage, draftRects, handleDragLive, primaryDragSession]);
 
   // Group drag (selection bounds Rnd)
   const groupDragStartRef = useRef<{
@@ -4012,11 +4010,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         }
                         const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                         if (!stagePoint) return;
-                        primaryDragRef.current = {
+                        setPrimaryDragSession({
                           id: el.id,
                           startStage: stagePoint,
                           origin: { x: x ?? 0, y: y ?? 0 },
-                        };
+                        });
                       }}
                     >
                       {contentNode}
