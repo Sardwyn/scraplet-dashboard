@@ -3996,10 +3996,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                           cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
                           return;
                         }
-                        if ((e as any).shiftKey === true) {
-                          onSelectElement(el.id, true);
-                          return;
-                        }
                         e.preventDefault();
                         e.stopPropagation();
                         dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
