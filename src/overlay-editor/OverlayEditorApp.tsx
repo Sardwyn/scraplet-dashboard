@@ -2199,31 +2199,72 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         e.preventDefault();
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        const touchedTimelineProperties: OverlayTimelineProperty[] = [];
+        if (dx !== 0) touchedTimelineProperties.push("x");
+        if (dy !== 0) touchedTimelineProperties.push("y");
 
         setConfig((prev) => {
           const sel = new Set(selectedIds);
+          let nextTimeline = prev.timeline;
+          let lastTimelineTrackId: string | null = null;
+          let lastTimelineKeyframeId: string | null = null;
           const next = prev.elements.map((raw) => {
             if (!sel.has(raw.id)) return raw;
 
             const el = raw as AnyEl;
             const nx = (el.x ?? 0) + dx;
             const ny = (el.y ?? 0) + dy;
+            const nextX = snapEnabled ? roundToGrid(nx, gridSize) : Math.round(nx);
+            const nextY = snapEnabled ? roundToGrid(ny, gridSize) : Math.round(ny);
+
+            if (isTimelineEligibleElement(el as OverlayElement)) {
+              if (dx !== 0) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  el.id,
+                  "x",
+                  nextX
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+              if (dy !== 0) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  el.id,
+                  "y",
+                  nextY
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+            }
 
             return {
               ...(raw as any),
-              x: snapEnabled ? roundToGrid(nx, gridSize) : Math.round(nx),
-              y: snapEnabled ? roundToGrid(ny, gridSize) : Math.round(ny),
+              x: nextX,
+              y: nextY,
             };
           });
 
-          return { ...prev, elements: next };
+          if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
+          if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+          return { ...prev, elements: next, timeline: nextTimeline };
         });
+        if (touchedTimelineProperties.length > 0) {
+          showEditorStatus(
+            `Timeline edit at ${formatTimelineTime(timelinePlayheadMs)}`,
+            `Updated ${touchedTimelineProperties.join(", ")} keyframe${touchedTimelineProperties.length > 1 ? "s" : ""}.`
+          );
+        }
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal]);
+  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
