@@ -2,6 +2,7 @@ import React, { useId } from "react";
 import {
     OverlayAnimation,
     OverlayAnimationPhase,
+    OverlayBlendMode,
     OverlayElement,
     OverlayBoxElement,
     OverlayTextElement,
@@ -219,6 +220,11 @@ function fitToObjectFit(fit?: OverlayMediaFit) {
     if (fit === "contain") return "contain";
     if (fit === "fill") return "fill";
     return "cover";
+}
+
+function toCssBlendMode(blendMode?: OverlayBlendMode): React.CSSProperties["mixBlendMode"] {
+    if (blendMode === "screen" || blendMode === "multiply") return blendMode;
+    return "normal";
 }
 
 function resolveText(text: string, data?: Record<string, string>) {
@@ -819,16 +825,19 @@ export function ElementRenderer({
 
         const fit = fitToObjectFit(img.fit);
         const src = img.src || "";
+        const mixBlendMode = toCssBlendMode(img.blendMode);
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <img
-                            src={src}
-                            alt=""
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                        />
+                        <div style={{ width: "100%", height: "100%", mixBlendMode }}>
+                            <img
+                                src={src}
+                                alt=""
+                                style={{ width: "100%", height: "100%", objectFit: fit as any }}
+                            />
+                        </div>
                     )}
                 </div>
             </div>
@@ -846,21 +855,24 @@ export function ElementRenderer({
 
         const fit = fitToObjectFit(vid.fit);
         const src = vid.src || "";
+        const mixBlendMode = toCssBlendMode(vid.blendMode);
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <video
-                            src={src}
-                            poster={vid.poster || undefined}
-                            autoPlay={!!vid.autoplay}
-                            muted={vid.muted !== false}
-                            loop={!!vid.loop}
-                            controls={!!vid.controls}
-                            playsInline
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                        />
+                        <div style={{ width: "100%", height: "100%", mixBlendMode }}>
+                            <video
+                                src={src}
+                                poster={vid.poster || undefined}
+                                autoPlay={!!vid.autoplay}
+                                muted={vid.muted !== false}
+                                loop={!!vid.loop}
+                                controls={!!vid.controls}
+                                playsInline
+                                style={{ width: "100%", height: "100%", objectFit: fit as any }}
+                            />
+                        </div>
                     )}
                 </div>
             </div>

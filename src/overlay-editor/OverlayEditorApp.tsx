@@ -5174,6 +5174,19 @@ function InspectorPanel({
                 </select>
               </div>
               <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>Blend Mode</label>
+                <select className={`flex-1 ${fieldClass}`} value={(element as any).blendMode ?? "normal"} onChange={(e) => onChange({ blendMode: e.target.value } as any)}>
+                  <option value="normal">Normal</option>
+                  <option value="screen">Screen</option>
+                  <option value="multiply">Multiply</option>
+                </select>
+              </div>
+              {((element as any).blendMode ?? "normal") !== "normal" && (
+                <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  Screen is useful for effects on black backgrounds.
+                </div>
+              )}
+              <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>

@@ -297,6 +297,7 @@ export interface OverlayShapeElement extends OverlayElementBase {
 ========================= */
 
 export type OverlayMediaFit = "contain" | "cover" | "fill";
+export type OverlayBlendMode = "normal" | "screen" | "multiply";
 
 export type OverlaySrcKind = "upload" | "library" | "url";
 
@@ -322,10 +323,12 @@ export interface OverlayMediaBase {
 
 export interface OverlayImageElement extends OverlayElementBase, OverlayMediaBase {
   type: "image";
+  blendMode?: OverlayBlendMode;
 }
 
 export interface OverlayVideoElement extends OverlayElementBase, OverlayMediaBase {
   type: "video";
+  blendMode?: OverlayBlendMode;
 
   autoplay?: boolean;
   muted?: boolean;
