@@ -2605,6 +2605,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       setResizeStatus(draft);
       setDraftRects((prev) => ({ ...prev, [active.id]: draft }));
+      updateElement(active.id, {
+        x: Math.round(draft.x),
+        y: Math.round(draft.y),
+        width: Math.round(draft.width),
+        height: Math.round(draft.height),
+      } as any);
     };
 
     const onUp = (e: MouseEvent) => {
@@ -2673,6 +2679,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       );
 
       setDraftRadiusValues((prev) => ({ ...prev, [active.id]: radius }));
+      const target = elementsById[active.id] as AnyEl | undefined;
+      if (target) {
+        updateElement(active.id, getRadiusPatch(target, Math.round(radius)) as any);
+      }
     };
 
     const onUp = (e: MouseEvent) => {
