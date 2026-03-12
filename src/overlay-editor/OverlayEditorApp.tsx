@@ -205,6 +205,165 @@ function snapRotationValue(value: number, allowFreeform: boolean) {
   return Math.round(value / 15) * 15;
 }
 
+type ResizeHandleKind = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+
+function rotateVector(x: number, y: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
+  };
+}
+
+function handleAxes(handle: ResizeHandleKind) {
+  return {
+    sx: handle.includes("e") ? 1 : handle.includes("w") ? -1 : 0,
+    sy: handle.includes("s") ? 1 : handle.includes("n") ? -1 : 0,
+  };
+}
+
+function getResizeCursor(handle: ResizeHandleKind, rotationDeg: number) {
+  const cursors = ["ew-resize", "nesw-resize", "ns-resize", "nwse-resize", "ew-resize", "nesw-resize", "ns-resize", "nwse-resize"];
+  const baseAngle = {
+    e: 0,
+    ne: 45,
+    n: 90,
+    nw: 135,
+    w: 180,
+    sw: 225,
+    s: 270,
+    se: 315,
+  } as const;
+  const angle = (((baseAngle[handle] + rotationDeg) % 360) + 360) % 360;
+  const index = Math.round(angle / 45) % 8;
+  return cursors[index];
+}
+
+function getElementRadiusValue(el: AnyEl) {
+  if (el.type === "box") return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
+  if (el.type === "shape" && (el as any).shape === "rect") return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  return 0;
+}
+
+function supportsRadiusHandle(el: AnyEl) {
+  return el.type === "box" || (el.type === "shape" && (el as any).shape === "rect");
+}
+
+function getRadiusPatch(el: AnyEl, radius: number): Partial<AnyEl> {
+  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius } as any;
+  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius } as any;
+  return {};
+}
+
+function computeResizeDraft(
+  origin: { x: number; y: number; width: number; height: number; rotationDeg: number },
+  handle: ResizeHandleKind,
+  deltaWorld: { x: number; y: number },
+  options: { preserveAspect: boolean; resizeFromCenter: boolean }
+) {
+  const minSize = 8;
+  const { sx, sy } = handleAxes(handle);
+  const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -origin.rotationDeg);
+  const aspect = origin.height !== 0 ? origin.width / origin.height : 1;
+  let left = -origin.width / 2;
+  let right = origin.width / 2;
+  let top = -origin.height / 2;
+  let bottom = origin.height / 2;
+  let centerLocalX = 0;
+  let centerLocalY = 0;
+
+  if (options.resizeFromCenter) {
+    let width = origin.width;
+    let height = origin.height;
+    if (sx !== 0) width = Math.max(minSize, origin.width + sx * deltaLocal.x * 2);
+    if (sy !== 0) height = Math.max(minSize, origin.height + sy * deltaLocal.y * 2);
+
+    if (options.preserveAspect) {
+      if (sx === 0 && sy !== 0) width = Math.max(minSize, height * aspect);
+      else if (sy === 0 && sx !== 0) height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+      else if (sx !== 0 && sy !== 0) {
+        const widthScale = width / Math.max(origin.width, minSize);
+        const heightScale = height / Math.max(origin.height, minSize);
+        if (Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)) {
+          height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+        } else {
+          width = Math.max(minSize, height * aspect);
+        }
+      }
+    }
+
+    left = -width / 2;
+    right = width / 2;
+    top = -height / 2;
+    bottom = height / 2;
+  } else {
+    if (sx === -1) left += deltaLocal.x;
+    if (sx === 1) right += deltaLocal.x;
+    if (sy === -1) top += deltaLocal.y;
+    if (sy === 1) bottom += deltaLocal.y;
+
+    if (options.preserveAspect) {
+      if (sx === 0 && sy !== 0) {
+        const height = Math.max(minSize, bottom - top);
+        const width = Math.max(minSize, height * aspect);
+        const cx = (left + right) / 2;
+        left = cx - width / 2;
+        right = cx + width / 2;
+      } else if (sy === 0 && sx !== 0) {
+        const width = Math.max(minSize, right - left);
+        const height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+        const cy = (top + bottom) / 2;
+        top = cy - height / 2;
+        bottom = cy + height / 2;
+      } else if (sx !== 0 && sy !== 0) {
+        const width = Math.max(minSize, right - left);
+        const height = Math.max(minSize, bottom - top);
+        const widthScale = width / Math.max(origin.width, minSize);
+        const heightScale = height / Math.max(origin.height, minSize);
+        if (Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)) {
+          const nextHeight = Math.max(minSize, width / Math.max(aspect, 0.0001));
+          if (sy < 0) top = bottom - nextHeight;
+          else bottom = top + nextHeight;
+        } else {
+          const nextWidth = Math.max(minSize, height * aspect);
+          if (sx < 0) left = right - nextWidth;
+          else right = left + nextWidth;
+        }
+      }
+    }
+
+    if (right - left < minSize) {
+      if (sx < 0) left = right - minSize;
+      if (sx > 0) right = left + minSize;
+    }
+    if (bottom - top < minSize) {
+      if (sy < 0) top = bottom - minSize;
+      if (sy > 0) bottom = top + minSize;
+    }
+
+    centerLocalX = (left + right) / 2;
+    centerLocalY = (top + bottom) / 2;
+  }
+
+  const nextWidth = Math.max(minSize, right - left);
+  const nextHeight = Math.max(minSize, bottom - top);
+  const originCenter = { x: origin.x + origin.width / 2, y: origin.y + origin.height / 2 };
+  const centerOffsetWorld = rotateVector(centerLocalX, centerLocalY, origin.rotationDeg);
+  const nextCenter = {
+    x: originCenter.x + centerOffsetWorld.x,
+    y: originCenter.y + centerOffsetWorld.y,
+  };
+
+  return {
+    x: nextCenter.x - nextWidth / 2,
+    y: nextCenter.y - nextHeight / 2,
+    width: nextWidth,
+    height: nextHeight,
+  };
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -518,7 +677,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
+  const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
+  const resizeDragRef = useRef<{
+    id: string;
+    handle: ResizeHandleKind;
+    startStage: { x: number; y: number };
+    origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
+  } | null>(null);
+  const radiusDragRef = useRef<{
+    id: string;
+    origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
+  } | null>(null);
 
   // Layers rename UX
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -2416,6 +2586,134 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
   }, [clientToStage, draftRotationDegs]);
 
+  useEffect(() => {
+    if (!resizeDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = resizeDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const draft = computeResizeDraft(
+        active.origin,
+        active.handle,
+        { x: stagePoint.x - active.startStage.x, y: stagePoint.y - active.startStage.y },
+        { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
+      );
+
+      setResizeStatus(draft);
+      setDraftRects((prev) => ({ ...prev, [active.id]: draft }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = resizeDragRef.current;
+      resizeDragRef.current = null;
+      if (!active) return;
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const draft =
+        draftRects[active.id] ??
+        (stagePoint
+          ? computeResizeDraft(
+              active.origin,
+              active.handle,
+              { x: stagePoint.x - active.startStage.x, y: stagePoint.y - active.startStage.y },
+              { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
+            )
+          : active.origin);
+
+      let nx = Math.round(draft.x);
+      let ny = Math.round(draft.y);
+      let nw = Math.round(draft.width);
+      let nh = Math.round(draft.height);
+
+      if (snapEnabled) {
+        nx = roundToGrid(nx, gridSize);
+        ny = roundToGrid(ny, gridSize);
+        nw = roundToGrid(nw, gridSize);
+        nh = roundToGrid(nh, gridSize);
+      }
+
+      updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
+      setResizeStatus(null);
+      setDraftRects((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRects, gridSize, snapEnabled]);
+
+  useEffect(() => {
+    if (!radiusDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = radiusDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const centerX = active.origin.x + active.origin.width / 2;
+      const centerY = active.origin.y + active.origin.height / 2;
+      const localPoint = rotateVector(stagePoint.x - centerX, stagePoint.y - centerY, -active.origin.rotationDeg);
+      const radius = clamp(
+        Math.min(localPoint.x + active.origin.width / 2, localPoint.y + active.origin.height / 2),
+        0,
+        Math.min(active.origin.width, active.origin.height) / 2
+      );
+
+      setDraftRadiusValues((prev) => ({ ...prev, [active.id]: radius }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = radiusDragRef.current;
+      radiusDragRef.current = null;
+      if (!active) return;
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      let radius = draftRadiusValues[active.id];
+      if (radius === undefined && stagePoint) {
+        const centerX = active.origin.x + active.origin.width / 2;
+        const centerY = active.origin.y + active.origin.height / 2;
+        const localPoint = rotateVector(stagePoint.x - centerX, stagePoint.y - centerY, -active.origin.rotationDeg);
+        radius = clamp(
+          Math.min(localPoint.x + active.origin.width / 2, localPoint.y + active.origin.height / 2),
+          0,
+          Math.min(active.origin.width, active.origin.height) / 2
+        );
+      }
+
+      const nextRadius = Math.round(radius ?? getElementRadiusValue((elementsById[active.id] as AnyEl) ?? ({ type: "box" } as AnyEl)));
+      const target = elementsById[active.id] as AnyEl | undefined;
+      if (target) {
+        updateElement(active.id, getRadiusPatch(target, nextRadius) as any);
+      }
+
+      setDraftRadiusValues((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRadiusValues, elementsById]);
+
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
     const x1 = marquee.start.x;
@@ -3489,24 +3787,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const y = draft?.y ?? el.y;
                 const w = draft?.width ?? el.width;
                 const h = draft?.height ?? el.height;
-                const renderedEl = (
-                  draftRotationDegs[el.id] !== undefined
-                    ? ({ ...el, rotationDeg: draftRotationDegs[el.id] } as AnyEl)
-                    : el
+                const rotationDeg = draftRotationDegs[el.id] ?? Number(el.rotationDeg ?? 0);
+                const draftRadius = draftRadiusValues[el.id];
+                const renderedEl = ({
+                  ...el,
+                  ...(draft ? draft : {}),
+                  ...(draftRotationDegs[el.id] !== undefined ? { rotationDeg: draftRotationDegs[el.id] } : {}),
+                  ...(draftRadius !== undefined ? getRadiusPatch(el, draftRadius) : {}),
+                } as AnyEl);
+                const radiusValue = clamp(
+                  draftRadius ?? getElementRadiusValue(renderedEl),
+                  0,
+                  Math.min(Math.max(1, w), Math.max(1, h)) / 2
                 );
+                const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marquee.active && selectedIds.length === 1;
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
-                  ? { boxShadow: `0 0 0 1px ${ACCENT_TINT}, 0 0 0 1px rgba(255,255,255,0.32) inset` }
+                  ? {}
                   : isSelected
                     ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
                     : {};
-
-                // Custom resize handle styles
-                const handleStyle = {
-                  width: 4, height: 4, background: "#f8fafc", border: `1px solid ${ACCENT_TINT}`, borderRadius: 1,
-                  pointerEvents: 'auto' as const
-                };
 
                 return (
                   <Rnd
@@ -3517,18 +3818,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     bounds="parent"
                     scale={scale}
                     disableDragging={isLocked || isPanning || marquee.active}
-                    enableResizing={isPrimary && !isLocked && !isPanning && !marquee.active}
-                    lockAspectRatio={shiftDown}
-                    resizeHandleStyles={isPrimary ? {
-                      topLeft: { ...handleStyle, left: -2, top: -2 },
-                      topRight: { ...handleStyle, left: '100%', top: -2, marginLeft: -2 },
-                      bottomLeft: { ...handleStyle, left: -2, top: '100%', marginTop: -2 },
-                      bottomRight: { ...handleStyle, left: '100%', top: '100%', marginLeft: -2, marginTop: -2 },
-                      top: { ...handleStyle, left: '50%', top: -2, marginLeft: -2, cursor: 'n-resize' },
-                      bottom: { ...handleStyle, left: '50%', top: '100%', marginLeft: -2, marginTop: -2, cursor: 's-resize' },
-                      left: { ...handleStyle, top: '50%', left: -2, marginTop: -2, cursor: 'w-resize' },
-                      right: { ...handleStyle, top: '50%', left: '100%', marginLeft: -2, marginTop: -2, cursor: 'e-resize' },
-                    } : undefined}
+                    enableResizing={false}
                     onDragStart={(e) => {
                       dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
                       if ((e as any).altKey === true) {
@@ -3548,33 +3838,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         setSelectedIds([duplicateId]);
                       }
                     }}
-
-                    onResizeStart={() => {
-                      resizeOriginRef.current[el.id] = { x: el.x, y: el.y, width: el.width, height: el.height };
-                      setResizeStatus({ x: el.x, y: el.y, width: el.width, height: el.height });
-                    }}
-                    onResize={(e, dir, ref, delta, pos) => {
-                      let nw = ref.offsetWidth;
-                      let nh = ref.offsetHeight;
-                      let nx = pos.x;
-                      let ny = pos.y;
-                      const origin = resizeOriginRef.current[el.id];
-                      if (altDown && origin) {
-                        const dw = nw - origin.width;
-                        const dh = nh - origin.height;
-                        nx = origin.x - dw / 2;
-                        ny = origin.y - dh / 2;
-                      }
-                      setResizeStatus({
-                        x: nx, y: ny,
-                        width: nw, height: nh
-                      });
-                      setDraftRects((prev) => ({
-                        ...prev,
-                        [el.id]: { x: nx, y: ny, width: nw, height: nh },
-                      }));
-                    }}
-                    onResizeStop={(e, dir, ref, delta, pos) => handleResizeStop(e, dir, ref, delta, pos, el.id)}
                     onMouseDown={(e) => {
                       if (spaceDown || (e as any).button === 1) return;
                       if (marquee.active) return;
@@ -3611,29 +3874,107 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                         {isLocked ? " (Locked)" : ""}
                       </div>
                     )}
-                    {isPrimary && !isLocked && !isPanning && !marquee.active && (
-                      <>
-                        <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
-                        <button
-                          type="button"
-                          className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const centerX = (x ?? 0) + (w ?? 0) / 2;
-                            const centerY = (y ?? 0) + (h ?? 0) / 2;
-                            rotationDragRef.current = { id: el.id, cx: centerX, cy: centerY };
-                            const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
-                            if (!stagePoint) return;
-                            const rawDeg = Math.atan2(stagePoint.y - centerY, stagePoint.x - centerX) * (180 / Math.PI) + 90;
-                            setDraftRotationDegs((prev) => ({
-                              ...prev,
-                              [el.id]: snapRotationValue(rawDeg, (e as any).altKey === true),
-                            }));
-                          }}
-                          title="Rotate (snaps to 15deg, hold Alt for free rotate)"
-                        />
-                      </>
+                    {showTransformOverlay && (
+                      <div className="absolute inset-0 overflow-visible pointer-events-none">
+                        <div
+                          className="absolute inset-0"
+                          style={{ transform: `rotate(${rotationDeg}deg)`, transformOrigin: "center center" }}
+                        >
+                          <div
+                            className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
+                            style={{
+                              borderColor: ACCENT_TINT,
+                              borderRadius: supportsRadiusHandle(renderedEl) ? radiusValue : 2,
+                            }}
+                          />
+                          {([
+                            ["nw", 0, 0],
+                            ["n", (w ?? 0) / 2, 0],
+                            ["ne", w ?? 0, 0],
+                            ["e", w ?? 0, (h ?? 0) / 2],
+                            ["se", w ?? 0, h ?? 0],
+                            ["s", (w ?? 0) / 2, h ?? 0],
+                            ["sw", 0, h ?? 0],
+                            ["w", 0, (h ?? 0) / 2],
+                          ] as [ResizeHandleKind, number, number][]).map(([handle, left, top]) => (
+                            <button
+                              key={`${el.id}_${handle}`}
+                              type="button"
+                              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+                              style={{ left, top, cursor: getResizeCursor(handle, rotationDeg), pointerEvents: "auto" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                if (!stagePoint) return;
+                                resizeDragRef.current = {
+                                  id: el.id,
+                                  handle,
+                                  startStage: stagePoint,
+                                  origin: {
+                                    x: x ?? 0,
+                                    y: y ?? 0,
+                                    width: w ?? 0,
+                                    height: h ?? 0,
+                                    rotationDeg,
+                                  },
+                                };
+                                setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
+                              }}
+                              aria-label={`Resize ${handle}`}
+                            />
+                          ))}
+                          {supportsRadiusHandle(renderedEl) && (
+                            <button
+                              type="button"
+                              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+                              style={{
+                                left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w ?? 0) / 2)),
+                                top: 0,
+                                cursor: "grab",
+                                pointerEvents: "auto",
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                radiusDragRef.current = {
+                                  id: el.id,
+                                  origin: {
+                                    x: x ?? 0,
+                                    y: y ?? 0,
+                                    width: w ?? 0,
+                                    height: h ?? 0,
+                                    rotationDeg,
+                                  },
+                                };
+                                setDraftRadiusValues((prev) => ({ ...prev, [el.id]: radiusValue }));
+                              }}
+                              aria-label="Adjust corner radius"
+                            />
+                          )}
+                          <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
+                          <button
+                            type="button"
+                            className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
+                            style={{ pointerEvents: "auto" }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const centerX = (x ?? 0) + (w ?? 0) / 2;
+                              const centerY = (y ?? 0) + (h ?? 0) / 2;
+                              rotationDragRef.current = { id: el.id, cx: centerX, cy: centerY };
+                              const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                              if (!stagePoint) return;
+                              const rawDeg = Math.atan2(stagePoint.y - centerY, stagePoint.x - centerX) * (180 / Math.PI) + 90;
+                              setDraftRotationDegs((prev) => ({
+                                ...prev,
+                                [el.id]: snapRotationValue(rawDeg, (e as any).altKey === true),
+                              }));
+                            }}
+                            title="Rotate (snaps to 15deg, hold Alt for free rotate)"
+                          />
+                        </div>
+                      </div>
                     )}
                   </Rnd>
                 );
