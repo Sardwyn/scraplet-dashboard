@@ -392,6 +392,50 @@ function scaleDescendantRect(
   };
 }
 
+function scaleNumericValue(value: unknown, scale: number) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return undefined;
+  return numeric * scale;
+}
+
+function getScaledTextPatch(
+  el: AnyEl,
+  origin: { width: number; height: number },
+  next: { width: number; height: number }
+): Partial<AnyEl> {
+  if (el.type !== "text") return {};
+
+  const scaleX = next.width / Math.max(origin.width, 1);
+  const scaleY = next.height / Math.max(origin.height, 1);
+  const textScale = Math.max(0.1, Math.min(scaleX, scaleY));
+  const patch: Partial<AnyEl> = {};
+
+  const fontSizePx = scaleNumericValue((el as any).fontSizePx, textScale);
+  if (fontSizePx !== undefined) patch.fontSizePx = fontSizePx as any;
+
+  const fontSize = scaleNumericValue((el as any).fontSize, textScale);
+  if (fontSize !== undefined) patch.fontSize = fontSize as any;
+
+  const strokeWidthPx = scaleNumericValue((el as any).strokeWidthPx, textScale);
+  if (strokeWidthPx !== undefined) patch.strokeWidthPx = strokeWidthPx as any;
+
+  const strokeWidth = scaleNumericValue((el as any).strokeWidth, textScale);
+  if (strokeWidth !== undefined) patch.strokeWidth = strokeWidth as any;
+
+  if ((el as any).shadow && typeof (el as any).shadow === "object") {
+    const shadow = (el as any).shadow;
+    patch.shadow = {
+      ...shadow,
+      blur: scaleNumericValue(shadow.blur, textScale) ?? shadow.blur,
+      x: scaleNumericValue(shadow.x, textScale) ?? shadow.x,
+      y: scaleNumericValue(shadow.y, textScale) ?? shadow.y,
+      spread: scaleNumericValue(shadow.spread, textScale) ?? shadow.spread,
+    } as any;
+  }
+
+  return patch;
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -707,6 +751,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
+  const [draftElementPatches, setDraftElementPatches] = useState<Record<string, Partial<AnyEl>>>({});
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
   const [primaryDragSession, setPrimaryDragSession] = useState<{
     id: string;
@@ -877,15 +922,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const draft = draftRects[el.id];
       const draftRotation = draftRotationDegs[el.id];
       const draftRadius = draftRadiusValues[el.id];
+      const draftPatch = draftElementPatches[el.id];
       map[el.id] = {
         ...(el as AnyEl),
         ...(draft ? draft : {}),
         ...(draftRotation !== undefined ? { rotationDeg: draftRotation } : {}),
         ...(draftRadius !== undefined ? getRadiusPatch(el as AnyEl, draftRadius) : {}),
+        ...(draftPatch ? draftPatch : {}),
       } as AnyEl;
     }
     return map;
-  }, [previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
+  }, [draftElementPatches, previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
 
   const previewAnimationPhases = useElementAnimationPhases(
     previewElements as OverlayElement[],
@@ -2648,9 +2695,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const nextDrafts: Record<string, { x: number; y: number; width: number; height: number }> = {
         [active.id]: draft,
       };
+      const nextPatches: Record<string, Partial<AnyEl>> = {};
       if (active.descendants) {
         for (const [descendantId, rect] of Object.entries(active.descendants)) {
           nextDrafts[descendantId] = scaleDescendantRect(rect, active.origin, draft);
+          const descendantEl = previewElementsById[descendantId];
+          if (descendantEl?.type === "text") {
+            nextPatches[descendantId] = getScaledTextPatch(descendantEl as AnyEl, active.origin, draft);
+          }
         }
       }
 
@@ -2658,6 +2710,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       rndRefs.current[active.id]?.updateSize?.({ width: draft.width, height: draft.height });
       setResizeStatus(draft);
       setDraftRects((prev) => ({ ...prev, ...nextDrafts }));
+      setDraftElementPatches((prev) => ({ ...prev, ...nextPatches }));
     };
 
     const onUp = (e: MouseEvent) => {
@@ -2725,6 +2778,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: Math.round(scaled.height),
             };
             const base = raw as AnyEl;
+            const textPatch = getScaledTextPatch(base, active.origin, nextGroupRect);
             if (isTimelineEligibleElement(base as OverlayElement)) {
               for (const [property, value] of Object.entries(rounded) as [OverlayTimelineProperty, number][]) {
                 const result = upsertKeyframeAtPlayhead(
@@ -2738,7 +2792,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 lastTimelineKeyframeId = result.keyframeId;
               }
             }
-            return { ...base, ...rounded };
+            return { ...base, ...rounded, ...textPatch };
           });
 
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
@@ -2755,6 +2809,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setDraftRects((prev) => {
         const next = { ...prev };
         delete next[active.id];
+        if (active.descendants) {
+          for (const descendantId of Object.keys(active.descendants)) delete next[descendantId];
+        }
+        return next;
+      });
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
         if (active.descendants) {
           for (const descendantId of Object.keys(active.descendants)) delete next[descendantId];
         }
@@ -4018,11 +4079,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const h = draft?.height ?? el.height;
                 const rotationDeg = draftRotationDegs[el.id] ?? Number(el.rotationDeg ?? 0);
                 const draftRadius = draftRadiusValues[el.id];
+                const draftPatch = draftElementPatches[el.id];
                 const renderedEl = ({
                   ...el,
                   ...(draft ? draft : {}),
                   ...(draftRotationDegs[el.id] !== undefined ? { rotationDeg: draftRotationDegs[el.id] } : {}),
                   ...(draftRadius !== undefined ? getRadiusPatch(el, draftRadius) : {}),
+                  ...(draftPatch ? draftPatch : {}),
                 } as AnyEl);
                 const radiusValue = clamp(
                   draftRadius ?? getElementRadiusValue(renderedEl),
