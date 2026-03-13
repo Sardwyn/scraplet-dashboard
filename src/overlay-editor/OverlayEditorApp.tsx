@@ -2819,8 +2819,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!el) return;
     const duplicate = dragDuplicateRef.current?.sourceId === elId ? dragDuplicateRef.current : null;
     const commitId = duplicate?.duplicateId || elId;
-    const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(elementsById, elId));
-    const movedIds = [commitId, ...descendantIds];
 
     const exclude = new Set<string>([elId]);
     if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
@@ -2853,21 +2851,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const dx = nx - (el.x ?? 0);
     const dy = ny - (el.y ?? 0);
 
-    setConfig((prev) => ({
-      ...prev,
-      elements: prev.elements.map((raw) => {
-        if (!movedIds.includes(raw.id)) return raw;
-        const base = raw as any;
-        if (raw.id === commitId) {
-          return { ...base, x: nx, y: ny };
-        }
-        return { ...base, x: Math.round((base.x ?? 0) + dx), y: Math.round((base.y ?? 0) + dy) };
-      }),
-    }));
+    setConfig((prev) => {
+      const prevMap = Object.fromEntries(prev.elements.map((item) => [item.id, item as AnyEl])) as Record<string, AnyEl>;
+      const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(prevMap, elId));
+      const movedIds = new Set([commitId, ...descendantIds]);
+
+      return {
+        ...prev,
+        elements: prev.elements.map((raw) => {
+          if (!movedIds.has(raw.id)) return raw;
+          const base = raw as any;
+          if (raw.id === commitId) {
+            return { ...base, x: nx, y: ny };
+          }
+          return { ...base, x: Math.round((base.x ?? 0) + dx), y: Math.round((base.y ?? 0) + dy) };
+        }),
+      };
+    });
     clearGuides();
     setDraftRects((prev) => {
       const next = { ...prev };
-      for (const movedId of movedIds) delete next[movedId];
+      delete next[commitId];
+      if (!duplicate) {
+        for (const movedId of collectDescendantIds(previewElementsById, elId)) delete next[movedId];
+      }
       if (duplicate?.duplicateId) {
         delete next[duplicate.duplicateId];
       }
