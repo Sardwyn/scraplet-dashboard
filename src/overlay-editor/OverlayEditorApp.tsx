@@ -364,6 +364,19 @@ function computeResizeDraft(
   };
 }
 
+function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, acc = new Set<string>()) {
+  const el = elementsById[id];
+  if (!el) return acc;
+  if (el.type !== "group" && el.type !== "mask") return acc;
+
+  for (const childId of (el as any).childIds ?? []) {
+    if (acc.has(childId)) continue;
+    acc.add(childId);
+    collectDescendantIds(elementsById, childId, acc);
+  }
+  return acc;
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -2798,6 +2811,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!el) return;
     const duplicate = dragDuplicateRef.current?.sourceId === elId ? dragDuplicateRef.current : null;
     const commitId = duplicate?.duplicateId || elId;
+    const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(elementsById, elId));
+    const movedIds = [commitId, ...descendantIds];
 
     const exclude = new Set<string>([elId]);
     if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
@@ -2827,11 +2842,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       ny = roundToGrid(ny, gridSize);
     }
 
-    updateElement(commitId, { x: nx, y: ny });
+    const dx = nx - (el.x ?? 0);
+    const dy = ny - (el.y ?? 0);
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.map((raw) => {
+        if (!movedIds.includes(raw.id)) return raw;
+        const base = raw as any;
+        if (raw.id === commitId) {
+          return { ...base, x: nx, y: ny };
+        }
+        return { ...base, x: Math.round((base.x ?? 0) + dx), y: Math.round((base.y ?? 0) + dy) };
+      }),
+    }));
     clearGuides();
     setDraftRects((prev) => {
       const next = { ...prev };
-      delete next[elId];
+      for (const movedId of movedIds) delete next[movedId];
       if (duplicate?.duplicateId) {
         delete next[duplicate.duplicateId];
       }
@@ -2879,6 +2907,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (!el) return;
       const duplicate = dragDuplicateRef.current?.sourceId === id ? dragDuplicateRef.current : null;
       const draftId = duplicate?.duplicateId || id;
+      const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(elementsById, id));
       const axisLock = options?.shiftKey === true;
 
       let nx = x;
@@ -2941,6 +2970,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         ny = roundToGrid(ny, gridSize);
       }
 
+      const dx = nx - (el.x ?? 0);
+      const dy = ny - (el.y ?? 0);
       setDraftRects((prev) => ({
         ...prev,
         [id]: duplicate
@@ -2962,9 +2993,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           width: prev[draftId]?.width ?? el.width ?? 0,
           height: prev[draftId]?.height ?? el.height ?? 0,
         },
+        ...Object.fromEntries(
+          descendantIds.map((childId) => {
+            const child = elementsById[childId];
+            const childDraft = prev[childId];
+            return [
+              childId,
+              {
+                x: Math.round((child?.x ?? 0) + dx),
+                y: Math.round((child?.y ?? 0) + dy),
+                width: childDraft?.width ?? child?.width ?? 0,
+                height: childDraft?.height ?? child?.height ?? 0,
+              },
+            ];
+          })
+        ),
       }));
     },
-    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled]
+    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, elementsById, baseResolution.width, baseResolution.height, updateGuidesThrottled]
   );
 
   useEffect(() => {
