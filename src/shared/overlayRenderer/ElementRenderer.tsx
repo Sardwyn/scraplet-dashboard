@@ -826,18 +826,17 @@ export function ElementRenderer({
         const fit = fitToObjectFit(img.fit);
         const src = img.src || "";
         const mixBlendMode = toCssBlendMode(img.blendMode);
+        const imageStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div style={baseStyle}>
+            <div style={imageStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <div style={{ width: "100%", height: "100%", mixBlendMode }}>
-                            <img
-                                src={src}
-                                alt=""
-                                style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                            />
-                        </div>
+                        <img
+                            src={src}
+                            alt=""
+                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
+                        />
                     )}
                 </div>
             </div>
@@ -856,23 +855,22 @@ export function ElementRenderer({
         const fit = fitToObjectFit(vid.fit);
         const src = vid.src || "";
         const mixBlendMode = toCssBlendMode(vid.blendMode);
+        const videoStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div style={baseStyle}>
+            <div style={videoStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <div style={{ width: "100%", height: "100%", mixBlendMode }}>
-                            <video
-                                src={src}
-                                poster={vid.poster || undefined}
-                                autoPlay={!!vid.autoplay}
-                                muted={vid.muted !== false}
-                                loop={!!vid.loop}
-                                controls={!!vid.controls}
-                                playsInline
-                                style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                            />
-                        </div>
+                        <video
+                            src={src}
+                            poster={vid.poster || undefined}
+                            autoPlay={!!vid.autoplay}
+                            muted={vid.muted !== false}
+                            loop={!!vid.loop}
+                            controls={!!vid.controls}
+                            playsInline
+                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
+                        />
                     )}
                 </div>
             </div>

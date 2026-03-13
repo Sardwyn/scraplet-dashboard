@@ -3848,6 +3848,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   Math.min(Math.max(1, w), Math.max(1, h)) / 2
                 );
                 const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marquee.active && selectedIds.length === 1;
+                const forcePlainWrapper =
+                  (renderedEl.type === "image" || renderedEl.type === "video") &&
+                  ((renderedEl as any).blendMode ?? "normal") !== "normal";
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
@@ -3980,17 +3983,25 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   </>
                 );
 
-                if (showTransformOverlay) {
+                if (showTransformOverlay || forcePlainWrapper) {
                   return (
                     <div
                       key={el.id}
-                      className={(isLocked ? "cursor-not-allowed " : "cursor-move ") + "absolute"}
-                      style={{ left: x, top: y, width: w, height: h }}
+                      className={(isLocked ? "cursor-not-allowed " : showTransformOverlay ? "cursor-move " : "") + "absolute"}
+                      style={{ left: x, top: y, width: w, height: h, ...(isSelected ? selectionStyle : {}) }}
                       onMouseDown={(e) => {
                         if (spaceDown || (e as any).button === 1) return;
                         if (marquee.active || isLocked) return;
                         if ((e as any).ctrlKey || (e as any).metaKey) {
                           cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                          return;
+                        }
+                        if (!showTransformOverlay && (e as any).shiftKey === true) {
+                          onSelectElement(el.id, true);
+                          return;
+                        }
+                        if (!showTransformOverlay) {
+                          cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
                           return;
                         }
                         e.preventDefault();
