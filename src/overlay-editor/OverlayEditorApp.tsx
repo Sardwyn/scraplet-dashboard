@@ -4565,6 +4565,17 @@ function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
   };
 }
 
+function ensureKeying(keying?: any) {
+  return {
+    mode: keying?.mode ?? "none",
+    threshold: keying?.threshold ?? 0.2,
+    softness: keying?.softness ?? 0.15,
+    keyColor: keying?.keyColor ?? "#00ff00",
+    tolerance: keying?.tolerance ?? 0.2,
+    spillReduction: keying?.spillReduction ?? 0,
+  };
+}
+
 function PatternFillControls({
   pattern,
   onChange,
@@ -5241,6 +5252,114 @@ function InspectorPanel({
           {/* IMAGE/VIDEO */}
           {(element.type === "image" || element.type === "video") && (
             <div className="space-y-3">
+              {(() => {
+                const keying = ensureKeying((element as any).keying);
+                return (
+                  <div className="space-y-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-3">
+                    <div className="flex items-center gap-2">
+                      <label className={`${fieldLabelClass} w-16 flex-none`}>Keying</label>
+                      <select
+                        className={`flex-1 ${fieldClass}`}
+                        value={keying.mode}
+                        onChange={(e) =>
+                          onChange({
+                            keying: e.target.value === "none"
+                              ? { ...keying, mode: "none" }
+                              : { ...keying, mode: e.target.value },
+                          } as any)
+                        }
+                      >
+                        <option value="none">None</option>
+                        <option value="alphaBlack">Alpha from Black</option>
+                        <option value="alphaWhite">Alpha from White</option>
+                        <option value="chromaKey">Chroma Key</option>
+                      </select>
+                    </div>
+                    {keying.mode !== "none" && (
+                      <>
+                        {(keying.mode === "alphaBlack" || keying.mode === "alphaWhite") && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Threshold</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.threshold * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, threshold: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.threshold * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.softness * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                            </div>
+                          </>
+                        )}
+                        {keying.mode === "chromaKey" && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Color</label>
+                              <ColorSwatch value={keying.keyColor} onChange={(v) => onChange({ keying: { ...keying, keyColor: v } } as any)} />
+                              <input
+                                type="text"
+                                className={`flex-1 font-mono ${fieldClass}`}
+                                value={keying.keyColor}
+                                onChange={(e) => onChange({ keying: { ...keying, keyColor: e.target.value } } as any)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Tolerance</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.tolerance * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, tolerance: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.tolerance * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.softness * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Spill</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.spillReduction * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, spillReduction: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.spillReduction * 100)}</span>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[12px] leading-[1.4] font-semibold text-slate-300">Source</label>

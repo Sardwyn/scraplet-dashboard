@@ -21,6 +21,7 @@ import {
 } from "../overlayTypes";
 import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
+import { KeyedMedia } from "../mediaEffects/KeyedMedia";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
 
@@ -823,7 +824,6 @@ export function ElementRenderer({
                 ? el.clip.radius
                 : br;
 
-        const fit = fitToObjectFit(img.fit);
         const src = img.src || "";
         const mixBlendMode = toCssBlendMode(img.blendMode);
         const imageStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
@@ -832,11 +832,7 @@ export function ElementRenderer({
             <div style={imageStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <img
-                            src={src}
-                            alt=""
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                        />
+                        <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
                 </div>
             </div>
@@ -852,7 +848,6 @@ export function ElementRenderer({
                 ? el.clip.radius
                 : br;
 
-        const fit = fitToObjectFit(vid.fit);
         const src = vid.src || "";
         const mixBlendMode = toCssBlendMode(vid.blendMode);
         const videoStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
@@ -861,15 +856,16 @@ export function ElementRenderer({
             <div style={videoStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <video
+                        <KeyedMedia
+                            kind="video"
                             src={src}
-                            poster={vid.poster || undefined}
-                            autoPlay={!!vid.autoplay}
+                            fit={vid.fit}
+                            keying={vid.keying}
+                            poster={vid.poster}
+                            autoplay={!!vid.autoplay}
                             muted={vid.muted !== false}
                             loop={!!vid.loop}
                             controls={!!vid.controls}
-                            playsInline
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
                         />
                     )}
                 </div>
