@@ -377,6 +377,21 @@ function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, a
   return acc;
 }
 
+function scaleDescendantRect(
+  rect: { x: number; y: number; width: number; height: number },
+  origin: { x: number; y: number; width: number; height: number },
+  next: { x: number; y: number; width: number; height: number }
+) {
+  const scaleX = next.width / Math.max(origin.width, 1);
+  const scaleY = next.height / Math.max(origin.height, 1);
+  return {
+    x: next.x + (rect.x - origin.x) * scaleX,
+    y: next.y + (rect.y - origin.y) * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -703,6 +718,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     handle: ResizeHandleKind;
     startStage: { x: number; y: number };
     origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
+    descendants?: Record<string, { x: number; y: number; width: number; height: number }>;
   } | null>(null);
   const [radiusDragSession, setRadiusDragSession] = useState<{
     id: string;
@@ -2629,10 +2645,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
       );
 
+      const nextDrafts: Record<string, { x: number; y: number; width: number; height: number }> = {
+        [active.id]: draft,
+      };
+      if (active.descendants) {
+        for (const [descendantId, rect] of Object.entries(active.descendants)) {
+          nextDrafts[descendantId] = scaleDescendantRect(rect, active.origin, draft);
+        }
+      }
+
       rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
       rndRefs.current[active.id]?.updateSize?.({ width: draft.width, height: draft.height });
       setResizeStatus(draft);
-      setDraftRects((prev) => ({ ...prev, [active.id]: draft }));
+      setDraftRects((prev) => ({ ...prev, ...nextDrafts }));
     };
 
     const onUp = (e: MouseEvent) => {
@@ -2663,11 +2688,76 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         nh = roundToGrid(nh, gridSize);
       }
 
-      updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
+      const nextGroupRect = { x: nx, y: ny, width: nw, height: nh };
+      if (!active.descendants || Object.keys(active.descendants).length === 0) {
+        updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
+      } else {
+        setConfig((prev) => {
+          let nextTimeline = prev.timeline;
+          let lastTimelineTrackId: string | null = null;
+          let lastTimelineKeyframeId: string | null = null;
+          const nextElements = prev.elements.map((raw) => {
+            if (raw.id === active.id) {
+              const base = raw as AnyEl;
+              if (isTimelineEligibleElement(base as OverlayElement)) {
+                for (const [property, value] of Object.entries(nextGroupRect) as [OverlayTimelineProperty, number][]) {
+                  const result = upsertKeyframeAtPlayhead(
+                    ensureTimeline(nextTimeline),
+                    raw.id,
+                    property,
+                    value
+                  );
+                  nextTimeline = result.timeline;
+                  lastTimelineTrackId = result.trackId;
+                  lastTimelineKeyframeId = result.keyframeId;
+                }
+              }
+              return { ...base, ...nextGroupRect };
+            }
+
+            const descendantRect = active.descendants?.[raw.id];
+            if (!descendantRect) return raw;
+            const scaled = scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
+            const rounded = {
+              x: Math.round(scaled.x),
+              y: Math.round(scaled.y),
+              width: Math.round(scaled.width),
+              height: Math.round(scaled.height),
+            };
+            const base = raw as AnyEl;
+            if (isTimelineEligibleElement(base as OverlayElement)) {
+              for (const [property, value] of Object.entries(rounded) as [OverlayTimelineProperty, number][]) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  raw.id,
+                  property,
+                  value
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+            }
+            return { ...base, ...rounded };
+          });
+
+          if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
+          if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+
+          return {
+            ...prev,
+            elements: nextElements,
+            timeline: nextTimeline,
+          };
+        });
+      }
       setResizeStatus(null);
       setDraftRects((prev) => {
         const next = { ...prev };
         delete next[active.id];
+        if (active.descendants) {
+          for (const descendantId of Object.keys(active.descendants)) delete next[descendantId];
+        }
         return next;
       });
     };
@@ -4003,6 +4093,26 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 e.stopPropagation();
                                 const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                                 if (!stagePoint) return;
+                                const descendants =
+                                  renderedEl.type === "group" || renderedEl.type === "mask"
+                                    ? Object.fromEntries(
+                                        Array.from(collectDescendantIds(previewElementsById, el.id))
+                                          .map((childId) => {
+                                            const child = previewElementsById[childId];
+                                            if (!child) return null;
+                                            return [
+                                              childId,
+                                              {
+                                                x: child.x ?? 0,
+                                                y: child.y ?? 0,
+                                                width: child.width ?? 0,
+                                                height: child.height ?? 0,
+                                              },
+                                            ] as const;
+                                          })
+                                          .filter(Boolean) as [string, { x: number; y: number; width: number; height: number }][]
+                                      )
+                                    : undefined;
                                 setResizeDragSession({
                                   id: el.id,
                                   handle,
@@ -4014,6 +4124,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                     height: h ?? 0,
                                     rotationDeg,
                                   },
+                                  descendants,
                                 });
                                 setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
                               }}
