@@ -858,10 +858,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const previewElementsById = useMemo(() => {
     const map: Record<string, AnyEl> = {};
     for (const el of previewElements) {
-      map[el.id] = el as AnyEl;
+      const draft = draftRects[el.id];
+      const draftRotation = draftRotationDegs[el.id];
+      const draftRadius = draftRadiusValues[el.id];
+      map[el.id] = {
+        ...(el as AnyEl),
+        ...(draft ? draft : {}),
+        ...(draftRotation !== undefined ? { rotationDeg: draftRotation } : {}),
+        ...(draftRadius !== undefined ? getRadiusPatch(el as AnyEl, draftRadius) : {}),
+      } as AnyEl;
     }
     return map;
-  }, [previewElements]);
+  }, [previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
 
   const previewAnimationPhases = useElementAnimationPhases(
     previewElements as OverlayElement[],
