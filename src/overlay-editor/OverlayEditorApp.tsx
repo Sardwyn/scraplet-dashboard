@@ -37,8 +37,9 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
-import { applyBooleanOperation, offsetOverlayPath } from "../shared/geometry/pathBoolean";
+import { offsetOverlayPath } from "../shared/geometry/pathBoolean";
 import { booleanContainerBounds, elementToOverlayPath, normalizePathToBounds, svgPathFromCommands } from "../shared/geometry/pathUtils";
+import { resolveElementGeometry } from "../shared/geometry/resolveGeometry";
 
 
 interface ServerOverlay {
@@ -1122,7 +1123,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
   const selectedPathElements = useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
   const canBooleanSelection = selectedPathElements.length >= 2;
-  const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl) && primarySelectedEl.type !== "boolean";
+  const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl);
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
   const selectionHasLocked = useMemo(() => selectedEls.some((e) => e.locked === true), [selectedEls]);
@@ -1615,10 +1616,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   function createOffsetPath(distance: number) {
     const source = primarySelectedEl;
-    if (!isPathCapableElement(source) || source.type === "boolean") return;
-    const basePath = elementToOverlayPath(source as any);
-    if (!basePath) return;
-    const result = offsetOverlayPath(basePath, distance);
+    if (!isPathCapableElement(source)) return;
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return;
+    const result = offsetOverlayPath(resolved.path, distance);
     addPathElement(result.path, {
       x: (source.x ?? 0) + result.bounds.x,
       y: (source.y ?? 0) + result.bounds.y,
@@ -5124,6 +5125,16 @@ function InspectorPanel({
   const isLocked = element.locked === true;
   const fieldClass = uiClasses.field;
   const fieldLabelClass = uiClasses.fieldLabel;
+  const resolvedGeometry =
+    element.type === "path" || element.type === "boolean" || element.type === "shape" || element.type === "box"
+      ? resolveElementGeometry(element as any)
+      : null;
+  const pathCommandCount =
+    element.type === "path"
+      ? ((element as any).path?.commands?.length ?? 0)
+      : element.type === "boolean"
+        ? (resolvedGeometry?.path.commands.length ?? 0)
+        : null;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
@@ -5168,6 +5179,18 @@ function InspectorPanel({
             <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Mask group selected</div>
             <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
               This container uses its first child as the mask shape and clips the content child beneath it.
+            </div>
+          </div>
+        )}
+        {(element.type === "path" || element.type === "boolean") && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">
+              {element.type === "path" ? "Path geometry" : "Boolean geometry"}
+            </div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              {element.type === "path"
+                ? `This layer renders from ${pathCommandCount ?? 0} local path commands.`
+                : `This container resolves ${((element as any).childIds?.length ?? 0)} child shapes into one cached path.`}
             </div>
           </div>
         )}

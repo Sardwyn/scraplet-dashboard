@@ -3,7 +3,6 @@ import {
     OverlayAnimation,
     OverlayAnimationPhase,
     OverlayBlendMode,
-    OverlayBooleanElement,
     OverlayElement,
     OverlayBoxElement,
     OverlayPathElement,
@@ -24,7 +23,7 @@ import {
 import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
 import { KeyedMedia } from "../mediaEffects/KeyedMedia";
-import { applyBooleanOperation } from "../geometry/pathBoolean";
+import { resolveElementGeometry } from "../geometry/resolveGeometry";
 import { elementToOverlayPath, svgPathFromCommands } from "../geometry/pathUtils";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
@@ -420,32 +419,13 @@ export function ElementRenderer({
         transition: "inherit",
     };
 
-    const resolveBooleanPath = (booleanEl: OverlayBooleanElement) => {
-        if (!elementsById) return null;
-        const children = booleanEl.childIds
-            .map((childId) => elementsById[childId])
-            .filter(Boolean) as OverlayElement[];
-        if (!children.length) return null;
-        return applyBooleanOperation(booleanEl.operation, children);
-    };
-
     const resolveMaskPathInfo = (maskShape: OverlayElement) => {
-        if (maskShape.type === "boolean") {
-            const resolved = resolveBooleanPath(maskShape as OverlayBooleanElement);
-            if (!resolved) return null;
-            return { d: svgPathFromCommands(resolved.path), bounds: resolved.bounds };
-        }
-        const path = elementToOverlayPath(maskShape);
-        if (!path) return null;
-        const localD = svgPathFromCommands(path);
+        const resolved = resolveElementGeometry(maskShape, elementsById);
+        if (!resolved) return null;
+        const localD = svgPathFromCommands(resolved.path);
         return {
             d: localD,
-            bounds: {
-                x: maskShape.x ?? 0,
-                y: maskShape.y ?? 0,
-                width: maskShape.width ?? 0,
-                height: maskShape.height ?? 0,
-            },
+            bounds: resolved.bounds,
         };
     };
 
@@ -791,7 +771,7 @@ export function ElementRenderer({
 
     if (el.type === "boolean") {
         const booleanEl = el as OverlayBooleanElement;
-        const resolved = resolveBooleanPath(booleanEl);
+        const resolved = resolveElementGeometry(booleanEl, elementsById);
         if (!resolved) return null;
         const w = Math.max(1, booleanEl.width ?? resolved.bounds.width ?? 1);
         const h = Math.max(1, booleanEl.height ?? resolved.bounds.height ?? 1);
