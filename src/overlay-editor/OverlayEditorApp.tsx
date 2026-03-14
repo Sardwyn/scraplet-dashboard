@@ -2,10 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Rnd, RndDragCallback, RndResizeCallback } from "react-rnd";
 import {
   OverlayAnimation,
+  OverlayBooleanElement,
+  OverlayBooleanOperation,
   OverlayConfigV0,
   OverlayElement,
+  OverlayPath,
+  OverlayPathElement,
   OverlayPatternFill,
   OverlayPatternFit,
+  PathCommand,
   OverlayTimeline,
   OverlayTimelineKeyframe,
   OverlayTimelineProperty,
@@ -32,6 +37,8 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
+import { applyBooleanOperation, offsetOverlayPath } from "../shared/geometry/pathBoolean";
+import { booleanContainerBounds, elementToOverlayPath, normalizePathToBounds, svgPathFromCommands } from "../shared/geometry/pathUtils";
 
 
 interface ServerOverlay {
@@ -367,7 +374,7 @@ function computeResizeDraft(
 function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, acc = new Set<string>()) {
   const el = elementsById[id];
   if (!el) return acc;
-  if (el.type !== "group" && el.type !== "mask") return acc;
+  if (el.type !== "group" && el.type !== "mask" && el.type !== "boolean") return acc;
 
   for (const childId of (el as any).childIds ?? []) {
     if (acc.has(childId)) continue;
@@ -396,6 +403,10 @@ function scaleNumericValue(value: unknown, scale: number) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return undefined;
   return numeric * scale;
+}
+
+function isPathCapableElement(el: AnyEl | null | undefined): el is AnyEl {
+  return !!el && (el.type === "shape" || el.type === "path" || el.type === "box" || el.type === "boolean");
 }
 
 function getScaledTextPatch(
@@ -732,6 +743,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit");
   const [manualScale, setManualScale] = useState(1);
   const [zoomAnimating, setZoomAnimating] = useState(false);
+  const [activeCreationTool, setActiveCreationTool] = useState<null | "pen">(null);
+  const [penDraft, setPenDraft] = useState<{
+    anchors: { x: number; y: number }[];
+    commands: PathCommand[];
+    previewPoint?: { x: number; y: number };
+  } | null>(null);
 
   // PAN (space/middle-mouse)
   const [spaceDown, setSpaceDown] = useState(false);
@@ -747,6 +764,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const clickCycleRef = useRef<{ x: number; y: number; ids: string[]; index: number } | null>(null);
   const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
   const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
+  const penPointerSessionRef = useRef<{ start: { x: number; y: number } } | null>(null);
   const rndRefs = useRef<Record<string, any>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
@@ -1102,6 +1120,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const canGroup = selectedIds.length > 0;
   const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
+  const selectedPathElements = useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
+  const canBooleanSelection = selectedPathElements.length >= 2;
+  const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl) && primarySelectedEl.type !== "boolean";
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
   const selectionHasLocked = useMemo(() => selectedEls.some((e) => e.locked === true), [selectedEls]);
@@ -1124,7 +1145,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
     previewElements.forEach(e => {
-      if (e.type === 'group' || e.type === 'mask') {
+      if (e.type === 'group' || e.type === 'mask' || e.type === 'boolean') {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
@@ -1376,7 +1397,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       }
 
       // Propagate group movement to children (recursive)
-      if (oldEl.type === 'group' && (patch.x !== undefined || patch.y !== undefined)) {
+      if ((oldEl.type === 'group' || oldEl.type === 'boolean') && (patch.x !== undefined || patch.y !== undefined)) {
         const dx = (patch.x ?? oldEl.x) - oldEl.x;
         const dy = (patch.y ?? oldEl.y) - oldEl.y;
 
@@ -1385,7 +1406,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           // Helper to find descendants
           const collect = (pid: string) => {
             const p = nextEls.find(e => e.id === pid);
-            if (p && p.type === 'group') {
+            if (p && (p.type === 'group' || p.type === 'boolean')) {
               (p as any).childIds?.forEach((cid: string) => {
                 if (!toMove.has(cid)) {
                   toMove.add(cid);
@@ -1538,6 +1559,81 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
     setSelectedIds([id]);
+  }
+
+  function addPathElement(path: OverlayPath, bounds: { x: number; y: number; width: number; height: number }, name = "Path") {
+    const id = genId("path");
+    const el: AnyEl = {
+      id,
+      type: "path",
+      name,
+      x: Math.round(bounds.x),
+      y: Math.round(bounds.y),
+      width: Math.max(1, Math.round(bounds.width)),
+      height: Math.max(1, Math.round(bounds.height)),
+      visible: true,
+      locked: false,
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeColor: "#000000",
+      strokeWidthPx: 2,
+      strokeOpacity: 1,
+      strokeDash: [],
+      path,
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
+    setSelectedIds([id]);
+    return id;
+  }
+
+  function createBooleanFromSelection(operation: OverlayBooleanOperation) {
+    const selected = selectedEls.filter(isPathCapableElement);
+    if (selected.length < 2) return;
+    const id = genId("bool");
+    const bounds = booleanContainerBounds({ id, type: "boolean" } as OverlayBooleanElement, selected as OverlayElement[]);
+    const el: AnyEl = {
+      id,
+      type: "boolean",
+      name: `${operation[0].toUpperCase()}${operation.slice(1)}`,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      visible: true,
+      locked: false,
+      operation,
+      childIds: selected.map((item) => item.id),
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeColor: "#000000",
+      strokeWidthPx: 2,
+      strokeOpacity: 1,
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
+    setSelectedIds([id]);
+  }
+
+  function createOffsetPath(distance: number) {
+    const source = primarySelectedEl;
+    if (!isPathCapableElement(source) || source.type === "boolean") return;
+    const basePath = elementToOverlayPath(source as any);
+    if (!basePath) return;
+    const result = offsetOverlayPath(basePath, distance);
+    addPathElement(result.path, {
+      x: (source.x ?? 0) + result.bounds.x,
+      y: (source.y ?? 0) + result.bounds.y,
+      width: result.bounds.width,
+      height: result.bounds.height,
+    }, distance < 0 ? "Inset Path" : "Outset Path");
+  }
+
+  function commitPenDraft(closePath = false) {
+    if (!penDraft || penDraft.anchors.length < 2) return;
+    const commands = closePath ? [...penDraft.commands, { type: "close" } as PathCommand] : penDraft.commands;
+    const normalized = normalizePathToBounds({ commands });
+    addPathElement(normalized.path, normalized.bounds, "Pen Path");
+    setPenDraft(null);
+    setActiveCreationTool(null);
   }
 
   function addImage() {
@@ -2384,6 +2480,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Keyboard UX (nudge, delete, duplicate, zoom)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (activeCreationTool === "pen") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setPenDraft(null);
+          setActiveCreationTool(null);
+          return;
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitPenDraft(false);
+          return;
+        }
+      }
       if (showShortcutModal && e.key === "Escape") {
         e.preventDefault();
         setShowShortcutModal(false);
@@ -2524,7 +2633,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
+  }, [activeCreationTool, commitPenDraft, primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
@@ -3248,6 +3357,78 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
   }, [clientToStage, draftRects, handleDragLive, primaryDragSession]);
 
+  useEffect(() => {
+    if (activeCreationTool !== "pen") return;
+
+    const onMove = (e: MouseEvent) => {
+      if (!penDraft) return;
+      const point = clientToStage(e.clientX, e.clientY);
+      if (!point) return;
+      setPenDraft((prev) => (prev ? { ...prev, previewPoint: point } : prev));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const session = penPointerSessionRef.current;
+      penPointerSessionRef.current = null;
+      if (!session) return;
+      const point = clientToStage(e.clientX, e.clientY);
+      if (!point) return;
+      const dx = point.x - session.start.x;
+      const dy = point.y - session.start.y;
+      const dragDistance = Math.hypot(dx, dy);
+
+      if (penDraft) {
+        const first = penDraft.anchors[0];
+        if (penDraft.anchors.length >= 2 && Math.hypot(point.x - first.x, point.y - first.y) < 12) {
+          const normalized = normalizePathToBounds({
+            commands: [...penDraft.commands, { type: "close" }],
+          });
+          addPathElement(normalized.path, normalized.bounds, "Pen Path");
+          setPenDraft(null);
+          setActiveCreationTool(null);
+          return;
+        }
+      }
+
+      setPenDraft((prev) => {
+        if (!prev) {
+          return {
+            anchors: [point],
+            commands: [{ type: "move", x: point.x, y: point.y }],
+          };
+        }
+        const last = prev.anchors[prev.anchors.length - 1];
+        const nextCommands =
+          dragDistance > 8
+            ? [
+                ...prev.commands,
+                {
+                  type: "curve" as const,
+                  x1: last.x + dx / 2,
+                  y1: last.y + dy / 2,
+                  x2: point.x - dx / 2,
+                  y2: point.y - dy / 2,
+                  x: point.x,
+                  y: point.y,
+                },
+              ]
+            : [...prev.commands, { type: "line" as const, x: point.x, y: point.y }];
+        return {
+          anchors: [...prev.anchors, point],
+          commands: nextCommands,
+          previewPoint: point,
+        };
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [activeCreationTool, clientToStage, penDraft]);
+
   // Group drag (selection bounds Rnd)
   const groupDragStartRef = useRef<{
     startX: number;
@@ -3597,6 +3778,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           onAddText={addText}
           onAddBox={addBox}
           onAddShape={addShape}
+          onTogglePenTool={() => {
+            setActiveCreationTool((prev) => prev === "pen" ? null : "pen");
+            setPenDraft(null);
+          }}
+          penToolActive={activeCreationTool === "pen"}
           onAddImage={addImage}
           onAddVideo={addVideo}
           onAddProgress={(t) => t === 'bar' ? addProgressBar() : addProgressRing()}
@@ -3800,6 +3986,26 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 </span>
               </button>
             </div>
+
+            <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
+
+            <div className="flex items-center gap-1">
+              <button onClick={() => createBooleanFromSelection("union")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Union Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M8 8h8v8H8z" /><path d="M4 4h8v8H4z" /></svg>
+              </button>
+              <button onClick={() => createBooleanFromSelection("subtract")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Subtract Selection">
+                <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="14" height="14" /><path d="M10 10h10v10H10z" fill="#0b0b0c" stroke="none" /></svg>
+              </button>
+              <button onClick={() => createBooleanFromSelection("intersect")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Intersect Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M7 12a5 5 0 1 1 10 0a5 5 0 1 1-10 0z" /></svg>
+              </button>
+              <button onClick={() => createOffsetPath(-8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Inset Path">
+                <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="8" y="8" width="8" height="8" rx="1" /></svg>
+              </button>
+              <button onClick={() => createOffsetPath(8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Outset Path">
+                <svg {...TOOL_ICON_PROPS}><rect x="7" y="7" width="10" height="10" rx="1" /><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -3902,6 +4108,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   const p = clientToStage((e as any).clientX, (e as any).clientY);
                   if (!p) return;
 
+                  if (activeCreationTool === "pen") {
+                    penPointerSessionRef.current = { start: p };
+                    if (!penDraft) {
+                      setPenDraft({
+                        anchors: [p],
+                        commands: [{ type: "move", x: p.x, y: p.y }],
+                        previewPoint: p,
+                      });
+                    } else {
+                      setPenDraft((prev) => (prev ? { ...prev, previewPoint: p } : prev));
+                    }
+                    return;
+                  }
+
                   marqueeStartSelectedRef.current = selectedIds.slice();
                   setMarquee({
                     active: true,
@@ -3994,6 +4214,35 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     )
                   )}
                 </div>
+              )}
+
+              {/* Marquee */}
+              {activeCreationTool === "pen" && penDraft && (
+                <svg className="absolute inset-0 pointer-events-none overflow-visible">
+                  <path
+                    d={svgPathFromCommands({
+                      commands:
+                        penDraft.previewPoint && penDraft.anchors.length
+                          ? [...penDraft.commands, { type: "line", x: penDraft.previewPoint.x, y: penDraft.previewPoint.y } as PathCommand]
+                          : penDraft.commands,
+                    })}
+                    fill="none"
+                    stroke="rgba(99,102,241,0.95)"
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                  />
+                  {penDraft.anchors.map((anchor, index) => (
+                    <circle
+                      key={`pen-anchor-${index}`}
+                      cx={anchor.x}
+                      cy={anchor.y}
+                      r={4}
+                      fill={index === 0 ? "rgba(99,102,241,0.95)" : "#fff"}
+                      stroke="rgba(15,23,42,0.9)"
+                      strokeWidth={1.5}
+                    />
+                  ))}
+                </svg>
               )}
 
               {/* Marquee */}
@@ -4157,7 +4406,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                                 if (!stagePoint) return;
                                 const descendants =
-                                  renderedEl.type === "group" || renderedEl.type === "mask"
+                                  renderedEl.type === "group" || renderedEl.type === "mask" || renderedEl.type === "boolean"
                                     ? Object.fromEntries(
                                         Array.from(collectDescendantIds(previewElementsById, el.id))
                                           .map((childId) => {
@@ -4497,6 +4746,8 @@ function pointInRect(x: number, y: number, rect: { l: number; r: number; t: numb
 function defaultElementLabel(el: AnyEl) {
   if (el.type === "text") return ((el as any).text || "Text").slice(0, 28);
   if (el.type === "shape") return (el as any).shape || "shape";
+  if (el.type === "path") return "Path";
+  if (el.type === "boolean") return `${((el as any).operation || "boolean").toString()} boolean`;
   if (el.type === "image") return "Image";
   if (el.type === "video") return "Video";
   if (el.type === "group") return "Group";
@@ -5238,22 +5489,40 @@ function InspectorPanel({
             </div>
           )}
 
-          {/* SHAPE */}
-          {element.type === "shape" && (
+          {/* SHAPE / PATH / BOOLEAN */}
+          {(element.type === "shape" || element.type === "path" || element.type === "boolean") && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={(element as any).shape ?? "rect"}
-                  onChange={(e) => onChange({ shape: e.target.value } as any)}
-                >
-                  <option value="rect">Rectangle</option>
-                  <option value="circle">Circle</option>
-                  <option value="triangle">Triangle</option>
-                  <option value="line">Line</option>
-                </select>
-              </div>
+              {element.type === "shape" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).shape ?? "rect"}
+                    onChange={(e) => onChange({ shape: e.target.value } as any)}
+                  >
+                    <option value="rect">Rectangle</option>
+                    <option value="circle">Circle</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="line">Line</option>
+                  </select>
+                </div>
+              )}
+
+              {element.type === "boolean" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Op</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).operation ?? "union"}
+                    onChange={(e) => onChange({ operation: e.target.value } as any)}
+                  >
+                    <option value="union">Union</option>
+                    <option value="subtract">Subtract</option>
+                    <option value="intersect">Intersect</option>
+                    <option value="exclude">Exclude</option>
+                  </select>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
@@ -5269,32 +5538,36 @@ function InspectorPanel({
                   <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={(element as any).pattern ? "pattern" : "solid"}
-                  onChange={(e) =>
-                    onChange({
-                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
-                    } as any)
-                  }
-                >
-                  <option value="solid">Solid</option>
-                  <option value="pattern">Pattern</option>
-                </select>
-              </div>
-              {(element as any).pattern && (
-                <PatternFillControls
-                  pattern={(element as any).pattern}
-                  onChange={(pattern) => onChange({ pattern } as any)}
-                  onPickImage={onPickPatternImage}
-                />
-              )}
-              {(element as any).shape === "line" && (element as any).pattern && (
-                <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
-                  Pattern fill is ignored for line shapes in this pass.
-                </div>
+              {element.type === "shape" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
+                    <select
+                      className={`flex-1 ${fieldClass}`}
+                      value={(element as any).pattern ? "pattern" : "solid"}
+                      onChange={(e) =>
+                        onChange({
+                          pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
+                        } as any)
+                      }
+                    >
+                      <option value="solid">Solid</option>
+                      <option value="pattern">Pattern</option>
+                    </select>
+                  </div>
+                  {(element as any).pattern && (
+                    <PatternFillControls
+                      pattern={(element as any).pattern}
+                      onChange={(pattern) => onChange({ pattern } as any)}
+                      onPickImage={onPickPatternImage}
+                    />
+                  )}
+                  {(element as any).shape === "line" && (element as any).pattern && (
+                    <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
+                      Pattern fill is ignored for line shapes in this pass.
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -5318,10 +5591,12 @@ function InspectorPanel({
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
-                <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
-              </div>
+              {element.type === "shape" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
+                  <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
+                </div>
+              )}
             </div>
           )}
 
@@ -6316,6 +6591,7 @@ function ToolButton({
 const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
   text: <span className="font-serif text-[14px] font-bold leading-none">T</span>,
   box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  pen: <svg {...TOOL_ICON_PROPS}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>,
   image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
   video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
   bar: <svg {...TOOL_ICON_PROPS}><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
@@ -6331,6 +6607,8 @@ function CreationToolbar({
   onAddText,
   onAddBox,
   onAddShape,
+  onTogglePenTool,
+  penToolActive,
   onAddImage,
   onAddVideo,
   onAddProgress,
@@ -6350,6 +6628,8 @@ function CreationToolbar({
   onAddText: () => void;
   onAddBox: () => void;
   onAddShape: (type: "rect" | "circle" | "triangle" | "line") => void;
+  onTogglePenTool: () => void;
+  penToolActive: boolean;
   onAddImage: () => void;
   onAddVideo: () => void;
   onAddProgress: (type: "bar" | "ring") => void;
@@ -6395,6 +6675,7 @@ function CreationToolbar({
         {/* Creation Tools (Row 1) */}
         <ToolButton icon={TOOLBAR_ICONS.text} label="Add Text" onClick={onAddText} />
         <ToolButton icon={TOOLBAR_ICONS.box} label="Add Box" onClick={onAddBox} />
+        <ToolButton icon={TOOLBAR_ICONS.pen} label="Pen Tool" onClick={onTogglePenTool} active={penToolActive} />
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
@@ -6507,7 +6788,7 @@ function LayersPanel({
   // Build hierarchy map for rendering
   const allChildIds = new Set<string>();
   elements.forEach(el => {
-    if ((el.type === 'group' || el.type === 'mask') && Array.isArray((el as any).childIds)) {
+    if ((el.type === 'group' || el.type === 'mask' || el.type === 'boolean') && Array.isArray((el as any).childIds)) {
       (el as any).childIds.forEach((cid: string) => allChildIds.add(cid));
     }
   });
@@ -6528,7 +6809,7 @@ function LayersPanel({
     const isRenaming = renamingId === el.id;
 
     // Find children
-    const isContainer = el.type === 'group' || el.type === 'mask';
+    const isContainer = el.type === 'group' || el.type === 'mask' || el.type === 'boolean';
     let children: OverlayElement[] = [];
     if (isContainer) {
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
@@ -6674,7 +6955,7 @@ function LayersPanel({
               </span>
             </button>
 
-            {el.type === "shape" && onMask && (
+            {(el.type === "shape" || el.type === "path" || el.type === "boolean" || el.type === "box") && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
                 className={`${uiClasses.iconButton} hover:text-indigo-400`}

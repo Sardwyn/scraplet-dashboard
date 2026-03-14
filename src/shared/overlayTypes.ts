@@ -4,6 +4,8 @@ export type OverlayElementType =
   | "text"
   | "box"
   | "shape"
+  | "path"
+  | "boolean"
   | "image"
   | "video"
   | "group"
@@ -56,6 +58,22 @@ export interface OverlayElementBase extends OverlayEditorFields {
   bindings?: Record<string, DynamicBinding>;
   animation?: OverlayAnimation;
 }
+
+/* =========================
+   GEOMETRY
+========================= */
+
+export type PathCommand =
+  | { type: "move"; x: number; y: number }
+  | { type: "line"; x: number; y: number }
+  | { type: "curve"; x1: number; y1: number; x2: number; y2: number; x: number; y: number }
+  | { type: "close" };
+
+export interface OverlayPath {
+  commands: PathCommand[];
+}
+
+export type OverlayBooleanOperation = "union" | "subtract" | "intersect" | "exclude";
 
 /* =========================
    DYNAMIC BINDINGS
@@ -292,6 +310,33 @@ export interface OverlayShapeElement extends OverlayElementBase {
   };
 }
 
+export interface OverlayPathElement extends OverlayElementBase {
+  type: "path";
+  path: OverlayPath;
+  fillColor?: string;
+  fillOpacity?: number;
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeOpacity?: number;
+  strokeDash?: number[];
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+}
+
+export interface OverlayBooleanElement extends OverlayElementBase {
+  type: "boolean";
+  operation: OverlayBooleanOperation;
+  childIds: string[];
+  fillColor?: string;
+  fillOpacity?: number;
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeOpacity?: number;
+  strokeDash?: number[];
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+}
+
 /* =========================
    MEDIA
 ========================= */
@@ -449,6 +494,8 @@ export type OverlayElement =
   | OverlayTextElement
   | OverlayBoxElement
   | OverlayShapeElement
+  | OverlayPathElement
+  | OverlayBooleanElement
   | OverlayImageElement
   | OverlayVideoElement
   | OverlayGroupElement
@@ -489,6 +536,8 @@ export interface OverlayConfigV0 {
       strokeOpacity?: number;
       cornerRadius?: number;
     })
+    | OverlayPathElement
+    | OverlayBooleanElement
     | (Omit<OverlayImageElement, "unit"> & {
       borderRadius?: number;
     })

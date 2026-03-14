@@ -547,11 +547,11 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const baseW = overlay?.baseResolution?.width ?? 1920;
   const baseH = overlay?.baseResolution?.height ?? 1080;
 
-  // IMPORTANT: Filter out children of Groups/Masks so they don't double-render at root
+  // IMPORTANT: Filter out children of container elements so they don't double-render at root
   const allChildIds = React.useMemo(() => {
     const ids = new Set<string>();
     elements.forEach(el => {
-      if ((el.type === 'group' || el.type === 'mask') && (el as any).childIds) {
+      if ((el.type === 'group' || el.type === 'mask' || el.type === 'boolean') && (el as any).childIds) {
         (el as any).childIds.forEach((cid: string) => ids.add(cid));
       }
     });

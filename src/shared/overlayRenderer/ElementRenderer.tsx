@@ -3,8 +3,10 @@ import {
     OverlayAnimation,
     OverlayAnimationPhase,
     OverlayBlendMode,
+    OverlayBooleanElement,
     OverlayElement,
     OverlayBoxElement,
+    OverlayPathElement,
     OverlayTextElement,
     OverlayShapeElement,
     OverlayImageElement,
@@ -22,6 +24,8 @@ import {
 import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
 import { KeyedMedia } from "../mediaEffects/KeyedMedia";
+import { applyBooleanOperation } from "../geometry/pathBoolean";
+import { elementToOverlayPath, svgPathFromCommands } from "../geometry/pathUtils";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
 
@@ -285,6 +289,34 @@ function renderSvgMaskShape(
     );
 }
 
+function renderPathSvg(
+    pathD: string,
+    style: {
+        fill?: string;
+        fillOpacity?: number;
+        stroke?: string;
+        strokeWidth?: number;
+        strokeOpacity?: number;
+        dash?: number[];
+        strokeLineCap?: string;
+        strokeLineJoin?: string;
+    }
+) {
+    return (
+        <path
+            d={pathD}
+            fill={style.fill ?? "none"}
+            fillOpacity={style.fillOpacity}
+            stroke={style.stroke}
+            strokeWidth={style.strokeWidth}
+            strokeOpacity={style.strokeOpacity}
+            strokeDasharray={style.dash?.join(" ")}
+            strokeLinecap={style.strokeLineCap as any}
+            strokeLinejoin={style.strokeLineJoin as any}
+        />
+    );
+}
+
 export function ElementRenderer({
     element,
     elementsById,
@@ -388,6 +420,35 @@ export function ElementRenderer({
         transition: "inherit",
     };
 
+    const resolveBooleanPath = (booleanEl: OverlayBooleanElement) => {
+        if (!elementsById) return null;
+        const children = booleanEl.childIds
+            .map((childId) => elementsById[childId])
+            .filter(Boolean) as OverlayElement[];
+        if (!children.length) return null;
+        return applyBooleanOperation(booleanEl.operation, children);
+    };
+
+    const resolveMaskPathInfo = (maskShape: OverlayElement) => {
+        if (maskShape.type === "boolean") {
+            const resolved = resolveBooleanPath(maskShape as OverlayBooleanElement);
+            if (!resolved) return null;
+            return { d: svgPathFromCommands(resolved.path), bounds: resolved.bounds };
+        }
+        const path = elementToOverlayPath(maskShape);
+        if (!path) return null;
+        const localD = svgPathFromCommands(path);
+        return {
+            d: localD,
+            bounds: {
+                x: maskShape.x ?? 0,
+                y: maskShape.y ?? 0,
+                width: maskShape.width ?? 0,
+                height: maskShape.height ?? 0,
+            },
+        };
+    };
+
     // COMPONENT INSTANCE
     if (el.type === "componentInstance") {
         const inst = el as OverlayComponentInstanceElement;
@@ -423,7 +484,7 @@ export function ElementRenderer({
 
         const childIds = new Set<string>();
         def.elements.forEach((c) => {
-            if ((c.type === "group" || c.type === "mask") && Array.isArray((c as any).childIds)) {
+            if ((c.type === "group" || c.type === "mask" || c.type === "boolean") && Array.isArray((c as any).childIds)) {
                 (c as any).childIds.forEach((cid: string) => childIds.add(cid));
             }
         });
@@ -456,7 +517,7 @@ export function ElementRenderer({
         const maskShapeId = maskGroup.childIds?.[0];
         const contentId = maskGroup.childIds?.[1];
 
-        const maskEl = elementsById?.[maskShapeId] as OverlayShapeElement | undefined;
+        const maskEl = elementsById?.[maskShapeId] as OverlayElement | undefined;
         const contentEl = contentId ? elementsById?.[contentId] : undefined;
 
         if (!maskEl || !contentEl) return null;
@@ -470,63 +531,40 @@ export function ElementRenderer({
         const gx = el.x ?? 0;
         const gy = el.y ?? 0;
 
-        const mx = (maskEl.x ?? 0) - gx;
-        const my = (maskEl.y ?? 0) - gy;
-        const mw = maskEl.width ?? 0;
-        const mh = maskEl.height ?? 0;
-        const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
-        const shape = maskEl.shape ?? "rect";
+        const maskPathInfo = resolveMaskPathInfo(maskEl);
+        if (!maskPathInfo) return null;
+        const mx = maskPathInfo.bounds.x - gx;
+        const my = maskPathInfo.bounds.y - gy;
+        const mw = maskPathInfo.bounds.width;
+        const mh = maskPathInfo.bounds.height;
+        const localMaskD =
+            maskEl.type === "boolean"
+                ? maskPathInfo.d
+                : svgPathFromCommands(
+                    {
+                        commands: (elementToOverlayPath(maskEl)?.commands ?? []).map((command) => {
+                            if (command.type === "close") return command;
+                            if (command.type === "curve") {
+                                return {
+                                    ...command,
+                                    x1: command.x1 + mx,
+                                    y1: command.y1 + my,
+                                    x2: command.x2 + mx,
+                                    y2: command.y2 + my,
+                                    x: command.x + mx,
+                                    y: command.y + my,
+                                };
+                            }
+                            return { ...command, x: command.x + mx, y: command.y + my };
+                        }),
+                    }
+                );
 
         const offsetX = (contentEl.x ?? 0) - (maskEl.x ?? 0);
         const offsetY = (contentEl.y ?? 0) - (maskEl.y ?? 0);
         const contentW = contentEl.width ?? mw;
         const contentH = contentEl.height ?? mh;
-
-        const normalClipPath = shapeClipPath(shape, mcr);
         const svgMaskId = `mask-${el.id}`;
-
-        if (!invert) {
-            return (
-                <div style={baseStyle}>
-                    <div style={{ ...innerStyle, position: "relative" }}>
-                        <div
-                            style={{
-                                position: "absolute",
-                                left: mx,
-                                top: my,
-                                width: mw,
-                                height: mh,
-                                overflow: "hidden",
-                                borderRadius: shape === "rect" ? mcr : undefined,
-                                clipPath: normalClipPath,
-                                WebkitClipPath: normalClipPath,
-                            }}
-                        >
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    left: offsetX,
-                                    top: offsetY,
-                                    width: contentW,
-                                    height: contentH,
-                                }}
-                            >
-                                <ElementRenderer
-                                    element={contentEl}
-                                    elementsById={elementsById}
-                                    overlayComponents={overlayComponents}
-                                    animationPhase={animationPhases?.[contentEl.id]?.phase}
-                                    animationPhases={animationPhases}
-                                    data={data}
-                                    layout="fill"
-                                    visited={nextVisited}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
 
         const groupW = el.width ?? 0;
         const groupH = el.height ?? 0;
@@ -543,8 +581,8 @@ export function ElementRenderer({
                     >
                         <defs>
                             <mask id={svgMaskId} maskUnits="userSpaceOnUse">
-                                <rect x="0" y="0" width={groupW} height={groupH} fill="white" />
-                                {renderSvgMaskShape(shape, mx, my, mw, mh, mcr, "black")}
+                                <rect x="0" y="0" width={groupW} height={groupH} fill={invert ? "white" : "black"} />
+                                <path d={localMaskD} fill={invert ? "black" : "white"} />
                             </mask>
                         </defs>
 
@@ -679,6 +717,33 @@ export function ElementRenderer({
         );
     }
 
+    // PATH
+    if (el.type === "path") {
+        const pathEl = el as OverlayPathElement;
+        const w = Math.max(1, pathEl.width ?? 1);
+        const h = Math.max(1, pathEl.height ?? 1);
+        const pathD = svgPathFromCommands(pathEl.path);
+
+        return (
+            <div style={baseStyle}>
+                <div style={innerStyle}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+                        {renderPathSvg(pathD, {
+                            fill: pathEl.fillColor ?? "rgba(56,189,248,0.18)",
+                            fillOpacity: typeof pathEl.fillOpacity === "number" ? pathEl.fillOpacity : 1,
+                            stroke: pathEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                            strokeWidth: pathEl.strokeWidthPx ?? 2,
+                            strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
+                            dash: pathEl.strokeDash,
+                            strokeLineCap: pathEl.strokeLineCap,
+                            strokeLineJoin: pathEl.strokeLineJoin,
+                        })}
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+
     // TEXT
     if (el.type === "text") {
         const textEl = el as OverlayTextElement;
@@ -724,11 +789,41 @@ export function ElementRenderer({
         );
     }
 
+    if (el.type === "boolean") {
+        const booleanEl = el as OverlayBooleanElement;
+        const resolved = resolveBooleanPath(booleanEl);
+        if (!resolved) return null;
+        const w = Math.max(1, booleanEl.width ?? resolved.bounds.width ?? 1);
+        const h = Math.max(1, booleanEl.height ?? resolved.bounds.height ?? 1);
+        const pathD = svgPathFromCommands(resolved.path);
+
+        return (
+            <div style={baseStyle}>
+                <div style={innerStyle}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+                        {renderPathSvg(pathD, {
+                            fill: booleanEl.fillColor ?? "rgba(56,189,248,0.18)",
+                            fillOpacity: typeof booleanEl.fillOpacity === "number" ? booleanEl.fillOpacity : 1,
+                            stroke: booleanEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                            strokeWidth: booleanEl.strokeWidthPx ?? 2,
+                            strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
+                            dash: booleanEl.strokeDash,
+                            strokeLineCap: booleanEl.strokeLineCap,
+                            strokeLineJoin: booleanEl.strokeLineJoin,
+                        })}
+                    </svg>
+                </div>
+            </div>
+        );
+    }
+
     // SHAPE
     if (el.type === "shape") {
         const s = el as OverlayShapeElement;
         const w = Math.max(1, s.width ?? 1);
         const h = Math.max(1, s.height ?? 1);
+        const shapePath = elementToOverlayPath(s);
+        const pathD = shapePath ? svgPathFromCommands(shapePath) : "";
 
         const fill = s.fillColor ?? "rgba(56,189,248,0.18)";
         const fillOpacity = typeof s.fillOpacity === "number" ? s.fillOpacity : 1;
@@ -796,19 +891,24 @@ export function ElementRenderer({
                             </defs>
                         )}
 
-                        {renderShapeGeometry(s, w, h, strokeWidth, {
+                        {pathD && renderPathSvg(pathD, {
                             fill,
                             fillOpacity,
-                            stroke: "none",
                         })}
 
-                        {patternEnabled &&
-                            renderShapeGeometry(s, w, h, strokeWidth, {
+                        {patternEnabled && pathD &&
+                            renderPathSvg(pathD, {
                                 fill: `url(#${patternId})`,
-                                stroke: "none",
                             })}
 
-                        {renderShapeGeometry(s, w, h, strokeWidth, strokeProps)}
+                        {pathD && renderPathSvg(pathD, {
+                            stroke,
+                            strokeWidth,
+                            strokeOpacity,
+                            dash,
+                            strokeLineCap: s.strokeLineCap,
+                            strokeLineJoin: s.strokeLineJoin,
+                        })}
                     </svg>
                 </div>
             </div>
