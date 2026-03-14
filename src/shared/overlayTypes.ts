@@ -8,6 +8,7 @@ export type OverlayElementType =
   | "boolean"
   | "image"
   | "video"
+  | "frame"
   | "group"
   | "progressBar"
   | "progressRing"
@@ -43,6 +44,7 @@ export interface OverlayElementBase extends OverlayEditorFields {
   pinned?: boolean;
   opacity?: number;
   rotationDeg?: number;
+  constraints?: OverlayConstraints;
   shadow?: {
     enabled: boolean;
     color: string;
@@ -58,6 +60,13 @@ export interface OverlayElementBase extends OverlayEditorFields {
   };
   bindings?: Record<string, DynamicBinding>;
   animation?: OverlayAnimation;
+}
+
+export type OverlayConstraintMode = "start" | "end" | "stretch" | "center" | "scale";
+
+export interface OverlayConstraints {
+  horizontal?: OverlayConstraintMode;
+  vertical?: OverlayConstraintMode;
 }
 
 /* =========================
@@ -121,6 +130,30 @@ export interface OverlayGroupElement extends OverlayElementBase {
   borderRadiusPx?: number;
   borderColor?: string;
   borderWidth?: number;
+}
+
+export type OverlayFrameLayoutMode = "free" | "horizontal" | "vertical";
+export type OverlayFrameAlign = "start" | "center" | "end" | "stretch";
+export type OverlayFrameJustify = "start" | "center" | "end" | "space-between";
+
+export interface OverlayFrameLayout {
+  mode?: OverlayFrameLayoutMode;
+  gap?: number;
+  padding?: number;
+  align?: OverlayFrameAlign;
+  justify?: OverlayFrameJustify;
+  wrap?: boolean;
+}
+
+export interface OverlayFrameElement extends OverlayElementBase {
+  type: "frame";
+  childIds: string[];
+  backgroundColor?: string;
+  borderRadiusPx?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  layout?: OverlayFrameLayout;
+  clipContent?: boolean;
 }
 
 /* =========================
@@ -622,6 +655,8 @@ export interface OverlayComponentDef {
     [propKey: string]: { type: "text" | "color" | "image" | "boolean"; label: string; default: any }
   };
   metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
+  variantGroupId?: string;
+  variantName?: string;
 }
 
 /* =========================
@@ -636,6 +671,7 @@ export type OverlayElement =
   | OverlayBooleanElement
   | OverlayImageElement
   | OverlayVideoElement
+  | OverlayFrameElement
   | OverlayGroupElement
   | OverlayProgressBarElement
   | OverlayProgressRingElement

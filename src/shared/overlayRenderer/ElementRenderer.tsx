@@ -7,6 +7,7 @@ import {
     OverlayCornerType,
     OverlayElement,
     OverlayEffect,
+    OverlayFrameElement,
     OverlayGlowEffect,
     OverlayLayerBlurEffect,
     OverlayNoiseEffect,
@@ -985,7 +986,7 @@ export function ElementRenderer({
 
         const childIds = new Set<string>();
         def.elements.forEach((c) => {
-            if ((c.type === "group" || c.type === "mask" || c.type === "boolean") && Array.isArray((c as any).childIds)) {
+            if ((c.type === "group" || c.type === "frame" || c.type === "mask" || c.type === "boolean") && Array.isArray((c as any).childIds)) {
                 (c as any).childIds.forEach((cid: string) => childIds.add(cid));
             }
         });
@@ -1131,8 +1132,8 @@ export function ElementRenderer({
     }
 
     // GROUP
-    if (el.type === "group") {
-        const group = el as OverlayGroupElement;
+    if (el.type === "group" || el.type === "frame") {
+        const group = el as OverlayGroupElement | OverlayFrameElement;
 
         if (visited && visited.has(el.id)) return null;
         const nextVisited = new Set(visited);
@@ -1146,6 +1147,7 @@ export function ElementRenderer({
                 ? `${group.borderWidth}px solid ${group.borderColor}`
                 : undefined,
             position: "relative",
+            overflow: el.type === "frame" && (group as OverlayFrameElement).clipContent !== false ? "hidden" : undefined,
         };
 
         return (

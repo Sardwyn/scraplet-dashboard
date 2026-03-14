@@ -551,7 +551,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const allChildIds = React.useMemo(() => {
     const ids = new Set<string>();
     elements.forEach(el => {
-      if ((el.type === 'group' || el.type === 'mask' || el.type === 'boolean') && (el as any).childIds) {
+      if ((el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean') && (el as any).childIds) {
         (el as any).childIds.forEach((cid: string) => ids.add(cid));
       }
     });

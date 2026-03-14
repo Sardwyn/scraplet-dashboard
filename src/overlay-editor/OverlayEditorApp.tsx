@@ -13,12 +13,18 @@ import {
   OverlayFill,
   OverlayFillStop,
   OverlayEffect,
+  OverlayConstraintMode,
+  OverlayConstraints,
   OverlayGlowEffect,
   OverlayLayerBlurEffect,
   OverlayNoiseEffect,
   OverlayShadowEffect,
   OverlayPatternFill,
   OverlayPatternFit,
+  OverlayFrameAlign,
+  OverlayFrameElement,
+  OverlayFrameJustify,
+  OverlayFrameLayoutMode,
   OverlayStrokeAlign,
   PathCommand,
   OverlayTimeline,
@@ -404,7 +410,7 @@ function computeResizeDraft(
 function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, acc = new Set<string>()) {
   const el = elementsById[id];
   if (!el) return acc;
-  if (el.type !== "group" && el.type !== "mask" && el.type !== "boolean") return acc;
+  if (el.type !== "group" && el.type !== "frame" && el.type !== "mask" && el.type !== "boolean") return acc;
 
   for (const childId of (el as any).childIds ?? []) {
     if (acc.has(childId)) continue;
@@ -1342,12 +1348,24 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
 
   const canGroup = selectedIds.length > 0;
-  const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === 'group' || primarySelectedEl.type === 'boolean');
+  const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === 'group' || primarySelectedEl.type === 'frame' || primarySelectedEl.type === 'boolean');
   const selectedPathElements = useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
   const canBooleanSelection = selectedPathElements.length >= 2;
   const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl);
   const canFlattenBoolean = primarySelectedEl?.type === "boolean";
   const canConvertSelectionToPath = !!primarySelectedEl && (primarySelectedEl.type === "shape" || primarySelectedEl.type === "box");
+  const selectedParentFrame = useMemo(
+    () =>
+      selectedIds[0]
+        ? ((config.elements.find(
+            (candidate) =>
+              candidate.type === "frame" &&
+              Array.isArray((candidate as any).childIds) &&
+              (candidate as any).childIds.includes(selectedIds[0])
+          ) as OverlayFrameElement | undefined) ?? null)
+        : null,
+    [config.elements, selectedIds]
+  );
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
   const selectionHasLocked = useMemo(() => selectedEls.some((e) => e.locked === true), [selectedEls]);
@@ -1370,7 +1388,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
     previewElements.forEach(e => {
-      if (e.type === 'group' || e.type === 'mask' || e.type === 'boolean') {
+      if (isContainerElement(e as AnyEl)) {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
@@ -1622,7 +1640,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       }
 
       // Propagate group movement to children (recursive)
-      if ((oldEl.type === 'group' || oldEl.type === 'boolean') && (patch.x !== undefined || patch.y !== undefined)) {
+      if ((oldEl.type === 'group' || oldEl.type === 'frame' || oldEl.type === 'boolean') && (patch.x !== undefined || patch.y !== undefined)) {
         const dx = (patch.x ?? oldEl.x) - oldEl.x;
         const dy = (patch.y ?? oldEl.y) - oldEl.y;
 
@@ -1631,7 +1649,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           // Helper to find descendants
           const collect = (pid: string) => {
             const p = nextEls.find(e => e.id === pid);
-            if (p && (p.type === 'group' || p.type === 'boolean')) {
+            if (p && (p.type === 'group' || p.type === 'frame' || p.type === 'boolean')) {
               (p as any).childIds?.forEach((cid: string) => {
                 if (!toMove.has(cid)) {
                   toMove.add(cid);
@@ -1650,6 +1668,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           });
         }
+      }
+      if (nextEls[idx]?.type === "frame") {
+        nextEls.splice(0, nextEls.length, ...reflowFrameInElementList(id, nextEls as AnyEl[]));
       }
       if (timelineKeyframeId) {
         setSelectedTimelineTrackId(timelineTrackId);
@@ -2295,6 +2316,103 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([id]);
   }
 
+  function addFrame() {
+    if (selectedIds.length > 0) {
+      const id = genId("frame");
+
+      setConfig((prev) => {
+        const els = prev.elements;
+        const selectedElsInOrder = els.filter((e) => selectedIds.includes(e.id));
+        if (!selectedElsInOrder.length) return prev;
+
+        let highestIdx = -1;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        selectedElsInOrder.forEach((el) => {
+          const idx = els.findIndex((candidate) => candidate.id === el.id);
+          if (idx > highestIdx) highestIdx = idx;
+          minX = Math.min(minX, el.x);
+          minY = Math.min(minY, el.y);
+          maxX = Math.max(maxX, el.x + el.width);
+          maxY = Math.max(maxY, el.y + el.height);
+        });
+
+        if (!isFinite(minX)) return prev;
+
+        const framePadding = 16;
+        const frameEl: AnyEl = {
+          id,
+          type: "frame",
+          name: "Frame",
+          x: Math.round(minX - framePadding),
+          y: Math.round(minY - framePadding),
+          width: Math.round(maxX - minX + framePadding * 2),
+          height: Math.round(maxY - minY + framePadding * 2),
+          visible: true,
+          locked: false,
+          opacity: 1,
+          childIds: selectedElsInOrder.map((e) => e.id),
+          layout: {
+            mode: "free",
+            gap: 12,
+            padding: framePadding,
+            align: "start",
+            justify: "start",
+            wrap: false,
+          },
+          clipContent: true,
+          constraints: { horizontal: "start", vertical: "start" },
+        } as any;
+
+        const withoutSelected = els.filter((e) => !selectedIds.includes(e.id));
+        let shift = 0;
+        for (let i = 0; i < highestIdx; i++) {
+          if (selectedIds.includes(els[i].id)) shift++;
+        }
+        const targetIdx = highestIdx - shift + 1;
+        const before = withoutSelected.slice(0, targetIdx);
+        const after = withoutSelected.slice(targetIdx);
+        return { ...prev, elements: [...before, ...selectedElsInOrder, frameEl, ...after] };
+      });
+
+      setSelectedIds([id]);
+      return;
+    }
+
+    const id = genId("frame");
+    const el: AnyEl = {
+      id,
+      type: "frame",
+      name: "Frame",
+      x: 260,
+      y: 180,
+      width: 420,
+      height: 240,
+      visible: true,
+      locked: false,
+      opacity: 1,
+      childIds: [],
+      backgroundColor: "rgba(15,23,42,0.18)",
+      borderColor: "rgba(255,255,255,0.12)",
+      borderWidth: 1,
+      borderRadiusPx: 16,
+      clipContent: true,
+      layout: {
+        mode: "free",
+        gap: 12,
+        padding: 16,
+        align: "start",
+        justify: "start",
+        wrap: false,
+      },
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el] }));
+    setSelectedIds([id]);
+  }
+
   function groupSelected() {
     if (selectedIds.length < 2) return;
     const id = genId("group");
@@ -2463,7 +2581,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     let childElements: AnyEl[] = [];
 
     // 1. Determine the logical grouping/container
-    if (!grp || grp.type !== 'group') {
+    if (!grp || (grp.type !== 'group' && grp.type !== 'frame')) {
       if (selectedIds.length === 0) {
         alert("Please select elements to convert into a component.");
         return;
@@ -2588,8 +2706,119 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
   }
 
+  function detachSelectedComponentInstance() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "componentInstance") return;
+    const instance = primarySelectedEl as AnyEl;
+    const def = overlayComponents.find((component) => component.id === (instance as any).componentId);
+    if (!def) return;
+
+    const masterBounds = computeSelectionBounds(def.elements as AnyEl[]);
+    if (!masterBounds) return;
+
+    const scaleX = (instance.width ?? masterBounds.w) / Math.max(1, masterBounds.w);
+    const scaleY = (instance.height ?? masterBounds.h) / Math.max(1, masterBounds.h);
+    const idMap = new Map<string, string>();
+    const overrides = ((instance as any).propOverrides ?? {}) as Record<string, any>;
+
+    const clones = (def.elements as AnyEl[]).map((source) => {
+      const nextId = genId(source.type === "text" ? "text" : source.type);
+      idMap.set(source.id, nextId);
+
+      const localX = (source.x ?? 0) - masterBounds.x;
+      const localY = (source.y ?? 0) - masterBounds.y;
+      const clone: AnyEl = {
+        ...source,
+        id: nextId,
+        x: Math.round((instance.x ?? 0) + localX * scaleX),
+        y: Math.round((instance.y ?? 0) + localY * scaleY),
+        width: Math.max(1, Math.round((source.width ?? 0) * scaleX)),
+        height: Math.max(1, Math.round((source.height ?? 0) * scaleY)),
+      } as AnyEl;
+
+      if (source.type === "text") {
+        Object.assign(clone, getScaledTextPatch(source as AnyEl, { width: masterBounds.w, height: masterBounds.h }, { width: instance.width ?? masterBounds.w, height: instance.height ?? masterBounds.h }));
+      }
+
+      if (source.bindings) {
+        const nextBindings = { ...source.bindings };
+        for (const [key, value] of Object.entries(overrides)) {
+          if (key in nextBindings) delete nextBindings[key];
+          if (key in clone) (clone as any)[key] = value;
+        }
+        clone.bindings = nextBindings;
+      }
+
+      return clone;
+    });
+
+    const remapped = clones.map((clone) => {
+      if (Array.isArray((clone as any).childIds)) {
+        return {
+          ...clone,
+          childIds: (clone as any).childIds.map((childId: string) => idMap.get(childId) ?? childId),
+        };
+      }
+      return clone;
+    });
+
+    setConfig((prev) => {
+      const index = prev.elements.findIndex((candidate) => candidate.id === instance.id);
+      const kept = prev.elements.filter((candidate) => candidate.id !== instance.id);
+      const insertAt = index < 0 ? kept.length : Math.min(index, kept.length);
+      return {
+        ...prev,
+        elements: [...kept.slice(0, insertAt), ...remapped, ...kept.slice(insertAt)],
+      };
+    });
+    setSelectedIds(remapped.filter((element) => !allChildIds.has(element.id)).map((element) => element.id));
+    showEditorStatus("Instance detached", `${def.name} is now editable local geometry.`);
+  }
+
+  async function createVariantFromComponent(componentId: string) {
+    const def = overlayComponents.find((component) => component.id === componentId);
+    if (!def) return;
+    const variantName = prompt("Enter a name for this variant:", def.variantName ? `${def.variantName} Copy` : `${def.name} Variant`);
+    if (!variantName) return;
+    const variantGroupId = def.variantGroupId || def.id;
+    const payload = {
+      name: `${def.name} / ${variantName}`,
+      schemaVersion: def.schemaVersion || 1,
+      elements: def.elements,
+      propsSchema: def.propsSchema || {},
+      metadata: def.metadata || {},
+      variantGroupId,
+      variantName,
+    };
+    try {
+      const res = await fetch("/dashboard/api/overlay-components", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setOverlayComponents((prev) => [
+        ...prev,
+        {
+          id: data.public_id,
+          name: payload.name,
+          schemaVersion: payload.schemaVersion,
+          elements: payload.elements as any,
+          propsSchema: payload.propsSchema,
+          metadata: payload.metadata,
+          variantGroupId,
+          variantName,
+        },
+      ]);
+      showEditorStatus("Variant created", `${variantName} is available in the component library.`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create variant. " + err.message);
+    }
+  }
+
   function ungroupSelected() {
-    if (!primarySelectedEl || (primarySelectedEl.type !== 'group' && primarySelectedEl.type !== "boolean")) return;
+    if (!primarySelectedEl || (primarySelectedEl.type !== 'group' && primarySelectedEl.type !== 'frame' && primarySelectedEl.type !== "boolean")) return;
     const grp = primarySelectedEl as any;
     const children = grp.childIds || [];
 
@@ -2690,7 +2919,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       // If this element is inside a group, reorder within group.childIds only.
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -2733,7 +2962,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (parentMask) return prev;
 
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -2767,7 +2996,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (parentMask) return prev;
 
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -3347,12 +3576,38 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       };
       const nextPatches: Record<string, Partial<AnyEl>> = {};
       if (active.descendants) {
+        const activeElement = previewElementsById[active.id] as AnyEl | undefined;
+        const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free");
         for (const [descendantId, rect] of Object.entries(active.descendants)) {
-          nextDrafts[descendantId] = scaleDescendantRect(rect, active.origin, draft);
-          const descendantEl = previewElementsById[descendantId];
-          if (descendantEl?.type === "text") {
+          const descendantEl = previewElementsById[descendantId] as AnyEl | undefined;
+          nextDrafts[descendantId] =
+            activeElement?.type === "frame" && descendantEl
+              ? constrainFrameChildRect(descendantEl, active.origin, draft)
+              : scaleDescendantRect(rect, active.origin, draft);
+          if (descendantEl?.type === "text" && shouldScaleFrameText) {
             nextPatches[descendantId] = getScaledTextPatch(descendantEl as AnyEl, active.origin, draft);
           }
+        }
+        if (activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free") {
+          const frameDraft: OverlayFrameElement = { ...(activeElement as OverlayFrameElement), ...draft };
+          const draftElements = Object.values(previewElementsById).map((element) =>
+            element.id === active.id
+              ? ({ ...element, ...draft } as AnyEl)
+              : nextDrafts[element.id]
+                ? ({ ...element, ...nextDrafts[element.id] } as AnyEl)
+                : element
+          ) as AnyEl[];
+          const reflowed = reflowFrameElements(frameDraft, draftElements);
+          reflowed.forEach((element) => {
+            if (active.descendants?.[element.id]) {
+              nextDrafts[element.id] = {
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height,
+              };
+            }
+          });
         }
         applyDerivedOffsetPathDrafts(nextDrafts, nextPatches);
       }
@@ -3397,9 +3652,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
       } else {
         setConfig((prev) => {
+          const activeElement = prev.elements.find((element) => element.id === active.id) as AnyEl | undefined;
           let nextTimeline = prev.timeline;
           let lastTimelineTrackId: string | null = null;
           let lastTimelineKeyframeId: string | null = null;
+          const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free");
           const nextElements = prev.elements.map((raw) => {
             if (raw.id === active.id) {
               const base = raw as AnyEl;
@@ -3421,7 +3678,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
             const descendantRect = active.descendants?.[raw.id];
             if (!descendantRect) return raw;
-            const scaled = scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
+            const scaled =
+              activeElement?.type === "frame"
+                ? constrainFrameChildRect(raw as AnyEl, active.origin, nextGroupRect)
+                : scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
             const rounded = {
               x: Math.round(scaled.x),
               y: Math.round(scaled.y),
@@ -3429,7 +3689,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: Math.round(scaled.height),
             };
             const base = raw as AnyEl;
-            let extraPatch: Partial<AnyEl> = base.type === "text" ? getScaledTextPatch(base, active.origin, nextGroupRect) : {};
+            let extraPatch: Partial<AnyEl> = base.type === "text" && shouldScaleFrameText ? getScaledTextPatch(base, active.origin, nextGroupRect) : {};
             if (base.type === "path" && (base as any).pathSource?.kind === "offset") {
               const pathSource = (base as any).pathSource;
               const sourceRaw = prev.elements.find((candidate) => candidate.id === pathSource.sourceId) as AnyEl | undefined;
@@ -3474,12 +3734,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             return { ...base, ...rounded, ...extraPatch };
           });
 
+          const finalizedElements =
+            activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free"
+              ? reflowFrameInElementList(active.id, nextElements as AnyEl[])
+              : nextElements;
+
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
           if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
 
           return {
             ...prev,
-            elements: nextElements,
+            elements: finalizedElements,
             timeline: nextTimeline,
           };
         });
@@ -4297,7 +4562,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const groupFor = (elementId: string) =>
         prev.elements.find(
-          (el) => el.type === "group" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+          (el) => (el.type === "group" || el.type === "frame") && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
         ) as any | undefined;
 
       const parentGroup = groupFor(id);
@@ -4469,6 +4734,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           penToolActive={activeCreationTool === "pen"}
           onAddImage={addImage}
           onAddVideo={addVideo}
+          onAddFrame={addFrame}
           onAddProgress={(t) => t === 'bar' ? addProgressBar() : addProgressRing()}
           onAddLowerThird={addLowerThird}
           onGroup={groupSelected}
@@ -4564,6 +4830,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 components={overlayComponents}
                 onEdit={enterIsolationMode}
                 onDelete={deleteComponent}
+                onCreateVariant={createVariantFromComponent}
                 onInsert={(comp) => {
                   const instId = genId("instance");
 
@@ -5120,7 +5387,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                                 if (!stagePoint) return;
                                 const descendants =
-                                  renderedEl.type === "group" || renderedEl.type === "mask" || renderedEl.type === "boolean"
+                                  renderedEl.type === "group" || renderedEl.type === "frame" || renderedEl.type === "mask" || renderedEl.type === "boolean"
                                     ? Object.fromEntries(
                                         Array.from(collectDescendantIds(previewElementsById, el.id))
                                           .map((childId) => {
@@ -5480,6 +5747,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onReleaseBoolean={ungroupSelected}
             onFlattenBoolean={flattenBooleanSelected}
             onConvertToPath={convertSelectedToPath}
+            onDetachInstance={detachSelectedComponentInstance}
+            onCreateVariant={createVariantFromComponent}
+            parentFrame={selectedParentFrame}
             selectedPathAnchor={selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null}
             onAddPathNode={addSelectedPathNode}
             onRemovePathNode={removeSelectedPathNode}
@@ -5585,6 +5855,7 @@ function defaultElementLabel(el: AnyEl) {
   if (el.type === "boolean") return `${((el as any).operation || "boolean").toString()} boolean`;
   if (el.type === "image") return "Image";
   if (el.type === "video") return "Video";
+  if (el.type === "frame") return "Frame";
   if (el.type === "group") return "Group";
   if (el.type === "progressBar") return "Progress Bar";
   if (el.type === "progressRing") return "Progress Ring";
@@ -5619,6 +5890,9 @@ interface InspectorProps {
   onReleaseBoolean?: () => void;
   onFlattenBoolean?: () => void;
   onConvertToPath?: () => void;
+  onDetachInstance?: () => void;
+  onCreateVariant?: (componentId: string) => void;
+  parentFrame?: OverlayFrameElement | null;
   selectedPathAnchor?: number | null;
   onAddPathNode?: () => void;
   onRemovePathNode?: () => void;
@@ -5869,6 +6143,34 @@ const CORNER_TYPE_OPTIONS: Array<{ value: OverlayCornerType; label: string }> = 
   { value: "angle", label: "Angle" },
 ];
 
+const FRAME_LAYOUT_MODE_OPTIONS: Array<{ value: OverlayFrameLayoutMode; label: string }> = [
+  { value: "free", label: "Free" },
+  { value: "horizontal", label: "Horizontal" },
+  { value: "vertical", label: "Vertical" },
+];
+
+const FRAME_ALIGN_OPTIONS: Array<{ value: OverlayFrameAlign; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "End" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const FRAME_JUSTIFY_OPTIONS: Array<{ value: OverlayFrameJustify; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "End" },
+  { value: "space-between", label: "Space Between" },
+];
+
+const CONSTRAINT_MODE_OPTIONS: Array<{ value: OverlayConstraintMode; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "end", label: "End" },
+  { value: "stretch", label: "Stretch" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
+
 const EFFECT_TYPE_OPTIONS: Array<{ value: OverlayEffect["type"]; label: string }> = [
   { value: "dropShadow", label: "Drop Shadow" },
   { value: "innerShadow", label: "Inner Shadow" },
@@ -6010,6 +6312,195 @@ function getElementEffects(element: AnyEl): OverlayEffect[] {
     ];
   }
   return [];
+}
+
+function ensureConstraints(constraints?: OverlayConstraints): OverlayConstraints {
+  return {
+    horizontal: constraints?.horizontal ?? "start",
+    vertical: constraints?.vertical ?? "start",
+  };
+}
+
+function ensureFrameLayout(layout?: (OverlayFrameElement["layout"])) {
+  return {
+    mode: layout?.mode ?? "free",
+    gap: layout?.gap ?? 12,
+    padding: layout?.padding ?? 16,
+    align: layout?.align ?? "start",
+    justify: layout?.justify ?? "start",
+    wrap: layout?.wrap ?? false,
+  };
+}
+
+function isContainerElement(el: AnyEl | OverlayElement | null | undefined): el is AnyEl {
+  return !!el && (el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean");
+}
+
+function isFrameElement(el: AnyEl | OverlayElement | null | undefined): el is OverlayFrameElement {
+  return !!el && el.type === "frame";
+}
+
+function constrainFrameChildRect(
+  child: AnyEl,
+  frameOrigin: { x: number; y: number; width: number; height: number },
+  nextFrame: { x: number; y: number; width: number; height: number }
+) {
+  const constraints = ensureConstraints(child.constraints);
+  const left = (child.x ?? 0) - frameOrigin.x;
+  const top = (child.y ?? 0) - frameOrigin.y;
+  const right = frameOrigin.width - left - (child.width ?? 0);
+  const bottom = frameOrigin.height - top - (child.height ?? 0);
+  const centerOffsetX = left + (child.width ?? 0) / 2 - frameOrigin.width / 2;
+  const centerOffsetY = top + (child.height ?? 0) / 2 - frameOrigin.height / 2;
+  const scaleX = nextFrame.width / Math.max(frameOrigin.width, 1);
+  const scaleY = nextFrame.height / Math.max(frameOrigin.height, 1);
+
+  let x = child.x ?? 0;
+  let y = child.y ?? 0;
+  let width = child.width ?? 0;
+  let height = child.height ?? 0;
+
+  switch (constraints.horizontal) {
+    case "end":
+      x = nextFrame.x + nextFrame.width - right - width;
+      break;
+    case "stretch":
+      x = nextFrame.x + left;
+      width = Math.max(1, nextFrame.width - left - right);
+      break;
+    case "center":
+      x = nextFrame.x + nextFrame.width / 2 + centerOffsetX - width / 2;
+      break;
+    case "scale":
+      x = nextFrame.x + left * scaleX;
+      width = Math.max(1, width * scaleX);
+      break;
+    case "start":
+    default:
+      x = nextFrame.x + left;
+      break;
+  }
+
+  switch (constraints.vertical) {
+    case "end":
+      y = nextFrame.y + nextFrame.height - bottom - height;
+      break;
+    case "stretch":
+      y = nextFrame.y + top;
+      height = Math.max(1, nextFrame.height - top - bottom);
+      break;
+    case "center":
+      y = nextFrame.y + nextFrame.height / 2 + centerOffsetY - height / 2;
+      break;
+    case "scale":
+      y = nextFrame.y + top * scaleY;
+      height = Math.max(1, height * scaleY);
+      break;
+    case "start":
+    default:
+      y = nextFrame.y + top;
+      break;
+  }
+
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+}
+
+function reflowFrameElements(frame: OverlayFrameElement, elements: AnyEl[]) {
+  const layout = ensureFrameLayout(frame.layout);
+  if (layout.mode === "free") return elements;
+
+  const elementMap = new Map(elements.map((element) => [element.id, element]));
+  const children = (frame.childIds ?? [])
+    .map((childId) => elementMap.get(childId))
+    .filter((child): child is AnyEl => Boolean(child));
+
+  if (!children.length) return elements;
+
+  const pad = layout.padding ?? 0;
+  const gap = layout.gap ?? 0;
+  const isHorizontal = layout.mode === "horizontal";
+  const mainSize = Math.max(0, (isHorizontal ? frame.width : frame.height) - pad * 2);
+  const crossSize = Math.max(0, (isHorizontal ? frame.height : frame.width) - pad * 2);
+
+  const rows: Array<{ children: AnyEl[]; used: number; cross: number }> = [];
+  let currentRow: { children: AnyEl[]; used: number; cross: number } = { children: [], used: 0, cross: 0 };
+
+  children.forEach((child, index) => {
+    const childMain = Math.max(1, isHorizontal ? child.width ?? 0 : child.height ?? 0);
+    const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+    const nextUsed = currentRow.children.length === 0 ? childMain : currentRow.used + gap + childMain;
+    const shouldWrap = layout.wrap && currentRow.children.length > 0 && nextUsed > mainSize;
+    if (shouldWrap) {
+      rows.push(currentRow);
+      currentRow = { children: [], used: 0, cross: 0 };
+    }
+    currentRow.children.push(child);
+    currentRow.used = currentRow.children.length === 1 ? childMain : currentRow.used + gap + childMain;
+    currentRow.cross = Math.max(currentRow.cross, childCross);
+    if (index === children.length - 1) rows.push(currentRow);
+  });
+  if (!rows.length) rows.push(currentRow);
+
+  const totalCross = rows.reduce((sum, row) => sum + row.cross, 0) + gap * Math.max(0, rows.length - 1);
+  let crossCursor = frame.y + pad;
+  if (layout.align === "center" && !layout.wrap) {
+    crossCursor = frame.y + pad + Math.max(0, (crossSize - totalCross) / 2);
+  } else if (layout.align === "end" && !layout.wrap) {
+    crossCursor = frame.y + pad + Math.max(0, crossSize - totalCross);
+  }
+
+  const updates = new Map<string, Partial<AnyEl>>();
+
+  rows.forEach((row) => {
+    let mainGap = gap;
+    let mainCursor = frame.x + pad;
+    if (layout.justify === "center") {
+      mainCursor = frame.x + pad + Math.max(0, (mainSize - row.used) / 2);
+    } else if (layout.justify === "end") {
+      mainCursor = frame.x + pad + Math.max(0, mainSize - row.used);
+    } else if (layout.justify === "space-between" && row.children.length > 1) {
+      mainGap = Math.max(gap, (mainSize - row.children.reduce((sum, child) => sum + (isHorizontal ? child.width ?? 0 : child.height ?? 0), 0)) / (row.children.length - 1));
+    }
+
+    row.children.forEach((child) => {
+      const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+      let crossPos = crossCursor;
+      let stretchPatch: Partial<AnyEl> = {};
+      if (layout.align === "center") {
+        crossPos = crossCursor + Math.max(0, (row.cross - childCross) / 2);
+      } else if (layout.align === "end") {
+        crossPos = crossCursor + Math.max(0, row.cross - childCross);
+      } else if (layout.align === "stretch") {
+        if (isHorizontal) {
+          stretchPatch.height = Math.max(1, row.cross);
+        } else {
+          stretchPatch.width = Math.max(1, row.cross);
+        }
+      }
+
+      updates.set(child.id, {
+        ...stretchPatch,
+        x: Math.round(isHorizontal ? mainCursor : crossPos),
+        y: Math.round(isHorizontal ? crossPos : mainCursor),
+      });
+      mainCursor += (isHorizontal ? child.width ?? 0 : child.height ?? 0) + mainGap;
+    });
+
+    crossCursor += row.cross + gap;
+  });
+
+  return elements.map((element) => (updates.has(element.id) ? { ...element, ...updates.get(element.id) } : element));
+}
+
+function reflowFrameInElementList(frameId: string, elements: AnyEl[]) {
+  const frame = elements.find((element) => element.id === frameId && element.type === "frame") as OverlayFrameElement | undefined;
+  if (!frame) return elements;
+  return reflowFrameElements(frame, elements);
 }
 
 function ensureCornerRadii(radius: number, cornerRadii?: OverlayCornerRadii): OverlayCornerRadii {
@@ -6656,7 +7147,7 @@ function InspectorPanel({
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath,
+  onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
   selectedPathAnchor, onAddPathNode, onRemovePathNode, onSplitPath, onContinuePath, onJoinPaths, onExpandStroke, canContinuePath, canJoinPaths,
   previewVisible,
   onPreviewVisibilityAction,
@@ -6923,6 +7414,20 @@ function InspectorPanel({
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                   Edit Master Component
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onDetachInstance?.()}
+                  className={uiClasses.buttonGhost}
+                >
+                  Detach Instance
+                </button>
+                <button
+                  onClick={() => onCreateVariant?.((element as any).componentId)}
+                  className={uiClasses.buttonGhost}
+                >
+                  Create Variant
                 </button>
               </div>
             </div>
@@ -7794,7 +8299,7 @@ function InspectorPanel({
           )}
 
           {/* GROUP */}
-          {element.type === "group" && (
+          {(element.type === "group" || element.type === "frame") && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12`}>Bg</label>
@@ -7810,6 +8315,109 @@ function InspectorPanel({
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
+              </div>
+              {element.type === "frame" && (
+                <>
+                  <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+                  <div className="space-y-3">
+                    <label className={uiClasses.label}>Frame Layout</label>
+                    <div className="flex items-center gap-2">
+                      <label className={`${fieldLabelClass} w-16 flex-none`}>Mode</label>
+                      <select
+                        className={`flex-1 ${fieldClass}`}
+                        value={ensureFrameLayout((element as any).layout).mode}
+                        onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), mode: e.target.value } } as any)}
+                      >
+                        {FRAME_LAYOUT_MODE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Gap</label>
+                        <NumberField label="" value={ensureFrameLayout((element as any).layout).gap ?? 12} onChange={(v) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), gap: v } } as any)} noLabel className="flex-1" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Pad</label>
+                        <NumberField label="" value={ensureFrameLayout((element as any).layout).padding ?? 16} onChange={(v) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), padding: v } } as any)} noLabel className="flex-1" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Align</label>
+                        <select className={`flex-1 ${fieldClass}`} value={ensureFrameLayout((element as any).layout).align} onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), align: e.target.value } } as any)}>
+                          {FRAME_ALIGN_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Justify</label>
+                        <select className={`flex-1 ${fieldClass}`} value={ensureFrameLayout((element as any).layout).justify} onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), justify: e.target.value } } as any)}>
+                          {FRAME_JUSTIFY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={ensureFrameLayout((element as any).layout).wrap === true}
+                        onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), wrap: e.target.checked } } as any)}
+                        className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                      />
+                      Wrap items
+                    </label>
+                    <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={(element as any).clipContent !== false}
+                        onChange={(e) => onChange({ clipContent: e.target.checked } as any)}
+                        className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                      />
+                      Clip content to frame
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {parentFrame && element.type !== "frame" && element.type !== "componentInstance" && (
+            <div className="space-y-3 rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-3">
+              <div>
+                <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Frame constraints</div>
+                <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+                  This layer belongs to {parentFrame.name || "a frame"}. Constraints apply when the frame is resized.
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-8 flex-none`}>H</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={ensureConstraints((element as any).constraints).horizontal}
+                    onChange={(e) => onChange({ constraints: { ...ensureConstraints((element as any).constraints), horizontal: e.target.value as OverlayConstraintMode } } as any)}
+                  >
+                    {CONSTRAINT_MODE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-8 flex-none`}>V</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={ensureConstraints((element as any).constraints).vertical}
+                    onChange={(e) => onChange({ constraints: { ...ensureConstraints((element as any).constraints), vertical: e.target.value as OverlayConstraintMode } } as any)}
+                  >
+                    {CONSTRAINT_MODE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -8442,6 +9050,7 @@ const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
   pen: <svg {...TOOL_ICON_PROPS}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>,
   image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
   video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
+  frame: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="7" y="7" width="10" height="10" rx="1.5" /></svg>,
   bar: <svg {...TOOL_ICON_PROPS}><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
   ring: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="8" /></svg>,
   rect: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
@@ -8462,6 +9071,7 @@ function CreationToolbar({
   penToolActive,
   onAddImage,
   onAddVideo,
+  onAddFrame,
   onAddProgress,
   onAddLowerThird,
   onGroup,
@@ -8483,6 +9093,7 @@ function CreationToolbar({
   penToolActive: boolean;
   onAddImage: () => void;
   onAddVideo: () => void;
+  onAddFrame: () => void;
   onAddProgress: (type: "bar" | "ring") => void;
   onAddLowerThird: () => void;
   onGroup: () => void;
@@ -8529,6 +9140,7 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.pen} label="Pen Tool" onClick={onTogglePenTool} active={penToolActive} />
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
+        <ToolButton icon={TOOLBAR_ICONS.frame} label="Add Frame" onClick={onAddFrame} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
@@ -8642,7 +9254,7 @@ function LayersPanel({
   // Build hierarchy map for rendering
   const allChildIds = new Set<string>();
   elements.forEach(el => {
-    if ((el.type === 'group' || el.type === 'mask' || el.type === 'boolean') && Array.isArray((el as any).childIds)) {
+    if ((el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean') && Array.isArray((el as any).childIds)) {
       (el as any).childIds.forEach((cid: string) => allChildIds.add(cid));
     }
   });
@@ -8663,7 +9275,7 @@ function LayersPanel({
     const isRenaming = renamingId === el.id;
 
     // Find children
-    const isContainer = el.type === 'group' || el.type === 'mask' || el.type === 'boolean';
+    const isContainer = el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean';
     let children: OverlayElement[] = [];
     if (isContainer) {
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
@@ -8861,11 +9473,12 @@ function LayersPanel({
   );
 }
 
-function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
+function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreateVariant }: {
   components: OverlayComponentDef[],
   onInsert: (c: OverlayComponentDef) => void,
   onEdit: (id: string) => void,
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void,
+  onCreateVariant: (id: string) => void
 }) {
   if (!components || components.length === 0) {
     return (
@@ -8889,9 +9502,19 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
           >
             <div className="flex flex-col truncate">
               <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
-              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">{comp.elements?.length || 0} nodes</span>
+              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">
+                {comp.elements?.length || 0} nodes
+                {comp.variantName ? ` • ${comp.variantName}` : ""}
+              </span>
             </div>
             <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+              <button
+                className={uiClasses.iconButton}
+                onClick={(e) => { e.stopPropagation(); onCreateVariant(comp.id); }}
+                title="Create Variant"
+              >
+                <svg {...TOOL_ICON_PROPS}><path d="M5 5h6v6H5z" /><path d="M13 13h6v6h-6z" /><path d="M8 8l8 8" /></svg>
+              </button>
               <button
                 className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
