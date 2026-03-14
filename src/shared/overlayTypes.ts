@@ -313,6 +313,11 @@ export interface OverlayShapeElement extends OverlayElementBase {
 export interface OverlayPathElement extends OverlayElementBase {
   type: "path";
   path: OverlayPath;
+  pathSource?: {
+    kind: "offset";
+    sourceId: string;
+    distance: number;
+  };
   fillColor?: string;
   fillOpacity?: number;
   strokeColor?: string;

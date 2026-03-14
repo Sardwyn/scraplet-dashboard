@@ -448,6 +448,18 @@ function getScaledTextPatch(
   return patch;
 }
 
+function getElementWithDraft(
+  element: AnyEl,
+  draftRect?: { x: number; y: number; width: number; height: number },
+  draftPatch?: Partial<AnyEl>
+) {
+  return {
+    ...element,
+    ...(draftRect ? draftRect : {}),
+    ...(draftPatch ? draftPatch : {}),
+  } as AnyEl;
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -1670,12 +1682,28 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
     if (!resolved) return;
     const result = offsetOverlayPath(resolved.path, distance);
-    addPathElement(result.path, {
+    const pathId = addPathElement(result.path, {
       x: (source.x ?? 0) + result.bounds.x,
       y: (source.y ?? 0) + result.bounds.y,
       width: result.bounds.width,
       height: result.bounds.height,
     }, distance < 0 ? "Inset Path" : "Outset Path");
+    if (!pathId) return;
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.map((candidate) =>
+        candidate.id === pathId
+          ? ({
+              ...candidate,
+              pathSource: {
+                kind: "offset",
+                sourceId: source.id,
+                distance,
+              },
+            } as any)
+          : candidate
+      ),
+    }));
   }
 
   function flattenBooleanSelected() {
@@ -1704,6 +1732,43 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     addPathElement(normalized.path, normalized.bounds, "Pen Path");
     setPenDraft(null);
     setActiveCreationTool(null);
+  }
+
+  function applyDerivedOffsetPathDrafts(
+    nextDrafts: Record<string, { x: number; y: number; width: number; height: number }>,
+    nextPatches: Record<string, Partial<AnyEl>>
+  ) {
+    for (const [draftId] of Object.entries(nextDrafts)) {
+      const candidate = previewElementsById[draftId];
+      if (!candidate || candidate.type !== "path") continue;
+      const pathSource = (candidate as any).pathSource;
+      if (!pathSource || pathSource.kind !== "offset") continue;
+
+      const sourceBase = previewElementsById[pathSource.sourceId] ?? elementsById[pathSource.sourceId];
+      if (!sourceBase) continue;
+      const sourceDraft = nextDrafts[pathSource.sourceId];
+      const sourcePatch = nextPatches[pathSource.sourceId];
+      const sourceElement = getElementWithDraft(sourceBase, sourceDraft, sourcePatch);
+      if (!isPathCapableElement(sourceElement)) continue;
+
+      const resolved = resolveElementGeometry(sourceElement as any, nextDrafts[pathSource.sourceId] ? ({
+        ...elementsById,
+        [pathSource.sourceId]: sourceElement,
+      } as Record<string, OverlayElement>) : (elementsById as Record<string, OverlayElement>));
+      if (!resolved) continue;
+
+      const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
+      nextDrafts[draftId] = {
+        x: Math.round((sourceElement.x ?? 0) + offset.bounds.x),
+        y: Math.round((sourceElement.y ?? 0) + offset.bounds.y),
+        width: Math.max(1, Math.round(offset.bounds.width)),
+        height: Math.max(1, Math.round(offset.bounds.height)),
+      };
+      nextPatches[draftId] = {
+        ...(nextPatches[draftId] ?? {}),
+        path: offset.path,
+      };
+    }
   }
 
   function addImage() {
@@ -2883,6 +2948,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             nextPatches[descendantId] = getScaledTextPatch(descendantEl as AnyEl, active.origin, draft);
           }
         }
+        applyDerivedOffsetPathDrafts(nextDrafts, nextPatches);
       }
 
       rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
@@ -2957,7 +3023,35 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: Math.round(scaled.height),
             };
             const base = raw as AnyEl;
-            const textPatch = getScaledTextPatch(base, active.origin, nextGroupRect);
+            let extraPatch: Partial<AnyEl> = base.type === "text" ? getScaledTextPatch(base, active.origin, nextGroupRect) : {};
+            if (base.type === "path" && (base as any).pathSource?.kind === "offset") {
+              const pathSource = (base as any).pathSource;
+              const sourceRaw = prev.elements.find((candidate) => candidate.id === pathSource.sourceId) as AnyEl | undefined;
+              let sourceElement = sourceRaw;
+              if (sourceRaw) {
+                if (sourceRaw.id === active.id) {
+                  sourceElement = { ...sourceRaw, ...nextGroupRect } as AnyEl;
+                } else if (active.descendants?.[sourceRaw.id]) {
+                  sourceElement = {
+                    ...sourceRaw,
+                    ...scaleDescendantRect(active.descendants[sourceRaw.id], active.origin, nextGroupRect),
+                  } as AnyEl;
+                }
+              }
+              if (sourceElement && isPathCapableElement(sourceElement)) {
+                const resolved = resolveElementGeometry(sourceElement as any, Object.fromEntries(
+                  prev.elements.map((candidate) => [candidate.id, candidate as OverlayElement])
+                ) as Record<string, OverlayElement>);
+                if (resolved) {
+                  const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
+                  rounded.x = Math.round((sourceElement.x ?? 0) + offset.bounds.x);
+                  rounded.y = Math.round((sourceElement.y ?? 0) + offset.bounds.y);
+                  rounded.width = Math.max(1, Math.round(offset.bounds.width));
+                  rounded.height = Math.max(1, Math.round(offset.bounds.height));
+                  extraPatch = { ...extraPatch, path: offset.path };
+                }
+              }
+            }
             if (isTimelineEligibleElement(base as OverlayElement)) {
               for (const [property, value] of Object.entries(rounded) as [OverlayTimelineProperty, number][]) {
                 const result = upsertKeyframeAtPlayhead(
@@ -2971,7 +3065,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 lastTimelineKeyframeId = result.keyframeId;
               }
             }
-            return { ...base, ...rounded, ...textPatch };
+            return { ...base, ...rounded, ...extraPatch };
           });
 
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
