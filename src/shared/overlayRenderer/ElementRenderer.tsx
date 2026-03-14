@@ -3,9 +3,12 @@ import {
     OverlayAnimation,
     OverlayAnimationPhase,
     OverlayBlendMode,
-    OverlayElement,
     OverlayBoxElement,
+    OverlayCornerType,
+    OverlayElement,
     OverlayPathElement,
+    OverlayStrokeAlign,
+    OverlayStrokeSides,
     OverlayTextElement,
     OverlayShapeElement,
     OverlayImageElement,
@@ -24,7 +27,7 @@ import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
 import { KeyedMedia } from "../mediaEffects/KeyedMedia";
 import { resolveElementGeometry } from "../geometry/resolveGeometry";
-import { elementToOverlayPath, svgPathFromCommands } from "../geometry/pathUtils";
+import { elementToOverlayPath, isClosedPath, svgPathFromCommands } from "../geometry/pathUtils";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
 
@@ -315,6 +318,137 @@ function renderPathSvg(
             strokeLinecap={style.strokeLineCap as any}
             strokeLinejoin={style.strokeLineJoin as any}
         />
+    );
+}
+
+function resolveRectCornerRadii(
+    width: number,
+    height: number,
+    radius: number,
+    cornerRadii?: { topLeft?: number; topRight?: number; bottomRight?: number; bottomLeft?: number }
+) {
+    const maxRadius = Math.min(width, height) / 2;
+    return {
+        topLeft: Math.max(0, Math.min(cornerRadii?.topLeft ?? radius, maxRadius)),
+        topRight: Math.max(0, Math.min(cornerRadii?.topRight ?? radius, maxRadius)),
+        bottomRight: Math.max(0, Math.min(cornerRadii?.bottomRight ?? radius, maxRadius)),
+        bottomLeft: Math.max(0, Math.min(cornerRadii?.bottomLeft ?? radius, maxRadius)),
+    };
+}
+
+function perSideStrokeRects(
+    width: number,
+    height: number,
+    strokeWidth: number,
+    align: OverlayStrokeAlign,
+    sides?: OverlayStrokeSides
+) {
+    const selected = {
+        top: sides?.top ?? true,
+        right: sides?.right ?? true,
+        bottom: sides?.bottom ?? true,
+        left: sides?.left ?? true,
+    };
+    const insideOffset = align === "outside" ? -strokeWidth : align === "center" ? -strokeWidth / 2 : 0;
+    const entries: Array<{ key: "top" | "right" | "bottom" | "left"; x: number; y: number; width: number; height: number }> = [];
+    if (selected.top) entries.push({ key: "top", x: 0, y: insideOffset, width, height: strokeWidth });
+    if (selected.right) entries.push({ key: "right", x: width - strokeWidth - insideOffset, y: 0, width: strokeWidth, height });
+    if (selected.bottom) entries.push({ key: "bottom", x: 0, y: height - strokeWidth - insideOffset, width, height: strokeWidth });
+    if (selected.left) entries.push({ key: "left", x: insideOffset, y: 0, width: strokeWidth, height });
+    return entries;
+}
+
+function renderRectPerSideStroke(
+    width: number,
+    height: number,
+    strokeWidth: number,
+    stroke: string,
+    strokeOpacity: number,
+    dash: number[] | undefined,
+    align: OverlayStrokeAlign,
+    sides?: OverlayStrokeSides
+) {
+    const dashPattern = dash?.join(" ");
+    return perSideStrokeRects(width, height, strokeWidth, align, sides).map((rect) => (
+        <rect
+            key={`side-${rect.key}`}
+            x={rect.x}
+            y={rect.y}
+            width={Math.max(0, rect.width)}
+            height={Math.max(0, rect.height)}
+            fill={stroke}
+            fillOpacity={strokeOpacity}
+            stroke={dashPattern ? stroke : undefined}
+            strokeWidth={dashPattern ? 0 : undefined}
+            strokeDasharray={dashPattern}
+        />
+    ));
+}
+
+function renderAlignedPathStroke(
+    pathD: string,
+    pathId: string,
+    style: {
+        stroke?: string;
+        strokeWidth?: number;
+        strokeOpacity?: number;
+        dash?: number[];
+        strokeLineCap?: string;
+        strokeLineJoin?: string;
+        strokeAlign?: OverlayStrokeAlign;
+    },
+    closed: boolean
+) {
+    if (!style.stroke || !style.strokeWidth || style.strokeWidth <= 0) return null;
+    const align = style.strokeAlign ?? "center";
+    if (align === "center" || !closed) {
+        return renderPathSvg(pathD, style);
+    }
+
+    const expandedWidth = style.strokeWidth * 2;
+    if (align === "inside") {
+        return (
+            <>
+                <defs>
+                    <clipPath id={`${pathId}-inside-clip`}>
+                        <path d={pathD} />
+                    </clipPath>
+                </defs>
+                <path
+                    d={pathD}
+                    fill="none"
+                    stroke={style.stroke}
+                    strokeWidth={expandedWidth}
+                    strokeOpacity={style.strokeOpacity}
+                    strokeDasharray={style.dash?.join(" ")}
+                    strokeLinecap={style.strokeLineCap as any}
+                    strokeLinejoin={style.strokeLineJoin as any}
+                    clipPath={`url(#${pathId}-inside-clip)`}
+                />
+            </>
+        );
+    }
+
+    return (
+        <>
+            <defs>
+                <mask id={`${pathId}-outside-mask`}>
+                    <rect x="-100%" y="-100%" width="300%" height="300%" fill="white" />
+                    <path d={pathD} fill="black" />
+                </mask>
+            </defs>
+            <path
+                d={pathD}
+                fill="none"
+                stroke={style.stroke}
+                strokeWidth={expandedWidth}
+                strokeOpacity={style.strokeOpacity}
+                strokeDasharray={style.dash?.join(" ")}
+                strokeLinecap={style.strokeLineCap as any}
+                strokeLinejoin={style.strokeLineJoin as any}
+                mask={`url(#${pathId}-outside-mask)`}
+            />
+        </>
     );
 }
 
@@ -667,33 +801,90 @@ export function ElementRenderer({
     // BOX
     if (el.type === "box") {
         const box = el as OverlayBoxElement;
-        const br = box.borderRadiusPx ?? (box as any).borderRadius ?? 16;
-        const patternStyle = getBoxPatternStyle(box.pattern);
-
-        const effectiveBr =
-            el.clip && el.clip.type !== "none"
-                ? clipStyle.borderRadius ?? br
-                : br;
+        const w = Math.max(1, box.width ?? 1);
+        const h = Math.max(1, box.height ?? 1);
+        const boxPath = elementToOverlayPath(box);
+        const pathD = svgPathFromCommands(boxPath ?? { commands: [] });
+        const patternEnabled = hasPatternSource(box.pattern);
+        const patternId = `box-pattern-${patternScopeId}-${box.id}`;
+        const patternFit = box.pattern?.fit ?? "tile";
+        const patternScale = getPatternScale(box.pattern);
+        const patternOpacity = getPatternOpacity(box.pattern);
+        const tileWidth = Math.max(1, w * (patternScale / 100));
+        const tileHeight = Math.max(1, h * (patternScale / 100));
+        const scaledWidth = Math.max(1, w * (patternScale / 100));
+        const scaledHeight = Math.max(1, h * (patternScale / 100));
+        const patternImageX = (w - scaledWidth) / 2;
+        const patternImageY = (h - scaledHeight) / 2;
+        const strokeWidth = box.strokeWidthPx ?? 0;
+        const strokeOpacity = typeof box.strokeOpacity === "number" ? box.strokeOpacity : 1;
+        const strokeAlign = box.strokeAlign ?? "center";
 
         return (
             <div style={baseStyle}>
-                <div
-                    style={{
-                        ...innerStyle,
-                        position: "relative",
-                        overflow: "hidden",
-                        background: box.backgroundColor || "rgba(15,23,42,0.8)",
-                        borderRadius: effectiveBr,
-                    }}
-                >
-                    {patternStyle && (
-                        <div
-                            style={{
-                                ...patternStyle,
-                                borderRadius: effectiveBr,
-                            }}
-                        />
-                    )}
+                <div style={{ ...innerStyle, position: "relative", overflow: "visible" }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
+                        {patternEnabled && (
+                            <defs>
+                                <pattern
+                                    id={patternId}
+                                    patternUnits="userSpaceOnUse"
+                                    width={patternFit === "tile" ? tileWidth : w}
+                                    height={patternFit === "tile" ? tileHeight : h}
+                                >
+                                    <image
+                                        href={box.pattern!.src}
+                                        x={patternFit === "tile" ? 0 : patternImageX}
+                                        y={patternFit === "tile" ? 0 : patternImageY}
+                                        width={patternFit === "tile" ? tileWidth : scaledWidth}
+                                        height={patternFit === "tile" ? tileHeight : scaledHeight}
+                                        preserveAspectRatio={
+                                            patternFit === "cover"
+                                                ? "xMidYMid slice"
+                                                : patternFit === "contain"
+                                                    ? "xMidYMid meet"
+                                                    : "none"
+                                        }
+                                        opacity={patternOpacity}
+                                    />
+                                </pattern>
+                            </defs>
+                        )}
+                        {pathD &&
+                            renderPathSvg(pathD, {
+                                fill: box.backgroundColor || "rgba(15,23,42,0.8)",
+                                fillOpacity: 1,
+                            })}
+                        {patternEnabled && pathD &&
+                            renderPathSvg(pathD, {
+                                fill: `url(#${patternId})`,
+                            })}
+                        {box.strokeSides && strokeWidth > 0
+                            ? renderRectPerSideStroke(
+                                  w,
+                                  h,
+                                  strokeWidth,
+                                  box.strokeColor ?? "rgba(255,255,255,0.9)",
+                                  strokeOpacity,
+                                  box.strokeDash,
+                                  strokeAlign,
+                                  box.strokeSides
+                              )
+                            : renderAlignedPathStroke(
+                                  pathD,
+                                  `box-${patternScopeId}-${box.id}`,
+                                  {
+                                      stroke: box.strokeColor ?? "rgba(255,255,255,0.9)",
+                                      strokeWidth,
+                                      strokeOpacity,
+                                      dash: box.strokeDash,
+                                      strokeLineCap: box.strokeLineCap,
+                                      strokeLineJoin: box.strokeLineJoin,
+                                      strokeAlign,
+                                  },
+                                  true
+                              )}
+                    </svg>
                 </div>
             </div>
         );
@@ -714,13 +905,21 @@ export function ElementRenderer({
                         {renderPathSvg(pathD, {
                             fill: pathEl.fillColor ?? "rgba(56,189,248,0.18)",
                             fillOpacity: typeof pathEl.fillOpacity === "number" ? pathEl.fillOpacity : 1,
-                            stroke: pathEl.strokeColor ?? "rgba(56,189,248,0.95)",
-                            strokeWidth: pathEl.strokeWidthPx ?? 2,
-                            strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
-                            dash: pathEl.strokeDash,
-                            strokeLineCap: pathEl.strokeLineCap,
-                            strokeLineJoin: pathEl.strokeLineJoin,
                         })}
+                        {renderAlignedPathStroke(
+                            pathD,
+                            `path-${patternScopeId}-${pathEl.id}`,
+                            {
+                                stroke: pathEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                                strokeWidth: pathEl.strokeWidthPx ?? 2,
+                                strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
+                                dash: pathEl.strokeDash,
+                                strokeLineCap: pathEl.strokeLineCap,
+                                strokeLineJoin: pathEl.strokeLineJoin,
+                                strokeAlign: pathEl.strokeAlign,
+                            },
+                            Boolean(scaledPath && isClosedPath(scaledPath))
+                        )}
                     </svg>
                 </div>
             </div>
@@ -787,13 +986,21 @@ export function ElementRenderer({
                         {renderPathSvg(pathD, {
                             fill: booleanEl.fillColor ?? "rgba(56,189,248,0.18)",
                             fillOpacity: typeof booleanEl.fillOpacity === "number" ? booleanEl.fillOpacity : 1,
-                            stroke: booleanEl.strokeColor ?? "rgba(56,189,248,0.95)",
-                            strokeWidth: booleanEl.strokeWidthPx ?? 2,
-                            strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
-                            dash: booleanEl.strokeDash,
-                            strokeLineCap: booleanEl.strokeLineCap,
-                            strokeLineJoin: booleanEl.strokeLineJoin,
                         })}
+                        {renderAlignedPathStroke(
+                            pathD,
+                            `boolean-${patternScopeId}-${booleanEl.id}`,
+                            {
+                                stroke: booleanEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                                strokeWidth: booleanEl.strokeWidthPx ?? 2,
+                                strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
+                                dash: booleanEl.strokeDash,
+                                strokeLineCap: booleanEl.strokeLineCap,
+                                strokeLineJoin: booleanEl.strokeLineJoin,
+                                strokeAlign: booleanEl.strokeAlign,
+                            },
+                            true
+                        )}
                     </svg>
                 </div>
             </div>
@@ -884,14 +1091,31 @@ export function ElementRenderer({
                                 fill: `url(#${patternId})`,
                             })}
 
-                        {pathD && renderPathSvg(pathD, {
-                            stroke,
-                            strokeWidth,
-                            strokeOpacity,
-                            dash,
-                            strokeLineCap: s.strokeLineCap,
-                            strokeLineJoin: s.strokeLineJoin,
-                        })}
+                        {s.shape === "rect" && s.strokeSides && strokeWidth > 0
+                            ? renderRectPerSideStroke(
+                                  w,
+                                  h,
+                                  strokeWidth,
+                                  stroke,
+                                  strokeOpacity,
+                                  dash,
+                                  s.strokeAlign ?? "center",
+                                  s.strokeSides
+                              )
+                            : renderAlignedPathStroke(
+                                  pathD,
+                                  `shape-${patternScopeId}-${s.id}`,
+                                  {
+                                      stroke,
+                                      strokeWidth,
+                                      strokeOpacity,
+                                      dash,
+                                      strokeLineCap: s.strokeLineCap,
+                                      strokeLineJoin: s.strokeLineJoin,
+                                      strokeAlign: s.strokeAlign,
+                                  },
+                                  Boolean(shapePath && isClosedPath(shapePath))
+                              )}
                     </svg>
                 </div>
             </div>

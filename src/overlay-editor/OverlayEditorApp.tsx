@@ -4,12 +4,15 @@ import {
   OverlayAnimation,
   OverlayBooleanElement,
   OverlayBooleanOperation,
+  OverlayCornerRadii,
+  OverlayCornerType,
   OverlayConfigV0,
   OverlayElement,
   OverlayPath,
   OverlayPathElement,
   OverlayPatternFill,
   OverlayPatternFit,
+  OverlayStrokeAlign,
   PathCommand,
   OverlayTimeline,
   OverlayTimelineKeyframe,
@@ -260,8 +263,16 @@ function getResizeCursor(handle: ResizeHandleKind, rotationDeg: number) {
 }
 
 function getElementRadiusValue(el: AnyEl) {
-  if (el.type === "box") return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
-  if (el.type === "shape" && (el as any).shape === "rect") return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  if (el.type === "box") {
+    const corners = (el as any).cornerRadii as OverlayCornerRadii | undefined;
+    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
+    return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
+  }
+  if (el.type === "shape" && (el as any).shape === "rect") {
+    const corners = (el as any).cornerRadii as OverlayCornerRadii | undefined;
+    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
+    return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  }
   return 0;
 }
 
@@ -270,8 +281,9 @@ function supportsRadiusHandle(el: AnyEl) {
 }
 
 function getRadiusPatch(el: AnyEl, radius: number): Partial<AnyEl> {
-  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius } as any;
-  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius } as any;
+  const cornerRadii: OverlayCornerRadii = { topLeft: radius, topRight: radius, bottomRight: radius, bottomLeft: radius };
+  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius, cornerRadii } as any;
+  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius, cornerRadii } as any;
   return {};
 }
 
@@ -5776,12 +5788,33 @@ const PATTERN_FIT_OPTIONS: Array<{ value: OverlayPatternFit; label: string }> = 
   { value: "contain", label: "Contain" },
 ];
 
+const STROKE_ALIGN_OPTIONS: Array<{ value: OverlayStrokeAlign; label: string }> = [
+  { value: "inside", label: "Inside" },
+  { value: "center", label: "Center" },
+  { value: "outside", label: "Outside" },
+];
+
+const CORNER_TYPE_OPTIONS: Array<{ value: OverlayCornerType; label: string }> = [
+  { value: "round", label: "Round" },
+  { value: "cut", label: "Cut" },
+  { value: "angle", label: "Angle" },
+];
+
 function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
   return {
     src: pattern?.src ?? "",
     fit: pattern?.fit ?? "tile",
     scale: pattern?.scale ?? 100,
     opacity: pattern?.opacity ?? 1,
+  };
+}
+
+function ensureCornerRadii(radius: number, cornerRadii?: OverlayCornerRadii): OverlayCornerRadii {
+  return {
+    topLeft: cornerRadii?.topLeft ?? radius,
+    topRight: cornerRadii?.topRight ?? radius,
+    bottomRight: cornerRadii?.bottomRight ?? radius,
+    bottomLeft: cornerRadii?.bottomLeft ?? radius,
   };
 }
 
@@ -6349,6 +6382,11 @@ function InspectorPanel({
           {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
+              {(() => {
+                const uniformRadius = (element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0;
+                const cornerRadii = ensureCornerRadii(uniformRadius, (element as any).cornerRadii);
+                return (
+                  <>
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
                 <div className="flex-1 flex gap-1 items-center">
@@ -6383,6 +6421,125 @@ function InspectorPanel({
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
+              <div className="grid grid-cols-2 gap-2 ml-14">
+                {([
+                  ["TL", "topLeft"],
+                  ["TR", "topRight"],
+                  ["BL", "bottomLeft"],
+                  ["BR", "bottomRight"],
+                ] as const).map(([label, key]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <label className="w-6 flex-none text-[11px] leading-[1.4] text-slate-500">{label}</label>
+                    <NumberField
+                      label=""
+                      value={Math.round(cornerRadii[key] ?? 0)}
+                      onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v, cornerRadii: { ...cornerRadii, [key]: v } } as any)}
+                      noLabel
+                      className="flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Corner</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).cornerType ?? "round"}
+                  onChange={(e) => onChange({ cornerType: e.target.value } as any)}
+                >
+                  {CORNER_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
+                <div className="flex-1 flex gap-2">
+                  <ColorSwatch value={(element as any).strokeColor ?? "#ffffff"} onChange={(v) => onChange({ strokeColor: v } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-16" />
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
+                  onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
+                >
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeAlign ?? "center"}
+                  onChange={(e) => onChange({ strokeAlign: e.target.value } as any)}
+                >
+                  {STROKE_ALIGN_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineJoin ?? "miter"}
+                  onChange={(e) => onChange({ strokeLineJoin: e.target.value } as any)}
+                >
+                  <option value="miter">Miter</option>
+                  <option value="round">Round</option>
+                  <option value="bevel">Bevel</option>
+                </select>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineCap ?? "butt"}
+                  onChange={(e) => onChange({ strokeLineCap: e.target.value } as any)}
+                >
+                  <option value="butt">Butt</option>
+                  <option value="round">Round</option>
+                  <option value="square">Square</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Sides</label>
+                <div className="flex flex-1 gap-1">
+                  {([
+                    ["T", "top"],
+                    ["R", "right"],
+                    ["B", "bottom"],
+                    ["L", "left"],
+                  ] as const).map(([label, key]) => {
+                    const active = (((element as any).strokeSides?.[key] ?? true) === true);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`}
+                        onClick={() =>
+                          onChange({
+                            strokeSides: {
+                              top: (element as any).strokeSides?.top ?? true,
+                              right: (element as any).strokeSides?.right ?? true,
+                              bottom: (element as any).strokeSides?.bottom ?? true,
+                              left: (element as any).strokeSides?.left ?? true,
+                              [key]: !active,
+                            },
+                          } as any)
+                        }
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+                );
+              })()}
             </div>
           )}
 
@@ -6560,12 +6717,123 @@ function InspectorPanel({
                   <option value="dashed">Dashed</option>
                 </select>
               </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeAlign ?? "center"}
+                  onChange={(e) => onChange({ strokeAlign: e.target.value } as any)}
+                >
+                  {STROKE_ALIGN_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineJoin ?? "miter"}
+                  onChange={(e) => onChange({ strokeLineJoin: e.target.value } as any)}
+                >
+                  <option value="miter">Miter</option>
+                  <option value="round">Round</option>
+                  <option value="bevel">Bevel</option>
+                </select>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineCap ?? "butt"}
+                  onChange={(e) => onChange({ strokeLineCap: e.target.value } as any)}
+                >
+                  <option value="butt">Butt</option>
+                  <option value="round">Round</option>
+                  <option value="square">Square</option>
+                </select>
+              </div>
+              {(element.type === "box" || (element.type === "shape" && (element as any).shape === "rect")) && (
+                <div className="flex items-center gap-2 ml-14">
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Sides</label>
+                  <div className="flex flex-1 gap-1">
+                    {([
+                      ["T", "top"],
+                      ["R", "right"],
+                      ["B", "bottom"],
+                      ["L", "left"],
+                    ] as const).map(([label, key]) => {
+                      const active = (((element as any).strokeSides?.[key] ?? true) === true);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`}
+                          onClick={() =>
+                            onChange({
+                              strokeSides: {
+                                top: (element as any).strokeSides?.top ?? true,
+                                right: (element as any).strokeSides?.right ?? true,
+                                bottom: (element as any).strokeSides?.bottom ?? true,
+                                left: (element as any).strokeSides?.left ?? true,
+                                [key]: !active,
+                              },
+                            } as any)
+                          }
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {element.type === "shape" && (
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
-                  <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
-                </div>
+                (() => {
+                  const uniformRadius = (element as any).cornerRadiusPx ?? (element as any).cornerRadius ?? 0;
+                  const cornerRadii = ensureCornerRadii(uniformRadius, (element as any).cornerRadii);
+                  return (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
+                        <NumberField label="" value={uniformRadius} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
+                      </div>
+                      {(element as any).shape === "rect" && (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 ml-14">
+                            {([
+                              ["TL", "topLeft"],
+                              ["TR", "topRight"],
+                              ["BL", "bottomLeft"],
+                              ["BR", "bottomRight"],
+                            ] as const).map(([label, key]) => (
+                              <div key={key} className="flex items-center gap-2">
+                                <label className="w-6 flex-none text-[11px] leading-[1.4] text-slate-500">{label}</label>
+                                <NumberField
+                                  label=""
+                                  value={Math.round(cornerRadii[key] ?? 0)}
+                                  onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v, cornerRadii: { ...cornerRadii, [key]: v } } as any)}
+                                  noLabel
+                                  className="flex-1"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className={`${fieldLabelClass} w-12 flex-none`}>Corner</label>
+                            <select
+                              className={`flex-1 ${fieldClass}`}
+                              value={(element as any).cornerType ?? "round"}
+                              onChange={(e) => onChange({ cornerType: e.target.value } as any)}
+                            >
+                              {CORNER_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()
               )}
             </div>
           )}

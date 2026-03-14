@@ -1,6 +1,8 @@
 import type {
   OverlayBooleanElement,
   OverlayBoxElement,
+  OverlayCornerRadii,
+  OverlayCornerType,
   OverlayElement,
   OverlayPath,
   OverlayPathElement,
@@ -51,31 +53,78 @@ function commandPoint(command: Exclude<PathCommand, { type: "close" }>): Point {
   return { x: command.x, y: command.y };
 }
 
-function roundedRectPath(width: number, height: number, radius: number): OverlayPath {
-  const r = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
-  if (r === 0) {
-    return {
-      commands: [
-        { type: "move", x: 0, y: 0 },
-        { type: "line", x: width, y: 0 },
-        { type: "line", x: width, y: height },
-        { type: "line", x: 0, y: height },
-        { type: "close" },
-      ],
-    };
+function rectCornerRadii(
+  width: number,
+  height: number,
+  radius: number,
+  cornerRadii?: OverlayCornerRadii
+) {
+  const maxRadius = Math.min(width, height) / 2;
+  return {
+    topLeft: Math.max(0, Math.min(cornerRadii?.topLeft ?? radius, maxRadius)),
+    topRight: Math.max(0, Math.min(cornerRadii?.topRight ?? radius, maxRadius)),
+    bottomRight: Math.max(0, Math.min(cornerRadii?.bottomRight ?? radius, maxRadius)),
+    bottomLeft: Math.max(0, Math.min(cornerRadii?.bottomLeft ?? radius, maxRadius)),
+  };
+}
+
+function roundedRectPath(
+  width: number,
+  height: number,
+  radius: number,
+  cornerRadii?: OverlayCornerRadii,
+  cornerType: OverlayCornerType = "round"
+): OverlayPath {
+  const radii = rectCornerRadii(width, height, radius, cornerRadii);
+  const commands: PathCommand[] = [];
+
+  const tl = cornerType === "angle" ? 0 : radii.topLeft;
+  const tr = cornerType === "angle" ? 0 : radii.topRight;
+  const br = cornerType === "angle" ? 0 : radii.bottomRight;
+  const bl = cornerType === "angle" ? 0 : radii.bottomLeft;
+
+  pushMove(commands, tl, 0);
+  pushLine(commands, width - tr, 0);
+
+  if (cornerType === "cut" && tr > 0) {
+    pushLine(commands, width, tr);
+  } else if (tr > 0) {
+    const c = tr * ELLIPSE_KAPPA;
+    pushCurve(commands, width - tr + c, 0, width, tr - c, width, tr);
+  } else {
+    pushLine(commands, width, 0);
   }
 
-  const c = r * ELLIPSE_KAPPA;
-  const commands: PathCommand[] = [];
-  pushMove(commands, r, 0);
-  pushLine(commands, width - r, 0);
-  pushCurve(commands, width - r + c, 0, width, r - c, width, r);
-  pushLine(commands, width, height - r);
-  pushCurve(commands, width, height - r + c, width - r + c, height, width - r, height);
-  pushLine(commands, r, height);
-  pushCurve(commands, r - c, height, 0, height - r + c, 0, height - r);
-  pushLine(commands, 0, r);
-  pushCurve(commands, 0, r - c, r - c, 0, r, 0);
+  pushLine(commands, width, height - br);
+  if (cornerType === "cut" && br > 0) {
+    pushLine(commands, width - br, height);
+  } else if (br > 0) {
+    const c = br * ELLIPSE_KAPPA;
+    pushCurve(commands, width, height - br + c, width - br + c, height, width - br, height);
+  } else {
+    pushLine(commands, width, height);
+  }
+
+  pushLine(commands, bl, height);
+  if (cornerType === "cut" && bl > 0) {
+    pushLine(commands, 0, height - bl);
+  } else if (bl > 0) {
+    const c = bl * ELLIPSE_KAPPA;
+    pushCurve(commands, bl - c, height, 0, height - bl + c, 0, height - bl);
+  } else {
+    pushLine(commands, 0, height);
+  }
+
+  pushLine(commands, 0, tl);
+  if (cornerType === "cut" && tl > 0) {
+    pushLine(commands, tl, 0);
+  } else if (tl > 0) {
+    const c = tl * ELLIPSE_KAPPA;
+    pushCurve(commands, 0, tl - c, tl - c, 0, tl, 0);
+  } else {
+    pushLine(commands, 0, 0);
+  }
+
   pushClose(commands);
   return { commands };
 }
@@ -229,7 +278,13 @@ function linePath(width: number, height: number, line?: OverlayShapeElement["lin
 }
 
 export function boxElementToPath(box: OverlayBoxElement): OverlayPath {
-  return roundedRectPath(box.width ?? 0, box.height ?? 0, (box as any).borderRadiusPx ?? (box as any).borderRadius ?? 0);
+  return roundedRectPath(
+    box.width ?? 0,
+    box.height ?? 0,
+    (box as any).borderRadiusPx ?? (box as any).borderRadius ?? 0,
+    box.cornerRadii,
+    box.cornerType ?? "round"
+  );
 }
 
 export function shapeElementToPath(shape: OverlayShapeElement): OverlayPath {
@@ -250,7 +305,13 @@ export function shapeElementToPath(shape: OverlayShapeElement): OverlayPath {
       return linePath(width, height, shape.line);
     case "rect":
     default:
-      return roundedRectPath(width, height, (shape as any).cornerRadiusPx ?? (shape as any).cornerRadius ?? 0);
+      return roundedRectPath(
+        width,
+        height,
+        (shape as any).cornerRadiusPx ?? (shape as any).cornerRadius ?? 0,
+        shape.cornerRadii,
+        shape.cornerType ?? "round"
+      );
   }
 }
 

@@ -256,11 +256,18 @@ export interface OverlayBoxElement extends OverlayElementBase {
 
   borderRadiusPx?: number;
   borderRadiusRel?: number; // V1: 0..1 of min(viewportW, viewportH)
+  cornerRadii?: OverlayCornerRadii;
+  cornerType?: OverlayCornerType;
 
   // Optional stroke for boxes (handy once you add “stroke options”)
   strokeColor?: string;
   strokeWidthPx?: number;
   strokeOpacity?: number;
+  strokeAlign?: OverlayStrokeAlign;
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeDash?: number[];
+  strokeSides?: OverlayStrokeSides;
 }
 
 /* =========================
@@ -271,6 +278,22 @@ export type OverlayShapeKind = "rect" | "circle" | "line" | "triangle" | "polygo
 
 export type OverlayStrokeLineCap = "butt" | "round" | "square";
 export type OverlayStrokeLineJoin = "miter" | "round" | "bevel";
+export type OverlayStrokeAlign = "inside" | "center" | "outside";
+export type OverlayCornerType = "round" | "cut" | "angle";
+
+export interface OverlayCornerRadii {
+  topLeft?: number;
+  topRight?: number;
+  bottomRight?: number;
+  bottomLeft?: number;
+}
+
+export interface OverlayStrokeSides {
+  top?: boolean;
+  right?: boolean;
+  bottom?: boolean;
+  left?: boolean;
+}
 
 export interface OverlayShapeElement extends OverlayElementBase {
   type: "shape";
@@ -288,9 +311,13 @@ export interface OverlayShapeElement extends OverlayElementBase {
   strokeDash?: number[];  // e.g. [6,4]
   strokeLineCap?: OverlayStrokeLineCap;
   strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
+  strokeSides?: OverlayStrokeSides;
 
   // Rect-specific
   cornerRadiusPx?: number;
+  cornerRadii?: OverlayCornerRadii;
+  cornerType?: OverlayCornerType;
 
   /**
    * Line-specific geometry (normalized inside the element box).
@@ -343,6 +370,7 @@ export interface OverlayPathElement extends OverlayElementBase {
   strokeDash?: number[];
   strokeLineCap?: OverlayStrokeLineCap;
   strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
 }
 
 export interface OverlayBooleanElement extends OverlayElementBase {
@@ -357,6 +385,7 @@ export interface OverlayBooleanElement extends OverlayElementBase {
   strokeDash?: number[];
   strokeLineCap?: OverlayStrokeLineCap;
   strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
 }
 
 /* =========================
