@@ -8,6 +8,7 @@ import type {
 import {
   elementToOverlayPath,
   flattenPath,
+  isClosedPath,
   normalizePathToBounds,
   ringsToOverlayPath,
   translateRings,
@@ -85,6 +86,26 @@ function clipperPathsToRings(paths: any[]): PolygonSet {
   );
 }
 
+function offsetRings(
+  rings: PolygonSet,
+  distance: number,
+  closed: boolean
+) {
+  const { outers, holes } = classifyRings(rings);
+  const clipper = new (ClipperLib as any).ClipperOffset(2, 0.25);
+
+  if (closed) {
+    if (outers.length) clipper.AddPaths(ringsToClipperPaths(outers), (ClipperLib as any).JoinType.jtRound, (ClipperLib as any).EndType.etClosedPolygon);
+    if (holes.length) clipper.AddPaths(ringsToClipperPaths(holes), (ClipperLib as any).JoinType.jtRound, (ClipperLib as any).EndType.etClosedPolygon);
+  } else if (rings.length) {
+    clipper.AddPaths(ringsToClipperPaths(rings), (ClipperLib as any).JoinType.jtRound, (ClipperLib as any).EndType.etOpenRound);
+  }
+
+  const solution: any[] = [];
+  clipper.Execute(solution, distance * CLIPPER_SCALE);
+  return clipperPathsToRings(solution);
+}
+
 export function resolveElementRings(element: OverlayElement): PolygonSet {
   const path = elementToOverlayPath(element);
   if (!path) return [];
@@ -123,11 +144,22 @@ export function applyBooleanOperation(operation: OverlayBooleanOperation, childr
 
 export function offsetOverlayPath(path: OverlayPath, distance: number) {
   const rings = flattenPath(path);
-  const { outers, holes } = classifyRings(rings);
-  const clipper = new (ClipperLib as any).ClipperOffset(2, 0.25);
-  if (outers.length) clipper.AddPaths(ringsToClipperPaths(outers), (ClipperLib as any).JoinType.jtRound, (ClipperLib as any).EndType.etClosedPolygon);
-  if (holes.length) clipper.AddPaths(ringsToClipperPaths(holes), (ClipperLib as any).JoinType.jtRound, (ClipperLib as any).EndType.etClosedPolygon);
-  const solution: any[] = [];
-  clipper.Execute(solution, distance * CLIPPER_SCALE);
-  return normalizePathToBounds(ringsToOverlayPath(clipperPathsToRings(solution)));
+  return normalizePathToBounds(ringsToOverlayPath(offsetRings(rings, distance, true)));
+}
+
+export function expandStrokePath(path: OverlayPath, strokeWidth: number) {
+  const distance = Math.max(0.5, strokeWidth / 2);
+  const rings = flattenPath(path);
+  if (!rings.length) {
+    return { path: { commands: [] } as OverlayPath, bounds: { x: 0, y: 0, width: 0, height: 0 } };
+  }
+
+  if (!isClosedPath(path)) {
+    return normalizePathToBounds(ringsToOverlayPath(offsetRings(rings, distance, false)));
+  }
+
+  const outer = ringsToMartinez(offsetRings(rings, distance, true));
+  const inner = ringsToMartinez(offsetRings(rings, -distance, true));
+  const result = (martinez as any).xor(outer, inner) ?? outer;
+  return normalizePathToBounds(ringsToOverlayPath(martinezToRings(result)));
 }

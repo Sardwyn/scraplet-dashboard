@@ -47,6 +47,10 @@ export function svgPathFromCommands(path: OverlayPath) {
     .join(" ");
 }
 
+function commandPoint(command: Exclude<PathCommand, { type: "close" }>): Point {
+  return { x: command.x, y: command.y };
+}
+
 function roundedRectPath(width: number, height: number, radius: number): OverlayPath {
   const r = Math.max(0, Math.min(radius, Math.min(width, height) / 2));
   if (r === 0) {
@@ -292,6 +296,159 @@ export function elementToOverlayPath(element: OverlayElement): OverlayPath | nul
   if (element.type === "shape") return shapeElementToPath(element as OverlayShapeElement);
   if (element.type === "box") return boxElementToPath(element as OverlayBoxElement);
   return null;
+}
+
+export function isClosedPath(path: OverlayPath) {
+  return path.commands.some((command) => command.type === "close");
+}
+
+export function translateOverlayPath(path: OverlayPath, dx: number, dy: number): OverlayPath {
+  return {
+    commands: path.commands.map((command) => {
+      if (command.type === "close") return command;
+      if (command.type === "curve") {
+        return {
+          ...command,
+          x1: command.x1 + dx,
+          y1: command.y1 + dy,
+          x2: command.x2 + dx,
+          y2: command.y2 + dy,
+          x: command.x + dx,
+          y: command.y + dy,
+        };
+      }
+      return {
+        ...command,
+        x: command.x + dx,
+        y: command.y + dy,
+      };
+    }),
+  };
+}
+
+export function reverseOpenPath(path: OverlayPath): OverlayPath {
+  const drawable = path.commands.filter((command) => command.type !== "close") as Exclude<PathCommand, { type: "close" }>[];
+  if (drawable.length <= 1) return path;
+
+  const reversed: PathCommand[] = [];
+  const last = drawable[drawable.length - 1];
+  reversed.push({ type: "move", x: last.x, y: last.y });
+
+  for (let index = drawable.length - 1; index >= 1; index -= 1) {
+    const segment = drawable[index];
+    const previous = drawable[index - 1];
+    if (segment.type === "curve") {
+      reversed.push({
+        type: "curve",
+        x1: segment.x2,
+        y1: segment.y2,
+        x2: segment.x1,
+        y2: segment.y1,
+        x: previous.x,
+        y: previous.y,
+      });
+    } else {
+      reversed.push({
+        type: "line",
+        x: previous.x,
+        y: previous.y,
+      });
+    }
+  }
+
+  return { commands: reversed };
+}
+
+export function splitOverlayPathAtAnchor(path: OverlayPath, commandIndex: number): OverlayPath[] {
+  const indexed = path.commands
+    .map((command, index) => ({ command, index }))
+    .filter((entry) => entry.command.type !== "close") as { command: Exclude<PathCommand, { type: "close" }>; index: number }[];
+  const selectedDrawableIndex = indexed.findIndex((entry) => entry.index === commandIndex);
+  if (selectedDrawableIndex === -1) return [path];
+
+  if (isClosedPath(path)) {
+    if (indexed.length < 3) return [path];
+    const selected = indexed[selectedDrawableIndex].command;
+    const commands: PathCommand[] = [{ type: "move", x: selected.x, y: selected.y }];
+
+    for (let i = selectedDrawableIndex + 1; i < indexed.length; i += 1) {
+      commands.push({ ...indexed[i].command });
+    }
+
+    const first = indexed[0].command;
+    if (selectedDrawableIndex !== 0) {
+      commands.push({ type: "line", x: first.x, y: first.y });
+    }
+
+    for (let i = 1; i < selectedDrawableIndex; i += 1) {
+      commands.push({ ...indexed[i].command });
+    }
+
+    return [{ commands }];
+  }
+
+  if (selectedDrawableIndex === 0 || selectedDrawableIndex === indexed.length - 1) {
+    return [path];
+  }
+
+  const firstPath: PathCommand[] = path.commands
+    .filter((_, index) => index <= commandIndex && path.commands[index].type !== "close")
+    .map((command) => ({ ...command })) as PathCommand[];
+
+  const secondAnchor = indexed[selectedDrawableIndex].command;
+  const secondPath: PathCommand[] = [
+    { type: "move", x: secondAnchor.x, y: secondAnchor.y },
+    ...path.commands
+      .filter((_, index) => index > commandIndex && path.commands[index].type !== "close")
+      .map((command) => ({ ...command })) as PathCommand[],
+  ];
+
+  if (firstPath.length < 2 || secondPath.length < 2) return [path];
+  return [{ commands: firstPath }, { commands: secondPath }];
+}
+
+function pathEndpoints(path: OverlayPath) {
+  const drawable = path.commands.filter((command) => command.type !== "close") as Exclude<PathCommand, { type: "close" }>[];
+  if (!drawable.length) return null;
+  return {
+    start: commandPoint(drawable[0]),
+    end: commandPoint(drawable[drawable.length - 1]),
+  };
+}
+
+export function joinOpenOverlayPaths(pathA: OverlayPath, pathB: OverlayPath): OverlayPath | null {
+  if (isClosedPath(pathA) || isClosedPath(pathB)) return null;
+
+  const candidates = [
+    { a: pathA, b: pathB },
+    { a: pathA, b: reverseOpenPath(pathB) },
+    { a: reverseOpenPath(pathA), b: pathB },
+    { a: reverseOpenPath(pathA), b: reverseOpenPath(pathB) },
+  ];
+
+  let best: { a: OverlayPath; b: OverlayPath; distance: number } | null = null;
+  for (const candidate of candidates) {
+    const endpointsA = pathEndpoints(candidate.a);
+    const endpointsB = pathEndpoints(candidate.b);
+    if (!endpointsA || !endpointsB) continue;
+    const distance = Math.hypot(endpointsA.end.x - endpointsB.start.x, endpointsA.end.y - endpointsB.start.y);
+    if (!best || distance < best.distance) {
+      best = { ...candidate, distance };
+    }
+  }
+
+  if (!best) return null;
+  const endpointsA = pathEndpoints(best.a);
+  const endpointsB = pathEndpoints(best.b);
+  if (!endpointsA || !endpointsB) return null;
+
+  const commands: PathCommand[] = best.a.commands.map((command) => ({ ...command })) as PathCommand[];
+  if (best.distance > 0.001) {
+    commands.push({ type: "line", x: endpointsB.start.x, y: endpointsB.start.y });
+  }
+  const tail = best.b.commands.slice(1).map((command) => ({ ...command })) as PathCommand[];
+  commands.push(...tail);
+  return { commands };
 }
 
 function cubicPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {

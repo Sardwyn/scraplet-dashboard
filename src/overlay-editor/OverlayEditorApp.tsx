@@ -37,8 +37,18 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
-import { offsetOverlayPath } from "../shared/geometry/pathBoolean";
-import { booleanContainerBounds, elementToOverlayPath, normalizePathToBounds, svgPathFromCommands } from "../shared/geometry/pathUtils";
+import { expandStrokePath, offsetOverlayPath } from "../shared/geometry/pathBoolean";
+import {
+  booleanContainerBounds,
+  elementToOverlayPath,
+  isClosedPath,
+  joinOpenOverlayPaths,
+  normalizePathToBounds,
+  reverseOpenPath,
+  splitOverlayPathAtAnchor,
+  svgPathFromCommands,
+  translateOverlayPath,
+} from "../shared/geometry/pathUtils";
 import { resolveElementGeometry } from "../shared/geometry/resolveGeometry";
 
 
@@ -466,6 +476,14 @@ type PathAnchor = {
   y: number;
 };
 
+type PathHandle = {
+  anchorCommandIndex: number;
+  curveCommandIndex: number;
+  role: "in" | "out";
+  x: number;
+  y: number;
+};
+
 function getPathAnchors(path: OverlayPath): PathAnchor[] {
   const anchors: PathAnchor[] = [];
   path.commands.forEach((command, commandIndex) => {
@@ -474,6 +492,32 @@ function getPathAnchors(path: OverlayPath): PathAnchor[] {
     }
   });
   return anchors;
+}
+
+function getPathHandles(path: OverlayPath): PathHandle[] {
+  const handles: PathHandle[] = [];
+  path.commands.forEach((command, commandIndex) => {
+    if (command.type === "curve") {
+      handles.push({
+        anchorCommandIndex: commandIndex,
+        curveCommandIndex: commandIndex,
+        role: "in",
+        x: command.x2,
+        y: command.y2,
+      });
+      const previous = path.commands[commandIndex - 1] as any;
+      if (previous && previous.type !== "close") {
+        handles.push({
+          anchorCommandIndex: commandIndex - 1,
+          curveCommandIndex: commandIndex,
+          role: "out",
+          x: command.x1,
+          y: command.y1,
+        });
+      }
+    }
+  });
+  return handles;
 }
 
 function updatePathAnchor(path: OverlayPath, commandIndex: number, nextPoint: { x: number; y: number }) {
@@ -501,6 +545,20 @@ function updatePathAnchor(path: OverlayPath, commandIndex: number, nextPoint: { 
     prevCurve.y2 += dy;
   }
 
+  return { commands };
+}
+
+function updatePathHandle(path: OverlayPath, curveCommandIndex: number, role: "in" | "out", nextPoint: { x: number; y: number }) {
+  const commands = path.commands.map((command) => ({ ...command })) as PathCommand[];
+  const curve = commands[curveCommandIndex] as any;
+  if (!curve || curve.type !== "curve") return path;
+  if (role === "in") {
+    curve.x2 = nextPoint.x;
+    curve.y2 = nextPoint.y;
+  } else {
+    curve.x1 = nextPoint.x;
+    curve.y1 = nextPoint.y;
+  }
   return { commands };
 }
 
@@ -837,6 +895,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     anchors: { x: number; y: number }[];
     commands: PathCommand[];
     previewPoint?: { x: number; y: number };
+    sourceElementId?: string;
   } | null>(null);
 
   // PAN (space/middle-mouse)
@@ -863,6 +922,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [pathAnchorDragSession, setPathAnchorDragSession] = useState<{
     elementId: string;
     commandIndex: number;
+    startStage: { x: number; y: number };
+    originPath: OverlayPath;
+    rotationDeg: number;
+  } | null>(null);
+  const [pathHandleDragSession, setPathHandleDragSession] = useState<{
+    elementId: string;
+    curveCommandIndex: number;
+    role: "in" | "out";
     startStage: { x: number; y: number };
     originPath: OverlayPath;
     rotationDeg: number;
@@ -1683,7 +1750,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([id]);
   }
 
-  function addPathElement(path: OverlayPath, bounds: { x: number; y: number; width: number; height: number }, name = "Path") {
+  function addPathElement(
+    path: OverlayPath,
+    bounds: { x: number; y: number; width: number; height: number },
+    name = "Path",
+    overrides?: Partial<AnyEl>
+  ) {
     const id = genId("path");
     const el: AnyEl = {
       id,
@@ -1702,6 +1774,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       strokeOpacity: 1,
       strokeDash: [],
       path,
+      ...overrides,
     } as any;
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
     setSelectedIds([id]);
@@ -1847,11 +1920,161 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedPathAnchor(null);
   }
 
+  function splitSelectedPath() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    const displayPath = elementToOverlayPath(primarySelectedEl as any);
+    if (!displayPath) return;
+    const splitPaths = splitOverlayPathAtAnchor(displayPath, selectedPathAnchor.commandIndex);
+    if (splitPaths.length === 1) {
+      const normalized = normalizePathToBounds(splitPaths[0]);
+      updateElement(primarySelectedEl.id, {
+        x: Math.round((primarySelectedEl.x ?? 0) + normalized.bounds.x),
+        y: Math.round((primarySelectedEl.y ?? 0) + normalized.bounds.y),
+        width: Math.max(1, Math.round(normalized.bounds.width)),
+        height: Math.max(1, Math.round(normalized.bounds.height)),
+        path: normalized.path,
+      } as any);
+      setSelectedPathAnchor({ elementId: primarySelectedEl.id, commandIndex: 0 });
+      return;
+    }
+
+    const [firstPath, secondPath] = splitPaths.map((candidate) => normalizePathToBounds(candidate));
+    const secondId = genId("path");
+    const secondEl: AnyEl = {
+      ...(primarySelectedEl as any),
+      id: secondId,
+      name: `${primarySelectedEl.name || defaultElementLabel(primarySelectedEl)} Split`,
+      x: Math.round((primarySelectedEl.x ?? 0) + secondPath.bounds.x),
+      y: Math.round((primarySelectedEl.y ?? 0) + secondPath.bounds.y),
+      width: Math.max(1, Math.round(secondPath.bounds.width)),
+      height: Math.max(1, Math.round(secondPath.bounds.height)),
+      path: secondPath.path,
+    };
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.flatMap((candidate) =>
+        candidate.id === primarySelectedEl.id
+          ? [
+              {
+                ...(candidate as any),
+                x: Math.round((primarySelectedEl.x ?? 0) + firstPath.bounds.x),
+                y: Math.round((primarySelectedEl.y ?? 0) + firstPath.bounds.y),
+                width: Math.max(1, Math.round(firstPath.bounds.width)),
+                height: Math.max(1, Math.round(firstPath.bounds.height)),
+                path: firstPath.path,
+              },
+              secondEl as any,
+            ]
+          : [candidate]
+      ),
+    }));
+    setSelectedIds([primarySelectedEl.id, secondId]);
+    setSelectedPathAnchor(null);
+  }
+
+  function continueSelectedPath() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    const displayPath = elementToOverlayPath(primarySelectedEl as any);
+    if (!displayPath || isClosedPath(displayPath)) return;
+    const anchors = getPathAnchors(displayPath);
+    const selectedIndex = anchors.findIndex((anchor) => anchor.commandIndex === selectedPathAnchor.commandIndex);
+    if (selectedIndex === -1) return;
+    if (selectedIndex !== 0 && selectedIndex !== anchors.length - 1) return;
+
+    const continuedPath = selectedIndex === 0 ? reverseOpenPath(displayPath) : displayPath;
+    setActiveCreationTool("pen");
+    const continuedAnchors = getPathAnchors(continuedPath).map((anchor) => ({ x: anchor.x, y: anchor.y }));
+    setPenDraft({
+      sourceElementId: primarySelectedEl.id,
+      anchors: continuedAnchors,
+      commands: continuedPath.commands.map((command) => ({ ...command })) as PathCommand[],
+      previewPoint: continuedAnchors[continuedAnchors.length - 1],
+    });
+    showEditorStatus("Continuing path", "Click to extend from the selected endpoint.");
+  }
+
+  function joinSelectedPaths() {
+    if (selectedIds.length !== 2) return;
+    const selectedPaths = selectedIds
+      .map((id) => elementsById[id])
+      .filter((candidate): candidate is OverlayPathElement => Boolean(candidate) && candidate.type === "path");
+    if (selectedPaths.length !== 2) return;
+
+    const [first, second] = selectedPaths;
+    const worldFirst = translateOverlayPath(elementToOverlayPath(first as any) ?? first.path, first.x ?? 0, first.y ?? 0);
+    const worldSecond = translateOverlayPath(elementToOverlayPath(second as any) ?? second.path, second.x ?? 0, second.y ?? 0);
+    const joined = joinOpenOverlayPaths(worldFirst, worldSecond);
+    if (!joined) return;
+
+    const normalized = normalizePathToBounds(joined);
+    const joinedId = genId("path");
+    const joinedEl: AnyEl = {
+      ...(first as any),
+      id: joinedId,
+      name: `${first.name || defaultElementLabel(first)} Join`,
+      x: Math.round(normalized.bounds.x),
+      y: Math.round(normalized.bounds.y),
+      width: Math.max(1, Math.round(normalized.bounds.width)),
+      height: Math.max(1, Math.round(normalized.bounds.height)),
+      path: normalized.path,
+      pathSource: undefined,
+    };
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: [...prev.elements.filter((candidate) => candidate.id !== first.id && candidate.id !== second.id), joinedEl as any],
+    }));
+    setSelectedIds([joinedId]);
+    setSelectedPathAnchor(null);
+  }
+
+  function expandSelectedStroke() {
+    const source = primarySelectedEl;
+    if (!source || !isPathCapableElement(source)) return;
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return;
+    const strokeWidth = Math.max(
+      1,
+      Number((source as any).strokeWidthPx ?? (source as any).strokeWidth ?? 0) || 1
+    );
+    const expanded = expandStrokePath(resolved.path, strokeWidth);
+    addPathElement(
+      expanded.path,
+      {
+        x: Math.round((source.x ?? 0) + expanded.bounds.x),
+        y: Math.round((source.y ?? 0) + expanded.bounds.y),
+        width: Math.max(1, Math.round(expanded.bounds.width)),
+        height: Math.max(1, Math.round(expanded.bounds.height)),
+      },
+      `${source.name || defaultElementLabel(source)} Stroke`,
+      {
+        fillColor: (source as any).strokeColor ?? "#ffffff",
+        fillOpacity: (source as any).strokeOpacity ?? 1,
+        strokeColor: "transparent",
+        strokeWidthPx: 0,
+      }
+    );
+  }
+
   function commitPenDraft(closePath = false) {
     if (!penDraft || penDraft.anchors.length < 2) return;
     const commands = closePath ? [...penDraft.commands, { type: "close" } as PathCommand] : penDraft.commands;
     const normalized = normalizePathToBounds({ commands });
-    addPathElement(normalized.path, normalized.bounds, "Pen Path");
+    if (penDraft.sourceElementId) {
+      const source = elementsById[penDraft.sourceElementId] as AnyEl | undefined;
+      if (source) {
+        updateElement(penDraft.sourceElementId, {
+          x: Math.round((source.x ?? 0) + normalized.bounds.x),
+          y: Math.round((source.y ?? 0) + normalized.bounds.y),
+          width: Math.max(1, Math.round(normalized.bounds.width)),
+          height: Math.max(1, Math.round(normalized.bounds.height)),
+          path: normalized.path,
+        } as any);
+      }
+    } else {
+      addPathElement(normalized.path, normalized.bounds, "Pen Path");
+    }
     setPenDraft(null);
     setActiveCreationTool(null);
   }
@@ -3353,6 +3576,65 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
   }, [clientToStage, draftElementPatches, pathAnchorDragSession]);
 
+  useEffect(() => {
+    if (!pathHandleDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = pathHandleDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const deltaWorld = {
+        x: stagePoint.x - active.startStage.x,
+        y: stagePoint.y - active.startStage.y,
+      };
+      const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -active.rotationDeg);
+      const curve = active.originPath.commands[active.curveCommandIndex] as any;
+      if (!curve || curve.type !== "curve") return;
+      const originPoint =
+        active.role === "in"
+          ? { x: curve.x2, y: curve.y2 }
+          : { x: curve.x1, y: curve.y1 };
+      const nextPath = updatePathHandle(active.originPath, active.curveCommandIndex, active.role, {
+        x: originPoint.x + deltaLocal.x,
+        y: originPoint.y + deltaLocal.y,
+      });
+      setDraftElementPatches((prev) => ({
+        ...prev,
+        [active.elementId]: {
+          ...(prev[active.elementId] ?? {}),
+          path: nextPath,
+        },
+      }));
+    };
+
+    const onUp = () => {
+      const active = pathHandleDragSession;
+      setPathHandleDragSession(null);
+      const patch = draftElementPatches[active.elementId];
+      const nextPath = patch?.path as OverlayPath | undefined;
+      if (nextPath) {
+        updateElement(active.elementId, { path: nextPath } as any);
+      }
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
+        if (next[active.elementId]) {
+          next[active.elementId] = { ...next[active.elementId] };
+          delete next[active.elementId].path;
+          if (!Object.keys(next[active.elementId]).length) delete next[active.elementId];
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftElementPatches, pathHandleDragSession]);
+
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
     const x1 = marquee.start.x;
@@ -4714,6 +4996,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 } as AnyEl);
                 const editablePath = renderedEl.type === "path" ? elementToOverlayPath(renderedEl as any) : null;
                 const pathAnchors = editablePath ? getPathAnchors(editablePath) : [];
+                const pathHandles = editablePath ? getPathHandles(editablePath) : [];
                 const radiusValue = clamp(
                   draftRadius ?? getElementRadiusValue(renderedEl),
                   0,
@@ -4821,6 +5104,54 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                               aria-label={`Resize ${handle}`}
                             />
                           ))}
+                          {renderedEl.type === "path" && (
+                            <svg className="absolute inset-0 overflow-visible pointer-events-none">
+                              {pathHandles
+                                .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+                                .map((handle) => {
+                                  const anchor = pathAnchors.find((candidate) => candidate.commandIndex === handle.anchorCommandIndex);
+                                  if (!anchor) return null;
+                                  return (
+                                    <line
+                                      key={`${el.id}_handle_line_${handle.curveCommandIndex}_${handle.role}`}
+                                      x1={anchor.x}
+                                      y1={anchor.y}
+                                      x2={handle.x}
+                                      y2={handle.y}
+                                      stroke="rgba(165,180,252,0.8)"
+                                      strokeWidth={1}
+                                    />
+                                  );
+                                })}
+                            </svg>
+                          )}
+                          {renderedEl.type === "path" && pathHandles
+                            .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+                            .map((handle) => {
+                              return (
+                                <React.Fragment key={`${el.id}_handle_${handle.curveCommandIndex}_${handle.role}`}>
+                                  <button
+                                    type="button"
+                                    className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-100 bg-indigo-400 shadow-[0_0_0_1px_rgba(15,23,42,0.85)]"
+                                    style={{ left: handle.x, top: handle.y, cursor: "grab", pointerEvents: "auto" }}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                      if (!stagePoint || !editablePath) return;
+                                      setPathHandleDragSession({
+                                        elementId: el.id,
+                                        curveCommandIndex: handle.curveCommandIndex,
+                                        role: handle.role,
+                                        startStage: stagePoint,
+                                        originPath: editablePath,
+                                        rotationDeg,
+                                      });
+                                    }}
+                                  />
+                                </React.Fragment>
+                              );
+                            })}
                           {renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => (
                             <button
                               key={`${el.id}_anchor_${anchor.commandIndex}`}
@@ -5089,6 +5420,31 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             selectedPathAnchor={selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null}
             onAddPathNode={addSelectedPathNode}
             onRemovePathNode={removeSelectedPathNode}
+            onSplitPath={splitSelectedPath}
+            onContinuePath={continueSelectedPath}
+            onJoinPaths={joinSelectedPaths}
+            onExpandStroke={expandSelectedStroke}
+            canContinuePath={Boolean(
+              primarySelectedEl?.type === "path" &&
+              selectedPathAnchor &&
+              selectedPathAnchor.elementId === primarySelectedEl.id &&
+              (() => {
+                const path = elementToOverlayPath(primarySelectedEl as any);
+                if (!path || isClosedPath(path)) return false;
+                const anchors = getPathAnchors(path);
+                const selectedIndex = anchors.findIndex((anchor) => anchor.commandIndex === selectedPathAnchor.commandIndex);
+                return selectedIndex === 0 || selectedIndex === anchors.length - 1;
+              })()
+            )}
+            canJoinPaths={
+              selectedIds.length === 2 &&
+              selectedIds.every((id) => elementsById[id]?.type === "path") &&
+              selectedIds.every((id) => {
+                const candidate = elementsById[id] as AnyEl | undefined;
+                const path = candidate ? elementToOverlayPath(candidate as any) : null;
+                return Boolean(path && !isClosedPath(path));
+              })
+            }
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
             timelineState={selectedTimelineState}
@@ -5203,6 +5559,12 @@ interface InspectorProps {
   selectedPathAnchor?: number | null;
   onAddPathNode?: () => void;
   onRemovePathNode?: () => void;
+  onSplitPath?: () => void;
+  onContinuePath?: () => void;
+  onJoinPaths?: () => void;
+  onExpandStroke?: () => void;
+  canContinuePath?: boolean;
+  canJoinPaths?: boolean;
   previewVisible?: boolean;
   onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
   timelineState?: {
@@ -5538,7 +5900,7 @@ function InspectorPanel({
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
   onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath,
-  selectedPathAnchor, onAddPathNode, onRemovePathNode,
+  selectedPathAnchor, onAddPathNode, onRemovePathNode, onSplitPath, onContinuePath, onJoinPaths, onExpandStroke, canContinuePath, canJoinPaths,
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
@@ -5644,6 +6006,33 @@ function InspectorPanel({
                   className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
                 >
                   Remove Point
+                </button>
+                <button
+                  onClick={() => onSplitPath?.()}
+                  disabled={selectedPathAnchor == null}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Split Path
+                </button>
+                <button
+                  onClick={() => onContinuePath?.()}
+                  disabled={!canContinuePath}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Continue Path
+                </button>
+                <button
+                  onClick={() => onExpandStroke?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Expand Stroke
+                </button>
+                <button
+                  onClick={() => onJoinPaths?.()}
+                  disabled={!canJoinPaths}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Join Selected
                 </button>
                 <div className="flex items-center text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
                   {selectedPathAnchor == null ? "Select a path point to edit it." : `Selected point #${selectedPathAnchor + 1}`}
