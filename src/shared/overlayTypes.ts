@@ -44,6 +44,8 @@ export interface OverlayElementBase extends OverlayEditorFields {
   pinned?: boolean;
   opacity?: number;
   rotationDeg?: number;
+  scaleX?: number;
+  scaleY?: number;
   constraints?: OverlayConstraints;
   shadow?: {
     enabled: boolean;
@@ -304,13 +306,21 @@ export type OverlayTimelineProperty =
   | "width"
   | "height"
   | "opacity"
-  | "rotationDeg";
+  | "rotationDeg"
+  | "scaleX"
+  | "scaleY";
 
 export type OverlayTimelineEasing =
   | "linear"
   | "ease-in"
   | "ease-out"
-  | "ease-in-out";
+  | "ease-in-out"
+  | "hold";
+
+export interface OverlayTimelinePlayback {
+  loop?: boolean;
+  reverse?: boolean;
+}
 
 export interface OverlayTimelineKeyframe {
   id: string;
@@ -329,6 +339,7 @@ export interface OverlayTimelineTrack {
 export interface OverlayTimeline {
   durationMs: number;
   tracks: OverlayTimelineTrack[];
+  playback?: OverlayTimelinePlayback;
 }
 
 /* =========================

@@ -17,6 +17,8 @@ function applyEasing(progress: number, easing: OverlayTimelineEasing) {
   const t = clamp(progress, 0, 1);
 
   switch (easing) {
+    case "hold":
+      return 0;
     case "ease-in":
       return t * t;
     case "ease-out":
@@ -35,6 +37,9 @@ function interpolateValue(
   progress: number,
   easing: OverlayTimelineEasing
 ) {
+  if (easing === "hold") {
+    return progress >= 1 ? toValue : fromValue;
+  }
   const eased = applyEasing(progress, easing);
   return fromValue + (toValue - fromValue) * eased;
 }

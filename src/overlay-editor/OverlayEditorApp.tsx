@@ -28,6 +28,7 @@ import {
   OverlayStrokeAlign,
   PathCommand,
   OverlayTimeline,
+  OverlayTimelineEasing,
   OverlayTimelineKeyframe,
   OverlayTimelineProperty,
   OverlayTimelineTrack,
@@ -148,6 +149,8 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "height",
   "opacity",
   "rotationDeg",
+  "scaleX",
+  "scaleY",
 ];
 
 const DEFAULT_TIMELINE_DURATION_MS = 5000;
@@ -199,6 +202,10 @@ function ensureTimeline(timeline?: OverlayTimeline): OverlayTimeline {
   return {
     durationMs: Math.max(100, timeline?.durationMs ?? DEFAULT_TIMELINE_DURATION_MS),
     tracks: [...(timeline?.tracks ?? [])],
+    playback: {
+      loop: timeline?.playback?.loop ?? false,
+      reverse: timeline?.playback?.reverse ?? false,
+    },
   };
 }
 
@@ -1187,16 +1194,29 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   useEffect(() => {
     if (!isTimelinePlaying) return;
 
+    const durationMs = Math.max(0, timeline.durationMs);
+    if (durationMs <= 0) {
+      setIsTimelinePlaying(false);
+      return;
+    }
+
+    const reverse = timeline.playback?.reverse === true;
+    const loop = timeline.playback?.loop === true;
     let frameId = 0;
-    const startOffset = timelinePlayheadMs;
+    const startOffset = reverse ? durationMs - timelinePlayheadMs : timelinePlayheadMs;
     timelinePlaybackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
       const startedAt = timelinePlaybackStartRef.current ?? now;
-      const next = Math.min(timeline.durationMs, now - startedAt);
+      const elapsed = Math.max(0, now - startedAt);
+      const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
+      const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
       setTimelinePlayheadMs(next);
 
-      if (next >= timeline.durationMs) {
+      const reachedEnd = !reverse && elapsed >= durationMs;
+      const reachedStart = reverse && elapsed >= durationMs;
+      if (!loop && (reachedEnd || reachedStart)) {
+        setTimelinePlayheadMs(reverse ? 0 : durationMs);
         setIsTimelinePlaying(false);
         timelinePlaybackStartRef.current = null;
       } else {
@@ -1209,7 +1229,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.cancelAnimationFrame(frameId);
       timelinePlaybackStartRef.current = null;
     };
-  }, [isTimelinePlaying, timeline.durationMs, timelinePlayheadMs]);
+  }, [isTimelinePlaying, timeline.durationMs, timeline.playback?.loop, timeline.playback?.reverse, timelinePlayheadMs]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -1346,6 +1366,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     return { playheadMs: timelinePlayheadMs, hasAnimatedProperties, properties };
   }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
+
+  const selectedTimelineKeyframe = useMemo(() => {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return null;
+    const track = timeline.tracks.find((candidate) => candidate.id === selectedTimelineTrackId);
+    if (!track) return null;
+    return track.keyframes.find((candidate) => candidate.id === selectedTimelineKeyframeId) ?? null;
+  }, [selectedTimelineKeyframeId, selectedTimelineTrackId, timeline.tracks]);
 
   const canGroup = selectedIds.length > 0;
   const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === 'group' || primarySelectedEl.type === 'frame' || primarySelectedEl.type === 'boolean');
@@ -1486,7 +1513,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         return prev;
       }
 
-      const value = Number((element as any)[property] ?? 0);
+      const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
+      const value = Number((element as any)[property] ?? fallbackValue);
       const keyframe: OverlayTimelineKeyframe = {
         id: genId("kf"),
         t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
@@ -1586,6 +1614,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setSelectedTimelineKeyframeId(createdId);
     }
     return createdId;
+  }
+
+  function updateSelectedTimelineKeyframeEasing(easing: OverlayTimelineEasing) {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return;
+
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== selectedTimelineTrackId) return track;
+        return {
+          ...track,
+          keyframes: track.keyframes.map((keyframe) =>
+            keyframe.id === selectedTimelineKeyframeId ? { ...keyframe, easing } : keyframe
+          ),
+        };
+      }),
+    }));
   }
 
   function deleteSelectedTimelineKeyframe() {
@@ -5807,13 +5852,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         selectedIds={selectedIds}
         playheadMs={timelinePlayheadMs}
         isPlaying={isTimelinePlaying}
+        selectedTrackId={selectedTimelineTrackId}
         selectedKeyframeId={selectedTimelineKeyframeId}
+        selectedKeyframeEasing={selectedTimelineKeyframe?.easing ?? "linear"}
         onSelectKeyframe={(trackId, keyframeId) => {
           setSelectedTimelineTrackId(trackId);
           setSelectedTimelineKeyframeId(keyframeId);
         }}
         onPlay={() => {
-          if (timelinePlayheadMs >= timeline.durationMs) {
+          if (timeline.playback?.reverse) {
+            if (timelinePlayheadMs <= 0) {
+              setTimelinePlayheadMs(timeline.durationMs);
+            }
+          } else if (timelinePlayheadMs >= timeline.durationMs) {
             setTimelinePlayheadMs(0);
           }
           setIsTimelinePlaying(true);
@@ -5821,7 +5872,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onPause={() => setIsTimelinePlaying(false)}
         onStop={() => {
           setIsTimelinePlaying(false);
-          setTimelinePlayheadMs(0);
+          setTimelinePlayheadMs(timeline.playback?.reverse ? timeline.durationMs : 0);
         }}
         onSetPlayhead={(timeMs) => {
           setIsTimelinePlaying(false);
@@ -5833,6 +5884,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
         }}
         onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
+        onSetPlayback={(patch) => {
+          setTimeline((currentTimeline) => ({
+            ...currentTimeline,
+            playback: {
+              ...(currentTimeline.playback ?? {}),
+              ...patch,
+            },
+          }));
+        }}
+        onSetSelectedKeyframeEasing={updateSelectedTimelineKeyframeEasing}
         onAddTrack={addTimelineTrack}
         onMoveKeyframe={moveTimelineKeyframe}
         onDuplicateKeyframe={duplicateTimelineKeyframe}
@@ -7328,6 +7389,16 @@ function InspectorPanel({
             <div className="flex items-center gap-2">
               <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} /></label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SX" timelineState={timelineState?.properties.scaleX} /></label>
+              <NumberField label="" value={typeof (element as any).scaleX === "number" ? (element as any).scaleX : 1} onChange={(v) => onChange({ scaleX: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SY" timelineState={timelineState?.properties.scaleY} /></label>
+              <NumberField label="" value={typeof (element as any).scaleY === "number" ? (element as any).scaleY : 1} onChange={(v) => onChange({ scaleY: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
             </div>
           </div>
 

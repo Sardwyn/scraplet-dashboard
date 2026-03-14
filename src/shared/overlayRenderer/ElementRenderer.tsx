@@ -913,8 +913,17 @@ export function ElementRenderer({
     Object.assign(baseStyle, getAnimationStyle(el.animation, effectiveAnimationPhase));
 
     const transformStyle: React.CSSProperties = {};
+    const scaleX = typeof (el as any).scaleX === "number" ? (el as any).scaleX : 1;
+    const scaleY = typeof (el as any).scaleY === "number" ? (el as any).scaleY : 1;
+    const transformParts: string[] = [];
     if (el.rotationDeg) {
-        transformStyle.transform = `rotate(${el.rotationDeg}deg)`;
+        transformParts.push(`rotate(${el.rotationDeg}deg)`);
+    }
+    if (scaleX !== 1 || scaleY !== 1) {
+        transformParts.push(`scale(${scaleX}, ${scaleY})`);
+    }
+    if (transformParts.length > 0) {
+        transformStyle.transform = transformParts.join(" ");
         transformStyle.transformOrigin = "center center";
     }
 

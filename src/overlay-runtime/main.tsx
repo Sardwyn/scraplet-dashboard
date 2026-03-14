@@ -47,6 +47,8 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "height",
   "opacity",
   "rotationDeg",
+  "scaleX",
+  "scaleY",
 ];
 
 function applyTimelineOverrides(
@@ -440,9 +442,10 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   useEffect(() => {
     const durationMs = overlay?.timeline?.durationMs ?? 0;
-    setPlayheadMs(0);
+    const reverse = overlay?.timeline?.playback?.reverse === true;
+    setPlayheadMs(reverse ? durationMs : 0);
     setIsTimelinePlaying(durationMs > 0);
-  }, [overlay?.timeline?.durationMs, overlay?.timeline?.tracks]);
+  }, [overlay?.timeline?.durationMs, overlay?.timeline?.tracks, overlay?.timeline?.playback?.reverse]);
 
   useEffect(() => {
     if (!isTimelinePlaying) return;
@@ -453,16 +456,21 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       return;
     }
 
+    const reverse = overlay?.timeline?.playback?.reverse === true;
+    const loop = overlay?.timeline?.playback?.loop === true;
     let frameId = 0;
-    const startOffset = playheadMs;
+    const startOffset = reverse ? durationMs - playheadMs : playheadMs;
     playbackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
       const startedAt = playbackStartRef.current ?? now;
-      const next = Math.min(durationMs, now - startedAt);
+      const elapsed = Math.max(0, now - startedAt);
+      const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
+      const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
       setPlayheadMs(next);
 
-      if (next >= durationMs) {
+      if (!loop && elapsed >= durationMs) {
+        setPlayheadMs(reverse ? 0 : durationMs);
         setIsTimelinePlaying(false);
         playbackStartRef.current = null;
       } else {
@@ -475,7 +483,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       window.cancelAnimationFrame(frameId);
       playbackStartRef.current = null;
     };
-  }, [isTimelinePlaying, overlay?.timeline?.durationMs, playheadMs]);
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs, overlay?.timeline?.playback?.loop, overlay?.timeline?.playback?.reverse, playheadMs]);
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {
