@@ -1120,10 +1120,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
 
   const canGroup = selectedIds.length > 0;
-  const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
+  const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === 'group' || primarySelectedEl.type === 'boolean');
   const selectedPathElements = useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
   const canBooleanSelection = selectedPathElements.length >= 2;
   const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl);
+  const canFlattenBoolean = primarySelectedEl?.type === "boolean";
+  const canConvertSelectionToPath = !!primarySelectedEl && (primarySelectedEl.type === "shape" || primarySelectedEl.type === "box");
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
   const selectionHasLocked = useMemo(() => selectedEls.some((e) => e.locked === true), [selectedEls]);
@@ -1614,6 +1616,54 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([id]);
   }
 
+  function createResolvedPathElement(
+    source: AnyEl,
+    options?: {
+      name?: string;
+      removeIds?: string[];
+      insertAtId?: string;
+    }
+  ) {
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return null;
+
+    const pathId = genId("path");
+    const pathEl: AnyEl = {
+      id: pathId,
+      type: "path",
+      name: options?.name ?? `${source.name || defaultElementLabel(source)} Path`,
+      x: Math.round(resolved.bounds.x),
+      y: Math.round(resolved.bounds.y),
+      width: Math.max(1, Math.round(resolved.bounds.width)),
+      height: Math.max(1, Math.round(resolved.bounds.height)),
+      visible: source.visible !== false,
+      locked: source.locked === true,
+      opacity: (source as any).opacity ?? 1,
+      rotationDeg: (source as any).rotationDeg ?? 0,
+      fillColor: (source as any).fillColor ?? "#ffffff",
+      fillOpacity: (source as any).fillOpacity ?? 1,
+      strokeColor: (source as any).strokeColor ?? "#000000",
+      strokeWidthPx: (source as any).strokeWidthPx ?? 2,
+      strokeOpacity: (source as any).strokeOpacity ?? 1,
+      strokeDash: Array.isArray((source as any).strokeDash) ? [...(source as any).strokeDash] : [],
+      path: resolved.path,
+    } as any;
+
+    const removeIds = new Set(options?.removeIds ?? []);
+    setConfig((prev) => {
+      const insertAtIdx = options?.insertAtId ? prev.elements.findIndex((candidate) => candidate.id === options.insertAtId) : -1;
+      const kept = prev.elements.filter((candidate) => !removeIds.has(candidate.id));
+      if (insertAtIdx < 0) {
+        return { ...prev, elements: [...kept, pathEl as any] };
+      }
+      const before = kept.slice(0, Math.min(insertAtIdx, kept.length));
+      const after = kept.slice(Math.min(insertAtIdx, kept.length));
+      return { ...prev, elements: [...before, pathEl as any, ...after] };
+    });
+    setSelectedIds([pathId]);
+    return pathId;
+  }
+
   function createOffsetPath(distance: number) {
     const source = primarySelectedEl;
     if (!isPathCapableElement(source)) return;
@@ -1626,6 +1676,25 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       width: result.bounds.width,
       height: result.bounds.height,
     }, distance < 0 ? "Inset Path" : "Outset Path");
+  }
+
+  function flattenBooleanSelected() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "boolean") return;
+    const booleanEl = primarySelectedEl as OverlayBooleanElement;
+    createResolvedPathElement(booleanEl as any, {
+      name: `${booleanEl.name || defaultElementLabel(booleanEl)} Path`,
+      removeIds: [booleanEl.id, ...(booleanEl.childIds ?? [])],
+      insertAtId: booleanEl.id,
+    });
+  }
+
+  function convertSelectedToPath() {
+    if (!primarySelectedEl || (primarySelectedEl.type !== "shape" && primarySelectedEl.type !== "box")) return;
+    createResolvedPathElement(primarySelectedEl as any, {
+      name: primarySelectedEl.name || defaultElementLabel(primarySelectedEl),
+      removeIds: [primarySelectedEl.id],
+      insertAtId: primarySelectedEl.id,
+    });
   }
 
   function commitPenDraft(closePath = false) {
@@ -2058,7 +2127,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function ungroupSelected() {
-    if (!primarySelectedEl || primarySelectedEl.type !== 'group') return;
+    if (!primarySelectedEl || (primarySelectedEl.type !== 'group' && primarySelectedEl.type !== "boolean")) return;
     const grp = primarySelectedEl as any;
     const children = grp.childIds || [];
 
@@ -4000,11 +4069,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               <button onClick={() => createBooleanFromSelection("intersect")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Intersect Selection">
                 <svg {...TOOL_ICON_PROPS}><path d="M7 12a5 5 0 1 1 10 0a5 5 0 1 1-10 0z" /></svg>
               </button>
+              <button onClick={() => createBooleanFromSelection("exclude")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Exclude Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M9 12a5 5 0 1 1 6 4.58" /><path d="M15 12a5 5 0 1 1-6-4.58" /></svg>
+              </button>
               <button onClick={() => createOffsetPath(-8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Inset Path">
                 <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="8" y="8" width="8" height="8" rx="1" /></svg>
               </button>
               <button onClick={() => createOffsetPath(8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Outset Path">
                 <svg {...TOOL_ICON_PROPS}><rect x="7" y="7" width="10" height="10" rx="1" /><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+              </button>
+              <button onClick={convertSelectedToPath} disabled={!canConvertSelectionToPath} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Convert Selection to Path">
+                <svg {...TOOL_ICON_PROPS}><path d="M5 6h8" /><path d="M5 10h12" /><path d="M5 14h9" /><path d="M16 5l3 3-6 6-4 1 1-4Z" /></svg>
+              </button>
+              <button onClick={flattenBooleanSelected} disabled={!canFlattenBoolean} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Flatten Boolean to Path">
+                <svg {...TOOL_ICON_PROPS}><path d="M5 6h14" /><path d="M5 10h14" /><path d="M5 14h14" /><path d="M5 18h14" /></svg>
               </button>
             </div>
           </div>
@@ -4016,6 +4094,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
+        {activeCreationTool === "pen" && (
+          <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+            <div className="min-w-0 flex-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">
+              Pen mode:
+              <span className="ml-1 text-slate-200">{penDraft?.anchors.length ? `${penDraft.anchors.length} point${penDraft.anchors.length === 1 ? "" : "s"}` : "click to start a path"}</span>
+            </div>
+            <button onClick={() => commitPenDraft(false)} disabled={!penDraft || penDraft.anchors.length < 2} className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}>
+              Finish
+            </button>
+            <button onClick={() => commitPenDraft(true)} disabled={!penDraft || penDraft.anchors.length < 2} className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}>
+              Close
+            </button>
+            <button onClick={() => { setPenDraft(null); setActiveCreationTool(null); }} className={`${uiClasses.buttonGhost} h-7`}>
+              Cancel
+            </button>
+          </div>
+        )}
         {/* Canvas Inner */}
         <div
           ref={canvasOuterRef}
@@ -4674,6 +4769,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
+            onReleaseBoolean={ungroupSelected}
+            onFlattenBoolean={flattenBooleanSelected}
+            onConvertToPath={convertSelectedToPath}
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
             timelineState={selectedTimelineState}
@@ -4782,6 +4880,9 @@ interface InspectorProps {
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  onReleaseBoolean?: () => void;
+  onFlattenBoolean?: () => void;
+  onConvertToPath?: () => void;
   previewVisible?: boolean;
   onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
   timelineState?: {
@@ -5116,7 +5217,7 @@ function InspectorPanel({
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask,
+  onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath,
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
@@ -5191,6 +5292,38 @@ function InspectorPanel({
               {element.type === "path"
                 ? `This layer renders from ${pathCommandCount ?? 0} local path commands.`
                 : `This container resolves ${((element as any).childIds?.length ?? 0)} child shapes into one cached path.`}
+            </div>
+            {element.type === "boolean" && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => onFlattenBoolean?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Flatten to Path
+                </button>
+                <button
+                  onClick={() => onReleaseBoolean?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Release Boolean
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {(element.type === "shape" || element.type === "box") && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Primitive geometry</div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              This layer is rendered through the shared path model and can be converted into an editable path element.
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => onConvertToPath?.()}
+                className={`${uiClasses.buttonGhost} h-7`}
+              >
+                Convert to Path
+              </button>
             </div>
           </div>
         )}
