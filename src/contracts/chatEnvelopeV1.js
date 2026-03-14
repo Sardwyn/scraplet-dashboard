@@ -6,4 +6,4 @@ export {
   deriveChatIdV1,
   normalizeChatEnvelopeV1,
   assertChatEnvelopeV1,
-} from "../../packages/contracts/chat.js";
+} from "@scraplet/contracts/chat";

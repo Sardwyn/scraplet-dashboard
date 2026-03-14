@@ -1,6 +1,6 @@
 import db from "../db.js";
 import { overlayGate } from "./overlayGate.js";
-import { OVERLAY_RUNTIME_PACKET_V1 } from "../packages/contracts/overlayRuntime.js";
+import { OVERLAY_RUNTIME_PACKET_V1 } from "@scraplet/contracts/overlayRuntime";
 
 const ENABLED = String(process.env.PRODUCER_OUTBOX_ENABLED || "true").toLowerCase() === "true";
 const POLL_MS = Number(process.env.PRODUCER_OUTBOX_POLL_MS || 250);

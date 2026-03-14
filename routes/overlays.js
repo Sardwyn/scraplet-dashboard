@@ -4,7 +4,7 @@ import db from "../db.js";
 import crypto from "crypto";
 import requireAuth from "../utils/requireAuth.js";
 import { overlayGate } from "../services/overlayGate.js";
-import { OVERLAY_RUNTIME_PACKET_V1 } from "../packages/contracts/overlayRuntime.js";
+import { OVERLAY_RUNTIME_PACKET_V1 } from "@scraplet/contracts/overlayRuntime";
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import db from "../../db.js";
 import { overlayGate } from "../../services/overlayGate.js";
 import crypto from "crypto";
-import { OVERLAY_RUNTIME_PACKET_V1 } from "../../packages/contracts/overlayRuntime.js";
+import { OVERLAY_RUNTIME_PACKET_V1 } from "@scraplet/contracts/overlayRuntime";
 
 // Allowed Event Types (Conservative V1 list)
 const ALLOWED_TYPES = new Set([

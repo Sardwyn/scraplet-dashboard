@@ -2,7 +2,7 @@ import Redis from "ioredis";
 import {
   OVERLAY_RUNTIME_PACKET_V1,
   assertOverlayRuntimePacketV1,
-} from "../packages/contracts/overlayRuntime.js";
+} from "@scraplet/contracts/overlayRuntime";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 

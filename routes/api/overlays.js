@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import {
   OVERLAY_RUNTIME_PACKET_V1,
   assertOverlayRuntimePacketV1,
-} from "../../packages/contracts/overlayRuntime.js";
+} from "@scraplet/contracts/overlayRuntime";
 
 const router = express.Router();
 

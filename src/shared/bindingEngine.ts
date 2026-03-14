@@ -1,6 +1,6 @@
 // src/shared/bindingEngine.ts
-import type { DynamicBindingV1, BindingFormatV1, SourceDefV1 } from "../../packages/contracts/bindings.js";
-import { SOURCE_CATALOG_V1 } from "../../packages/contracts/bindings.js";
+import type { DynamicBindingV1, BindingFormatV1, SourceDefV1 } from "@scraplet/contracts/bindings";
+import { SOURCE_CATALOG_V1 } from "@scraplet/contracts/bindings";
 
 type DynamicBinding = DynamicBindingV1;
 type BindingFormat = BindingFormatV1;
