@@ -4,7 +4,10 @@ import db from "../../db.js";
 import requireAuth from "../../utils/requireAuth.js";
 import { overlayGate } from '../../services/overlayGate.js';
 import crypto from 'crypto';
-import { OVERLAY_RUNTIME_PACKET_V1 } from "../../packages/contracts/overlayRuntime.js";
+import {
+  OVERLAY_RUNTIME_PACKET_V1,
+  assertOverlayRuntimePacketV1,
+} from "../../packages/contracts/overlayRuntime.js";
 
 const router = express.Router();
 
@@ -201,6 +204,47 @@ router.post("/overlays/:id/test-lower-third/hide", requireAuth, express.json(), 
     res.json({ ok: true });
   } catch (err) {
     console.error("[TestLowerThird] ERROR:", err);
+    next(err);
+  }
+});
+
+// POST /dashboard/api/runtime/packets
+// Publishes a versioned overlay runtime packet for an overlay the user owns.
+router.post("/runtime/packets", requireAuth, express.json(), async (req, res, next) => {
+  try {
+    const sessionUser = req.session.user;
+    const userId = String(sessionUser.id);
+    const packet = req.body;
+
+    assertOverlayRuntimePacketV1(packet, { allowLegacy: false });
+
+    const scope = packet?.header?.scope;
+    const overlayPublicId = String(scope?.overlayPublicId || "").trim();
+    const tenantId = String(scope?.tenantId || "").trim();
+
+    if (!overlayPublicId) {
+      return res.status(400).json({ error: "overlayPublicId required" });
+    }
+
+    if (tenantId !== userId) {
+      return res.status(403).json({ error: "tenant scope mismatch" });
+    }
+
+    const { rows } = await db.query(
+      `SELECT public_id, user_id
+       FROM overlays
+       WHERE public_id = $1 AND user_id = $2
+       LIMIT 1`,
+      [overlayPublicId, userId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "overlay not found for runtime packet target" });
+    }
+
+    await overlayGate.publish(userId, overlayPublicId, packet);
+    return res.json({ ok: true, packetId: packet.header.id });
+  } catch (err) {
     next(err);
   }
 });
