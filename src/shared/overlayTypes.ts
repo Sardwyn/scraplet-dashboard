@@ -51,6 +51,7 @@ export interface OverlayElementBase extends OverlayEditorFields {
     y: number;
     spread?: number;
   };
+  effects?: OverlayEffect[];
   clip?: {
     type: OverlayClipType;
     radius?: number;
@@ -207,6 +208,58 @@ export interface OverlayPatternFill extends OverlayFillBase {
 }
 
 export type OverlayFill = OverlaySolidFill | OverlayGradientFill | OverlayPatternFill;
+
+/* =========================
+   EFFECTS
+========================= */
+
+export type OverlayEffectType =
+  | "dropShadow"
+  | "innerShadow"
+  | "outerGlow"
+  | "innerGlow"
+  | "layerBlur"
+  | "noise";
+
+export interface OverlayEffectBase {
+  id?: string;
+  type: OverlayEffectType;
+  enabled?: boolean;
+  opacity?: number;
+}
+
+export interface OverlayShadowEffect extends OverlayEffectBase {
+  type: "dropShadow" | "innerShadow";
+  color: string;
+  blur: number;
+  x: number;
+  y: number;
+  spread?: number;
+}
+
+export interface OverlayGlowEffect extends OverlayEffectBase {
+  type: "outerGlow" | "innerGlow";
+  color: string;
+  blur: number;
+  spread?: number;
+}
+
+export interface OverlayLayerBlurEffect extends OverlayEffectBase {
+  type: "layerBlur";
+  blur: number;
+}
+
+export interface OverlayNoiseEffect extends OverlayEffectBase {
+  type: "noise";
+  amount: number;
+  scale?: number;
+}
+
+export type OverlayEffect =
+  | OverlayShadowEffect
+  | OverlayGlowEffect
+  | OverlayLayerBlurEffect
+  | OverlayNoiseEffect;
 
 /* =========================
    TIMELINE

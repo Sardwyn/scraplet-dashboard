@@ -6,7 +6,12 @@ import {
     OverlayBoxElement,
     OverlayCornerType,
     OverlayElement,
+    OverlayEffect,
+    OverlayGlowEffect,
+    OverlayLayerBlurEffect,
+    OverlayNoiseEffect,
     OverlayPathElement,
+    OverlayShadowEffect,
     OverlayStrokeAlign,
     OverlayStrokeSides,
     OverlayTextElement,
@@ -205,6 +210,274 @@ function fitToObjectFit(fit?: OverlayMediaFit) {
 function toCssBlendMode(blendMode?: OverlayBlendMode): React.CSSProperties["mixBlendMode"] {
     if (blendMode === "screen" || blendMode === "multiply") return blendMode;
     return "normal";
+}
+
+function parseColorWithAlpha(color: string | undefined, opacity = 1) {
+    if (!color) return { color: "#000000", opacity: Math.max(0, Math.min(1, opacity)) };
+    const value = color.trim();
+    if (value.startsWith("#")) {
+        if (value.length === 9) {
+            const alpha = parseInt(value.slice(7, 9), 16) / 255;
+            return { color: value.slice(0, 7), opacity: Math.max(0, Math.min(1, alpha * opacity)) };
+        }
+        if (value.length === 5) {
+            const alpha = parseInt(value.slice(4, 5).repeat(2), 16) / 255;
+            return { color: `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`, opacity: Math.max(0, Math.min(1, alpha * opacity)) };
+        }
+        return { color: value, opacity: Math.max(0, Math.min(1, opacity)) };
+    }
+
+    const match = value.match(/^rgba?\(([^)]+)\)$/i);
+    if (match) {
+        const parts = match[1].split(",").map((part) => part.trim());
+        const [r = "0", g = "0", b = "0", a = "1"] = parts;
+        return {
+            color: `rgb(${r}, ${g}, ${b})`,
+            opacity: Math.max(0, Math.min(1, Number(a) * opacity)),
+        };
+    }
+
+    return { color: value, opacity: Math.max(0, Math.min(1, opacity)) };
+}
+
+function cssColorWithOpacity(color: string | undefined, opacity = 1) {
+    const parsed = parseColorWithAlpha(color, opacity);
+    const rgbMatch = parsed.color.match(/^rgb\(([^)]+)\)$/i);
+    if (rgbMatch) {
+        return `rgba(${rgbMatch[1]}, ${parsed.opacity})`;
+    }
+    if (parsed.color.startsWith("#") && parsed.color.length === 7) {
+        const r = parseInt(parsed.color.slice(1, 3), 16);
+        const g = parseInt(parsed.color.slice(3, 5), 16);
+        const b = parseInt(parsed.color.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${parsed.opacity})`;
+    }
+    return parsed.color;
+}
+
+function getElementEffects(el: OverlayElement): OverlayEffect[] {
+    if (Array.isArray((el as any).effects) && (el as any).effects.length) {
+        return (el as any).effects.filter((effect: OverlayEffect) => effect?.enabled !== false);
+    }
+
+    if ((el as any).shadow?.enabled) {
+        const shadow = (el as any).shadow;
+        return [
+            {
+                type: "dropShadow",
+                color: shadow.color,
+                blur: shadow.blur,
+                x: shadow.x,
+                y: shadow.y,
+                spread: shadow.spread ?? 0,
+                opacity: 1,
+                enabled: true,
+            } as OverlayShadowEffect,
+        ];
+    }
+
+    return [];
+}
+
+function buildCssEffectStyle(effects: OverlayEffect[]): React.CSSProperties {
+    const active = effects.filter((effect) => effect.enabled !== false);
+    if (!active.length) return {};
+
+    const filterParts: string[] = [];
+    for (const effect of active) {
+        if (effect.type === "dropShadow") {
+            const shadow = effect as OverlayShadowEffect;
+            filterParts.push(`drop-shadow(${shadow.x}px ${shadow.y}px ${Math.max(0, shadow.blur)}px ${cssColorWithOpacity(shadow.color, shadow.opacity ?? 1)})`);
+        } else if (effect.type === "outerGlow") {
+            const glow = effect as OverlayGlowEffect;
+            filterParts.push(`drop-shadow(0 0 ${Math.max(0, glow.blur)}px ${cssColorWithOpacity(glow.color, glow.opacity ?? 1)})`);
+        } else if (effect.type === "layerBlur") {
+            filterParts.push(`blur(${Math.max(0, (effect as OverlayLayerBlurEffect).blur)}px)`);
+        }
+    }
+
+    return filterParts.length ? { filter: filterParts.join(" ") } : {};
+}
+
+function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string) {
+    const active = effects.filter((effect) => effect.enabled !== false);
+    if (!active.length) return null;
+
+    const nodes: React.ReactNode[] = [];
+    let currentResult = "SourceGraphic";
+
+    active.forEach((effect, index) => {
+        const resultId = `${filterId}-r${index}`;
+
+        if (effect.type === "layerBlur") {
+            nodes.push(
+                <feGaussianBlur
+                    key={`${resultId}-blur`}
+                    in={currentResult}
+                    stdDeviation={Math.max(0, (effect as OverlayLayerBlurEffect).blur) / 2}
+                    result={resultId}
+                />
+            );
+            currentResult = resultId;
+            return;
+        }
+
+        if (effect.type === "dropShadow" || effect.type === "outerGlow") {
+            const shadow =
+                effect.type === "dropShadow"
+                    ? (effect as OverlayShadowEffect)
+                    : ({
+                          color: (effect as OverlayGlowEffect).color,
+                          blur: (effect as OverlayGlowEffect).blur,
+                          x: 0,
+                          y: 0,
+                          spread: (effect as OverlayGlowEffect).spread ?? 0,
+                          opacity: effect.opacity ?? 1,
+                      } as OverlayShadowEffect);
+            const { color, opacity } = parseColorWithAlpha(shadow.color, shadow.opacity ?? 1);
+            const morphId = `${resultId}-morph`;
+            const shadowId = `${resultId}-shadow`;
+            const mergeId = `${resultId}-merge`;
+            const sourceIn = currentResult;
+            if ((shadow.spread ?? 0) > 0) {
+                nodes.push(
+                    <feMorphology
+                        key={`${morphId}-node`}
+                        in={sourceIn}
+                        operator="dilate"
+                        radius={(shadow.spread ?? 0) / 2}
+                        result={morphId}
+                    />
+                );
+            }
+            nodes.push(
+                <feDropShadow
+                    key={`${shadowId}-node`}
+                    in={(shadow.spread ?? 0) > 0 ? morphId : sourceIn}
+                    dx={shadow.x}
+                    dy={shadow.y}
+                    stdDeviation={Math.max(0, shadow.blur) / 2}
+                    floodColor={color}
+                    floodOpacity={opacity}
+                    result={shadowId}
+                />
+            );
+            nodes.push(
+                <feMerge key={`${mergeId}-node`} result={mergeId}>
+                    <feMergeNode in={shadowId} />
+                    <feMergeNode in={currentResult} />
+                </feMerge>
+            );
+            currentResult = mergeId;
+            return;
+        }
+
+        if (effect.type === "innerShadow" || effect.type === "innerGlow") {
+            const inner =
+                effect.type === "innerShadow"
+                    ? (effect as OverlayShadowEffect)
+                    : ({
+                          color: (effect as OverlayGlowEffect).color,
+                          blur: (effect as OverlayGlowEffect).blur,
+                          x: 0,
+                          y: 0,
+                          spread: (effect as OverlayGlowEffect).spread ?? 0,
+                          opacity: effect.opacity ?? 1,
+                      } as OverlayShadowEffect);
+            const { color, opacity } = parseColorWithAlpha(inner.color, inner.opacity ?? 1);
+            const alphaId = `${resultId}-alpha`;
+            const blurId = `${resultId}-blur`;
+            const offsetId = `${resultId}-offset`;
+            const fillId = `${resultId}-fill`;
+            const compId = `${resultId}-comp`;
+            const clipId = `${resultId}-clip`;
+            const mergeId = `${resultId}-merge`;
+            if ((inner.spread ?? 0) > 0) {
+                nodes.push(
+                    <feMorphology
+                        key={`${alphaId}-morph`}
+                        in="SourceAlpha"
+                        operator="dilate"
+                        radius={(inner.spread ?? 0) / 2}
+                        result={alphaId}
+                    />
+                );
+            }
+            nodes.push(
+                <feGaussianBlur
+                    key={`${blurId}-node`}
+                    in={(inner.spread ?? 0) > 0 ? alphaId : "SourceAlpha"}
+                    stdDeviation={Math.max(0, inner.blur) / 2}
+                    result={blurId}
+                />
+            );
+            nodes.push(
+                <feOffset key={`${offsetId}-node`} in={blurId} dx={inner.x} dy={inner.y} result={offsetId} />
+            );
+            nodes.push(
+                <feFlood key={`${fillId}-node`} floodColor={color} floodOpacity={opacity} result={fillId} />
+            );
+            nodes.push(
+                <feComposite key={`${compId}-node`} in={fillId} in2={offsetId} operator="in" result={compId} />
+            );
+            nodes.push(
+                <feComposite key={`${clipId}-node`} in={compId} in2="SourceAlpha" operator="in" result={clipId} />
+            );
+            nodes.push(
+                <feMerge key={`${mergeId}-node`} result={mergeId}>
+                    <feMergeNode in={currentResult} />
+                    <feMergeNode in={clipId} />
+                </feMerge>
+            );
+            currentResult = mergeId;
+            return;
+        }
+
+        if (effect.type === "noise") {
+            const noise = effect as OverlayNoiseEffect;
+            const turbulenceId = `${resultId}-turbulence`;
+            const monoId = `${resultId}-mono`;
+            const alphaId = `${resultId}-alpha`;
+            const clipId = `${resultId}-clip`;
+            nodes.push(
+                <feTurbulence
+                    key={`${turbulenceId}-node`}
+                    type="fractalNoise"
+                    baseFrequency={Math.max(0.002, 1 / Math.max(1, noise.scale ?? 24))}
+                    numOctaves={2}
+                    seed={index + 1}
+                    result={turbulenceId}
+                />
+            );
+            nodes.push(
+                <feColorMatrix
+                    key={`${monoId}-node`}
+                    in={turbulenceId}
+                    type="saturate"
+                    values="0"
+                    result={monoId}
+                />
+            );
+            nodes.push(
+                <feComponentTransfer key={`${alphaId}-node`} in={monoId} result={alphaId}>
+                    <feFuncA type="linear" slope={Math.max(0, Math.min(1, (noise.amount ?? 0.18) * (noise.opacity ?? 1)))} />
+                </feComponentTransfer>
+            );
+            nodes.push(
+                <feComposite key={`${clipId}-node`} in={alphaId} in2="SourceAlpha" operator="in" result={clipId} />
+            );
+            nodes.push(
+                <feBlend key={`${resultId}-blend`} in={currentResult} in2={clipId} mode="overlay" result={resultId} />
+            );
+            currentResult = resultId;
+        }
+    });
+
+    return (
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
+            {nodes}
+        </filter>
+    );
 }
 
 function resolveText(text: string, data?: Record<string, string>) {
@@ -644,17 +917,7 @@ export function ElementRenderer({
         transformStyle.transformOrigin = "center center";
     }
 
-    const effectStyle: React.CSSProperties = {};
-    const useFilterShadow = el.type === "shape" || el.type === "text";
-
-    if (el.shadow?.enabled) {
-        const { color, blur, x, y, spread } = el.shadow;
-        if (useFilterShadow) {
-            effectStyle.filter = `drop-shadow(${x}px ${y}px ${blur}px ${color})`;
-        } else {
-            effectStyle.boxShadow = `${x}px ${y}px ${blur}px ${spread ?? 0}px ${color}`;
-        }
-    }
+    const effects = getElementEffects(el);
 
     const clipStyle: React.CSSProperties = {};
     if (el.clip && el.clip.type !== "none") {
@@ -673,7 +936,6 @@ export function ElementRenderer({
         height: "100%",
         opacity: typeof el.opacity === "number" ? el.opacity : 1,
         ...transformStyle,
-        ...effectStyle,
         ...clipStyle,
         transition: "inherit",
     };
@@ -930,6 +1192,7 @@ export function ElementRenderer({
         const pathD = svgPathFromCommands(boxPath ?? { commands: [] });
         const fills = legacyFillStack(box);
         const fillScopeId = `box-fill-${patternScopeId}-${box.id}`;
+        const effectFilterId = sanitizeSvgId(`box-effect-${patternScopeId}-${box.id}`);
         const strokeWidth = box.strokeWidthPx ?? 0;
         const strokeOpacity = typeof box.strokeOpacity === "number" ? box.strokeOpacity : 1;
         const strokeAlign = box.strokeAlign ?? "center";
@@ -938,33 +1201,38 @@ export function ElementRenderer({
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative", overflow: "visible" }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
-                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
-                        {pathD && renderFillLayers(pathD, fills, fillScopeId)}
-                        {box.strokeSides && strokeWidth > 0
-                            ? renderRectPerSideStroke(
-                                  w,
-                                  h,
-                                  strokeWidth,
-                                  box.strokeColor ?? "rgba(255,255,255,0.9)",
-                                  strokeOpacity,
-                                  box.strokeDash,
-                                  strokeAlign,
-                                  box.strokeSides
-                              )
-                            : renderAlignedPathStroke(
-                                  pathD,
-                                  `box-${patternScopeId}-${box.id}`,
-                                  {
-                                      stroke: box.strokeColor ?? "rgba(255,255,255,0.9)",
+                        <defs>
+                            {renderFillDefs(fills, fillScopeId, w, h)}
+                            {renderSvgEffectFilter(effects, effectFilterId)}
+                        </defs>
+                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                            {pathD && renderFillLayers(pathD, fills, fillScopeId)}
+                            {box.strokeSides && strokeWidth > 0
+                                ? renderRectPerSideStroke(
+                                      w,
+                                      h,
                                       strokeWidth,
+                                      box.strokeColor ?? "rgba(255,255,255,0.9)",
                                       strokeOpacity,
-                                      dash: box.strokeDash,
-                                      strokeLineCap: box.strokeLineCap,
-                                      strokeLineJoin: box.strokeLineJoin,
+                                      box.strokeDash,
                                       strokeAlign,
-                                  },
-                                  true
-                              )}
+                                      box.strokeSides
+                                  )
+                                : renderAlignedPathStroke(
+                                      pathD,
+                                      `box-${patternScopeId}-${box.id}`,
+                                      {
+                                          stroke: box.strokeColor ?? "rgba(255,255,255,0.9)",
+                                          strokeWidth,
+                                          strokeOpacity,
+                                          dash: box.strokeDash,
+                                          strokeLineCap: box.strokeLineCap,
+                                          strokeLineJoin: box.strokeLineJoin,
+                                          strokeAlign,
+                                      },
+                                      true
+                                  )}
+                        </g>
                     </svg>
                 </div>
             </div>
@@ -980,27 +1248,33 @@ export function ElementRenderer({
         const pathD = svgPathFromCommands(scaledPath ?? pathEl.path);
         const fills = legacyFillStack(pathEl);
         const fillScopeId = `path-fill-${patternScopeId}-${pathEl.id}`;
+        const effectFilterId = sanitizeSvgId(`path-effect-${patternScopeId}-${pathEl.id}`);
 
         return (
             <div style={baseStyle}>
                 <div style={innerStyle}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
-                        {renderFillLayers(pathD, fills, fillScopeId)}
-                        {renderAlignedPathStroke(
-                            pathD,
-                            `path-${patternScopeId}-${pathEl.id}`,
-                            {
-                                stroke: pathEl.strokeColor ?? "rgba(56,189,248,0.95)",
-                                strokeWidth: pathEl.strokeWidthPx ?? 2,
-                                strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
-                                dash: pathEl.strokeDash,
-                                strokeLineCap: pathEl.strokeLineCap,
-                                strokeLineJoin: pathEl.strokeLineJoin,
-                                strokeAlign: pathEl.strokeAlign,
-                            },
-                            Boolean(scaledPath && isClosedPath(scaledPath))
-                        )}
+                        <defs>
+                            {renderFillDefs(fills, fillScopeId, w, h)}
+                            {renderSvgEffectFilter(effects, effectFilterId)}
+                        </defs>
+                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                            {renderFillLayers(pathD, fills, fillScopeId)}
+                            {renderAlignedPathStroke(
+                                pathD,
+                                `path-${patternScopeId}-${pathEl.id}`,
+                                {
+                                    stroke: pathEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                                    strokeWidth: pathEl.strokeWidthPx ?? 2,
+                                    strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
+                                    dash: pathEl.strokeDash,
+                                    strokeLineCap: pathEl.strokeLineCap,
+                                    strokeLineJoin: pathEl.strokeLineJoin,
+                                    strokeAlign: pathEl.strokeAlign,
+                                },
+                                Boolean(scaledPath && isClosedPath(scaledPath))
+                            )}
+                        </g>
                     </svg>
                 </div>
             </div>
@@ -1010,6 +1284,7 @@ export function ElementRenderer({
     // TEXT
     if (el.type === "text") {
         const textEl = el as OverlayTextElement;
+        const cssEffectStyle = buildCssEffectStyle(effects);
         let justify: React.CSSProperties["justifyContent"] = "flex-start";
         if (textEl.textAlign === "center") justify = "center";
         if (textEl.textAlign === "right") justify = "flex-end";
@@ -1024,6 +1299,7 @@ export function ElementRenderer({
                 <div
                     style={{
                         ...innerStyle,
+                        ...cssEffectStyle,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: justify,
@@ -1061,27 +1337,33 @@ export function ElementRenderer({
         const pathD = svgPathFromCommands(resolved.path);
         const fills = legacyFillStack(booleanEl);
         const fillScopeId = `boolean-fill-${patternScopeId}-${booleanEl.id}`;
+        const effectFilterId = sanitizeSvgId(`boolean-effect-${patternScopeId}-${booleanEl.id}`);
 
         return (
             <div style={baseStyle}>
                 <div style={innerStyle}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
-                        {renderFillLayers(pathD, fills, fillScopeId)}
-                        {renderAlignedPathStroke(
-                            pathD,
-                            `boolean-${patternScopeId}-${booleanEl.id}`,
-                            {
-                                stroke: booleanEl.strokeColor ?? "rgba(56,189,248,0.95)",
-                                strokeWidth: booleanEl.strokeWidthPx ?? 2,
-                                strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
-                                dash: booleanEl.strokeDash,
-                                strokeLineCap: booleanEl.strokeLineCap,
-                                strokeLineJoin: booleanEl.strokeLineJoin,
-                                strokeAlign: booleanEl.strokeAlign,
-                            },
-                            true
-                        )}
+                        <defs>
+                            {renderFillDefs(fills, fillScopeId, w, h)}
+                            {renderSvgEffectFilter(effects, effectFilterId)}
+                        </defs>
+                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                            {renderFillLayers(pathD, fills, fillScopeId)}
+                            {renderAlignedPathStroke(
+                                pathD,
+                                `boolean-${patternScopeId}-${booleanEl.id}`,
+                                {
+                                    stroke: booleanEl.strokeColor ?? "rgba(56,189,248,0.95)",
+                                    strokeWidth: booleanEl.strokeWidthPx ?? 2,
+                                    strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
+                                    dash: booleanEl.strokeDash,
+                                    strokeLineCap: booleanEl.strokeLineCap,
+                                    strokeLineJoin: booleanEl.strokeLineJoin,
+                                    strokeAlign: booleanEl.strokeAlign,
+                                },
+                                true
+                            )}
+                        </g>
                     </svg>
                 </div>
             </div>
@@ -1108,6 +1390,7 @@ export function ElementRenderer({
             Array.isArray(s.strokeDash) && s.strokeDash.length ? s.strokeDash : undefined;
         const fills = s.shape === "line" ? legacyFillStack({ ...s, fills: [] } as any) : legacyFillStack(s);
         const fillScopeId = `shape-fill-${patternScopeId}-${s.id}`;
+        const effectFilterId = sanitizeSvgId(`shape-effect-${patternScopeId}-${s.id}`);
 
         const strokeProps = {
             fill: "none",
@@ -1126,34 +1409,39 @@ export function ElementRenderer({
                         viewBox={`0 0 ${w} ${h}`}
                         preserveAspectRatio="none"
                     >
-                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
-                        {pathD && renderFillLayers(pathD, fills, fillScopeId)}
+                        <defs>
+                            {renderFillDefs(fills, fillScopeId, w, h)}
+                            {renderSvgEffectFilter(effects, effectFilterId)}
+                        </defs>
+                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                            {pathD && renderFillLayers(pathD, fills, fillScopeId)}
 
-                        {s.shape === "rect" && s.strokeSides && strokeWidth > 0
-                            ? renderRectPerSideStroke(
-                                  w,
-                                  h,
-                                  strokeWidth,
-                                  stroke,
-                                  strokeOpacity,
-                                  dash,
-                                  s.strokeAlign ?? "center",
-                                  s.strokeSides
-                              )
-                            : renderAlignedPathStroke(
-                                  pathD,
-                                  `shape-${patternScopeId}-${s.id}`,
-                                  {
-                                      stroke,
+                            {s.shape === "rect" && s.strokeSides && strokeWidth > 0
+                                ? renderRectPerSideStroke(
+                                      w,
+                                      h,
                                       strokeWidth,
+                                      stroke,
                                       strokeOpacity,
                                       dash,
-                                      strokeLineCap: s.strokeLineCap,
-                                      strokeLineJoin: s.strokeLineJoin,
-                                      strokeAlign: s.strokeAlign,
-                                  },
-                                  Boolean(shapePath && isClosedPath(shapePath))
-                              )}
+                                      s.strokeAlign ?? "center",
+                                      s.strokeSides
+                                  )
+                                : renderAlignedPathStroke(
+                                      pathD,
+                                      `shape-${patternScopeId}-${s.id}`,
+                                      {
+                                          stroke,
+                                          strokeWidth,
+                                          strokeOpacity,
+                                          dash,
+                                          strokeLineCap: s.strokeLineCap,
+                                          strokeLineJoin: s.strokeLineJoin,
+                                          strokeAlign: s.strokeAlign,
+                                      },
+                                      Boolean(shapePath && isClosedPath(shapePath))
+                                  )}
+                        </g>
                     </svg>
                 </div>
             </div>
@@ -1163,6 +1451,7 @@ export function ElementRenderer({
     // IMAGE
     if (el.type === "image") {
         const img = el as OverlayImageElement;
+        const cssEffectStyle = buildCssEffectStyle(effects);
         const br = img.borderRadiusPx ?? (img as any).borderRadius ?? 0;
         const effectiveBr =
             el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number"
@@ -1175,7 +1464,7 @@ export function ElementRenderer({
 
         return (
             <div style={imageStyle}>
-                <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
+                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
                         <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
@@ -1187,6 +1476,7 @@ export function ElementRenderer({
     // VIDEO
     if (el.type === "video") {
         const vid = el as OverlayVideoElement;
+        const cssEffectStyle = buildCssEffectStyle(effects);
         const br = vid.borderRadiusPx ?? (vid as any).borderRadius ?? 0;
         const effectiveBr =
             el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number"
@@ -1199,7 +1489,7 @@ export function ElementRenderer({
 
         return (
             <div style={videoStyle}>
-                <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
+                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
                         <KeyedMedia
                             kind="video"

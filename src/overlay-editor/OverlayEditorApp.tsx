@@ -12,6 +12,11 @@ import {
   OverlayPathElement,
   OverlayFill,
   OverlayFillStop,
+  OverlayEffect,
+  OverlayGlowEffect,
+  OverlayLayerBlurEffect,
+  OverlayNoiseEffect,
+  OverlayShadowEffect,
   OverlayPatternFill,
   OverlayPatternFit,
   OverlayStrokeAlign,
@@ -467,6 +472,39 @@ function getScaledTextPatch(
       y: scaleNumericValue(shadow.y, textScale) ?? shadow.y,
       spread: scaleNumericValue(shadow.spread, textScale) ?? shadow.spread,
     } as any;
+  }
+
+  if (Array.isArray((el as any).effects)) {
+    patch.effects = (el as any).effects.map((effect: OverlayEffect) => {
+      if (effect.type === "dropShadow" || effect.type === "innerShadow") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+          x: scaleNumericValue(effect.x, textScale) ?? effect.x,
+          y: scaleNumericValue(effect.y, textScale) ?? effect.y,
+          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread,
+        } as OverlayShadowEffect;
+      }
+      if (effect.type === "outerGlow" || effect.type === "innerGlow") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread,
+        } as OverlayGlowEffect;
+      }
+      if (effect.type === "layerBlur") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+        } as OverlayLayerBlurEffect;
+      }
+      return effect.type === "noise"
+        ? ({
+            ...effect,
+            scale: scaleNumericValue(effect.scale, textScale) ?? effect.scale,
+          } as OverlayNoiseEffect)
+        : effect;
+    }) as any;
   }
 
   return patch;
@@ -5780,6 +5818,22 @@ function TrashIcon() {
   );
 }
 
+function ChevronUpIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="m6 14 6-6 6 6" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="m6 10 6 6 6-6" />
+    </svg>
+  );
+}
+
 const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string }> = [
   { value: "none", label: "None" },
   { value: "fade", label: "Fade" },
@@ -5813,6 +5867,15 @@ const CORNER_TYPE_OPTIONS: Array<{ value: OverlayCornerType; label: string }> = 
   { value: "round", label: "Round" },
   { value: "cut", label: "Cut" },
   { value: "angle", label: "Angle" },
+];
+
+const EFFECT_TYPE_OPTIONS: Array<{ value: OverlayEffect["type"]; label: string }> = [
+  { value: "dropShadow", label: "Drop Shadow" },
+  { value: "innerShadow", label: "Inner Shadow" },
+  { value: "outerGlow", label: "Outer Glow" },
+  { value: "innerGlow", label: "Inner Glow" },
+  { value: "layerBlur", label: "Layer Blur" },
+  { value: "noise", label: "Noise / Grain" },
 ];
 
 function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
@@ -5862,6 +5925,91 @@ function getElementFills(element: AnyEl): OverlayFill[] {
   if ((element as any).fillColor) fills.push({ type: "solid", color: (element as any).fillColor, opacity: (element as any).fillOpacity ?? 1 });
   if ((element as any).pattern?.src) fills.push(ensurePatternFill((element as any).pattern));
   return fills.length ? fills : [{ type: "solid", color: "#ffffff", opacity: 1 }];
+}
+
+function defaultEffect(type: OverlayEffect["type"] = "dropShadow"): OverlayEffect {
+  switch (type) {
+    case "innerShadow":
+      return { type, color: "rgba(15,23,42,0.7)", blur: 12, x: 0, y: 4, spread: 0, opacity: 1 };
+    case "outerGlow":
+      return { type, color: "#60a5fa", blur: 18, spread: 2, opacity: 0.9 };
+    case "innerGlow":
+      return { type, color: "#60a5fa", blur: 14, spread: 1, opacity: 0.65 };
+    case "layerBlur":
+      return { type, blur: 8, opacity: 1 };
+    case "noise":
+      return { type, amount: 0.18, scale: 24, opacity: 0.18 };
+    case "dropShadow":
+    default:
+      return { type: "dropShadow", color: "rgba(15,23,42,0.55)", blur: 18, x: 0, y: 8, spread: 0, opacity: 1 };
+  }
+}
+
+function ensureEffect(effect?: OverlayEffect): OverlayEffect {
+  if (!effect) return defaultEffect();
+  const base = { ...defaultEffect(effect.type), ...effect };
+  if (base.type === "dropShadow" || base.type === "innerShadow") {
+    return {
+      type: base.type,
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      color: (base as OverlayShadowEffect).color,
+      blur: (base as OverlayShadowEffect).blur,
+      x: (base as OverlayShadowEffect).x,
+      y: (base as OverlayShadowEffect).y,
+      spread: (base as OverlayShadowEffect).spread ?? 0,
+    };
+  }
+  if (base.type === "outerGlow" || base.type === "innerGlow") {
+    return {
+      type: base.type,
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      color: (base as OverlayGlowEffect).color,
+      blur: (base as OverlayGlowEffect).blur,
+      spread: (base as OverlayGlowEffect).spread ?? 0,
+    };
+  }
+  if (base.type === "layerBlur") {
+    return {
+      type: "layerBlur",
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      blur: (base as OverlayLayerBlurEffect).blur,
+    };
+  }
+  return {
+    type: "noise",
+    id: base.id,
+    enabled: base.enabled ?? true,
+    opacity: base.opacity ?? 1,
+    amount: (base as OverlayNoiseEffect).amount,
+    scale: (base as OverlayNoiseEffect).scale ?? 24,
+  };
+}
+
+function getElementEffects(element: AnyEl): OverlayEffect[] {
+  if (Array.isArray((element as any).effects) && (element as any).effects.length) {
+    return (element as any).effects.map((effect: OverlayEffect) => ensureEffect(effect));
+  }
+  const shadow = (element as any).shadow;
+  if (shadow?.enabled) {
+    return [
+      ensureEffect({
+        type: "dropShadow",
+        color: shadow.color,
+        blur: shadow.blur,
+        x: shadow.x,
+        y: shadow.y,
+        spread: shadow.spread ?? 0,
+        opacity: 1,
+      }),
+    ];
+  }
+  return [];
 }
 
 function ensureCornerRadii(radius: number, cornerRadii?: OverlayCornerRadii): OverlayCornerRadii {
@@ -6172,6 +6320,332 @@ function FillStackControls({
         onClick={() => setFills([...fills, { type: "solid", color: "#ffffff", opacity: 1 }])}
       >
         Add Fill
+      </button>
+    </div>
+  );
+}
+
+function EffectsStackControls({
+  element,
+  onChange,
+}: {
+  element: AnyEl;
+  onChange: (patch: Partial<AnyEl>) => void;
+}) {
+  const effects = getElementEffects(element);
+
+  const setEffects = (nextEffects: OverlayEffect[]) => {
+    const normalized = nextEffects.map((effect) => ensureEffect(effect));
+    const legacyShadow = normalized.find((effect) => effect.type === "dropShadow") as OverlayShadowEffect | undefined;
+    onChange({
+      effects: normalized,
+      shadow: legacyShadow
+        ? {
+            enabled: true,
+            color: legacyShadow.color,
+            blur: legacyShadow.blur,
+            x: legacyShadow.x,
+            y: legacyShadow.y,
+            spread: legacyShadow.spread ?? 0,
+          }
+        : {
+            enabled: false,
+            color: "#000000",
+            blur: 10,
+            x: 0,
+            y: 4,
+            spread: 0,
+          },
+    } as any);
+  };
+
+  const moveEffect = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= effects.length) return;
+    const next = [...effects];
+    [next[index], next[target]] = [next[target], next[index]];
+    setEffects(next);
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      {effects.length === 0 && (
+        <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+          No effects. Add shadows, glows, blur, or grain.
+        </div>
+      )}
+
+      {effects.map((effect, index) => {
+        const nextEffect = ensureEffect(effect);
+        return (
+          <div key={nextEffect.id ?? `${nextEffect.type}-${index}`} className="space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3">
+            <div className="flex items-center gap-2">
+              <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Effect</label>
+              <select
+                className={`flex-1 ${uiClasses.field}`}
+                value={nextEffect.type}
+                onChange={(e) =>
+                  setEffects(
+                    effects.map((candidate, candidateIndex) =>
+                      candidateIndex === index ? defaultEffect(e.target.value as OverlayEffect["type"]) : candidate
+                    )
+                  )
+                }
+              >
+                {EFFECT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => moveEffect(index, -1)}
+                disabled={index === 0}
+                title="Move effect up"
+              >
+                <ChevronUpIcon />
+              </button>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => moveEffect(index, 1)}
+                disabled={index === effects.length - 1}
+                title="Move effect down"
+              >
+                <ChevronDownIcon />
+              </button>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => setEffects(effects.filter((_, candidateIndex) => candidateIndex !== index))}
+                title="Remove effect"
+              >
+                <TrashIcon />
+              </button>
+            </div>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                checked={nextEffect.enabled !== false}
+                onChange={(e) =>
+                  setEffects(
+                    effects.map((candidate, candidateIndex) =>
+                      candidateIndex === index ? { ...nextEffect, enabled: e.target.checked } : candidate
+                    )
+                  )
+                }
+              />
+              <span className={uiClasses.fieldLabel}>Enabled</span>
+            </label>
+
+            {(nextEffect.type === "dropShadow" ||
+              nextEffect.type === "innerShadow" ||
+              nextEffect.type === "outerGlow" ||
+              nextEffect.type === "innerGlow") && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Color</label>
+                <div className="flex flex-1 gap-2">
+                  <ColorSwatch
+                    value={(nextEffect as OverlayShadowEffect | OverlayGlowEffect).color}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, color: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                  />
+                  <input
+                    type="text"
+                    className={`flex-1 font-mono ${uiClasses.field}`}
+                    value={(nextEffect as OverlayShadowEffect | OverlayGlowEffect).color}
+                    onChange={(e) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, color: e.target.value } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {(nextEffect.type === "dropShadow" || nextEffect.type === "innerShadow") && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).blur}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Spread</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).spread ?? 0}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, spread: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Off X</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).x}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, x: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Off Y</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).y}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, y: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(nextEffect.type === "outerGlow" || nextEffect.type === "innerGlow") && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayGlowEffect).blur}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Spread</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayGlowEffect).spread ?? 0}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, spread: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {nextEffect.type === "layerBlur" && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                <NumberField
+                  label=""
+                  value={(nextEffect as OverlayLayerBlurEffect).blur}
+                  onChange={(v) =>
+                    setEffects(
+                      effects.map((candidate, candidateIndex) =>
+                        candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                      )
+                    )
+                  }
+                  noLabel
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            {nextEffect.type === "noise" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Amt</label>
+                  <NumberField
+                    label=""
+                    value={Math.round(((nextEffect as OverlayNoiseEffect).amount ?? 0.18) * 100)}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, amount: Math.max(0, Math.min(1, v / 100)) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Scale</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayNoiseEffect).scale ?? 24}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, scale: Math.max(1, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => setEffects([...effects, defaultEffect("dropShadow")])}
+      >
+        Add Effect
       </button>
     </div>
   );
@@ -7559,42 +8033,7 @@ function InspectorPanel({
       {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
         <div className="space-y-4">
-          {/* Shadow / Glow */}
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer mb-2">
-              <input type="checkbox" checked={(element as any).shadow?.enabled === true}
-                onChange={(e) => {
-                  const s = (element as any).shadow || { color: "#000000", blur: 10, x: 0, y: 4 };
-                  onChange({ shadow: { ...s, enabled: e.target.checked } } as any);
-                }}
-                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
-              />
-              <span className="text-[12px] leading-[1.4] font-medium text-slate-300">Shadow / Glow</span>
-            </label>
-            {(element as any).shadow?.enabled && (
-              <div className="ml-1 space-y-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
-                  <div className="flex-1 flex gap-2">
-                    <ColorSwatch value={(element as any).shadow?.color} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, color: v } } as any)} />
-                    <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Blur</label>
-                  <NumberField label="" value={(element as any).shadow?.blur} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, blur: v } } as any)} noLabel className="flex-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset X</label>
-                  <NumberField label="" value={(element as any).shadow?.x} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, x: v } } as any)} noLabel className="flex-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset Y</label>
-                  <NumberField label="" value={(element as any).shadow?.y} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, y: v } } as any)} noLabel className="flex-1" />
-                </div>
-              </div>
-            )}
-          </div>
+          <EffectsStackControls element={element} onChange={onChange} />
 
           <div className="h-px bg-[rgba(255,255,255,0.06)]" />
 
