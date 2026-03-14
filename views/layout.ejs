@@ -17,6 +17,10 @@
   <!-- Scraplet pulp theme -->
   <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=1">
 
+  <% if (tabView === 'tabs/overlays') { %>
+    <link rel="stylesheet" href="/dashboard/css/overlay-library.css?v=1" />
+  <% } %>
+
   <% if (tabView === 'studio/playground') { %>
     <link rel="stylesheet" href="/dashboard/css/studio-playground.css" />
   <% } %>
