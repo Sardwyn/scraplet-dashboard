@@ -5006,6 +5006,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const forcePlainWrapper =
                   (renderedEl.type === "image" || renderedEl.type === "video") &&
                   ((renderedEl as any).blendMode ?? "normal") !== "normal";
+                const suppressLayerPointerEvents = activeCreationTool === "pen";
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
@@ -5244,7 +5245,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     <div
                       key={el.id}
                       className={(isLocked ? "cursor-not-allowed " : showTransformOverlay ? "cursor-move " : "") + "absolute"}
-                      style={{ left: x, top: y, width: w, height: h, ...(isSelected ? selectionStyle : {}) }}
+                      style={{
+                        left: x,
+                        top: y,
+                        width: w,
+                        height: h,
+                        pointerEvents: suppressLayerPointerEvents ? "none" : undefined,
+                        ...(isSelected ? selectionStyle : {}),
+                      }}
                       onMouseDown={(e) => {
                         if (spaceDown || (e as any).button === 1) return;
                         if (marquee.active || isLocked) return;
@@ -5332,7 +5340,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       (isLocked ? "cursor-not-allowed " : "cursor-move ") +
                       (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
                     }
-                    style={isSelected ? selectionStyle : undefined}
+                    style={{
+                      ...(isSelected ? selectionStyle : {}),
+                      pointerEvents: suppressLayerPointerEvents ? "none" : undefined,
+                    }}
                   >
                     {contentNode}
                   </Rnd>
