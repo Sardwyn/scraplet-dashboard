@@ -704,7 +704,8 @@ export function ElementRenderer({
         const pathEl = el as OverlayPathElement;
         const w = Math.max(1, pathEl.width ?? 1);
         const h = Math.max(1, pathEl.height ?? 1);
-        const pathD = svgPathFromCommands(pathEl.path);
+        const scaledPath = elementToOverlayPath(pathEl);
+        const pathD = svgPathFromCommands(scaledPath ?? pathEl.path);
 
         return (
             <div style={baseStyle}>
