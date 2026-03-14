@@ -139,8 +139,45 @@ export function shapeElementToPath(shape: OverlayShapeElement): OverlayPath {
   }
 }
 
+function scalePathToBounds(path: OverlayPath, width: number, height: number): OverlayPath {
+  const bounds = getPathBounds(path);
+  if (bounds.width === 0 && bounds.height === 0) {
+    return path;
+  }
+
+  const scaleX = bounds.width > 0 ? width / bounds.width : 1;
+  const scaleY = bounds.height > 0 ? height / bounds.height : 1;
+  if (scaleX === 1 && scaleY === 1 && bounds.x === 0 && bounds.y === 0) {
+    return path;
+  }
+
+  const commands = path.commands.map((command) => {
+    if (command.type === "close") return command;
+    if (command.type === "curve") {
+      return {
+        ...command,
+        x1: (command.x1 - bounds.x) * scaleX,
+        y1: (command.y1 - bounds.y) * scaleY,
+        x2: (command.x2 - bounds.x) * scaleX,
+        y2: (command.y2 - bounds.y) * scaleY,
+        x: (command.x - bounds.x) * scaleX,
+        y: (command.y - bounds.y) * scaleY,
+      };
+    }
+    return {
+      ...command,
+      x: (command.x - bounds.x) * scaleX,
+      y: (command.y - bounds.y) * scaleY,
+    };
+  });
+  return { commands };
+}
+
 export function elementToOverlayPath(element: OverlayElement): OverlayPath | null {
-  if (element.type === "path") return (element as OverlayPathElement).path;
+  if (element.type === "path") {
+    const pathEl = element as OverlayPathElement;
+    return scalePathToBounds(pathEl.path, pathEl.width ?? 0, pathEl.height ?? 0);
+  }
   if (element.type === "shape") return shapeElementToPath(element as OverlayShapeElement);
   if (element.type === "box") return boxElementToPath(element as OverlayBoxElement);
   return null;
