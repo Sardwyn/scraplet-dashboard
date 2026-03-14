@@ -2,11 +2,33 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Rnd, RndDragCallback, RndResizeCallback } from "react-rnd";
 import {
   OverlayAnimation,
+  OverlayBooleanElement,
+  OverlayBooleanOperation,
+  OverlayCornerRadii,
+  OverlayCornerType,
   OverlayConfigV0,
   OverlayElement,
+  OverlayPath,
+  OverlayPathElement,
+  OverlayFill,
+  OverlayFillStop,
+  OverlayEffect,
+  OverlayConstraintMode,
+  OverlayConstraints,
+  OverlayGlowEffect,
+  OverlayLayerBlurEffect,
+  OverlayNoiseEffect,
+  OverlayShadowEffect,
   OverlayPatternFill,
   OverlayPatternFit,
+  OverlayFrameAlign,
+  OverlayFrameElement,
+  OverlayFrameJustify,
+  OverlayFrameLayoutMode,
+  OverlayStrokeAlign,
+  PathCommand,
   OverlayTimeline,
+  OverlayTimelineEasing,
   OverlayTimelineKeyframe,
   OverlayTimelineProperty,
   OverlayTimelineTrack,
@@ -32,6 +54,19 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
+import { expandStrokePath, offsetOverlayPath } from "../shared/geometry/pathBoolean";
+import {
+  booleanContainerBounds,
+  elementToOverlayPath,
+  isClosedPath,
+  joinOpenOverlayPaths,
+  normalizePathToBounds,
+  reverseOpenPath,
+  splitOverlayPathAtAnchor,
+  svgPathFromCommands,
+  translateOverlayPath,
+} from "../shared/geometry/pathUtils";
+import { resolveElementGeometry } from "../shared/geometry/resolveGeometry";
 
 
 interface ServerOverlay {
@@ -114,6 +149,8 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "height",
   "opacity",
   "rotationDeg",
+  "scaleX",
+  "scaleY",
 ];
 
 const DEFAULT_TIMELINE_DURATION_MS = 5000;
@@ -165,6 +202,10 @@ function ensureTimeline(timeline?: OverlayTimeline): OverlayTimeline {
   return {
     durationMs: Math.max(100, timeline?.durationMs ?? DEFAULT_TIMELINE_DURATION_MS),
     tracks: [...(timeline?.tracks ?? [])],
+    playback: {
+      loop: timeline?.playback?.loop ?? false,
+      reverse: timeline?.playback?.reverse ?? false,
+    },
   };
 }
 
@@ -242,8 +283,16 @@ function getResizeCursor(handle: ResizeHandleKind, rotationDeg: number) {
 }
 
 function getElementRadiusValue(el: AnyEl) {
-  if (el.type === "box") return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
-  if (el.type === "shape" && (el as any).shape === "rect") return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  if (el.type === "box") {
+    const corners = (el as any).cornerRadii as OverlayCornerRadii | undefined;
+    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
+    return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
+  }
+  if (el.type === "shape" && (el as any).shape === "rect") {
+    const corners = (el as any).cornerRadii as OverlayCornerRadii | undefined;
+    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
+    return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  }
   return 0;
 }
 
@@ -252,8 +301,9 @@ function supportsRadiusHandle(el: AnyEl) {
 }
 
 function getRadiusPatch(el: AnyEl, radius: number): Partial<AnyEl> {
-  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius } as any;
-  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius } as any;
+  const cornerRadii: OverlayCornerRadii = { topLeft: radius, topRight: radius, bottomRight: radius, bottomLeft: radius };
+  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius, cornerRadii } as any;
+  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius, cornerRadii } as any;
   return {};
 }
 
@@ -367,7 +417,7 @@ function computeResizeDraft(
 function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, acc = new Set<string>()) {
   const el = elementsById[id];
   if (!el) return acc;
-  if (el.type !== "group" && el.type !== "mask") return acc;
+  if (el.type !== "group" && el.type !== "frame" && el.type !== "mask" && el.type !== "boolean") return acc;
 
   for (const childId of (el as any).childIds ?? []) {
     if (acc.has(childId)) continue;
@@ -396,6 +446,10 @@ function scaleNumericValue(value: unknown, scale: number) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return undefined;
   return numeric * scale;
+}
+
+function isPathCapableElement(el: AnyEl | null | undefined): el is AnyEl {
+  return !!el && (el.type === "shape" || el.type === "path" || el.type === "box" || el.type === "boolean");
 }
 
 function getScaledTextPatch(
@@ -433,7 +487,176 @@ function getScaledTextPatch(
     } as any;
   }
 
+  if (Array.isArray((el as any).effects)) {
+    patch.effects = (el as any).effects.map((effect: OverlayEffect) => {
+      if (effect.type === "dropShadow" || effect.type === "innerShadow") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+          x: scaleNumericValue(effect.x, textScale) ?? effect.x,
+          y: scaleNumericValue(effect.y, textScale) ?? effect.y,
+          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread,
+        } as OverlayShadowEffect;
+      }
+      if (effect.type === "outerGlow" || effect.type === "innerGlow") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread,
+        } as OverlayGlowEffect;
+      }
+      if (effect.type === "layerBlur") {
+        return {
+          ...effect,
+          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
+        } as OverlayLayerBlurEffect;
+      }
+      return effect.type === "noise"
+        ? ({
+            ...effect,
+            scale: scaleNumericValue(effect.scale, textScale) ?? effect.scale,
+          } as OverlayNoiseEffect)
+        : effect;
+    }) as any;
+  }
+
   return patch;
+}
+
+function getElementWithDraft(
+  element: AnyEl,
+  draftRect?: { x: number; y: number; width: number; height: number },
+  draftPatch?: Partial<AnyEl>
+) {
+  return {
+    ...element,
+    ...(draftRect ? draftRect : {}),
+    ...(draftPatch ? draftPatch : {}),
+  } as AnyEl;
+}
+
+type PathAnchor = {
+  commandIndex: number;
+  x: number;
+  y: number;
+};
+
+type PathHandle = {
+  anchorCommandIndex: number;
+  curveCommandIndex: number;
+  role: "in" | "out";
+  x: number;
+  y: number;
+};
+
+function getPathAnchors(path: OverlayPath): PathAnchor[] {
+  const anchors: PathAnchor[] = [];
+  path.commands.forEach((command, commandIndex) => {
+    if (command.type === "move" || command.type === "line" || command.type === "curve") {
+      anchors.push({ commandIndex, x: command.x, y: command.y });
+    }
+  });
+  return anchors;
+}
+
+function getPathHandles(path: OverlayPath): PathHandle[] {
+  const handles: PathHandle[] = [];
+  path.commands.forEach((command, commandIndex) => {
+    if (command.type === "curve") {
+      handles.push({
+        anchorCommandIndex: commandIndex,
+        curveCommandIndex: commandIndex,
+        role: "in",
+        x: command.x2,
+        y: command.y2,
+      });
+      const previous = path.commands[commandIndex - 1] as any;
+      if (previous && previous.type !== "close") {
+        handles.push({
+          anchorCommandIndex: commandIndex - 1,
+          curveCommandIndex: commandIndex,
+          role: "out",
+          x: command.x1,
+          y: command.y1,
+        });
+      }
+    }
+  });
+  return handles;
+}
+
+function updatePathAnchor(path: OverlayPath, commandIndex: number, nextPoint: { x: number; y: number }) {
+  const commands = path.commands.map((command) => ({ ...command })) as PathCommand[];
+  const current = commands[commandIndex] as any;
+  if (!current || current.type === "close") return path;
+  const dx = nextPoint.x - current.x;
+  const dy = nextPoint.y - current.y;
+  current.x = nextPoint.x;
+  current.y = nextPoint.y;
+  if (current.type === "curve") {
+    current.x2 += dx;
+    current.y2 += dy;
+  }
+
+  const nextCurve = commands[commandIndex + 1] as any;
+  if (nextCurve?.type === "curve") {
+    nextCurve.x1 += dx;
+    nextCurve.y1 += dy;
+  }
+
+  const prevCurve = commands[commandIndex - 1] as any;
+  if (prevCurve?.type === "curve") {
+    prevCurve.x2 += dx;
+    prevCurve.y2 += dy;
+  }
+
+  return { commands };
+}
+
+function updatePathHandle(path: OverlayPath, curveCommandIndex: number, role: "in" | "out", nextPoint: { x: number; y: number }) {
+  const commands = path.commands.map((command) => ({ ...command })) as PathCommand[];
+  const curve = commands[curveCommandIndex] as any;
+  if (!curve || curve.type !== "curve") return path;
+  if (role === "in") {
+    curve.x2 = nextPoint.x;
+    curve.y2 = nextPoint.y;
+  } else {
+    curve.x1 = nextPoint.x;
+    curve.y1 = nextPoint.y;
+  }
+  return { commands };
+}
+
+function removePathAnchor(path: OverlayPath, commandIndex: number) {
+  const removable = getPathAnchors(path);
+  if (removable.length <= 2) return path;
+  const commands = path.commands.filter((_, index) => index !== commandIndex);
+  const firstDrawableIndex = commands.findIndex((command) => command.type !== "close");
+  if (firstDrawableIndex >= 0 && commands[firstDrawableIndex].type !== "move") {
+    commands[firstDrawableIndex] = { ...(commands[firstDrawableIndex] as any), type: "move" };
+  }
+  return { commands };
+}
+
+function addPathAnchorAfterSelection(path: OverlayPath, commandIndex: number) {
+  const anchors = getPathAnchors(path);
+  const currentAnchorIndex = anchors.findIndex((anchor) => anchor.commandIndex === commandIndex);
+  if (currentAnchorIndex === -1) return path;
+  const currentAnchor = anchors[currentAnchorIndex];
+  const isClosed = path.commands.some((command) => command.type === "close");
+  const nextAnchor = anchors[currentAnchorIndex + 1] ?? (isClosed ? anchors[0] : undefined);
+  if (!nextAnchor) return path;
+  const midpoint = {
+    x: (currentAnchor.x + nextAnchor.x) / 2,
+    y: (currentAnchor.y + nextAnchor.y) / 2,
+  };
+  const nextCommands = [...path.commands];
+  const insertIndex =
+    currentAnchorIndex === anchors.length - 1 && isClosed
+      ? nextCommands.findIndex((command) => command.type === "close")
+      : nextAnchor.commandIndex;
+  nextCommands.splice(Math.max(0, insertIndex), 0, { type: "line", ...midpoint } as PathCommand);
+  return { commands: nextCommands };
 }
 
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
@@ -732,6 +955,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit");
   const [manualScale, setManualScale] = useState(1);
   const [zoomAnimating, setZoomAnimating] = useState(false);
+  const [activeCreationTool, setActiveCreationTool] = useState<null | "pen">(null);
+  const [penDraft, setPenDraft] = useState<{
+    anchors: { x: number; y: number }[];
+    commands: PathCommand[];
+    previewPoint?: { x: number; y: number };
+    sourceElementId?: string;
+  } | null>(null);
 
   // PAN (space/middle-mouse)
   const [spaceDown, setSpaceDown] = useState(false);
@@ -747,11 +977,28 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const clickCycleRef = useRef<{ x: number; y: number; ids: string[]; index: number } | null>(null);
   const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
   const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
+  const penPointerSessionRef = useRef<{ start: { x: number; y: number } } | null>(null);
   const rndRefs = useRef<Record<string, any>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const [draftElementPatches, setDraftElementPatches] = useState<Record<string, Partial<AnyEl>>>({});
+  const [selectedPathAnchor, setSelectedPathAnchor] = useState<{ elementId: string; commandIndex: number } | null>(null);
+  const [pathAnchorDragSession, setPathAnchorDragSession] = useState<{
+    elementId: string;
+    commandIndex: number;
+    startStage: { x: number; y: number };
+    originPath: OverlayPath;
+    rotationDeg: number;
+  } | null>(null);
+  const [pathHandleDragSession, setPathHandleDragSession] = useState<{
+    elementId: string;
+    curveCommandIndex: number;
+    role: "in" | "out";
+    startStage: { x: number; y: number };
+    originPath: OverlayPath;
+    rotationDeg: number;
+  } | null>(null);
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
   const [primaryDragSession, setPrimaryDragSession] = useState<{
     id: string;
@@ -947,16 +1194,29 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   useEffect(() => {
     if (!isTimelinePlaying) return;
 
+    const durationMs = Math.max(0, timeline.durationMs);
+    if (durationMs <= 0) {
+      setIsTimelinePlaying(false);
+      return;
+    }
+
+    const reverse = timeline.playback?.reverse === true;
+    const loop = timeline.playback?.loop === true;
     let frameId = 0;
-    const startOffset = timelinePlayheadMs;
+    const startOffset = reverse ? durationMs - timelinePlayheadMs : timelinePlayheadMs;
     timelinePlaybackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
       const startedAt = timelinePlaybackStartRef.current ?? now;
-      const next = Math.min(timeline.durationMs, now - startedAt);
+      const elapsed = Math.max(0, now - startedAt);
+      const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
+      const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
       setTimelinePlayheadMs(next);
 
-      if (next >= timeline.durationMs) {
+      const reachedEnd = !reverse && elapsed >= durationMs;
+      const reachedStart = reverse && elapsed >= durationMs;
+      if (!loop && (reachedEnd || reachedStart)) {
+        setTimelinePlayheadMs(reverse ? 0 : durationMs);
         setIsTimelinePlaying(false);
         timelinePlaybackStartRef.current = null;
       } else {
@@ -969,7 +1229,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.cancelAnimationFrame(frameId);
       timelinePlaybackStartRef.current = null;
     };
-  }, [isTimelinePlaying, timeline.durationMs, timelinePlayheadMs]);
+  }, [isTimelinePlaying, timeline.durationMs, timeline.playback?.loop, timeline.playback?.reverse, timelinePlayheadMs]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -1075,6 +1335,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
 
+  useEffect(() => {
+    if (!selectedPathAnchor) return;
+    if (primarySelectedEl?.type !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
+      setSelectedPathAnchor(null);
+    }
+  }, [primarySelectedEl, selectedPathAnchor]);
+
   const selectedTimelineState = useMemo(() => {
     if (!primarySelectedId) {
       return {
@@ -1100,8 +1367,32 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return { playheadMs: timelinePlayheadMs, hasAnimatedProperties, properties };
   }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
 
+  const selectedTimelineKeyframe = useMemo(() => {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return null;
+    const track = timeline.tracks.find((candidate) => candidate.id === selectedTimelineTrackId);
+    if (!track) return null;
+    return track.keyframes.find((candidate) => candidate.id === selectedTimelineKeyframeId) ?? null;
+  }, [selectedTimelineKeyframeId, selectedTimelineTrackId, timeline.tracks]);
+
   const canGroup = selectedIds.length > 0;
-  const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
+  const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === 'group' || primarySelectedEl.type === 'frame' || primarySelectedEl.type === 'boolean');
+  const selectedPathElements = useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
+  const canBooleanSelection = selectedPathElements.length >= 2;
+  const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl);
+  const canFlattenBoolean = primarySelectedEl?.type === "boolean";
+  const canConvertSelectionToPath = !!primarySelectedEl && (primarySelectedEl.type === "shape" || primarySelectedEl.type === "box");
+  const selectedParentFrame = useMemo(
+    () =>
+      selectedIds[0]
+        ? ((config.elements.find(
+            (candidate) =>
+              candidate.type === "frame" &&
+              Array.isArray((candidate as any).childIds) &&
+              (candidate as any).childIds.includes(selectedIds[0])
+          ) as OverlayFrameElement | undefined) ?? null)
+        : null,
+    [config.elements, selectedIds]
+  );
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
   const selectionHasLocked = useMemo(() => selectedEls.some((e) => e.locked === true), [selectedEls]);
@@ -1124,7 +1415,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
     previewElements.forEach(e => {
-      if (e.type === 'group' || e.type === 'mask') {
+      if (isContainerElement(e as AnyEl)) {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
@@ -1222,7 +1513,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         return prev;
       }
 
-      const value = Number((element as any)[property] ?? 0);
+      const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
+      const value = Number((element as any)[property] ?? fallbackValue);
       const keyframe: OverlayTimelineKeyframe = {
         id: genId("kf"),
         t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
@@ -1324,6 +1616,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return createdId;
   }
 
+  function updateSelectedTimelineKeyframeEasing(easing: OverlayTimelineEasing) {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return;
+
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== selectedTimelineTrackId) return track;
+        return {
+          ...track,
+          keyframes: track.keyframes.map((keyframe) =>
+            keyframe.id === selectedTimelineKeyframeId ? { ...keyframe, easing } : keyframe
+          ),
+        };
+      }),
+    }));
+  }
+
   function deleteSelectedTimelineKeyframe() {
     if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return;
 
@@ -1376,7 +1685,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       }
 
       // Propagate group movement to children (recursive)
-      if (oldEl.type === 'group' && (patch.x !== undefined || patch.y !== undefined)) {
+      if ((oldEl.type === 'group' || oldEl.type === 'frame' || oldEl.type === 'boolean') && (patch.x !== undefined || patch.y !== undefined)) {
         const dx = (patch.x ?? oldEl.x) - oldEl.x;
         const dy = (patch.y ?? oldEl.y) - oldEl.y;
 
@@ -1385,7 +1694,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           // Helper to find descendants
           const collect = (pid: string) => {
             const p = nextEls.find(e => e.id === pid);
-            if (p && p.type === 'group') {
+            if (p && (p.type === 'group' || p.type === 'frame' || p.type === 'boolean')) {
               (p as any).childIds?.forEach((cid: string) => {
                 if (!toMove.has(cid)) {
                   toMove.add(cid);
@@ -1404,6 +1713,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           });
         }
+      }
+      if (nextEls[idx]?.type === "frame") {
+        nextEls.splice(0, nextEls.length, ...reflowFrameInElementList(id, nextEls as AnyEl[]));
       }
       if (timelineKeyframeId) {
         setSelectedTimelineTrackId(timelineTrackId);
@@ -1509,8 +1821,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const { width: bw, height: bh } = baseResolution;
 
     // Defaults matching requirements
-    const w = kind === "line" ? 200 : 200;
-    const h = kind === "line" ? 40 : 200;
+    const w = kind === "line" ? 200 : kind === "arrow" ? 260 : 200;
+    const h = kind === "line" ? 40 : kind === "arrow" ? 140 : 200;
 
     // Center in base resolution
     const x = Math.round(bw / 2 - w / 2);
@@ -1519,7 +1831,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const el: AnyEl = {
       id,
       type: "shape" as any,
-      name: kind === "rect" ? "Rectangle" : kind === "circle" ? "Circle" : kind === "line" ? "Line" : "Triangle",
+      name:
+        kind === "rect"
+          ? "Rectangle"
+          : kind === "circle"
+            ? "Circle"
+            : kind === "line"
+              ? "Line"
+              : kind === "polygon"
+                ? "Polygon"
+                : kind === "star"
+                  ? "Star"
+                  : kind === "arrow"
+                    ? "Arrow"
+                    : "Triangle",
       x,
       y,
       width: w,
@@ -1534,10 +1859,379 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       strokeOpacity: 1,
       strokeDash: [],
       cornerRadiusPx: 0,
+      polygon: kind === "polygon" ? { sides: 6, rotationDeg: -90 } : undefined,
+      star: kind === "star" ? { points: 5, innerRatio: 0.5, rotationDeg: -90 } : undefined,
+      arrow: kind === "arrow" ? { direction: "right", shaftRatio: 0.42, headRatio: 0.34 } : undefined,
     } as any;
 
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
     setSelectedIds([id]);
+  }
+
+  function addPathElement(
+    path: OverlayPath,
+    bounds: { x: number; y: number; width: number; height: number },
+    name = "Path",
+    overrides?: Partial<AnyEl>
+  ) {
+    const id = genId("path");
+    const el: AnyEl = {
+      id,
+      type: "path",
+      name,
+      x: Math.round(bounds.x),
+      y: Math.round(bounds.y),
+      width: Math.max(1, Math.round(bounds.width)),
+      height: Math.max(1, Math.round(bounds.height)),
+      visible: true,
+      locked: false,
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeColor: "#000000",
+      strokeWidthPx: 2,
+      strokeOpacity: 1,
+      strokeDash: [],
+      path,
+      ...overrides,
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
+    setSelectedIds([id]);
+    return id;
+  }
+
+  function createBooleanFromSelection(operation: OverlayBooleanOperation) {
+    const selected = selectedEls.filter(isPathCapableElement);
+    if (selected.length < 2) return;
+    const id = genId("bool");
+    const bounds = booleanContainerBounds({ id, type: "boolean" } as OverlayBooleanElement, selected as OverlayElement[]);
+    const el: AnyEl = {
+      id,
+      type: "boolean",
+      name: `${operation[0].toUpperCase()}${operation.slice(1)}`,
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      visible: true,
+      locked: false,
+      operation,
+      childIds: selected.map((item) => item.id),
+      fillColor: "#ffffff",
+      fillOpacity: 1,
+      strokeColor: "#000000",
+      strokeWidthPx: 2,
+      strokeOpacity: 1,
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
+    setSelectedIds([id]);
+  }
+
+  function createResolvedPathElement(
+    source: AnyEl,
+    options?: {
+      name?: string;
+      removeIds?: string[];
+      insertAtId?: string;
+    }
+  ) {
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return null;
+
+    const pathId = genId("path");
+    const pathEl: AnyEl = {
+      id: pathId,
+      type: "path",
+      name: options?.name ?? `${source.name || defaultElementLabel(source)} Path`,
+      x: Math.round(resolved.bounds.x),
+      y: Math.round(resolved.bounds.y),
+      width: Math.max(1, Math.round(resolved.bounds.width)),
+      height: Math.max(1, Math.round(resolved.bounds.height)),
+      visible: source.visible !== false,
+      locked: source.locked === true,
+      opacity: (source as any).opacity ?? 1,
+      rotationDeg: (source as any).rotationDeg ?? 0,
+      fillColor: (source as any).fillColor ?? "#ffffff",
+      fillOpacity: (source as any).fillOpacity ?? 1,
+      strokeColor: (source as any).strokeColor ?? "#000000",
+      strokeWidthPx: (source as any).strokeWidthPx ?? 2,
+      strokeOpacity: (source as any).strokeOpacity ?? 1,
+      strokeDash: Array.isArray((source as any).strokeDash) ? [...(source as any).strokeDash] : [],
+      path: resolved.path,
+    } as any;
+
+    const removeIds = new Set(options?.removeIds ?? []);
+    setConfig((prev) => {
+      const insertAtIdx = options?.insertAtId ? prev.elements.findIndex((candidate) => candidate.id === options.insertAtId) : -1;
+      const kept = prev.elements.filter((candidate) => !removeIds.has(candidate.id));
+      if (insertAtIdx < 0) {
+        return { ...prev, elements: [...kept, pathEl as any] };
+      }
+      const before = kept.slice(0, Math.min(insertAtIdx, kept.length));
+      const after = kept.slice(Math.min(insertAtIdx, kept.length));
+      return { ...prev, elements: [...before, pathEl as any, ...after] };
+    });
+    setSelectedIds([pathId]);
+    return pathId;
+  }
+
+  function createOffsetPath(distance: number) {
+    const source = primarySelectedEl;
+    if (!isPathCapableElement(source)) return;
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return;
+    const result = offsetOverlayPath(resolved.path, distance);
+    const pathId = addPathElement(result.path, {
+      x: (source.x ?? 0) + result.bounds.x,
+      y: (source.y ?? 0) + result.bounds.y,
+      width: result.bounds.width,
+      height: result.bounds.height,
+    }, distance < 0 ? "Inset Path" : "Outset Path");
+    if (!pathId) return;
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.map((candidate) =>
+        candidate.id === pathId
+          ? ({
+              ...candidate,
+              pathSource: {
+                kind: "offset",
+                sourceId: source.id,
+                distance,
+              },
+            } as any)
+          : candidate
+      ),
+    }));
+  }
+
+  function flattenBooleanSelected() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "boolean") return;
+    const booleanEl = primarySelectedEl as OverlayBooleanElement;
+    createResolvedPathElement(booleanEl as any, {
+      name: `${booleanEl.name || defaultElementLabel(booleanEl)} Path`,
+      removeIds: [booleanEl.id, ...(booleanEl.childIds ?? [])],
+      insertAtId: booleanEl.id,
+    });
+  }
+
+  function convertSelectedToPath() {
+    if (!primarySelectedEl || (primarySelectedEl.type !== "shape" && primarySelectedEl.type !== "box")) return;
+    createResolvedPathElement(primarySelectedEl as any, {
+      name: primarySelectedEl.name || defaultElementLabel(primarySelectedEl),
+      removeIds: [primarySelectedEl.id],
+      insertAtId: primarySelectedEl.id,
+    });
+  }
+
+  function addSelectedPathNode() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    updateElement(primarySelectedEl.id, {
+      path: addPathAnchorAfterSelection((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+    } as any);
+  }
+
+  function removeSelectedPathNode() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    updateElement(primarySelectedEl.id, {
+      path: removePathAnchor((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+    } as any);
+    setSelectedPathAnchor(null);
+  }
+
+  function splitSelectedPath() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    const displayPath = elementToOverlayPath(primarySelectedEl as any);
+    if (!displayPath) return;
+    const splitPaths = splitOverlayPathAtAnchor(displayPath, selectedPathAnchor.commandIndex);
+    if (splitPaths.length === 1) {
+      const normalized = normalizePathToBounds(splitPaths[0]);
+      updateElement(primarySelectedEl.id, {
+        x: Math.round((primarySelectedEl.x ?? 0) + normalized.bounds.x),
+        y: Math.round((primarySelectedEl.y ?? 0) + normalized.bounds.y),
+        width: Math.max(1, Math.round(normalized.bounds.width)),
+        height: Math.max(1, Math.round(normalized.bounds.height)),
+        path: normalized.path,
+      } as any);
+      setSelectedPathAnchor({ elementId: primarySelectedEl.id, commandIndex: 0 });
+      return;
+    }
+
+    const [firstPath, secondPath] = splitPaths.map((candidate) => normalizePathToBounds(candidate));
+    const secondId = genId("path");
+    const secondEl: AnyEl = {
+      ...(primarySelectedEl as any),
+      id: secondId,
+      name: `${primarySelectedEl.name || defaultElementLabel(primarySelectedEl)} Split`,
+      x: Math.round((primarySelectedEl.x ?? 0) + secondPath.bounds.x),
+      y: Math.round((primarySelectedEl.y ?? 0) + secondPath.bounds.y),
+      width: Math.max(1, Math.round(secondPath.bounds.width)),
+      height: Math.max(1, Math.round(secondPath.bounds.height)),
+      path: secondPath.path,
+    };
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.flatMap((candidate) =>
+        candidate.id === primarySelectedEl.id
+          ? [
+              {
+                ...(candidate as any),
+                x: Math.round((primarySelectedEl.x ?? 0) + firstPath.bounds.x),
+                y: Math.round((primarySelectedEl.y ?? 0) + firstPath.bounds.y),
+                width: Math.max(1, Math.round(firstPath.bounds.width)),
+                height: Math.max(1, Math.round(firstPath.bounds.height)),
+                path: firstPath.path,
+              },
+              secondEl as any,
+            ]
+          : [candidate]
+      ),
+    }));
+    setSelectedIds([primarySelectedEl.id, secondId]);
+    setSelectedPathAnchor(null);
+  }
+
+  function continueSelectedPath() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    const displayPath = elementToOverlayPath(primarySelectedEl as any);
+    if (!displayPath || isClosedPath(displayPath)) return;
+    const anchors = getPathAnchors(displayPath);
+    const selectedIndex = anchors.findIndex((anchor) => anchor.commandIndex === selectedPathAnchor.commandIndex);
+    if (selectedIndex === -1) return;
+    if (selectedIndex !== 0 && selectedIndex !== anchors.length - 1) return;
+
+    const continuedPath = selectedIndex === 0 ? reverseOpenPath(displayPath) : displayPath;
+    setActiveCreationTool("pen");
+    const continuedAnchors = getPathAnchors(continuedPath).map((anchor) => ({ x: anchor.x, y: anchor.y }));
+    setPenDraft({
+      sourceElementId: primarySelectedEl.id,
+      anchors: continuedAnchors,
+      commands: continuedPath.commands.map((command) => ({ ...command })) as PathCommand[],
+      previewPoint: continuedAnchors[continuedAnchors.length - 1],
+    });
+    showEditorStatus("Continuing path", "Click to extend from the selected endpoint.");
+  }
+
+  function joinSelectedPaths() {
+    if (selectedIds.length !== 2) return;
+    const selectedPaths = selectedIds
+      .map((id) => elementsById[id])
+      .filter((candidate): candidate is OverlayPathElement => Boolean(candidate) && candidate.type === "path");
+    if (selectedPaths.length !== 2) return;
+
+    const [first, second] = selectedPaths;
+    const worldFirst = translateOverlayPath(elementToOverlayPath(first as any) ?? first.path, first.x ?? 0, first.y ?? 0);
+    const worldSecond = translateOverlayPath(elementToOverlayPath(second as any) ?? second.path, second.x ?? 0, second.y ?? 0);
+    const joined = joinOpenOverlayPaths(worldFirst, worldSecond);
+    if (!joined) return;
+
+    const normalized = normalizePathToBounds(joined);
+    const joinedId = genId("path");
+    const joinedEl: AnyEl = {
+      ...(first as any),
+      id: joinedId,
+      name: `${first.name || defaultElementLabel(first)} Join`,
+      x: Math.round(normalized.bounds.x),
+      y: Math.round(normalized.bounds.y),
+      width: Math.max(1, Math.round(normalized.bounds.width)),
+      height: Math.max(1, Math.round(normalized.bounds.height)),
+      path: normalized.path,
+      pathSource: undefined,
+    };
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: [...prev.elements.filter((candidate) => candidate.id !== first.id && candidate.id !== second.id), joinedEl as any],
+    }));
+    setSelectedIds([joinedId]);
+    setSelectedPathAnchor(null);
+  }
+
+  function expandSelectedStroke() {
+    const source = primarySelectedEl;
+    if (!source || !isPathCapableElement(source)) return;
+    const resolved = resolveElementGeometry(source as any, elementsById as Record<string, OverlayElement>);
+    if (!resolved) return;
+    const strokeWidth = Math.max(
+      1,
+      Number((source as any).strokeWidthPx ?? (source as any).strokeWidth ?? 0) || 1
+    );
+    const expanded = expandStrokePath(resolved.path, strokeWidth);
+    addPathElement(
+      expanded.path,
+      {
+        x: Math.round((source.x ?? 0) + expanded.bounds.x),
+        y: Math.round((source.y ?? 0) + expanded.bounds.y),
+        width: Math.max(1, Math.round(expanded.bounds.width)),
+        height: Math.max(1, Math.round(expanded.bounds.height)),
+      },
+      `${source.name || defaultElementLabel(source)} Stroke`,
+      {
+        fillColor: (source as any).strokeColor ?? "#ffffff",
+        fillOpacity: (source as any).strokeOpacity ?? 1,
+        strokeColor: "transparent",
+        strokeWidthPx: 0,
+      }
+    );
+  }
+
+  function commitPenDraft(closePath = false) {
+    if (!penDraft || penDraft.anchors.length < 2) return;
+    const commands = closePath ? [...penDraft.commands, { type: "close" } as PathCommand] : penDraft.commands;
+    const normalized = normalizePathToBounds({ commands });
+    if (penDraft.sourceElementId) {
+      const source = elementsById[penDraft.sourceElementId] as AnyEl | undefined;
+      if (source) {
+        updateElement(penDraft.sourceElementId, {
+          x: Math.round((source.x ?? 0) + normalized.bounds.x),
+          y: Math.round((source.y ?? 0) + normalized.bounds.y),
+          width: Math.max(1, Math.round(normalized.bounds.width)),
+          height: Math.max(1, Math.round(normalized.bounds.height)),
+          path: normalized.path,
+        } as any);
+      }
+    } else {
+      addPathElement(normalized.path, normalized.bounds, "Pen Path");
+    }
+    setPenDraft(null);
+    setActiveCreationTool(null);
+  }
+
+  function applyDerivedOffsetPathDrafts(
+    nextDrafts: Record<string, { x: number; y: number; width: number; height: number }>,
+    nextPatches: Record<string, Partial<AnyEl>>
+  ) {
+    for (const [draftId] of Object.entries(nextDrafts)) {
+      const candidate = previewElementsById[draftId];
+      if (!candidate || candidate.type !== "path") continue;
+      const pathSource = (candidate as any).pathSource;
+      if (!pathSource || pathSource.kind !== "offset") continue;
+
+      const sourceBase = previewElementsById[pathSource.sourceId] ?? elementsById[pathSource.sourceId];
+      if (!sourceBase) continue;
+      const sourceDraft = nextDrafts[pathSource.sourceId];
+      const sourcePatch = nextPatches[pathSource.sourceId];
+      const sourceElement = getElementWithDraft(sourceBase, sourceDraft, sourcePatch);
+      if (!isPathCapableElement(sourceElement)) continue;
+
+      const resolved = resolveElementGeometry(sourceElement as any, nextDrafts[pathSource.sourceId] ? ({
+        ...elementsById,
+        [pathSource.sourceId]: sourceElement,
+      } as Record<string, OverlayElement>) : (elementsById as Record<string, OverlayElement>));
+      if (!resolved) continue;
+
+      const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
+      nextDrafts[draftId] = {
+        x: Math.round((sourceElement.x ?? 0) + offset.bounds.x),
+        y: Math.round((sourceElement.y ?? 0) + offset.bounds.y),
+        width: Math.max(1, Math.round(offset.bounds.width)),
+        height: Math.max(1, Math.round(offset.bounds.height)),
+      };
+      nextPatches[draftId] = {
+        ...(nextPatches[draftId] ?? {}),
+        path: offset.path,
+      };
+    }
   }
 
   function addImage() {
@@ -1664,6 +2358,103 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       defaultDurationMs: 8000
     };
     setConfig(prev => ({ ...prev, elements: [...prev.elements, el] }));
+    setSelectedIds([id]);
+  }
+
+  function addFrame() {
+    if (selectedIds.length > 0) {
+      const id = genId("frame");
+
+      setConfig((prev) => {
+        const els = prev.elements;
+        const selectedElsInOrder = els.filter((e) => selectedIds.includes(e.id));
+        if (!selectedElsInOrder.length) return prev;
+
+        let highestIdx = -1;
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        selectedElsInOrder.forEach((el) => {
+          const idx = els.findIndex((candidate) => candidate.id === el.id);
+          if (idx > highestIdx) highestIdx = idx;
+          minX = Math.min(minX, el.x);
+          minY = Math.min(minY, el.y);
+          maxX = Math.max(maxX, el.x + el.width);
+          maxY = Math.max(maxY, el.y + el.height);
+        });
+
+        if (!isFinite(minX)) return prev;
+
+        const framePadding = 16;
+        const frameEl: AnyEl = {
+          id,
+          type: "frame",
+          name: "Frame",
+          x: Math.round(minX - framePadding),
+          y: Math.round(minY - framePadding),
+          width: Math.round(maxX - minX + framePadding * 2),
+          height: Math.round(maxY - minY + framePadding * 2),
+          visible: true,
+          locked: false,
+          opacity: 1,
+          childIds: selectedElsInOrder.map((e) => e.id),
+          layout: {
+            mode: "free",
+            gap: 12,
+            padding: framePadding,
+            align: "start",
+            justify: "start",
+            wrap: false,
+          },
+          clipContent: true,
+          constraints: { horizontal: "start", vertical: "start" },
+        } as any;
+
+        const withoutSelected = els.filter((e) => !selectedIds.includes(e.id));
+        let shift = 0;
+        for (let i = 0; i < highestIdx; i++) {
+          if (selectedIds.includes(els[i].id)) shift++;
+        }
+        const targetIdx = highestIdx - shift + 1;
+        const before = withoutSelected.slice(0, targetIdx);
+        const after = withoutSelected.slice(targetIdx);
+        return { ...prev, elements: [...before, ...selectedElsInOrder, frameEl, ...after] };
+      });
+
+      setSelectedIds([id]);
+      return;
+    }
+
+    const id = genId("frame");
+    const el: AnyEl = {
+      id,
+      type: "frame",
+      name: "Frame",
+      x: 260,
+      y: 180,
+      width: 420,
+      height: 240,
+      visible: true,
+      locked: false,
+      opacity: 1,
+      childIds: [],
+      backgroundColor: "rgba(15,23,42,0.18)",
+      borderColor: "rgba(255,255,255,0.12)",
+      borderWidth: 1,
+      borderRadiusPx: 16,
+      clipContent: true,
+      layout: {
+        mode: "free",
+        gap: 12,
+        padding: 16,
+        align: "start",
+        justify: "start",
+        wrap: false,
+      },
+    } as any;
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el] }));
     setSelectedIds([id]);
   }
 
@@ -1835,7 +2626,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     let childElements: AnyEl[] = [];
 
     // 1. Determine the logical grouping/container
-    if (!grp || grp.type !== 'group') {
+    if (!grp || (grp.type !== 'group' && grp.type !== 'frame')) {
       if (selectedIds.length === 0) {
         alert("Please select elements to convert into a component.");
         return;
@@ -1960,8 +2751,119 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
   }
 
+  function detachSelectedComponentInstance() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "componentInstance") return;
+    const instance = primarySelectedEl as AnyEl;
+    const def = overlayComponents.find((component) => component.id === (instance as any).componentId);
+    if (!def) return;
+
+    const masterBounds = computeSelectionBounds(def.elements as AnyEl[]);
+    if (!masterBounds) return;
+
+    const scaleX = (instance.width ?? masterBounds.w) / Math.max(1, masterBounds.w);
+    const scaleY = (instance.height ?? masterBounds.h) / Math.max(1, masterBounds.h);
+    const idMap = new Map<string, string>();
+    const overrides = ((instance as any).propOverrides ?? {}) as Record<string, any>;
+
+    const clones = (def.elements as AnyEl[]).map((source) => {
+      const nextId = genId(source.type === "text" ? "text" : source.type);
+      idMap.set(source.id, nextId);
+
+      const localX = (source.x ?? 0) - masterBounds.x;
+      const localY = (source.y ?? 0) - masterBounds.y;
+      const clone: AnyEl = {
+        ...source,
+        id: nextId,
+        x: Math.round((instance.x ?? 0) + localX * scaleX),
+        y: Math.round((instance.y ?? 0) + localY * scaleY),
+        width: Math.max(1, Math.round((source.width ?? 0) * scaleX)),
+        height: Math.max(1, Math.round((source.height ?? 0) * scaleY)),
+      } as AnyEl;
+
+      if (source.type === "text") {
+        Object.assign(clone, getScaledTextPatch(source as AnyEl, { width: masterBounds.w, height: masterBounds.h }, { width: instance.width ?? masterBounds.w, height: instance.height ?? masterBounds.h }));
+      }
+
+      if (source.bindings) {
+        const nextBindings = { ...source.bindings };
+        for (const [key, value] of Object.entries(overrides)) {
+          if (key in nextBindings) delete nextBindings[key];
+          if (key in clone) (clone as any)[key] = value;
+        }
+        clone.bindings = nextBindings;
+      }
+
+      return clone;
+    });
+
+    const remapped = clones.map((clone) => {
+      if (Array.isArray((clone as any).childIds)) {
+        return {
+          ...clone,
+          childIds: (clone as any).childIds.map((childId: string) => idMap.get(childId) ?? childId),
+        };
+      }
+      return clone;
+    });
+
+    setConfig((prev) => {
+      const index = prev.elements.findIndex((candidate) => candidate.id === instance.id);
+      const kept = prev.elements.filter((candidate) => candidate.id !== instance.id);
+      const insertAt = index < 0 ? kept.length : Math.min(index, kept.length);
+      return {
+        ...prev,
+        elements: [...kept.slice(0, insertAt), ...remapped, ...kept.slice(insertAt)],
+      };
+    });
+    setSelectedIds(remapped.filter((element) => !allChildIds.has(element.id)).map((element) => element.id));
+    showEditorStatus("Instance detached", `${def.name} is now editable local geometry.`);
+  }
+
+  async function createVariantFromComponent(componentId: string) {
+    const def = overlayComponents.find((component) => component.id === componentId);
+    if (!def) return;
+    const variantName = prompt("Enter a name for this variant:", def.variantName ? `${def.variantName} Copy` : `${def.name} Variant`);
+    if (!variantName) return;
+    const variantGroupId = def.variantGroupId || def.id;
+    const payload = {
+      name: `${def.name} / ${variantName}`,
+      schemaVersion: def.schemaVersion || 1,
+      elements: def.elements,
+      propsSchema: def.propsSchema || {},
+      metadata: def.metadata || {},
+      variantGroupId,
+      variantName,
+    };
+    try {
+      const res = await fetch("/dashboard/api/overlay-components", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setOverlayComponents((prev) => [
+        ...prev,
+        {
+          id: data.public_id,
+          name: payload.name,
+          schemaVersion: payload.schemaVersion,
+          elements: payload.elements as any,
+          propsSchema: payload.propsSchema,
+          metadata: payload.metadata,
+          variantGroupId,
+          variantName,
+        },
+      ]);
+      showEditorStatus("Variant created", `${variantName} is available in the component library.`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create variant. " + err.message);
+    }
+  }
+
   function ungroupSelected() {
-    if (!primarySelectedEl || primarySelectedEl.type !== 'group') return;
+    if (!primarySelectedEl || (primarySelectedEl.type !== 'group' && primarySelectedEl.type !== 'frame' && primarySelectedEl.type !== "boolean")) return;
     const grp = primarySelectedEl as any;
     const children = grp.childIds || [];
 
@@ -2062,7 +2964,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       // If this element is inside a group, reorder within group.childIds only.
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -2105,7 +3007,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (parentMask) return prev;
 
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -2139,7 +3041,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (parentMask) return prev;
 
       const parentGroup = prev.elements.find(
-        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+        (e) => (e.type === "group" || e.type === "frame") && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
       ) as any | undefined;
 
       if (parentGroup) {
@@ -2384,6 +3286,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Keyboard UX (nudge, delete, duplicate, zoom)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (activeCreationTool === "pen") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setPenDraft(null);
+          setActiveCreationTool(null);
+          return;
+        }
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commitPenDraft(false);
+          return;
+        }
+      }
       if (showShortcutModal && e.key === "Escape") {
         e.preventDefault();
         setShowShortcutModal(false);
@@ -2441,6 +3356,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (shortcutMatchesEvent("zoom-selection", e)) {
         e.preventDefault();
         zoomToSelection();
+        return;
+      }
+
+      if (selectedPathAnchor && primarySelectedEl?.type === "path" && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        updateElement(primarySelectedEl.id, {
+          path: removePathAnchor((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+        } as any);
+        setSelectedPathAnchor(null);
         return;
       }
 
@@ -2524,7 +3448,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
+  }, [activeCreationTool, commitPenDraft, primarySelectedEl, selectedIds, selectedEls, selectedPathAnchor, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
@@ -2697,13 +3621,40 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       };
       const nextPatches: Record<string, Partial<AnyEl>> = {};
       if (active.descendants) {
+        const activeElement = previewElementsById[active.id] as AnyEl | undefined;
+        const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free");
         for (const [descendantId, rect] of Object.entries(active.descendants)) {
-          nextDrafts[descendantId] = scaleDescendantRect(rect, active.origin, draft);
-          const descendantEl = previewElementsById[descendantId];
-          if (descendantEl?.type === "text") {
+          const descendantEl = previewElementsById[descendantId] as AnyEl | undefined;
+          nextDrafts[descendantId] =
+            activeElement?.type === "frame" && descendantEl
+              ? constrainFrameChildRect(descendantEl, active.origin, draft)
+              : scaleDescendantRect(rect, active.origin, draft);
+          if (descendantEl?.type === "text" && shouldScaleFrameText) {
             nextPatches[descendantId] = getScaledTextPatch(descendantEl as AnyEl, active.origin, draft);
           }
         }
+        if (activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free") {
+          const frameDraft: OverlayFrameElement = { ...(activeElement as OverlayFrameElement), ...draft };
+          const draftElements = Object.values(previewElementsById).map((element) =>
+            element.id === active.id
+              ? ({ ...element, ...draft } as AnyEl)
+              : nextDrafts[element.id]
+                ? ({ ...element, ...nextDrafts[element.id] } as AnyEl)
+                : element
+          ) as AnyEl[];
+          const reflowed = reflowFrameElements(frameDraft, draftElements);
+          reflowed.forEach((element) => {
+            if (active.descendants?.[element.id]) {
+              nextDrafts[element.id] = {
+                x: element.x,
+                y: element.y,
+                width: element.width,
+                height: element.height,
+              };
+            }
+          });
+        }
+        applyDerivedOffsetPathDrafts(nextDrafts, nextPatches);
       }
 
       rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
@@ -2746,9 +3697,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
       } else {
         setConfig((prev) => {
+          const activeElement = prev.elements.find((element) => element.id === active.id) as AnyEl | undefined;
           let nextTimeline = prev.timeline;
           let lastTimelineTrackId: string | null = null;
           let lastTimelineKeyframeId: string | null = null;
+          const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free");
           const nextElements = prev.elements.map((raw) => {
             if (raw.id === active.id) {
               const base = raw as AnyEl;
@@ -2770,7 +3723,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
             const descendantRect = active.descendants?.[raw.id];
             if (!descendantRect) return raw;
-            const scaled = scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
+            const scaled =
+              activeElement?.type === "frame"
+                ? constrainFrameChildRect(raw as AnyEl, active.origin, nextGroupRect)
+                : scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
             const rounded = {
               x: Math.round(scaled.x),
               y: Math.round(scaled.y),
@@ -2778,7 +3734,35 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: Math.round(scaled.height),
             };
             const base = raw as AnyEl;
-            const textPatch = getScaledTextPatch(base, active.origin, nextGroupRect);
+            let extraPatch: Partial<AnyEl> = base.type === "text" && shouldScaleFrameText ? getScaledTextPatch(base, active.origin, nextGroupRect) : {};
+            if (base.type === "path" && (base as any).pathSource?.kind === "offset") {
+              const pathSource = (base as any).pathSource;
+              const sourceRaw = prev.elements.find((candidate) => candidate.id === pathSource.sourceId) as AnyEl | undefined;
+              let sourceElement = sourceRaw;
+              if (sourceRaw) {
+                if (sourceRaw.id === active.id) {
+                  sourceElement = { ...sourceRaw, ...nextGroupRect } as AnyEl;
+                } else if (active.descendants?.[sourceRaw.id]) {
+                  sourceElement = {
+                    ...sourceRaw,
+                    ...scaleDescendantRect(active.descendants[sourceRaw.id], active.origin, nextGroupRect),
+                  } as AnyEl;
+                }
+              }
+              if (sourceElement && isPathCapableElement(sourceElement)) {
+                const resolved = resolveElementGeometry(sourceElement as any, Object.fromEntries(
+                  prev.elements.map((candidate) => [candidate.id, candidate as OverlayElement])
+                ) as Record<string, OverlayElement>);
+                if (resolved) {
+                  const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
+                  rounded.x = Math.round((sourceElement.x ?? 0) + offset.bounds.x);
+                  rounded.y = Math.round((sourceElement.y ?? 0) + offset.bounds.y);
+                  rounded.width = Math.max(1, Math.round(offset.bounds.width));
+                  rounded.height = Math.max(1, Math.round(offset.bounds.height));
+                  extraPatch = { ...extraPatch, path: offset.path };
+                }
+              }
+            }
             if (isTimelineEligibleElement(base as OverlayElement)) {
               for (const [property, value] of Object.entries(rounded) as [OverlayTimelineProperty, number][]) {
                 const result = upsertKeyframeAtPlayhead(
@@ -2792,15 +3776,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 lastTimelineKeyframeId = result.keyframeId;
               }
             }
-            return { ...base, ...rounded, ...textPatch };
+            return { ...base, ...rounded, ...extraPatch };
           });
+
+          const finalizedElements =
+            activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free"
+              ? reflowFrameInElementList(active.id, nextElements as AnyEl[])
+              : nextElements;
 
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
           if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
 
           return {
             ...prev,
-            elements: nextElements,
+            elements: finalizedElements,
             timeline: nextTimeline,
           };
         });
@@ -2893,6 +3882,120 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.removeEventListener("mouseup", onUp as any);
     };
   }, [clientToStage, draftRadiusValues, elementsById, radiusDragSession]);
+
+  useEffect(() => {
+    if (!pathAnchorDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = pathAnchorDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const deltaWorld = {
+        x: stagePoint.x - active.startStage.x,
+        y: stagePoint.y - active.startStage.y,
+      };
+      const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -active.rotationDeg);
+      const originAnchor = getPathAnchors(active.originPath).find((anchor) => anchor.commandIndex === active.commandIndex);
+      if (!originAnchor) return;
+      const nextPath = updatePathAnchor(active.originPath, active.commandIndex, {
+        x: originAnchor.x + deltaLocal.x,
+        y: originAnchor.y + deltaLocal.y,
+      });
+      setDraftElementPatches((prev) => ({
+        ...prev,
+        [active.elementId]: {
+          ...(prev[active.elementId] ?? {}),
+          path: nextPath,
+        },
+      }));
+    };
+
+    const onUp = () => {
+      const active = pathAnchorDragSession;
+      setPathAnchorDragSession(null);
+      const patch = draftElementPatches[active.elementId];
+      const nextPath = patch?.path as OverlayPath | undefined;
+      if (nextPath) {
+        updateElement(active.elementId, { path: nextPath } as any);
+      }
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
+        if (next[active.elementId]) {
+          next[active.elementId] = { ...next[active.elementId] };
+          delete next[active.elementId].path;
+          if (!Object.keys(next[active.elementId]).length) delete next[active.elementId];
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftElementPatches, pathAnchorDragSession]);
+
+  useEffect(() => {
+    if (!pathHandleDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = pathHandleDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const deltaWorld = {
+        x: stagePoint.x - active.startStage.x,
+        y: stagePoint.y - active.startStage.y,
+      };
+      const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -active.rotationDeg);
+      const curve = active.originPath.commands[active.curveCommandIndex] as any;
+      if (!curve || curve.type !== "curve") return;
+      const originPoint =
+        active.role === "in"
+          ? { x: curve.x2, y: curve.y2 }
+          : { x: curve.x1, y: curve.y1 };
+      const nextPath = updatePathHandle(active.originPath, active.curveCommandIndex, active.role, {
+        x: originPoint.x + deltaLocal.x,
+        y: originPoint.y + deltaLocal.y,
+      });
+      setDraftElementPatches((prev) => ({
+        ...prev,
+        [active.elementId]: {
+          ...(prev[active.elementId] ?? {}),
+          path: nextPath,
+        },
+      }));
+    };
+
+    const onUp = () => {
+      const active = pathHandleDragSession;
+      setPathHandleDragSession(null);
+      const patch = draftElementPatches[active.elementId];
+      const nextPath = patch?.path as OverlayPath | undefined;
+      if (nextPath) {
+        updateElement(active.elementId, { path: nextPath } as any);
+      }
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
+        if (next[active.elementId]) {
+          next[active.elementId] = { ...next[active.elementId] };
+          delete next[active.elementId].path;
+          if (!Object.keys(next[active.elementId]).length) delete next[active.elementId];
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftElementPatches, pathHandleDragSession]);
 
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
@@ -3248,6 +4351,78 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
   }, [clientToStage, draftRects, handleDragLive, primaryDragSession]);
 
+  useEffect(() => {
+    if (activeCreationTool !== "pen") return;
+
+    const onMove = (e: MouseEvent) => {
+      if (!penDraft) return;
+      const point = clientToStage(e.clientX, e.clientY);
+      if (!point) return;
+      setPenDraft((prev) => (prev ? { ...prev, previewPoint: point } : prev));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const session = penPointerSessionRef.current;
+      penPointerSessionRef.current = null;
+      if (!session) return;
+      const point = clientToStage(e.clientX, e.clientY);
+      if (!point) return;
+      const dx = point.x - session.start.x;
+      const dy = point.y - session.start.y;
+      const dragDistance = Math.hypot(dx, dy);
+
+      if (penDraft) {
+        const first = penDraft.anchors[0];
+        if (penDraft.anchors.length >= 2 && Math.hypot(point.x - first.x, point.y - first.y) < 12) {
+          const normalized = normalizePathToBounds({
+            commands: [...penDraft.commands, { type: "close" }],
+          });
+          addPathElement(normalized.path, normalized.bounds, "Pen Path");
+          setPenDraft(null);
+          setActiveCreationTool(null);
+          return;
+        }
+      }
+
+      setPenDraft((prev) => {
+        if (!prev) {
+          return {
+            anchors: [point],
+            commands: [{ type: "move", x: point.x, y: point.y }],
+          };
+        }
+        const last = prev.anchors[prev.anchors.length - 1];
+        const nextCommands =
+          dragDistance > 8
+            ? [
+                ...prev.commands,
+                {
+                  type: "curve" as const,
+                  x1: last.x + dx / 2,
+                  y1: last.y + dy / 2,
+                  x2: point.x - dx / 2,
+                  y2: point.y - dy / 2,
+                  x: point.x,
+                  y: point.y,
+                },
+              ]
+            : [...prev.commands, { type: "line" as const, x: point.x, y: point.y }];
+        return {
+          anchors: [...prev.anchors, point],
+          commands: nextCommands,
+          previewPoint: point,
+        };
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [activeCreationTool, clientToStage, penDraft]);
+
   // Group drag (selection bounds Rnd)
   const groupDragStartRef = useRef<{
     startX: number;
@@ -3432,7 +4607,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const groupFor = (elementId: string) =>
         prev.elements.find(
-          (el) => el.type === "group" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+          (el) => (el.type === "group" || el.type === "frame") && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
         ) as any | undefined;
 
       const parentGroup = groupFor(id);
@@ -3597,8 +4772,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           onAddText={addText}
           onAddBox={addBox}
           onAddShape={addShape}
+          onTogglePenTool={() => {
+            setActiveCreationTool((prev) => prev === "pen" ? null : "pen");
+            setPenDraft(null);
+          }}
+          penToolActive={activeCreationTool === "pen"}
           onAddImage={addImage}
           onAddVideo={addVideo}
+          onAddFrame={addFrame}
           onAddProgress={(t) => t === 'bar' ? addProgressBar() : addProgressRing()}
           onAddLowerThird={addLowerThird}
           onGroup={groupSelected}
@@ -3694,6 +4875,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 components={overlayComponents}
                 onEdit={enterIsolationMode}
                 onDelete={deleteComponent}
+                onCreateVariant={createVariantFromComponent}
                 onInsert={(comp) => {
                   const instId = genId("instance");
 
@@ -3800,6 +4982,35 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 </span>
               </button>
             </div>
+
+            <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
+
+            <div className="flex items-center gap-1">
+              <button onClick={() => createBooleanFromSelection("union")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Union Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M8 8h8v8H8z" /><path d="M4 4h8v8H4z" /></svg>
+              </button>
+              <button onClick={() => createBooleanFromSelection("subtract")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Subtract Selection">
+                <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="14" height="14" /><path d="M10 10h10v10H10z" fill="#0b0b0c" stroke="none" /></svg>
+              </button>
+              <button onClick={() => createBooleanFromSelection("intersect")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Intersect Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M7 12a5 5 0 1 1 10 0a5 5 0 1 1-10 0z" /></svg>
+              </button>
+              <button onClick={() => createBooleanFromSelection("exclude")} disabled={!canBooleanSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Exclude Selection">
+                <svg {...TOOL_ICON_PROPS}><path d="M9 12a5 5 0 1 1 6 4.58" /><path d="M15 12a5 5 0 1 1-6-4.58" /></svg>
+              </button>
+              <button onClick={() => createOffsetPath(-8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Inset Path">
+                <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="2" /><rect x="8" y="8" width="8" height="8" rx="1" /></svg>
+              </button>
+              <button onClick={() => createOffsetPath(8)} disabled={!canOffsetSelection} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Create Outset Path">
+                <svg {...TOOL_ICON_PROPS}><rect x="7" y="7" width="10" height="10" rx="1" /><rect x="3" y="3" width="18" height="18" rx="2" /></svg>
+              </button>
+              <button onClick={convertSelectedToPath} disabled={!canConvertSelectionToPath} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Convert Selection to Path">
+                <svg {...TOOL_ICON_PROPS}><path d="M5 6h8" /><path d="M5 10h12" /><path d="M5 14h9" /><path d="M16 5l3 3-6 6-4 1 1-4Z" /></svg>
+              </button>
+              <button onClick={flattenBooleanSelected} disabled={!canFlattenBoolean} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Flatten Boolean to Path">
+                <svg {...TOOL_ICON_PROPS}><path d="M5 6h14" /><path d="M5 10h14" /><path d="M5 14h14" /><path d="M5 18h14" /></svg>
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -3809,6 +5020,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
+        {activeCreationTool === "pen" && (
+          <div className="flex items-center gap-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+            <div className="min-w-0 flex-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">
+              Pen mode:
+              <span className="ml-1 text-slate-200">{penDraft?.anchors.length ? `${penDraft.anchors.length} point${penDraft.anchors.length === 1 ? "" : "s"}` : "click to start a path"}</span>
+            </div>
+            <button onClick={() => commitPenDraft(false)} disabled={!penDraft || penDraft.anchors.length < 2} className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}>
+              Finish
+            </button>
+            <button onClick={() => commitPenDraft(true)} disabled={!penDraft || penDraft.anchors.length < 2} className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}>
+              Close
+            </button>
+            <button onClick={() => { setPenDraft(null); setActiveCreationTool(null); }} className={`${uiClasses.buttonGhost} h-7`}>
+              Cancel
+            </button>
+          </div>
+        )}
         {/* Canvas Inner */}
         <div
           ref={canvasOuterRef}
@@ -3901,6 +5129,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                   const p = clientToStage((e as any).clientX, (e as any).clientY);
                   if (!p) return;
+
+                  if (activeCreationTool === "pen") {
+                    penPointerSessionRef.current = { start: p };
+                    if (!penDraft) {
+                      setPenDraft({
+                        anchors: [p],
+                        commands: [{ type: "move", x: p.x, y: p.y }],
+                        previewPoint: p,
+                      });
+                    } else {
+                      setPenDraft((prev) => (prev ? { ...prev, previewPoint: p } : prev));
+                    }
+                    return;
+                  }
 
                   marqueeStartSelectedRef.current = selectedIds.slice();
                   setMarquee({
@@ -3997,6 +5239,35 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               )}
 
               {/* Marquee */}
+              {activeCreationTool === "pen" && penDraft && (
+                <svg className="absolute inset-0 pointer-events-none overflow-visible">
+                  <path
+                    d={svgPathFromCommands({
+                      commands:
+                        penDraft.previewPoint && penDraft.anchors.length
+                          ? [...penDraft.commands, { type: "line", x: penDraft.previewPoint.x, y: penDraft.previewPoint.y } as PathCommand]
+                          : penDraft.commands,
+                    })}
+                    fill="none"
+                    stroke="rgba(99,102,241,0.95)"
+                    strokeWidth={2}
+                    strokeDasharray="6 4"
+                  />
+                  {penDraft.anchors.map((anchor, index) => (
+                    <circle
+                      key={`pen-anchor-${index}`}
+                      cx={anchor.x}
+                      cy={anchor.y}
+                      r={4}
+                      fill={index === 0 ? "rgba(99,102,241,0.95)" : "#fff"}
+                      stroke="rgba(15,23,42,0.9)"
+                      strokeWidth={1.5}
+                    />
+                  ))}
+                </svg>
+              )}
+
+              {/* Marquee */}
               {marquee.active && (() => {
                 const r = getMarqueeRect();
                 if (!r) return null;
@@ -4087,6 +5358,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   ...(draftRadius !== undefined ? getRadiusPatch(el, draftRadius) : {}),
                   ...(draftPatch ? draftPatch : {}),
                 } as AnyEl);
+                const editablePath = renderedEl.type === "path" ? elementToOverlayPath(renderedEl as any) : null;
+                const pathAnchors = editablePath ? getPathAnchors(editablePath) : [];
+                const pathHandles = editablePath ? getPathHandles(editablePath) : [];
                 const radiusValue = clamp(
                   draftRadius ?? getElementRadiusValue(renderedEl),
                   0,
@@ -4096,6 +5370,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const forcePlainWrapper =
                   (renderedEl.type === "image" || renderedEl.type === "video") &&
                   ((renderedEl as any).blendMode ?? "normal") !== "normal";
+                const suppressLayerPointerEvents = activeCreationTool === "pen";
 
                 // Figma-style high-contrast selection border
                 const selectionStyle = isPrimary
@@ -4157,7 +5432,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
                                 if (!stagePoint) return;
                                 const descendants =
-                                  renderedEl.type === "group" || renderedEl.type === "mask"
+                                  renderedEl.type === "group" || renderedEl.type === "frame" || renderedEl.type === "mask" || renderedEl.type === "boolean"
                                     ? Object.fromEntries(
                                         Array.from(collectDescendantIds(previewElementsById, el.id))
                                           .map((childId) => {
@@ -4192,6 +5467,86 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
                               }}
                               aria-label={`Resize ${handle}`}
+                            />
+                          ))}
+                          {renderedEl.type === "path" && (
+                            <svg className="absolute inset-0 overflow-visible pointer-events-none">
+                              {pathHandles
+                                .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+                                .map((handle) => {
+                                  const anchor = pathAnchors.find((candidate) => candidate.commandIndex === handle.anchorCommandIndex);
+                                  if (!anchor) return null;
+                                  return (
+                                    <line
+                                      key={`${el.id}_handle_line_${handle.curveCommandIndex}_${handle.role}`}
+                                      x1={anchor.x}
+                                      y1={anchor.y}
+                                      x2={handle.x}
+                                      y2={handle.y}
+                                      stroke="rgba(165,180,252,0.8)"
+                                      strokeWidth={1}
+                                    />
+                                  );
+                                })}
+                            </svg>
+                          )}
+                          {renderedEl.type === "path" && pathHandles
+                            .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+                            .map((handle) => {
+                              return (
+                                <React.Fragment key={`${el.id}_handle_${handle.curveCommandIndex}_${handle.role}`}>
+                                  <button
+                                    type="button"
+                                    className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-100 bg-indigo-400 shadow-[0_0_0_1px_rgba(15,23,42,0.85)]"
+                                    style={{ left: handle.x, top: handle.y, cursor: "grab", pointerEvents: "auto" }}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                      if (!stagePoint || !editablePath) return;
+                                      setPathHandleDragSession({
+                                        elementId: el.id,
+                                        curveCommandIndex: handle.curveCommandIndex,
+                                        role: handle.role,
+                                        startStage: stagePoint,
+                                        originPath: editablePath,
+                                        rotationDeg,
+                                      });
+                                    }}
+                                  />
+                                </React.Fragment>
+                              );
+                            })}
+                          {renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => (
+                            <button
+                              key={`${el.id}_anchor_${anchor.commandIndex}`}
+                              type="button"
+                              className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${
+                                selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex
+                                  ? "border-indigo-100 bg-indigo-300"
+                                  : "border-white bg-[#111113]"
+                              }`}
+                              style={{ left: anchor.x, top: anchor.y, cursor: "grab", pointerEvents: "auto" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                if (!stagePoint || !editablePath) return;
+                                setSelectedPathAnchor({ elementId: el.id, commandIndex: anchor.commandIndex });
+                                setPathAnchorDragSession({
+                                  elementId: el.id,
+                                  commandIndex: anchor.commandIndex,
+                                  startStage: stagePoint,
+                                  originPath: editablePath,
+                                  rotationDeg,
+                                });
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedPathAnchor({ elementId: el.id, commandIndex: anchor.commandIndex });
+                              }}
+                              title={`Path point ${anchorIndex + 1}`}
                             />
                           ))}
                           {supportsRadiusHandle(renderedEl) && (
@@ -4254,7 +5609,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     <div
                       key={el.id}
                       className={(isLocked ? "cursor-not-allowed " : showTransformOverlay ? "cursor-move " : "") + "absolute"}
-                      style={{ left: x, top: y, width: w, height: h, ...(isSelected ? selectionStyle : {}) }}
+                      style={{
+                        left: x,
+                        top: y,
+                        width: w,
+                        height: h,
+                        pointerEvents: suppressLayerPointerEvents ? "none" : undefined,
+                        ...(isSelected ? selectionStyle : {}),
+                      }}
                       onMouseDown={(e) => {
                         if (spaceDown || (e as any).button === 1) return;
                         if (marquee.active || isLocked) return;
@@ -4342,7 +5704,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       (isLocked ? "cursor-not-allowed " : "cursor-move ") +
                       (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
                     }
-                    style={isSelected ? selectionStyle : undefined}
+                    style={{
+                      ...(isSelected ? selectionStyle : {}),
+                      pointerEvents: suppressLayerPointerEvents ? "none" : undefined,
+                    }}
                   >
                     {contentNode}
                   </Rnd>
@@ -4424,6 +5789,40 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
+            onReleaseBoolean={ungroupSelected}
+            onFlattenBoolean={flattenBooleanSelected}
+            onConvertToPath={convertSelectedToPath}
+            onDetachInstance={detachSelectedComponentInstance}
+            onCreateVariant={createVariantFromComponent}
+            parentFrame={selectedParentFrame}
+            selectedPathAnchor={selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null}
+            onAddPathNode={addSelectedPathNode}
+            onRemovePathNode={removeSelectedPathNode}
+            onSplitPath={splitSelectedPath}
+            onContinuePath={continueSelectedPath}
+            onJoinPaths={joinSelectedPaths}
+            onExpandStroke={expandSelectedStroke}
+            canContinuePath={Boolean(
+              primarySelectedEl?.type === "path" &&
+              selectedPathAnchor &&
+              selectedPathAnchor.elementId === primarySelectedEl.id &&
+              (() => {
+                const path = elementToOverlayPath(primarySelectedEl as any);
+                if (!path || isClosedPath(path)) return false;
+                const anchors = getPathAnchors(path);
+                const selectedIndex = anchors.findIndex((anchor) => anchor.commandIndex === selectedPathAnchor.commandIndex);
+                return selectedIndex === 0 || selectedIndex === anchors.length - 1;
+              })()
+            )}
+            canJoinPaths={
+              selectedIds.length === 2 &&
+              selectedIds.every((id) => elementsById[id]?.type === "path") &&
+              selectedIds.every((id) => {
+                const candidate = elementsById[id] as AnyEl | undefined;
+                const path = candidate ? elementToOverlayPath(candidate as any) : null;
+                return Boolean(path && !isClosedPath(path));
+              })
+            }
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
             timelineState={selectedTimelineState}
@@ -4453,13 +5852,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         selectedIds={selectedIds}
         playheadMs={timelinePlayheadMs}
         isPlaying={isTimelinePlaying}
+        selectedTrackId={selectedTimelineTrackId}
         selectedKeyframeId={selectedTimelineKeyframeId}
+        selectedKeyframeEasing={selectedTimelineKeyframe?.easing ?? "linear"}
         onSelectKeyframe={(trackId, keyframeId) => {
           setSelectedTimelineTrackId(trackId);
           setSelectedTimelineKeyframeId(keyframeId);
         }}
         onPlay={() => {
-          if (timelinePlayheadMs >= timeline.durationMs) {
+          if (timeline.playback?.reverse) {
+            if (timelinePlayheadMs <= 0) {
+              setTimelinePlayheadMs(timeline.durationMs);
+            }
+          } else if (timelinePlayheadMs >= timeline.durationMs) {
             setTimelinePlayheadMs(0);
           }
           setIsTimelinePlaying(true);
@@ -4467,7 +5872,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onPause={() => setIsTimelinePlaying(false)}
         onStop={() => {
           setIsTimelinePlaying(false);
-          setTimelinePlayheadMs(0);
+          setTimelinePlayheadMs(timeline.playback?.reverse ? timeline.durationMs : 0);
         }}
         onSetPlayhead={(timeMs) => {
           setIsTimelinePlaying(false);
@@ -4479,6 +5884,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
         }}
         onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
+        onSetPlayback={(patch) => {
+          setTimeline((currentTimeline) => ({
+            ...currentTimeline,
+            playback: {
+              ...(currentTimeline.playback ?? {}),
+              ...patch,
+            },
+          }));
+        }}
+        onSetSelectedKeyframeEasing={updateSelectedTimelineKeyframeEasing}
         onAddTrack={addTimelineTrack}
         onMoveKeyframe={moveTimelineKeyframe}
         onDuplicateKeyframe={duplicateTimelineKeyframe}
@@ -4497,8 +5912,11 @@ function pointInRect(x: number, y: number, rect: { l: number; r: number; t: numb
 function defaultElementLabel(el: AnyEl) {
   if (el.type === "text") return ((el as any).text || "Text").slice(0, 28);
   if (el.type === "shape") return (el as any).shape || "shape";
+  if (el.type === "path") return "Path";
+  if (el.type === "boolean") return `${((el as any).operation || "boolean").toString()} boolean`;
   if (el.type === "image") return "Image";
   if (el.type === "video") return "Video";
+  if (el.type === "frame") return "Frame";
   if (el.type === "group") return "Group";
   if (el.type === "progressBar") return "Progress Bar";
   if (el.type === "progressRing") return "Progress Ring";
@@ -4530,6 +5948,21 @@ interface InspectorProps {
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  onReleaseBoolean?: () => void;
+  onFlattenBoolean?: () => void;
+  onConvertToPath?: () => void;
+  onDetachInstance?: () => void;
+  onCreateVariant?: (componentId: string) => void;
+  parentFrame?: OverlayFrameElement | null;
+  selectedPathAnchor?: number | null;
+  onAddPathNode?: () => void;
+  onRemovePathNode?: () => void;
+  onSplitPath?: () => void;
+  onContinuePath?: () => void;
+  onJoinPaths?: () => void;
+  onExpandStroke?: () => void;
+  canContinuePath?: boolean;
+  canJoinPaths?: boolean;
   previewVisible?: boolean;
   onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
   timelineState?: {
@@ -4708,6 +6141,34 @@ function LinkIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M4 6h16" />
+      <path d="M9 3h6" />
+      <path d="M6 6v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6" />
+      <path d="M10 9v6" />
+      <path d="M14 9v6" />
+    </svg>
+  );
+}
+
+function ChevronUpIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="m6 14 6-6 6 6" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="m6 10 6 6 6-6" />
+    </svg>
+  );
+}
+
 const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string }> = [
   { value: "none", label: "None" },
   { value: "fade", label: "Fade" },
@@ -4728,14 +6189,387 @@ const PATTERN_FIT_OPTIONS: Array<{ value: OverlayPatternFit; label: string }> = 
   { value: "tile", label: "Tile" },
   { value: "cover", label: "Cover" },
   { value: "contain", label: "Contain" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const STROKE_ALIGN_OPTIONS: Array<{ value: OverlayStrokeAlign; label: string }> = [
+  { value: "inside", label: "Inside" },
+  { value: "center", label: "Center" },
+  { value: "outside", label: "Outside" },
+];
+
+const CORNER_TYPE_OPTIONS: Array<{ value: OverlayCornerType; label: string }> = [
+  { value: "round", label: "Round" },
+  { value: "cut", label: "Cut" },
+  { value: "angle", label: "Angle" },
+];
+
+const FRAME_LAYOUT_MODE_OPTIONS: Array<{ value: OverlayFrameLayoutMode; label: string }> = [
+  { value: "free", label: "Free" },
+  { value: "horizontal", label: "Horizontal" },
+  { value: "vertical", label: "Vertical" },
+];
+
+const FRAME_ALIGN_OPTIONS: Array<{ value: OverlayFrameAlign; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "End" },
+  { value: "stretch", label: "Stretch" },
+];
+
+const FRAME_JUSTIFY_OPTIONS: Array<{ value: OverlayFrameJustify; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "center", label: "Center" },
+  { value: "end", label: "End" },
+  { value: "space-between", label: "Space Between" },
+];
+
+const CONSTRAINT_MODE_OPTIONS: Array<{ value: OverlayConstraintMode; label: string }> = [
+  { value: "start", label: "Start" },
+  { value: "end", label: "End" },
+  { value: "stretch", label: "Stretch" },
+  { value: "center", label: "Center" },
+  { value: "scale", label: "Scale" },
+];
+
+const EFFECT_TYPE_OPTIONS: Array<{ value: OverlayEffect["type"]; label: string }> = [
+  { value: "dropShadow", label: "Drop Shadow" },
+  { value: "innerShadow", label: "Inner Shadow" },
+  { value: "outerGlow", label: "Outer Glow" },
+  { value: "innerGlow", label: "Inner Glow" },
+  { value: "layerBlur", label: "Layer Blur" },
+  { value: "noise", label: "Noise / Grain" },
 ];
 
 function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
   return {
+    type: "pattern",
     src: pattern?.src ?? "",
     fit: pattern?.fit ?? "tile",
     scale: pattern?.scale ?? 100,
     opacity: pattern?.opacity ?? 1,
+    offsetX: pattern?.offsetX ?? 0,
+    offsetY: pattern?.offsetY ?? 0,
+    rotationDeg: pattern?.rotationDeg ?? 0,
+  };
+}
+
+function defaultGradientStops(): OverlayFillStop[] {
+  return [
+    { color: "#ffffff", opacity: 1, position: 0 },
+    { color: "#7c3aed", opacity: 1, position: 100 },
+  ];
+}
+
+function ensureFill(fill?: OverlayFill): OverlayFill {
+  if (!fill) return { type: "solid", color: "#ffffff", opacity: 1 };
+  if (fill.type === "solid") return { type: "solid", color: fill.color ?? "#ffffff", opacity: fill.opacity ?? 1, id: fill.id };
+  if (fill.type === "pattern") return ensurePatternFill(fill);
+  return {
+    type: fill.type,
+    id: fill.id,
+    opacity: fill.opacity ?? 1,
+    angleDeg: fill.angleDeg ?? 0,
+    stops: Array.isArray(fill.stops) && fill.stops.length ? fill.stops : defaultGradientStops(),
+  };
+}
+
+function getElementFills(element: AnyEl): OverlayFill[] {
+  if (Array.isArray((element as any).fills) && (element as any).fills.length) {
+    return (element as any).fills.map((fill: OverlayFill) => ensureFill(fill));
+  }
+  if (element.type === "box") {
+    const fills: OverlayFill[] = [];
+    if ((element as any).backgroundColor) fills.push({ type: "solid", color: (element as any).backgroundColor, opacity: 1 });
+    if ((element as any).pattern?.src) fills.push(ensurePatternFill((element as any).pattern));
+    return fills.length ? fills : [{ type: "solid", color: "#0f172a", opacity: 1 }];
+  }
+  const fills: OverlayFill[] = [];
+  if ((element as any).fillColor) fills.push({ type: "solid", color: (element as any).fillColor, opacity: (element as any).fillOpacity ?? 1 });
+  if ((element as any).pattern?.src) fills.push(ensurePatternFill((element as any).pattern));
+  return fills.length ? fills : [{ type: "solid", color: "#ffffff", opacity: 1 }];
+}
+
+function defaultEffect(type: OverlayEffect["type"] = "dropShadow"): OverlayEffect {
+  switch (type) {
+    case "innerShadow":
+      return { type, color: "rgba(15,23,42,0.7)", blur: 12, x: 0, y: 4, spread: 0, opacity: 1 };
+    case "outerGlow":
+      return { type, color: "#60a5fa", blur: 18, spread: 2, opacity: 0.9 };
+    case "innerGlow":
+      return { type, color: "#60a5fa", blur: 14, spread: 1, opacity: 0.65 };
+    case "layerBlur":
+      return { type, blur: 8, opacity: 1 };
+    case "noise":
+      return { type, amount: 0.18, scale: 24, opacity: 0.18 };
+    case "dropShadow":
+    default:
+      return { type: "dropShadow", color: "rgba(15,23,42,0.55)", blur: 18, x: 0, y: 8, spread: 0, opacity: 1 };
+  }
+}
+
+function ensureEffect(effect?: OverlayEffect): OverlayEffect {
+  if (!effect) return defaultEffect();
+  const base = { ...defaultEffect(effect.type), ...effect };
+  if (base.type === "dropShadow" || base.type === "innerShadow") {
+    return {
+      type: base.type,
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      color: (base as OverlayShadowEffect).color,
+      blur: (base as OverlayShadowEffect).blur,
+      x: (base as OverlayShadowEffect).x,
+      y: (base as OverlayShadowEffect).y,
+      spread: (base as OverlayShadowEffect).spread ?? 0,
+    };
+  }
+  if (base.type === "outerGlow" || base.type === "innerGlow") {
+    return {
+      type: base.type,
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      color: (base as OverlayGlowEffect).color,
+      blur: (base as OverlayGlowEffect).blur,
+      spread: (base as OverlayGlowEffect).spread ?? 0,
+    };
+  }
+  if (base.type === "layerBlur") {
+    return {
+      type: "layerBlur",
+      id: base.id,
+      enabled: base.enabled ?? true,
+      opacity: base.opacity ?? 1,
+      blur: (base as OverlayLayerBlurEffect).blur,
+    };
+  }
+  return {
+    type: "noise",
+    id: base.id,
+    enabled: base.enabled ?? true,
+    opacity: base.opacity ?? 1,
+    amount: (base as OverlayNoiseEffect).amount,
+    scale: (base as OverlayNoiseEffect).scale ?? 24,
+  };
+}
+
+function getElementEffects(element: AnyEl): OverlayEffect[] {
+  if (Array.isArray((element as any).effects) && (element as any).effects.length) {
+    return (element as any).effects.map((effect: OverlayEffect) => ensureEffect(effect));
+  }
+  const shadow = (element as any).shadow;
+  if (shadow?.enabled) {
+    return [
+      ensureEffect({
+        type: "dropShadow",
+        color: shadow.color,
+        blur: shadow.blur,
+        x: shadow.x,
+        y: shadow.y,
+        spread: shadow.spread ?? 0,
+        opacity: 1,
+      }),
+    ];
+  }
+  return [];
+}
+
+function ensureConstraints(constraints?: OverlayConstraints): OverlayConstraints {
+  return {
+    horizontal: constraints?.horizontal ?? "start",
+    vertical: constraints?.vertical ?? "start",
+  };
+}
+
+function ensureFrameLayout(layout?: (OverlayFrameElement["layout"])) {
+  return {
+    mode: layout?.mode ?? "free",
+    gap: layout?.gap ?? 12,
+    padding: layout?.padding ?? 16,
+    align: layout?.align ?? "start",
+    justify: layout?.justify ?? "start",
+    wrap: layout?.wrap ?? false,
+  };
+}
+
+function isContainerElement(el: AnyEl | OverlayElement | null | undefined): el is AnyEl {
+  return !!el && (el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean");
+}
+
+function isFrameElement(el: AnyEl | OverlayElement | null | undefined): el is OverlayFrameElement {
+  return !!el && el.type === "frame";
+}
+
+function constrainFrameChildRect(
+  child: AnyEl,
+  frameOrigin: { x: number; y: number; width: number; height: number },
+  nextFrame: { x: number; y: number; width: number; height: number }
+) {
+  const constraints = ensureConstraints(child.constraints);
+  const left = (child.x ?? 0) - frameOrigin.x;
+  const top = (child.y ?? 0) - frameOrigin.y;
+  const right = frameOrigin.width - left - (child.width ?? 0);
+  const bottom = frameOrigin.height - top - (child.height ?? 0);
+  const centerOffsetX = left + (child.width ?? 0) / 2 - frameOrigin.width / 2;
+  const centerOffsetY = top + (child.height ?? 0) / 2 - frameOrigin.height / 2;
+  const scaleX = nextFrame.width / Math.max(frameOrigin.width, 1);
+  const scaleY = nextFrame.height / Math.max(frameOrigin.height, 1);
+
+  let x = child.x ?? 0;
+  let y = child.y ?? 0;
+  let width = child.width ?? 0;
+  let height = child.height ?? 0;
+
+  switch (constraints.horizontal) {
+    case "end":
+      x = nextFrame.x + nextFrame.width - right - width;
+      break;
+    case "stretch":
+      x = nextFrame.x + left;
+      width = Math.max(1, nextFrame.width - left - right);
+      break;
+    case "center":
+      x = nextFrame.x + nextFrame.width / 2 + centerOffsetX - width / 2;
+      break;
+    case "scale":
+      x = nextFrame.x + left * scaleX;
+      width = Math.max(1, width * scaleX);
+      break;
+    case "start":
+    default:
+      x = nextFrame.x + left;
+      break;
+  }
+
+  switch (constraints.vertical) {
+    case "end":
+      y = nextFrame.y + nextFrame.height - bottom - height;
+      break;
+    case "stretch":
+      y = nextFrame.y + top;
+      height = Math.max(1, nextFrame.height - top - bottom);
+      break;
+    case "center":
+      y = nextFrame.y + nextFrame.height / 2 + centerOffsetY - height / 2;
+      break;
+    case "scale":
+      y = nextFrame.y + top * scaleY;
+      height = Math.max(1, height * scaleY);
+      break;
+    case "start":
+    default:
+      y = nextFrame.y + top;
+      break;
+  }
+
+  return {
+    x: Math.round(x),
+    y: Math.round(y),
+    width: Math.round(width),
+    height: Math.round(height),
+  };
+}
+
+function reflowFrameElements(frame: OverlayFrameElement, elements: AnyEl[]) {
+  const layout = ensureFrameLayout(frame.layout);
+  if (layout.mode === "free") return elements;
+
+  const elementMap = new Map(elements.map((element) => [element.id, element]));
+  const children = (frame.childIds ?? [])
+    .map((childId) => elementMap.get(childId))
+    .filter((child): child is AnyEl => Boolean(child));
+
+  if (!children.length) return elements;
+
+  const pad = layout.padding ?? 0;
+  const gap = layout.gap ?? 0;
+  const isHorizontal = layout.mode === "horizontal";
+  const mainSize = Math.max(0, (isHorizontal ? frame.width : frame.height) - pad * 2);
+  const crossSize = Math.max(0, (isHorizontal ? frame.height : frame.width) - pad * 2);
+
+  const rows: Array<{ children: AnyEl[]; used: number; cross: number }> = [];
+  let currentRow: { children: AnyEl[]; used: number; cross: number } = { children: [], used: 0, cross: 0 };
+
+  children.forEach((child, index) => {
+    const childMain = Math.max(1, isHorizontal ? child.width ?? 0 : child.height ?? 0);
+    const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+    const nextUsed = currentRow.children.length === 0 ? childMain : currentRow.used + gap + childMain;
+    const shouldWrap = layout.wrap && currentRow.children.length > 0 && nextUsed > mainSize;
+    if (shouldWrap) {
+      rows.push(currentRow);
+      currentRow = { children: [], used: 0, cross: 0 };
+    }
+    currentRow.children.push(child);
+    currentRow.used = currentRow.children.length === 1 ? childMain : currentRow.used + gap + childMain;
+    currentRow.cross = Math.max(currentRow.cross, childCross);
+    if (index === children.length - 1) rows.push(currentRow);
+  });
+  if (!rows.length) rows.push(currentRow);
+
+  const totalCross = rows.reduce((sum, row) => sum + row.cross, 0) + gap * Math.max(0, rows.length - 1);
+  let crossCursor = frame.y + pad;
+  if (layout.align === "center" && !layout.wrap) {
+    crossCursor = frame.y + pad + Math.max(0, (crossSize - totalCross) / 2);
+  } else if (layout.align === "end" && !layout.wrap) {
+    crossCursor = frame.y + pad + Math.max(0, crossSize - totalCross);
+  }
+
+  const updates = new Map<string, Partial<AnyEl>>();
+
+  rows.forEach((row) => {
+    let mainGap = gap;
+    let mainCursor = frame.x + pad;
+    if (layout.justify === "center") {
+      mainCursor = frame.x + pad + Math.max(0, (mainSize - row.used) / 2);
+    } else if (layout.justify === "end") {
+      mainCursor = frame.x + pad + Math.max(0, mainSize - row.used);
+    } else if (layout.justify === "space-between" && row.children.length > 1) {
+      mainGap = Math.max(gap, (mainSize - row.children.reduce((sum, child) => sum + (isHorizontal ? child.width ?? 0 : child.height ?? 0), 0)) / (row.children.length - 1));
+    }
+
+    row.children.forEach((child) => {
+      const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+      let crossPos = crossCursor;
+      let stretchPatch: Partial<AnyEl> = {};
+      if (layout.align === "center") {
+        crossPos = crossCursor + Math.max(0, (row.cross - childCross) / 2);
+      } else if (layout.align === "end") {
+        crossPos = crossCursor + Math.max(0, row.cross - childCross);
+      } else if (layout.align === "stretch") {
+        if (isHorizontal) {
+          stretchPatch.height = Math.max(1, row.cross);
+        } else {
+          stretchPatch.width = Math.max(1, row.cross);
+        }
+      }
+
+      updates.set(child.id, {
+        ...stretchPatch,
+        x: Math.round(isHorizontal ? mainCursor : crossPos),
+        y: Math.round(isHorizontal ? crossPos : mainCursor),
+      });
+      mainCursor += (isHorizontal ? child.width ?? 0 : child.height ?? 0) + mainGap;
+    });
+
+    crossCursor += row.cross + gap;
+  });
+
+  return elements.map((element) => (updates.has(element.id) ? { ...element, ...updates.get(element.id) } : element));
+}
+
+function reflowFrameInElementList(frameId: string, elements: AnyEl[]) {
+  const frame = elements.find((element) => element.id === frameId && element.type === "frame") as OverlayFrameElement | undefined;
+  if (!frame) return elements;
+  return reflowFrameElements(frame, elements);
+}
+
+function ensureCornerRadii(radius: number, cornerRadii?: OverlayCornerRadii): OverlayCornerRadii {
+  return {
+    topLeft: cornerRadii?.topLeft ?? radius,
+    topRight: cornerRadii?.topRight ?? radius,
+    bottomRight: cornerRadii?.bottomRight ?? radius,
+    bottomLeft: cornerRadii?.bottomLeft ?? radius,
   };
 }
 
@@ -4855,6 +6689,516 @@ function PatternFillControls({
           <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
         </div>
       </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off X</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off Y</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Rot</label>
+          <NumberField label="" value={Math.round(nextPattern.rotationDeg ?? 0)} onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })} noLabel className="flex-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FillStackControls({
+  element,
+  onChange,
+  onPickPatternImage,
+}: {
+  element: AnyEl;
+  onChange: (patch: Partial<AnyEl>) => void;
+  onPickPatternImage: () => void;
+}) {
+  const fills = getElementFills(element);
+  const setFills = (nextFills: OverlayFill[]) => {
+    if (element.type === "box") {
+      const firstSolid = nextFills.find((fill) => fill.type === "solid") as any;
+      const firstPattern = nextFills.find((fill) => fill.type === "pattern") as any;
+      onChange({
+        fills: nextFills,
+        backgroundColor: firstSolid?.color,
+        pattern: firstPattern,
+      } as any);
+      return;
+    }
+    const firstSolid = nextFills.find((fill) => fill.type === "solid") as any;
+    const firstPattern = nextFills.find((fill) => fill.type === "pattern") as any;
+    onChange({
+      fills: nextFills,
+      fillColor: firstSolid?.color,
+      fillOpacity: firstSolid?.opacity,
+      pattern: firstPattern,
+    } as any);
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      {fills.map((fill, index) => {
+        const nextFill = ensureFill(fill);
+        return (
+          <div key={nextFill.id ?? `${nextFill.type}-${index}`} className="space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3">
+            <div className="flex items-center gap-2">
+              <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fill</label>
+              <select
+                className={`flex-1 ${uiClasses.field}`}
+                value={nextFill.type}
+                onChange={(e) => {
+                  const replacement =
+                    e.target.value === "solid"
+                      ? ({ type: "solid", color: "#ffffff", opacity: 1 } as OverlayFill)
+                      : e.target.value === "pattern"
+                        ? (ensurePatternFill() as OverlayFill)
+                        : ({ type: e.target.value as any, opacity: 1, angleDeg: 0, stops: defaultGradientStops() } as OverlayFill);
+                  setFills(fills.map((candidate, candidateIndex) => (candidateIndex === index ? replacement : candidate)));
+                }}
+              >
+                <option value="solid">Solid</option>
+                <option value="linear">Linear</option>
+                <option value="radial">Radial</option>
+                <option value="conic">Conic</option>
+                <option value="pattern">Pattern</option>
+              </select>
+              <button type="button" className={uiClasses.iconButton} onClick={() => setFills(fills.filter((_, candidateIndex) => candidateIndex !== index))}>
+                <TrashIcon />
+              </button>
+            </div>
+
+            {nextFill.type === "solid" && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Color</label>
+                <div className="flex-1 flex gap-2">
+                  <ColorSwatch value={nextFill.color} onChange={(v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: v } : candidate))} />
+                  <input type="text" className={`flex-1 font-mono ${uiClasses.field}`} value={nextFill.color} onChange={(e) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: e.target.value } : candidate))} />
+                </div>
+              </div>
+            )}
+
+            {(nextFill.type === "linear" || nextFill.type === "radial" || nextFill.type === "conic") && (
+              <>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Angle</label>
+                  <NumberField label="" value={Math.round(nextFill.angleDeg ?? 0)} onChange={(v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v } : candidate))} noLabel className="flex-1" />
+                </div>
+                {[0, 1].map((stopIndex) => {
+                  const stop = nextFill.stops[stopIndex] ?? defaultGradientStops()[stopIndex];
+                  return (
+                    <div key={stopIndex} className="grid grid-cols-[48px_1fr_80px] items-center gap-2">
+                      <label className={uiClasses.fieldLabel}>{stopIndex === 0 ? "From" : "To"}</label>
+                      <div className="flex gap-2">
+                        <ColorSwatch
+                          value={stop.color}
+                          onChange={(v) =>
+                            setFills(
+                              fills.map((candidate, candidateIndex) =>
+                                candidateIndex === index
+                                  ? {
+                                      ...nextFill,
+                                      stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                        candidateStopIndex === stopIndex ? { ...candidateStop, color: v } : candidateStop
+                                      ),
+                                    }
+                                  : candidate
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          type="text"
+                          className={`flex-1 font-mono ${uiClasses.field}`}
+                          value={stop.color}
+                          onChange={(e) =>
+                            setFills(
+                              fills.map((candidate, candidateIndex) =>
+                                candidateIndex === index
+                                  ? {
+                                      ...nextFill,
+                                      stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                        candidateStopIndex === stopIndex ? { ...candidateStop, color: e.target.value } : candidateStop
+                                      ),
+                                    }
+                                  : candidate
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                      <NumberField
+                        label=""
+                        value={Math.round(stop.position ?? (stopIndex === 0 ? 0 : 100))}
+                        onChange={(v) =>
+                          setFills(
+                            fills.map((candidate, candidateIndex) =>
+                              candidateIndex === index
+                                ? {
+                                    ...nextFill,
+                                    stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                      candidateStopIndex === stopIndex ? { ...candidateStop, position: v } : candidateStop
+                                    ),
+                                  }
+                                : candidate
+                            )
+                          )
+                        }
+                        noLabel
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {nextFill.type === "pattern" && (
+              <PatternFillControls
+                pattern={nextFill}
+                onChange={(pattern) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? pattern : candidate))}
+                onPickImage={onPickPatternImage}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => setFills([...fills, { type: "solid", color: "#ffffff", opacity: 1 }])}
+      >
+        Add Fill
+      </button>
+    </div>
+  );
+}
+
+function EffectsStackControls({
+  element,
+  onChange,
+}: {
+  element: AnyEl;
+  onChange: (patch: Partial<AnyEl>) => void;
+}) {
+  const effects = getElementEffects(element);
+
+  const setEffects = (nextEffects: OverlayEffect[]) => {
+    const normalized = nextEffects.map((effect) => ensureEffect(effect));
+    const legacyShadow = normalized.find((effect) => effect.type === "dropShadow") as OverlayShadowEffect | undefined;
+    onChange({
+      effects: normalized,
+      shadow: legacyShadow
+        ? {
+            enabled: true,
+            color: legacyShadow.color,
+            blur: legacyShadow.blur,
+            x: legacyShadow.x,
+            y: legacyShadow.y,
+            spread: legacyShadow.spread ?? 0,
+          }
+        : {
+            enabled: false,
+            color: "#000000",
+            blur: 10,
+            x: 0,
+            y: 4,
+            spread: 0,
+          },
+    } as any);
+  };
+
+  const moveEffect = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= effects.length) return;
+    const next = [...effects];
+    [next[index], next[target]] = [next[target], next[index]];
+    setEffects(next);
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      {effects.length === 0 && (
+        <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+          No effects. Add shadows, glows, blur, or grain.
+        </div>
+      )}
+
+      {effects.map((effect, index) => {
+        const nextEffect = ensureEffect(effect);
+        return (
+          <div key={nextEffect.id ?? `${nextEffect.type}-${index}`} className="space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3">
+            <div className="flex items-center gap-2">
+              <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Effect</label>
+              <select
+                className={`flex-1 ${uiClasses.field}`}
+                value={nextEffect.type}
+                onChange={(e) =>
+                  setEffects(
+                    effects.map((candidate, candidateIndex) =>
+                      candidateIndex === index ? defaultEffect(e.target.value as OverlayEffect["type"]) : candidate
+                    )
+                  )
+                }
+              >
+                {EFFECT_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => moveEffect(index, -1)}
+                disabled={index === 0}
+                title="Move effect up"
+              >
+                <ChevronUpIcon />
+              </button>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => moveEffect(index, 1)}
+                disabled={index === effects.length - 1}
+                title="Move effect down"
+              >
+                <ChevronDownIcon />
+              </button>
+              <button
+                type="button"
+                className={uiClasses.iconButton}
+                onClick={() => setEffects(effects.filter((_, candidateIndex) => candidateIndex !== index))}
+                title="Remove effect"
+              >
+                <TrashIcon />
+              </button>
+            </div>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                checked={nextEffect.enabled !== false}
+                onChange={(e) =>
+                  setEffects(
+                    effects.map((candidate, candidateIndex) =>
+                      candidateIndex === index ? { ...nextEffect, enabled: e.target.checked } : candidate
+                    )
+                  )
+                }
+              />
+              <span className={uiClasses.fieldLabel}>Enabled</span>
+            </label>
+
+            {(nextEffect.type === "dropShadow" ||
+              nextEffect.type === "innerShadow" ||
+              nextEffect.type === "outerGlow" ||
+              nextEffect.type === "innerGlow") && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Color</label>
+                <div className="flex flex-1 gap-2">
+                  <ColorSwatch
+                    value={(nextEffect as OverlayShadowEffect | OverlayGlowEffect).color}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, color: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                  />
+                  <input
+                    type="text"
+                    className={`flex-1 font-mono ${uiClasses.field}`}
+                    value={(nextEffect as OverlayShadowEffect | OverlayGlowEffect).color}
+                    onChange={(e) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, color: e.target.value } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            )}
+
+            {(nextEffect.type === "dropShadow" || nextEffect.type === "innerShadow") && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).blur}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Spread</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).spread ?? 0}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, spread: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Off X</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).x}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, x: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Off Y</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayShadowEffect).y}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, y: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {(nextEffect.type === "outerGlow" || nextEffect.type === "innerGlow") && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayGlowEffect).blur}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Spread</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayGlowEffect).spread ?? 0}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, spread: v } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+
+            {nextEffect.type === "layerBlur" && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Blur</label>
+                <NumberField
+                  label=""
+                  value={(nextEffect as OverlayLayerBlurEffect).blur}
+                  onChange={(v) =>
+                    setEffects(
+                      effects.map((candidate, candidateIndex) =>
+                        candidateIndex === index ? { ...nextEffect, blur: Math.max(0, v) } as OverlayEffect : candidate
+                      )
+                    )
+                  }
+                  noLabel
+                  className="flex-1"
+                />
+              </div>
+            )}
+
+            {nextEffect.type === "noise" && (
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Amt</label>
+                  <NumberField
+                    label=""
+                    value={Math.round(((nextEffect as OverlayNoiseEffect).amount ?? 0.18) * 100)}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, amount: Math.max(0, Math.min(1, v / 100)) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Scale</label>
+                  <NumberField
+                    label=""
+                    value={(nextEffect as OverlayNoiseEffect).scale ?? 24}
+                    onChange={(v) =>
+                      setEffects(
+                        effects.map((candidate, candidateIndex) =>
+                          candidateIndex === index ? { ...nextEffect, scale: Math.max(1, v) } as OverlayEffect : candidate
+                        )
+                      )
+                    }
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => setEffects([...effects, defaultEffect("dropShadow")])}
+      >
+        Add Effect
+      </button>
     </div>
   );
 }
@@ -4864,7 +7208,8 @@ function InspectorPanel({
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask,
+  onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
+  selectedPathAnchor, onAddPathNode, onRemovePathNode, onSplitPath, onContinuePath, onJoinPaths, onExpandStroke, canContinuePath, canJoinPaths,
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
@@ -4873,6 +7218,16 @@ function InspectorPanel({
   const isLocked = element.locked === true;
   const fieldClass = uiClasses.field;
   const fieldLabelClass = uiClasses.fieldLabel;
+  const resolvedGeometry =
+    element.type === "path" || element.type === "boolean" || element.type === "shape" || element.type === "box"
+      ? resolveElementGeometry(element as any)
+      : null;
+  const pathCommandCount =
+    element.type === "path"
+      ? ((element as any).path?.commands?.length ?? 0)
+      : element.type === "boolean"
+        ? (resolvedGeometry?.path.commands.length ?? 0)
+        : null;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
@@ -4920,6 +7275,97 @@ function InspectorPanel({
             </div>
           </div>
         )}
+        {(element.type === "path" || element.type === "boolean") && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">
+              {element.type === "path" ? "Path geometry" : "Boolean geometry"}
+            </div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              {element.type === "path"
+                ? `This layer renders from ${pathCommandCount ?? 0} local path commands.`
+                : `This container resolves ${((element as any).childIds?.length ?? 0)} child shapes into one cached path.`}
+            </div>
+            {element.type === "boolean" && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => onFlattenBoolean?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Flatten to Path
+                </button>
+                <button
+                  onClick={() => onReleaseBoolean?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Release Boolean
+                </button>
+              </div>
+            )}
+            {element.type === "path" && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => onAddPathNode?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Add Point
+                </button>
+                <button
+                  onClick={() => onRemovePathNode?.()}
+                  disabled={selectedPathAnchor == null}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Remove Point
+                </button>
+                <button
+                  onClick={() => onSplitPath?.()}
+                  disabled={selectedPathAnchor == null}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Split Path
+                </button>
+                <button
+                  onClick={() => onContinuePath?.()}
+                  disabled={!canContinuePath}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Continue Path
+                </button>
+                <button
+                  onClick={() => onExpandStroke?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Expand Stroke
+                </button>
+                <button
+                  onClick={() => onJoinPaths?.()}
+                  disabled={!canJoinPaths}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Join Selected
+                </button>
+                <div className="flex items-center text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  {selectedPathAnchor == null ? "Select a path point to edit it." : `Selected point #${selectedPathAnchor + 1}`}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {(element.type === "shape" || element.type === "box") && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Primitive geometry</div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              This layer is rendered through the shared path model and can be converted into an editable path element.
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                onClick={() => onConvertToPath?.()}
+                className={`${uiClasses.buttonGhost} h-7`}
+              >
+                Convert to Path
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transform Section */}
@@ -4943,6 +7389,16 @@ function InspectorPanel({
             <div className="flex items-center gap-2">
               <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} /></label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SX" timelineState={timelineState?.properties.scaleX} /></label>
+              <NumberField label="" value={typeof (element as any).scaleX === "number" ? (element as any).scaleX : 1} onChange={(v) => onChange({ scaleX: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SY" timelineState={timelineState?.properties.scaleY} /></label>
+              <NumberField label="" value={typeof (element as any).scaleY === "number" ? (element as any).scaleY : 1} onChange={(v) => onChange({ scaleY: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
             </div>
           </div>
 
@@ -5029,6 +7485,20 @@ function InspectorPanel({
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                   Edit Master Component
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => onDetachInstance?.()}
+                  className={uiClasses.buttonGhost}
+                >
+                  Detach Instance
+                </button>
+                <button
+                  onClick={() => onCreateVariant?.((element as any).componentId)}
+                  className={uiClasses.buttonGhost}
+                >
+                  Create Variant
                 </button>
               </div>
             </div>
@@ -5201,97 +7671,248 @@ function InspectorPanel({
           {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
-                <div className="flex-1 flex gap-1 items-center">
-                  <ColorSwatch value={(element as any).backgroundColor} onChange={(v) => onChange({ backgroundColor: v } as any)} />
-                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
-                  {isComponentMaster && <ExposeButton element={element} propPath="backgroundColor" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={(element as any).pattern ? "pattern" : "solid"}
-                  onChange={(e) =>
-                    onChange({
-                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
-                    } as any)
-                  }
-                >
-                  <option value="solid">Solid</option>
-                  <option value="pattern">Pattern</option>
-                </select>
-              </div>
-              {(element as any).pattern && (
-                <PatternFillControls
-                  pattern={(element as any).pattern}
-                  onChange={(pattern) => onChange({ pattern } as any)}
-                  onPickImage={onPickPatternImage}
-                />
-              )}
+              <FillStackControls element={element} onChange={onChange} onPickPatternImage={onPickPatternImage} />
+              {(() => {
+                const uniformRadius = (element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0;
+                const cornerRadii = ensureCornerRadii(uniformRadius, (element as any).cornerRadii);
+                return (
+                  <>
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
-            </div>
-          )}
-
-          {/* SHAPE */}
-          {element.type === "shape" && (
-            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 ml-14">
+                {([
+                  ["TL", "topLeft"],
+                  ["TR", "topRight"],
+                  ["BL", "bottomLeft"],
+                  ["BR", "bottomRight"],
+                ] as const).map(([label, key]) => (
+                  <div key={key} className="flex items-center gap-2">
+                    <label className="w-6 flex-none text-[11px] leading-[1.4] text-slate-500">{label}</label>
+                    <NumberField
+                      label=""
+                      value={Math.round(cornerRadii[key] ?? 0)}
+                      onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v, cornerRadii: { ...cornerRadii, [key]: v } } as any)}
+                      noLabel
+                      className="flex-1"
+                    />
+                  </div>
+                ))}
+              </div>
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Corner</label>
                 <select
                   className={`flex-1 ${fieldClass}`}
-                  value={(element as any).shape ?? "rect"}
-                  onChange={(e) => onChange({ shape: e.target.value } as any)}
+                  value={(element as any).cornerType ?? "round"}
+                  onChange={(e) => onChange({ cornerType: e.target.value } as any)}
                 >
-                  <option value="rect">Rectangle</option>
-                  <option value="circle">Circle</option>
-                  <option value="triangle">Triangle</option>
-                  <option value="line">Line</option>
+                  {CORNER_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
-
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
                 <div className="flex-1 flex gap-2">
-                  <ColorSwatch value={(element as any).fillColor} onChange={(v) => onChange({ fillColor: v } as any)} />
-                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
+                  <ColorSwatch value={(element as any).strokeColor ?? "#ffffff"} onChange={(v) => onChange({ strokeColor: v } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-14">
-                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Opac.</label>
-                <div className="w-16 relative">
-                  <NumberField label="" value={Math.round(((element as any).fillOpacity ?? 1) * 100)} onChange={(v) => onChange({ fillOpacity: v / 100 } as any)} noLabel />
-                  <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
+                <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-16" />
                 <select
                   className={`flex-1 ${fieldClass}`}
-                  value={(element as any).pattern ? "pattern" : "solid"}
-                  onChange={(e) =>
-                    onChange({
-                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
-                    } as any)
-                  }
+                  value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
+                  onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
                 >
                   <option value="solid">Solid</option>
-                  <option value="pattern">Pattern</option>
+                  <option value="dashed">Dashed</option>
                 </select>
               </div>
-              {(element as any).pattern && (
-                <PatternFillControls
-                  pattern={(element as any).pattern}
-                  onChange={(pattern) => onChange({ pattern } as any)}
-                  onPickImage={onPickPatternImage}
-                />
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeAlign ?? "center"}
+                  onChange={(e) => onChange({ strokeAlign: e.target.value } as any)}
+                >
+                  {STROKE_ALIGN_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineJoin ?? "miter"}
+                  onChange={(e) => onChange({ strokeLineJoin: e.target.value } as any)}
+                >
+                  <option value="miter">Miter</option>
+                  <option value="round">Round</option>
+                  <option value="bevel">Bevel</option>
+                </select>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineCap ?? "butt"}
+                  onChange={(e) => onChange({ strokeLineCap: e.target.value } as any)}
+                >
+                  <option value="butt">Butt</option>
+                  <option value="round">Round</option>
+                  <option value="square">Square</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Sides</label>
+                <div className="flex flex-1 gap-1">
+                  {([
+                    ["T", "top"],
+                    ["R", "right"],
+                    ["B", "bottom"],
+                    ["L", "left"],
+                  ] as const).map(([label, key]) => {
+                    const active = (((element as any).strokeSides?.[key] ?? true) === true);
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`}
+                        onClick={() =>
+                          onChange({
+                            strokeSides: {
+                              top: (element as any).strokeSides?.top ?? true,
+                              right: (element as any).strokeSides?.right ?? true,
+                              bottom: (element as any).strokeSides?.bottom ?? true,
+                              left: (element as any).strokeSides?.left ?? true,
+                              [key]: !active,
+                            },
+                          } as any)
+                        }
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* SHAPE / PATH / BOOLEAN */}
+          {(element.type === "shape" || element.type === "path" || element.type === "boolean") && (
+            <div className="space-y-3">
+              {element.type === "shape" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).shape ?? "rect"}
+                    onChange={(e) => onChange({ shape: e.target.value } as any)}
+                  >
+                    <option value="rect">Rectangle</option>
+                    <option value="circle">Circle</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="polygon">Polygon</option>
+                    <option value="star">Star</option>
+                    <option value="arrow">Arrow</option>
+                    <option value="line">Line</option>
+                  </select>
+                </div>
               )}
-              {(element as any).shape === "line" && (element as any).pattern && (
+
+              {element.type === "shape" && (element as any).shape === "polygon" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Sides</label>
+                  <NumberField
+                    label=""
+                    value={(element as any).polygon?.sides ?? 6}
+                    onChange={(v) => onChange({ polygon: { ...(element as any).polygon, sides: Math.max(3, Math.round(v)) } } as any)}
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              )}
+
+              {element.type === "shape" && (element as any).shape === "star" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Points</label>
+                    <NumberField
+                      label=""
+                      value={(element as any).star?.points ?? 5}
+                      onChange={(v) => onChange({ star: { ...(element as any).star, points: Math.max(3, Math.round(v)) } } as any)}
+                      noLabel
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Inner</label>
+                    <div className="w-16 relative">
+                      <NumberField
+                        label=""
+                        value={Math.round(((element as any).star?.innerRatio ?? 0.5) * 100)}
+                        onChange={(v) => onChange({ star: { ...(element as any).star, innerRatio: clamp(v / 100, 0.05, 0.95) } } as any)}
+                        noLabel
+                      />
+                      <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {element.type === "shape" && (element as any).shape === "arrow" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Dir</label>
+                    <select
+                      className={`flex-1 ${fieldClass}`}
+                      value={(element as any).arrow?.direction ?? "right"}
+                      onChange={(e) => onChange({ arrow: { ...(element as any).arrow, direction: e.target.value } } as any)}
+                    >
+                      <option value="right">Right</option>
+                      <option value="left">Left</option>
+                      <option value="up">Up</option>
+                      <option value="down">Down</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Shaft</label>
+                    <div className="w-16 relative">
+                      <NumberField
+                        label=""
+                        value={Math.round(((element as any).arrow?.shaftRatio ?? 0.42) * 100)}
+                        onChange={(v) => onChange({ arrow: { ...(element as any).arrow, shaftRatio: clamp(v / 100, 0.1, 0.8) } } as any)}
+                        noLabel
+                      />
+                      <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {element.type === "boolean" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Op</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).operation ?? "union"}
+                    onChange={(e) => onChange({ operation: e.target.value } as any)}
+                  >
+                    <option value="union">Union</option>
+                    <option value="subtract">Subtract</option>
+                    <option value="intersect">Intersect</option>
+                    <option value="exclude">Exclude</option>
+                  </select>
+                </div>
+              )}
+
+              <FillStackControls element={element} onChange={onChange} onPickPatternImage={onPickPatternImage} />
+              {element.type === "shape" && (element as any).shape === "line" && getElementFills(element).some((fill) => fill.type === "pattern") && (
                 <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
                   Pattern fill is ignored for line shapes in this pass.
                 </div>
@@ -5317,11 +7938,124 @@ function InspectorPanel({
                   <option value="dashed">Dashed</option>
                 </select>
               </div>
-
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
-                <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeAlign ?? "center"}
+                  onChange={(e) => onChange({ strokeAlign: e.target.value } as any)}
+                >
+                  {STROKE_ALIGN_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </div>
+              <div className="flex items-center gap-2 ml-14">
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineJoin ?? "miter"}
+                  onChange={(e) => onChange({ strokeLineJoin: e.target.value } as any)}
+                >
+                  <option value="miter">Miter</option>
+                  <option value="round">Round</option>
+                  <option value="bevel">Bevel</option>
+                </select>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).strokeLineCap ?? "butt"}
+                  onChange={(e) => onChange({ strokeLineCap: e.target.value } as any)}
+                >
+                  <option value="butt">Butt</option>
+                  <option value="round">Round</option>
+                  <option value="square">Square</option>
+                </select>
+              </div>
+              {(element.type === "box" || (element.type === "shape" && (element as any).shape === "rect")) && (
+                <div className="flex items-center gap-2 ml-14">
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Sides</label>
+                  <div className="flex flex-1 gap-1">
+                    {([
+                      ["T", "top"],
+                      ["R", "right"],
+                      ["B", "bottom"],
+                      ["L", "left"],
+                    ] as const).map(([label, key]) => {
+                      const active = (((element as any).strokeSides?.[key] ?? true) === true);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          className={`${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`}
+                          onClick={() =>
+                            onChange({
+                              strokeSides: {
+                                top: (element as any).strokeSides?.top ?? true,
+                                right: (element as any).strokeSides?.right ?? true,
+                                bottom: (element as any).strokeSides?.bottom ?? true,
+                                left: (element as any).strokeSides?.left ?? true,
+                                [key]: !active,
+                              },
+                            } as any)
+                          }
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {element.type === "shape" && (
+                (() => {
+                  const uniformRadius = (element as any).cornerRadiusPx ?? (element as any).cornerRadius ?? 0;
+                  const cornerRadii = ensureCornerRadii(uniformRadius, (element as any).cornerRadii);
+                  return (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
+                        <NumberField label="" value={uniformRadius} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
+                      </div>
+                      {(element as any).shape === "rect" && (
+                        <>
+                          <div className="grid grid-cols-2 gap-2 ml-14">
+                            {([
+                              ["TL", "topLeft"],
+                              ["TR", "topRight"],
+                              ["BL", "bottomLeft"],
+                              ["BR", "bottomRight"],
+                            ] as const).map(([label, key]) => (
+                              <div key={key} className="flex items-center gap-2">
+                                <label className="w-6 flex-none text-[11px] leading-[1.4] text-slate-500">{label}</label>
+                                <NumberField
+                                  label=""
+                                  value={Math.round(cornerRadii[key] ?? 0)}
+                                  onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v, cornerRadii: { ...cornerRadii, [key]: v } } as any)}
+                                  noLabel
+                                  className="flex-1"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className={`${fieldLabelClass} w-12 flex-none`}>Corner</label>
+                            <select
+                              className={`flex-1 ${fieldClass}`}
+                              value={(element as any).cornerType ?? "round"}
+                              onChange={(e) => onChange({ cornerType: e.target.value } as any)}
+                            >
+                              {CORNER_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()
+              )}
             </div>
           )}
 
@@ -5636,7 +8370,7 @@ function InspectorPanel({
           )}
 
           {/* GROUP */}
-          {element.type === "group" && (
+          {(element.type === "group" || element.type === "frame") && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12`}>Bg</label>
@@ -5652,6 +8386,109 @@ function InspectorPanel({
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
+              </div>
+              {element.type === "frame" && (
+                <>
+                  <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+                  <div className="space-y-3">
+                    <label className={uiClasses.label}>Frame Layout</label>
+                    <div className="flex items-center gap-2">
+                      <label className={`${fieldLabelClass} w-16 flex-none`}>Mode</label>
+                      <select
+                        className={`flex-1 ${fieldClass}`}
+                        value={ensureFrameLayout((element as any).layout).mode}
+                        onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), mode: e.target.value } } as any)}
+                      >
+                        {FRAME_LAYOUT_MODE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Gap</label>
+                        <NumberField label="" value={ensureFrameLayout((element as any).layout).gap ?? 12} onChange={(v) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), gap: v } } as any)} noLabel className="flex-1" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Pad</label>
+                        <NumberField label="" value={ensureFrameLayout((element as any).layout).padding ?? 16} onChange={(v) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), padding: v } } as any)} noLabel className="flex-1" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Align</label>
+                        <select className={`flex-1 ${fieldClass}`} value={ensureFrameLayout((element as any).layout).align} onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), align: e.target.value } } as any)}>
+                          {FRAME_ALIGN_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className={`${fieldLabelClass} w-16 flex-none`}>Justify</label>
+                        <select className={`flex-1 ${fieldClass}`} value={ensureFrameLayout((element as any).layout).justify} onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), justify: e.target.value } } as any)}>
+                          {FRAME_JUSTIFY_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={ensureFrameLayout((element as any).layout).wrap === true}
+                        onChange={(e) => onChange({ layout: { ...ensureFrameLayout((element as any).layout), wrap: e.target.checked } } as any)}
+                        className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                      />
+                      Wrap items
+                    </label>
+                    <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={(element as any).clipContent !== false}
+                        onChange={(e) => onChange({ clipContent: e.target.checked } as any)}
+                        className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                      />
+                      Clip content to frame
+                    </label>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {parentFrame && element.type !== "frame" && element.type !== "componentInstance" && (
+            <div className="space-y-3 rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-3">
+              <div>
+                <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Frame constraints</div>
+                <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+                  This layer belongs to {parentFrame.name || "a frame"}. Constraints apply when the frame is resized.
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-8 flex-none`}>H</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={ensureConstraints((element as any).constraints).horizontal}
+                    onChange={(e) => onChange({ constraints: { ...ensureConstraints((element as any).constraints), horizontal: e.target.value as OverlayConstraintMode } } as any)}
+                  >
+                    {CONSTRAINT_MODE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-8 flex-none`}>V</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={ensureConstraints((element as any).constraints).vertical}
+                    onChange={(e) => onChange({ constraints: { ...ensureConstraints((element as any).constraints), vertical: e.target.value as OverlayConstraintMode } } as any)}
+                  >
+                    {CONSTRAINT_MODE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           )}
@@ -5875,42 +8712,7 @@ function InspectorPanel({
       {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
         <div className="space-y-4">
-          {/* Shadow / Glow */}
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer mb-2">
-              <input type="checkbox" checked={(element as any).shadow?.enabled === true}
-                onChange={(e) => {
-                  const s = (element as any).shadow || { color: "#000000", blur: 10, x: 0, y: 4 };
-                  onChange({ shadow: { ...s, enabled: e.target.checked } } as any);
-                }}
-                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
-              />
-              <span className="text-[12px] leading-[1.4] font-medium text-slate-300">Shadow / Glow</span>
-            </label>
-            {(element as any).shadow?.enabled && (
-              <div className="ml-1 space-y-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
-                  <div className="flex-1 flex gap-2">
-                    <ColorSwatch value={(element as any).shadow?.color} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, color: v } } as any)} />
-                    <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Blur</label>
-                  <NumberField label="" value={(element as any).shadow?.blur} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, blur: v } } as any)} noLabel className="flex-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset X</label>
-                  <NumberField label="" value={(element as any).shadow?.x} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, x: v } } as any)} noLabel className="flex-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset Y</label>
-                  <NumberField label="" value={(element as any).shadow?.y} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, y: v } } as any)} noLabel className="flex-1" />
-                </div>
-              </div>
-            )}
-          </div>
+          <EffectsStackControls element={element} onChange={onChange} />
 
           <div className="h-px bg-[rgba(255,255,255,0.06)]" />
 
@@ -6316,13 +9118,18 @@ function ToolButton({
 const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
   text: <span className="font-serif text-[14px] font-bold leading-none">T</span>,
   box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  pen: <svg {...TOOL_ICON_PROPS}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>,
   image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
   video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
+  frame: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><rect x="7" y="7" width="10" height="10" rx="1.5" /></svg>,
   bar: <svg {...TOOL_ICON_PROPS}><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
   ring: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="8" /></svg>,
   rect: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
   circle: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="9" /></svg>,
   triangle: <svg {...TOOL_ICON_PROPS}><path d="M12 3l10 18H2L12 3z" /></svg>,
+  polygon: <svg {...TOOL_ICON_PROPS}><path d="M12 3l8 5v8l-8 5-8-5V8l8-5Z" /></svg>,
+  star: <svg {...TOOL_ICON_PROPS}><path d="m12 3 2.6 5.8 6.4.6-4.8 4.2 1.4 6.4L12 17l-5.6 3 1.4-6.4L3 9.4l6.4-.6L12 3Z" /></svg>,
+  arrow: <svg {...TOOL_ICON_PROPS}><path d="M4 12h10" /><path d="m11 6 7 6-7 6" /></svg>,
   line: <svg {...TOOL_ICON_PROPS}><line x1="4" y1="20" x2="20" y2="4" /></svg>,
   lower_third: <svg {...TOOL_ICON_PROPS}><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
 };
@@ -6331,8 +9138,11 @@ function CreationToolbar({
   onAddText,
   onAddBox,
   onAddShape,
+  onTogglePenTool,
+  penToolActive,
   onAddImage,
   onAddVideo,
+  onAddFrame,
   onAddProgress,
   onAddLowerThird,
   onGroup,
@@ -6349,9 +9159,12 @@ function CreationToolbar({
 }: {
   onAddText: () => void;
   onAddBox: () => void;
-  onAddShape: (type: "rect" | "circle" | "triangle" | "line") => void;
+  onAddShape: (type: OverlayShapeKind) => void;
+  onTogglePenTool: () => void;
+  penToolActive: boolean;
   onAddImage: () => void;
   onAddVideo: () => void;
+  onAddFrame: () => void;
   onAddProgress: (type: "bar" | "ring") => void;
   onAddLowerThird: () => void;
   onGroup: () => void;
@@ -6395,8 +9208,10 @@ function CreationToolbar({
         {/* Creation Tools (Row 1) */}
         <ToolButton icon={TOOLBAR_ICONS.text} label="Add Text" onClick={onAddText} />
         <ToolButton icon={TOOLBAR_ICONS.box} label="Add Box" onClick={onAddBox} />
+        <ToolButton icon={TOOLBAR_ICONS.pen} label="Pen Tool" onClick={onTogglePenTool} active={penToolActive} />
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
+        <ToolButton icon={TOOLBAR_ICONS.frame} label="Add Frame" onClick={onAddFrame} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
@@ -6412,6 +9227,9 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.circle} label="Add Circle" onClick={() => onAddShape("circle")} />
         <ToolButton icon={TOOLBAR_ICONS.triangle} label="Add Triangle" onClick={() => onAddShape("triangle")} />
         <ToolButton icon={TOOLBAR_ICONS.line} label="Add Line" onClick={() => onAddShape("line")} />
+        <ToolButton icon={TOOLBAR_ICONS.polygon} label="Add Polygon" onClick={() => onAddShape("polygon")} />
+        <ToolButton icon={TOOLBAR_ICONS.star} label="Add Star" onClick={() => onAddShape("star")} />
+        <ToolButton icon={TOOLBAR_ICONS.arrow} label="Add Arrow" onClick={() => onAddShape("arrow")} />
       </div>
 
       <div className="mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">
@@ -6507,7 +9325,7 @@ function LayersPanel({
   // Build hierarchy map for rendering
   const allChildIds = new Set<string>();
   elements.forEach(el => {
-    if ((el.type === 'group' || el.type === 'mask') && Array.isArray((el as any).childIds)) {
+    if ((el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean') && Array.isArray((el as any).childIds)) {
       (el as any).childIds.forEach((cid: string) => allChildIds.add(cid));
     }
   });
@@ -6528,7 +9346,7 @@ function LayersPanel({
     const isRenaming = renamingId === el.id;
 
     // Find children
-    const isContainer = el.type === 'group' || el.type === 'mask';
+    const isContainer = el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean';
     let children: OverlayElement[] = [];
     if (isContainer) {
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
@@ -6674,7 +9492,7 @@ function LayersPanel({
               </span>
             </button>
 
-            {el.type === "shape" && onMask && (
+            {(el.type === "shape" || el.type === "path" || el.type === "boolean" || el.type === "box") && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
                 className={`${uiClasses.iconButton} hover:text-indigo-400`}
@@ -6726,11 +9544,12 @@ function LayersPanel({
   );
 }
 
-function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
+function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreateVariant }: {
   components: OverlayComponentDef[],
   onInsert: (c: OverlayComponentDef) => void,
   onEdit: (id: string) => void,
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void,
+  onCreateVariant: (id: string) => void
 }) {
   if (!components || components.length === 0) {
     return (
@@ -6754,9 +9573,19 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
           >
             <div className="flex flex-col truncate">
               <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
-              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">{comp.elements?.length || 0} nodes</span>
+              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">
+                {comp.elements?.length || 0} nodes
+                {comp.variantName ? ` • ${comp.variantName}` : ""}
+              </span>
             </div>
             <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+              <button
+                className={uiClasses.iconButton}
+                onClick={(e) => { e.stopPropagation(); onCreateVariant(comp.id); }}
+                title="Create Variant"
+              >
+                <svg {...TOOL_ICON_PROPS}><path d="M5 5h6v6H5z" /><path d="M13 13h6v6h-6z" /><path d="M8 8l8 8" /></svg>
+              </button>
               <button
                 className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}

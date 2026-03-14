@@ -1,133 +1,400 @@
-<div class="pc-page">
-  <!-- Header Panel -->
-  <div class="pc-panel mb-6">
-    <div class="pc-panel-bd flex justify-between items-center">
-      <div>
-        <h2 class="text-xl font-bold text-white">Overlays</h2>
-        <p class="pc-text-muted mt-1 text-sm">Manage your browser source overlays</p>
-      </div>
-      <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary">
-        New Overlay
-      </a>
-    </div>
-  </div>
+<%
+  const overlayItems = overlays || [];
+  const templateItems = locals.templates || templates || [];
+  const totalItems = overlayItems.length + templateItems.length;
+%>
 
-  <!-- Overlays List -->
-  <div class="pc-panel mb-6">
-    <div class="pc-panel-hd">
-      <div>
-        <div class="pc-panel-title">Your Overlays</div>
-      </div>
-    </div>
-    <div class="pc-panel-bd">
-      <% if (overlays.length> 0) { %>
-        <div class="pc-oled overflow-hidden">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="bg-white/5 text-white/40 border-b border-white/5">
-                <th class="p-3">Name</th>
-                <th class="p-3">Slug</th>
-                <th class="p-3">Public URL</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5">
-              <% overlays.forEach(function(ov) { %>
-                <tr class="hover:bg-white/5 group">
-                  <td class="p-3 font-bold text-white">
-                    <%= ov.name %>
-                  </td>
-                  <td class="p-3 font-mono text-cyan-300">
-                    <%= ov.slug %>
-                  </td>
-                  <td class="p-3 text-white/50 font-mono text-[10px]">
-                    /o/<%= ov.public_id %>
-                  </td>
-                  <td class="p-3 text-right space-x-2">
-                    <a href="/dashboard/overlays/<%= ov.id %>/edit"
-                      class="pc-btn pc-btn--ghost h-7 px-2 text-[10px]">Edit</a>
-                    <a href="/o/<%= ov.public_id %>" target="_blank"
-                      class="pc-btn pc-btn--ghost h-7 px-2 text-[10px]">Preview</a>
-                  </td>
-                </tr>
-                <% }) %>
-            </tbody>
-          </table>
-        </div>
-        <% } else { %>
-          <div class="text-center py-8">
-            <div class="pc-text-muted">No overlays found. Create one above!</div>
+<div class="overlay-library" id="overlayLibrary" data-active-filter="all" data-view-mode="grid" data-empty-state="false">
+  <div class="overlay-library__shell">
+    <aside class="overlay-library__sidebar">
+      <div class="overlay-library__panel">
+        <div class="overlay-library__sidebar-block">
+          <div class="overlay-library__eyebrow">Library</div>
+          <h1 class="overlay-library__title">Overlay workspace</h1>
+          <p class="overlay-library__sidebar-copy">
+            Browse overlays, lower thirds, and reusable broadcast assets in one quieter surface instead of a raw admin table.
+          </p>
+
+          <div class="mt-4 flex flex-col gap-2">
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary justify-center">
+              Create overlay
+            </a>
+            <a href="/dashboard" class="pc-btn pc-btn--ghost justify-center">
+              Back to dashboard
+            </a>
           </div>
-          <% } %>
-    </div>
-  </div>
-
-  <!-- Templates List -->
-  <div class="pc-panel">
-    <div class="pc-panel-hd">
-      <div>
-        <div class="pc-panel-title">Lower Third Templates</div>
-        <div class="pc-panel-sub">Saved designs for your broadcast</div>
-      </div>
-    </div>
-
-    <div class="pc-panel-bd">
-      <% if (locals.templates && templates.length> 0) { %>
-        <div class="pc-oled overflow-hidden">
-          <table class="w-full text-left text-xs">
-            <thead>
-              <tr class="bg-white/5 text-white/40 border-b border-white/5">
-                <th class="p-3">Name</th>
-                <th class="p-3">Created</th>
-                <th class="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-white/5">
-              <% templates.forEach(function(tmpl) { %>
-                <tr class="hover:bg-white/5" id="template-row-<%= tmpl.id %>">
-                  <td class="p-3 font-bold text-white">
-                    <%= tmpl.name %>
-                  </td>
-                  <td class="p-3 text-white/50">
-                    <%= new Date(tmpl.created_at).toLocaleDateString() %>
-                  </td>
-                  <td class="p-3 text-right space-x-2">
-                    <button onclick="deleteTemplate('<%= tmpl.id %>')"
-                      class="pc-btn pc-btn--ghost text-red-300 hover:text-red-200 h-7 px-2 text-[10px]">Delete</button>
-                  </td>
-                </tr>
-                <% }) %>
-            </tbody>
-          </table>
         </div>
-        <% } else { %>
-          <div class="text-center py-8">
-            <div class="pc-text-muted">No templates found. Open an overlay editor to save one!</div>
+      </div>
+
+      <div class="overlay-library__panel">
+        <div class="overlay-library__sidebar-block">
+          <div class="overlay-library__eyebrow">Browse</div>
+          <div class="overlay-library__nav mt-3">
+            <button type="button" class="overlay-library__nav-btn is-active" data-library-filter="all">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">All files</span>
+                <span class="overlay-library__nav-sub">Everything in your library</span>
+              </span>
+              <span class="overlay-library__count"><%= totalItems %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="overlay">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Overlays</span>
+                <span class="overlay-library__nav-sub">Browser-source compositions</span>
+              </span>
+              <span class="overlay-library__count"><%= overlayItems.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="template">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Lower thirds</span>
+                <span class="overlay-library__nav-sub">Saved broadcast templates</span>
+              </span>
+              <span class="overlay-library__count"><%= templateItems.length %></span>
+            </button>
           </div>
-          <% } %>
-    </div>
+        </div>
+      </div>
+
+      <div class="overlay-library__panel">
+        <div class="overlay-library__sidebar-block">
+          <div class="overlay-library__eyebrow">Workflow</div>
+          <div class="overlay-library__helper mt-3">
+            <div class="overlay-library__helper-row">
+              <span class="overlay-library__helper-dot"></span>
+              <div class="overlay-library__helper-text">Create an overlay here, then move into the editor for geometry, timeline, masking, and effects work.</div>
+            </div>
+            <div class="overlay-library__helper-row">
+              <span class="overlay-library__helper-dot"></span>
+              <div class="overlay-library__helper-text">Lower thirds are stored alongside overlays so your broadcast assets feel like one library, not separate admin tools.</div>
+            </div>
+            <div class="overlay-library__helper-row">
+              <span class="overlay-library__helper-dot"></span>
+              <div class="overlay-library__helper-text">Use search plus the category rail to keep a large package browsable as the asset count grows.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <section class="min-w-0">
+      <div class="overlay-library__hero">
+        <div class="overlay-library__hero-grid">
+          <div>
+            <div class="overlay-library__hero-kicker">Creator asset library</div>
+            <div class="overlay-library__hero-title">Build, browse, and reuse your on-stream design system.</div>
+            <div class="overlay-library__hero-copy">
+              This view now behaves more like a real design library: scan recent work fast, jump back into editing, and keep lower thirds close to the overlays they belong with.
+            </div>
+          </div>
+          <div class="overlay-library__hero-actions">
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary">New overlay</a>
+            <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost">Widgets</a>
+          </div>
+        </div>
+
+        <div class="overlay-library__stats">
+          <div class="overlay-library__stat">
+            <div class="overlay-library__stat-value"><%= overlayItems.length %></div>
+            <div class="overlay-library__stat-label">Overlay files</div>
+          </div>
+          <div class="overlay-library__stat">
+            <div class="overlay-library__stat-value"><%= templateItems.length %></div>
+            <div class="overlay-library__stat-label">Lower thirds</div>
+          </div>
+          <div class="overlay-library__stat">
+            <div class="overlay-library__stat-value"><%= totalItems %></div>
+            <div class="overlay-library__stat-label">Total library items</div>
+          </div>
+        </div>
+
+        <div class="overlay-library__toolbar">
+          <div class="overlay-library__search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle>
+              <path d="m20 20-3.5-3.5"></path>
+            </svg>
+            <input
+              type="text"
+              id="overlayLibrarySearch"
+              placeholder="Search overlays, slugs, public IDs, or template names"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="overlay-library__toolbar-group">
+            <div class="overlay-library__segmented" role="tablist" aria-label="Library item type">
+              <button type="button" class="is-active" data-library-filter="all">All</button>
+              <button type="button" data-library-filter="overlay">Overlays</button>
+              <button type="button" data-library-filter="template">Lower thirds</button>
+            </div>
+          </div>
+
+          <div class="overlay-library__toolbar-group">
+            <div class="overlay-library__segmented" role="tablist" aria-label="Library view mode">
+              <button type="button" class="is-active" data-library-view="grid">Grid</button>
+              <button type="button" data-library-view="list">List</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay-library__results-empty overlay-library__empty">
+        <div class="overlay-library__empty-title">Nothing matches that filter.</div>
+        <div class="overlay-library__empty-copy">
+          Try a broader search term, switch back to all files, or create a new overlay to start building your library.
+        </div>
+      </div>
+
+      <section class="overlay-library__section" data-library-section data-kind="overlay">
+        <div class="overlay-library__section-head">
+          <div>
+            <div class="overlay-library__section-title">Overlays</div>
+            <div class="overlay-library__section-sub">Browser-source compositions you can edit, preview, and wire into OBS.</div>
+          </div>
+          <div class="overlay-library__section-meta"><%= overlayItems.length %> item<%= overlayItems.length === 1 ? '' : 's' %></div>
+        </div>
+
+        <% if (overlayItems.length > 0) { %>
+          <div class="overlay-library__grid" data-library-grid>
+            <% overlayItems.forEach(function(ov, index) {
+                 const createdLabel = new Date(ov.created_at).toLocaleDateString();
+                 const hue = (Number(ov.id) * 37 + index * 23) % 360;
+            %>
+              <article
+                class="overlay-card"
+                data-library-item
+                data-kind="overlay"
+                data-search="<%= [ov.name, ov.slug, ov.public_id].join(' ').toLowerCase() %>"
+                style="--card-hue: <%= hue %>;"
+              >
+                <div class="overlay-card__preview">
+                  <div class="overlay-card__chrome">
+                    <span class="overlay-card__chip">Overlay</span>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--a"></div>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--b"></div>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--c"></div>
+                    <div class="overlay-card__stage-block overlay-card__stage-block--panel"></div>
+                    <div class="overlay-card__stage-block overlay-card__stage-block--caption"></div>
+                  </div>
+                </div>
+                <div class="overlay-card__body">
+                  <div class="overlay-card__meta">
+                    <span class="overlay-card__kind">Overlay</span>
+                    <span class="overlay-card__stamp">Created <%= createdLabel %></span>
+                  </div>
+                  <div>
+                    <div class="overlay-card__name"><%= ov.name %></div>
+                    <div class="overlay-card__sub"><%= ov.slug %></div>
+                    <div class="overlay-card__sub font-mono text-[11px] mt-1">/o/<%= ov.public_id %></div>
+                  </div>
+                  <div class="overlay-card__footer">
+                    <a href="/dashboard/overlays/<%= ov.id %>/edit" class="pc-btn pc-btn--primary">Open editor</a>
+                    <a href="/o/<%= ov.public_id %>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost">Preview</a>
+                    <button type="button" class="pc-btn pc-btn--ghost" data-copy-url="/o/<%= ov.public_id %>">Copy URL</button>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="overlay-library__empty">
+            <div class="overlay-library__empty-title">No overlays yet</div>
+            <div class="overlay-library__empty-copy">Create your first overlay to start building browser-source packages for OBS and Scraplet scenes.</div>
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary">Create overlay</a>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="overlay-library__section" data-library-section data-kind="template">
+        <div class="overlay-library__section-head">
+          <div>
+            <div class="overlay-library__section-title">Lower third templates</div>
+            <div class="overlay-library__section-sub">Saved title treatments and broadcast callouts you can reuse across overlays.</div>
+          </div>
+          <div class="overlay-library__section-meta"><%= templateItems.length %> item<%= templateItems.length === 1 ? '' : 's' %></div>
+        </div>
+
+        <% if (templateItems.length > 0) { %>
+          <div class="overlay-library__grid" data-library-grid>
+            <% templateItems.forEach(function(tmpl, index) {
+                 const createdLabel = new Date(tmpl.created_at).toLocaleDateString();
+                 const hue = (index * 41 + 28) % 360;
+            %>
+              <article
+                class="overlay-card"
+                data-library-item
+                data-kind="template"
+                data-search="<%= [tmpl.name, tmpl.public_id].join(' ').toLowerCase() %>"
+                style="--card-hue: <%= hue %>;"
+                id="template-card-<%= tmpl.public_id %>"
+              >
+                <div class="overlay-card__preview">
+                  <div class="overlay-card__chrome">
+                    <span class="overlay-card__chip">Lower third</span>
+                    <div class="overlay-card__stage-block overlay-card__stage-block--caption" style="width:72%; height:20%;"></div>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--a" style="width:34%; top:32px;"></div>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--b" style="width:54%; top:56px;"></div>
+                    <div class="overlay-card__stage-line overlay-card__stage-line--c" style="width:18%; bottom:44px;"></div>
+                  </div>
+                </div>
+                <div class="overlay-card__body">
+                  <div class="overlay-card__meta">
+                    <span class="overlay-card__kind">Template</span>
+                    <span class="overlay-card__stamp">Saved <%= createdLabel %></span>
+                  </div>
+                  <div>
+                    <div class="overlay-card__name"><%= tmpl.name %></div>
+                    <div class="overlay-card__sub font-mono text-[11px] mt-1"><%= tmpl.public_id %></div>
+                  </div>
+                  <div class="overlay-card__footer">
+                    <button type="button" class="pc-btn pc-btn--ghost text-red-200 hover:text-red-100" data-delete-template="<%= tmpl.public_id %>">Delete</button>
+                    <span class="overlay-card__ghost">Save new ones from inside the overlay editor.</span>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="overlay-library__empty">
+            <div class="overlay-library__empty-title">No lower thirds saved yet</div>
+            <div class="overlay-library__empty-copy">Open an overlay, design a lower third, then save it to start building a reusable on-stream template library.</div>
+          </div>
+        <% } %>
+      </section>
+    </section>
   </div>
 </div>
 
 <script>
-  async function deleteTemplate(id) {
-    if (!confirm("Are you sure you want to delete this template?")) return;
+  (function () {
+    const root = document.getElementById("overlayLibrary");
+    if (!root) return;
 
-    try {
-      const res = await fetch(`/dashboard/api/lower-third-templates/${id}`, {
-        method: "DELETE"
+    const searchInput = document.getElementById("overlayLibrarySearch");
+    const filterButtons = Array.from(root.querySelectorAll("[data-library-filter]"));
+    const viewButtons = Array.from(root.querySelectorAll("[data-library-view]"));
+    const sections = Array.from(root.querySelectorAll("[data-library-section]"));
+    const items = Array.from(root.querySelectorAll("[data-library-item]"));
+    const grids = Array.from(root.querySelectorAll("[data-library-grid]"));
+
+    let activeFilter = "all";
+    let activeView = "grid";
+    let activeQuery = "";
+
+    function syncActiveButtons() {
+      filterButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.libraryFilter === activeFilter);
+      });
+      viewButtons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.libraryView === activeView);
+      });
+      grids.forEach((grid) => {
+        grid.classList.toggle("is-list", activeView === "list");
+      });
+      root.dataset.activeFilter = activeFilter;
+      root.dataset.viewMode = activeView;
+    }
+
+    function applyLibraryFilters() {
+      let anyVisible = false;
+
+      sections.forEach((section) => {
+        const sectionKind = section.dataset.kind;
+        const sectionItems = Array.from(section.querySelectorAll("[data-library-item]"));
+        let visibleInSection = 0;
+
+        sectionItems.forEach((item) => {
+          const itemKind = item.dataset.kind || "";
+          const haystack = item.dataset.search || "";
+          const matchesFilter = activeFilter === "all" || itemKind === activeFilter;
+          const matchesQuery = !activeQuery || haystack.includes(activeQuery);
+          const visible = matchesFilter && matchesQuery;
+          item.style.display = visible ? "" : "none";
+          if (visible) visibleInSection += 1;
+        });
+
+        const showSection = visibleInSection > 0 && (activeFilter === "all" || sectionKind === activeFilter);
+        section.dataset.hidden = showSection ? "false" : "true";
+        if (showSection) anyVisible = true;
       });
 
-      if (res.ok) {
-        const row = document.getElementById(`template-row-${id}`);
-        if (row) row.remove();
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || "Failed to delete template");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error deleting template");
+      root.dataset.emptyState = anyVisible ? "false" : "true";
     }
-  }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeFilter = button.dataset.libraryFilter || "all";
+        syncActiveButtons();
+        applyLibraryFilters();
+      });
+    });
+
+    viewButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeView = button.dataset.libraryView || "grid";
+        syncActiveButtons();
+      });
+    });
+
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        activeQuery = searchInput.value.trim().toLowerCase();
+        applyLibraryFilters();
+      });
+    }
+
+    root.addEventListener("click", async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const copyButton = target.closest("[data-copy-url]");
+      if (copyButton instanceof HTMLElement) {
+        const path = copyButton.dataset.copyUrl;
+        if (!path) return;
+        const absoluteUrl = new URL(path, window.location.origin).toString();
+        try {
+          await navigator.clipboard.writeText(absoluteUrl);
+          const previous = copyButton.textContent;
+          copyButton.textContent = "Copied";
+          window.setTimeout(() => {
+            copyButton.textContent = previous;
+          }, 1400);
+        } catch (err) {
+          console.error(err);
+          alert("Failed to copy URL");
+        }
+        return;
+      }
+
+      const deleteButton = target.closest("[data-delete-template]");
+      if (deleteButton instanceof HTMLElement) {
+        const publicId = deleteButton.dataset.deleteTemplate;
+        if (!publicId) return;
+        if (!confirm("Delete this lower third template?")) return;
+
+        try {
+          const res = await fetch(`/dashboard/api/lower-third-templates/${publicId}`, {
+            method: "DELETE"
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Failed to delete template");
+          }
+
+          const card = document.getElementById(`template-card-${publicId}`);
+          if (card) {
+            card.remove();
+            applyLibraryFilters();
+          }
+        } catch (err) {
+          console.error(err);
+          alert(err.message || "Failed to delete template");
+        }
+      }
+    });
+
+    syncActiveButtons();
+    applyLibraryFilters();
+  })();
 </script>

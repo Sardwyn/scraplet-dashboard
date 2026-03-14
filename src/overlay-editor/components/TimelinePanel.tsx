@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import {
   OverlayElement,
+  OverlayTimelineEasing,
   OverlayTimeline,
   OverlayTimelineKeyframe,
   OverlayTimelineProperty,
@@ -20,6 +21,16 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "height",
   "opacity",
   "rotationDeg",
+  "scaleX",
+  "scaleY",
+];
+
+const EASING_OPTIONS: Array<{ value: OverlayTimelineEasing; label: string }> = [
+  { value: "linear", label: "Linear" },
+  { value: "ease-in", label: "Ease In" },
+  { value: "ease-out", label: "Ease Out" },
+  { value: "ease-in-out", label: "Ease In Out" },
+  { value: "hold", label: "Hold" },
 ];
 
 function formatMs(value: number) {
@@ -153,7 +164,9 @@ type Props = {
   selectedIds: string[];
   playheadMs: number;
   isPlaying: boolean;
+  selectedTrackId: string | null;
   selectedKeyframeId: string | null;
+  selectedKeyframeEasing: OverlayTimelineEasing;
   onSelectKeyframe: (trackId: string | null, keyframeId: string | null) => void;
   onPlay: () => void;
   onPause: () => void;
@@ -161,6 +174,8 @@ type Props = {
   onSetPlayhead: (timeMs: number) => void;
   onSetDuration: (durationMs: number) => void;
   onDeleteSelectedKeyframe: () => void;
+  onSetPlayback: (patch: { loop?: boolean; reverse?: boolean }) => void;
+  onSetSelectedKeyframeEasing: (easing: OverlayTimelineEasing) => void;
   onAddTrack: (elementId: string, property: OverlayTimelineProperty) => void;
   onMoveKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => void;
   onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
@@ -173,7 +188,9 @@ export function TimelinePanel({
   selectedIds,
   playheadMs,
   isPlaying,
+  selectedTrackId,
   selectedKeyframeId,
+  selectedKeyframeEasing,
   onSelectKeyframe,
   onPlay,
   onPause,
@@ -181,6 +198,8 @@ export function TimelinePanel({
   onSetPlayhead,
   onSetDuration,
   onDeleteSelectedKeyframe,
+  onSetPlayback,
+  onSetSelectedKeyframeEasing,
   onAddTrack,
   onMoveKeyframe,
   onDuplicateKeyframe,
@@ -263,6 +282,35 @@ export function TimelinePanel({
             className={`${uiClasses.field} w-24`}
           />
           <span>ms</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onSetPlayback({ loop: !(timeline.playback?.loop ?? false) })}
+          className={`${uiClasses.button} ${(timeline.playback?.loop ?? false) ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-100" : ""}`}
+        >
+          Loop
+        </button>
+        <button
+          type="button"
+          onClick={() => onSetPlayback({ reverse: !(timeline.playback?.reverse ?? false) })}
+          className={`${uiClasses.button} ${(timeline.playback?.reverse ?? false) ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-100" : ""}`}
+        >
+          Reverse
+        </button>
+        <div className="flex items-center gap-2 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-300">
+          <span>Easing</span>
+          <select
+            value={selectedKeyframeEasing}
+            disabled={!selectedKeyframeId || !selectedTrackId}
+            onChange={(event) => onSetSelectedKeyframeEasing(event.target.value as OverlayTimelineEasing)}
+            className={`${uiClasses.field} w-32 disabled:opacity-40`}
+          >
+            {EASING_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
         <div className={`ml-auto text-[12px] leading-[1.4] tracking-[-0.02em] ${isPlaying ? "text-emerald-300" : "text-slate-500"}`}>
           {isPlaying ? "Playing" : "Paused"}

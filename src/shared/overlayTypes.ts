@@ -4,8 +4,11 @@ export type OverlayElementType =
   | "text"
   | "box"
   | "shape"
+  | "path"
+  | "boolean"
   | "image"
   | "video"
+  | "frame"
   | "group"
   | "progressBar"
   | "progressRing"
@@ -41,6 +44,9 @@ export interface OverlayElementBase extends OverlayEditorFields {
   pinned?: boolean;
   opacity?: number;
   rotationDeg?: number;
+  scaleX?: number;
+  scaleY?: number;
+  constraints?: OverlayConstraints;
   shadow?: {
     enabled: boolean;
     color: string;
@@ -49,6 +55,7 @@ export interface OverlayElementBase extends OverlayEditorFields {
     y: number;
     spread?: number;
   };
+  effects?: OverlayEffect[];
   clip?: {
     type: OverlayClipType;
     radius?: number;
@@ -56,6 +63,29 @@ export interface OverlayElementBase extends OverlayEditorFields {
   bindings?: Record<string, DynamicBinding>;
   animation?: OverlayAnimation;
 }
+
+export type OverlayConstraintMode = "start" | "end" | "stretch" | "center" | "scale";
+
+export interface OverlayConstraints {
+  horizontal?: OverlayConstraintMode;
+  vertical?: OverlayConstraintMode;
+}
+
+/* =========================
+   GEOMETRY
+========================= */
+
+export type PathCommand =
+  | { type: "move"; x: number; y: number }
+  | { type: "line"; x: number; y: number }
+  | { type: "curve"; x1: number; y1: number; x2: number; y2: number; x: number; y: number }
+  | { type: "close" };
+
+export interface OverlayPath {
+  commands: PathCommand[];
+}
+
+export type OverlayBooleanOperation = "union" | "subtract" | "intersect" | "exclude";
 
 /* =========================
    DYNAMIC BINDINGS
@@ -104,6 +134,30 @@ export interface OverlayGroupElement extends OverlayElementBase {
   borderWidth?: number;
 }
 
+export type OverlayFrameLayoutMode = "free" | "horizontal" | "vertical";
+export type OverlayFrameAlign = "start" | "center" | "end" | "stretch";
+export type OverlayFrameJustify = "start" | "center" | "end" | "space-between";
+
+export interface OverlayFrameLayout {
+  mode?: OverlayFrameLayoutMode;
+  gap?: number;
+  padding?: number;
+  align?: OverlayFrameAlign;
+  justify?: OverlayFrameJustify;
+  wrap?: boolean;
+}
+
+export interface OverlayFrameElement extends OverlayElementBase {
+  type: "frame";
+  childIds: string[];
+  backgroundColor?: string;
+  borderRadiusPx?: number;
+  borderColor?: string;
+  borderWidth?: number;
+  layout?: OverlayFrameLayout;
+  clipContent?: boolean;
+}
+
 /* =========================
    MASKING
  ========================= */
@@ -148,17 +202,99 @@ export interface OverlayAnimation {
 }
 
 /* =========================
-   PATTERN FILLS
+   FILLS
 ========================= */
 
-export type OverlayPatternFit = "tile" | "cover" | "contain";
+export type OverlayPatternFit = "tile" | "cover" | "contain" | "stretch";
+export type OverlayFillType = "solid" | "linear" | "radial" | "conic" | "pattern";
 
-export interface OverlayPatternFill {
+export interface OverlayFillStop {
+  color: string;
+  opacity?: number;
+  position?: number;
+}
+
+export interface OverlayFillBase {
+  id?: string;
+  type: OverlayFillType;
+  opacity?: number;
+}
+
+export interface OverlaySolidFill extends OverlayFillBase {
+  type: "solid";
+  color: string;
+}
+
+export interface OverlayGradientFill extends OverlayFillBase {
+  type: "linear" | "radial" | "conic";
+  stops: OverlayFillStop[];
+  angleDeg?: number;
+}
+
+export interface OverlayPatternFill extends OverlayFillBase {
+  type: "pattern";
   src: string;
   fit?: OverlayPatternFit;
   scale?: number;
   opacity?: number;
+  offsetX?: number;
+  offsetY?: number;
+  rotationDeg?: number;
 }
+
+export type OverlayFill = OverlaySolidFill | OverlayGradientFill | OverlayPatternFill;
+
+/* =========================
+   EFFECTS
+========================= */
+
+export type OverlayEffectType =
+  | "dropShadow"
+  | "innerShadow"
+  | "outerGlow"
+  | "innerGlow"
+  | "layerBlur"
+  | "noise";
+
+export interface OverlayEffectBase {
+  id?: string;
+  type: OverlayEffectType;
+  enabled?: boolean;
+  opacity?: number;
+}
+
+export interface OverlayShadowEffect extends OverlayEffectBase {
+  type: "dropShadow" | "innerShadow";
+  color: string;
+  blur: number;
+  x: number;
+  y: number;
+  spread?: number;
+}
+
+export interface OverlayGlowEffect extends OverlayEffectBase {
+  type: "outerGlow" | "innerGlow";
+  color: string;
+  blur: number;
+  spread?: number;
+}
+
+export interface OverlayLayerBlurEffect extends OverlayEffectBase {
+  type: "layerBlur";
+  blur: number;
+}
+
+export interface OverlayNoiseEffect extends OverlayEffectBase {
+  type: "noise";
+  amount: number;
+  scale?: number;
+}
+
+export type OverlayEffect =
+  | OverlayShadowEffect
+  | OverlayGlowEffect
+  | OverlayLayerBlurEffect
+  | OverlayNoiseEffect;
 
 /* =========================
    TIMELINE
@@ -170,13 +306,21 @@ export type OverlayTimelineProperty =
   | "width"
   | "height"
   | "opacity"
-  | "rotationDeg";
+  | "rotationDeg"
+  | "scaleX"
+  | "scaleY";
 
 export type OverlayTimelineEasing =
   | "linear"
   | "ease-in"
   | "ease-out"
-  | "ease-in-out";
+  | "ease-in-out"
+  | "hold";
+
+export interface OverlayTimelinePlayback {
+  loop?: boolean;
+  reverse?: boolean;
+}
 
 export interface OverlayTimelineKeyframe {
   id: string;
@@ -195,6 +339,7 @@ export interface OverlayTimelineTrack {
 export interface OverlayTimeline {
   durationMs: number;
   tracks: OverlayTimelineTrack[];
+  playback?: OverlayTimelinePlayback;
 }
 
 /* =========================
@@ -235,29 +380,54 @@ export interface OverlayBoxElement extends OverlayElementBase {
   type: "box";
   backgroundColor?: string;
   pattern?: OverlayPatternFill;
+  fills?: OverlayFill[];
 
   borderRadiusPx?: number;
   borderRadiusRel?: number; // V1: 0..1 of min(viewportW, viewportH)
+  cornerRadii?: OverlayCornerRadii;
+  cornerType?: OverlayCornerType;
 
   // Optional stroke for boxes (handy once you add “stroke options”)
   strokeColor?: string;
   strokeWidthPx?: number;
   strokeOpacity?: number;
+  strokeAlign?: OverlayStrokeAlign;
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeDash?: number[];
+  strokeSides?: OverlayStrokeSides;
 }
 
 /* =========================
    SHAPES
 ========================= */
 
-export type OverlayShapeKind = "rect" | "circle" | "line" | "triangle";
+export type OverlayShapeKind = "rect" | "circle" | "line" | "triangle" | "polygon" | "star" | "arrow";
 
 export type OverlayStrokeLineCap = "butt" | "round" | "square";
 export type OverlayStrokeLineJoin = "miter" | "round" | "bevel";
+export type OverlayStrokeAlign = "inside" | "center" | "outside";
+export type OverlayCornerType = "round" | "cut" | "angle";
+
+export interface OverlayCornerRadii {
+  topLeft?: number;
+  topRight?: number;
+  bottomRight?: number;
+  bottomLeft?: number;
+}
+
+export interface OverlayStrokeSides {
+  top?: boolean;
+  right?: boolean;
+  bottom?: boolean;
+  left?: boolean;
+}
 
 export interface OverlayShapeElement extends OverlayElementBase {
   type: "shape";
   shape: OverlayShapeKind;
   pattern?: OverlayPatternFill;
+  fills?: OverlayFill[];
 
   // Fill
   fillColor?: string;     // if omitted => transparent
@@ -270,9 +440,13 @@ export interface OverlayShapeElement extends OverlayElementBase {
   strokeDash?: number[];  // e.g. [6,4]
   strokeLineCap?: OverlayStrokeLineCap;
   strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
+  strokeSides?: OverlayStrokeSides;
 
   // Rect-specific
   cornerRadiusPx?: number;
+  cornerRadii?: OverlayCornerRadii;
+  cornerType?: OverlayCornerType;
 
   /**
    * Line-specific geometry (normalized inside the element box).
@@ -290,6 +464,59 @@ export interface OverlayShapeElement extends OverlayElementBase {
   triangle?: {
     direction?: "up" | "down" | "left" | "right";
   };
+
+  polygon?: {
+    sides?: number;
+    rotationDeg?: number;
+  };
+
+  star?: {
+    points?: number;
+    innerRatio?: number;
+    rotationDeg?: number;
+  };
+
+  arrow?: {
+    direction?: "up" | "down" | "left" | "right";
+    shaftRatio?: number;
+    headRatio?: number;
+  };
+}
+
+export interface OverlayPathElement extends OverlayElementBase {
+  type: "path";
+  path: OverlayPath;
+  pathSource?: {
+    kind: "offset";
+    sourceId: string;
+    distance: number;
+  };
+  fillColor?: string;
+  fillOpacity?: number;
+  fills?: OverlayFill[];
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeOpacity?: number;
+  strokeDash?: number[];
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
+}
+
+export interface OverlayBooleanElement extends OverlayElementBase {
+  type: "boolean";
+  operation: OverlayBooleanOperation;
+  childIds: string[];
+  fillColor?: string;
+  fillOpacity?: number;
+  fills?: OverlayFill[];
+  strokeColor?: string;
+  strokeWidthPx?: number;
+  strokeOpacity?: number;
+  strokeDash?: number[];
+  strokeLineCap?: OverlayStrokeLineCap;
+  strokeLineJoin?: OverlayStrokeLineJoin;
+  strokeAlign?: OverlayStrokeAlign;
 }
 
 /* =========================
@@ -439,6 +666,8 @@ export interface OverlayComponentDef {
     [propKey: string]: { type: "text" | "color" | "image" | "boolean"; label: string; default: any }
   };
   metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
+  variantGroupId?: string;
+  variantName?: string;
 }
 
 /* =========================
@@ -449,8 +678,11 @@ export type OverlayElement =
   | OverlayTextElement
   | OverlayBoxElement
   | OverlayShapeElement
+  | OverlayPathElement
+  | OverlayBooleanElement
   | OverlayImageElement
   | OverlayVideoElement
+  | OverlayFrameElement
   | OverlayGroupElement
   | OverlayProgressBarElement
   | OverlayProgressRingElement
@@ -489,6 +721,8 @@ export interface OverlayConfigV0 {
       strokeOpacity?: number;
       cornerRadius?: number;
     })
+    | OverlayPathElement
+    | OverlayBooleanElement
     | (Omit<OverlayImageElement, "unit"> & {
       borderRadius?: number;
     })
