@@ -1,5 +1,8 @@
-import React, { useMemo } from "react";
+import React, { useId } from "react";
 import {
+    OverlayAnimation,
+    OverlayAnimationPhase,
+    OverlayBlendMode,
     OverlayElement,
     OverlayBoxElement,
     OverlayTextElement,
@@ -12,17 +15,217 @@ import {
     OverlayLowerThirdElement,
     OverlayMaskElement,
     OverlayMediaFit,
+    OverlayPatternFill,
     OverlayComponentDef,
-    OverlayComponentInstanceElement
+    OverlayComponentInstanceElement,
 } from "../overlayTypes";
 import { getFontStack } from "../FontManager";
-
 import { resolveBinding } from "../bindingEngine";
+import { KeyedMedia } from "../mediaEffects/KeyedMedia";
+
+type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
+
+function sanitizeSvgId(value: string) {
+    return value.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function getPatternScale(pattern?: OverlayPatternFill) {
+    return Math.max(1, pattern?.scale ?? 100);
+}
+
+function getPatternOpacity(pattern?: OverlayPatternFill) {
+    return Math.max(0, Math.min(1, pattern?.opacity ?? 1));
+}
+
+function hasPatternSource(pattern?: OverlayPatternFill) {
+    return typeof pattern?.src === "string" && pattern.src.trim().length > 0;
+}
+
+function getBoxPatternStyle(pattern?: OverlayPatternFill): React.CSSProperties | null {
+    if (!hasPatternSource(pattern)) return null;
+
+    const fit = pattern?.fit ?? "tile";
+    const scale = getPatternScale(pattern);
+    const opacity = getPatternOpacity(pattern);
+
+    const style: React.CSSProperties = {
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        opacity,
+        backgroundImage: `url("${pattern!.src}")`,
+        backgroundPosition: "center",
+    };
+
+    if (fit === "tile") {
+        style.backgroundRepeat = "repeat";
+        style.backgroundSize = `${scale}% auto`;
+        return style;
+    }
+
+    style.backgroundRepeat = "no-repeat";
+    style.backgroundSize = fit;
+    style.transform = `scale(${scale / 100})`;
+    style.transformOrigin = "center center";
+    return style;
+}
+
+function renderShapeGeometry(
+    shape: OverlayShapeElement,
+    width: number,
+    height: number,
+    strokeWidth: number,
+    props: Record<string, any>
+) {
+    if (shape.shape === "rect") {
+        const radius = shape.cornerRadiusPx ?? (shape as any).cornerRadius ?? 0;
+        return (
+            <rect
+                x={strokeWidth / 2}
+                y={strokeWidth / 2}
+                width={Math.max(0, width - strokeWidth)}
+                height={Math.max(0, height - strokeWidth)}
+                rx={radius}
+                ry={radius}
+                {...props}
+            />
+        );
+    }
+
+    if (shape.shape === "circle") {
+        return (
+            <ellipse
+                cx={width / 2}
+                cy={height / 2}
+                rx={Math.max(0, width / 2 - strokeWidth / 2)}
+                ry={Math.max(0, height / 2 - strokeWidth / 2)}
+                {...props}
+            />
+        );
+    }
+
+    if (shape.shape === "line") {
+        return (
+            <line
+                x1={shape.line ? shape.line.x1 * width : 0}
+                y1={shape.line ? shape.line.y1 * height : height / 2}
+                x2={shape.line ? shape.line.x2 * width : width}
+                y2={shape.line ? shape.line.y2 * height : height / 2}
+                {...props}
+            />
+        );
+    }
+
+    return (
+        <polygon
+            points={`${width / 2},${strokeWidth / 2} ${width - strokeWidth / 2},${height - strokeWidth / 2} ${strokeWidth / 2},${height - strokeWidth / 2}`}
+            {...props}
+        />
+    );
+}
+
+function getAnimationTransition(
+    animation: OverlayAnimation | undefined,
+    phase: OverlayAnimationPhase | undefined
+) {
+    if (!animation) return undefined;
+    if (phase === "hidden") return "none";
+
+    const duration = Math.max(0, animation.durationMs ?? 400);
+    const delay = Math.max(0, animation.delayMs ?? 0);
+    const easing = animation.easing ?? "ease-out";
+    const transitionProps = ["opacity", "transform", "filter", "box-shadow"];
+
+    return transitionProps
+        .map((prop) => `${prop} ${duration}ms ${easing} ${delay}ms`)
+        .join(", ");
+}
+
+function getEnterMotionPresetStyle(
+    preset?: OverlayAnimation["enter"]
+): React.CSSProperties {
+    switch (preset) {
+        case "fade":
+            return { opacity: 0 };
+        case "slideUp":
+            return { transform: "translateY(32px)", opacity: 0 };
+        case "slideDown":
+            return { transform: "translateY(-32px)", opacity: 0 };
+        case "slideLeft":
+            return { transform: "translateX(32px)", opacity: 0 };
+        case "slideRight":
+            return { transform: "translateX(-32px)", opacity: 0 };
+        case "none":
+        default:
+            return {};
+    }
+}
+
+function getExitMotionPresetStyle(
+    preset?: OverlayAnimation["exit"]
+): React.CSSProperties {
+    switch (preset) {
+        case "fade":
+            return { opacity: 0 };
+        case "slideUp":
+            return { transform: "translateY(-32px)", opacity: 0 };
+        case "slideDown":
+            return { transform: "translateY(32px)", opacity: 0 };
+        case "slideLeft":
+            return { transform: "translateX(-32px)", opacity: 0 };
+        case "slideRight":
+            return { transform: "translateX(32px)", opacity: 0 };
+        case "none":
+        default:
+            return {};
+    }
+}
+
+function getAnimationStyle(
+    animation: OverlayAnimation | undefined,
+    phase: OverlayAnimationPhase | undefined
+): React.CSSProperties {
+    if (phase === "hidden") {
+        if (!animation) {
+            return {
+                opacity: 0,
+                pointerEvents: "none",
+            };
+        }
+
+        return {
+            ...getEnterMotionPresetStyle(animation.enter),
+            pointerEvents: "none",
+        };
+    }
+
+    if (!animation || !phase || phase === "visible") {
+        return {};
+    }
+
+    if (phase === "entering") {
+        return {};
+    }
+
+    if (phase === "exiting") {
+        return {
+            ...getExitMotionPresetStyle(animation.exit),
+            pointerEvents: "none",
+        };
+    }
+
+    return {};
+}
 
 function fitToObjectFit(fit?: OverlayMediaFit) {
     if (fit === "contain") return "contain";
     if (fit === "fill") return "fill";
     return "cover";
+}
+
+function toCssBlendMode(blendMode?: OverlayBlendMode): React.CSSProperties["mixBlendMode"] {
+    if (blendMode === "screen" || blendMode === "multiply") return blendMode;
+    return "normal";
 }
 
 function resolveText(text: string, data?: Record<string, string>) {
@@ -32,34 +235,86 @@ function resolveText(text: string, data?: Record<string, string>) {
     });
 }
 
+function shapeClipPath(shape: string, radius = 0) {
+    if (shape === "circle") return "ellipse(50% 50% at 50% 50%)";
+    if (shape === "triangle") return "polygon(50% 0%, 100% 100%, 0% 100%)";
+    if (shape === "rect" && radius > 0) return undefined;
+    return undefined;
+}
+
+function renderSvgMaskShape(
+    shape: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    radius: number,
+    fill: "white" | "black"
+) {
+    if (shape === "circle") {
+        return (
+            <ellipse
+                cx={x + w / 2}
+                cy={y + h / 2}
+                rx={w / 2}
+                ry={h / 2}
+                fill={fill}
+            />
+        );
+    }
+
+    if (shape === "triangle") {
+        return (
+            <polygon
+                points={`${x + w / 2},${y} ${x + w},${y + h} ${x},${y + h}`}
+                fill={fill}
+            />
+        );
+    }
+
+    return (
+        <rect
+            x={x}
+            y={y}
+            width={w}
+            height={h}
+            rx={radius}
+            ry={radius}
+            fill={fill}
+        />
+    );
+}
+
 export function ElementRenderer({
     element,
-    elementsById, // Required for Group recursion
-    overlayComponents, // Required for componentInstance rendering
-    data,         // Variable binding context
+    elementsById,
+    overlayComponents,
+    animationPhase,
+    animationPhases,
+    data,
     yOffset = 0,
     layout = "absolute",
-    visited,      // Cycle detection
+    visited,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
     overlayComponents?: OverlayComponentDef[];
+    animationPhase?: OverlayAnimationPhase;
+    animationPhases?: ElementAnimationPhaseMap;
     data?: Record<string, any>;
     yOffset?: number;
     layout?: "absolute" | "fill";
     visited?: Set<string>;
 }) {
-    // -------------------------------------------------------------------------
-    // PROP WEAVING: If this element has bindings and we have data, override props
-    // -------------------------------------------------------------------------
+    const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
+
     if (el.bindings && data) {
         const overrides: any = {};
         for (const [propPath, binding] of Object.entries(el.bindings)) {
-            if (binding && typeof binding === 'object' && (binding as any).mode === 'dynamic') {
+            if (binding && typeof binding === "object" && (binding as any).mode === "dynamic") {
                 overrides[propPath] = resolveBinding(binding as any, data);
-            } else if (typeof binding === 'string') {
-                // Back-compat for legacy string-based bindings
+            } else if (typeof binding === "string") {
                 const val = data[binding];
                 if (val !== undefined) overrides[propPath] = val;
             }
@@ -69,9 +324,9 @@ export function ElementRenderer({
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 1. BASE STYLES & LAYOUT
-    // -------------------------------------------------------------------------
+    const effectiveAnimationPhase =
+        animationPhase ?? (el.visible === false ? "hidden" : "visible");
+
     const baseStyle: React.CSSProperties =
         layout === "fill"
             ? {
@@ -80,7 +335,7 @@ export function ElementRenderer({
                 top: 0,
                 width: "100%",
                 height: "100%",
-                transition: "all 0.4s ease-out", // Default smooth transitions
+                transition: getAnimationTransition(el.animation, effectiveAnimationPhase),
             }
             : {
                 position: "absolute",
@@ -88,67 +343,41 @@ export function ElementRenderer({
                 top: el.y + yOffset,
                 width: el.width,
                 height: el.height,
-                transition: "all 0.4s ease-out", // Default smooth transitions
+                transition: getAnimationTransition(el.animation, effectiveAnimationPhase),
             };
 
-    if (el.visible === false) {
-        baseStyle.opacity = 0;
-        baseStyle.pointerEvents = "none";
-    }
+    Object.assign(baseStyle, getAnimationStyle(el.animation, effectiveAnimationPhase));
 
-    // -------------------------------------------------------------------------
-    // 2. TRANSFORMS (Rotation)
-    // -------------------------------------------------------------------------
-    // Applied to inner container so Rnd (editor) stays axis-aligned
     const transformStyle: React.CSSProperties = {};
-    if (element.rotationDeg) {
-        transformStyle.transform = `rotate(${element.rotationDeg}deg)`;
+    if (el.rotationDeg) {
+        transformStyle.transform = `rotate(${el.rotationDeg}deg)`;
         transformStyle.transformOrigin = "center center";
     }
 
-    // -------------------------------------------------------------------------
-    // 3. EFFECTS (Shadow / Glow)
-    // -------------------------------------------------------------------------
     const effectStyle: React.CSSProperties = {};
-    const useFilterShadow = element.type === "shape" || element.type === "text"; // Text/Shape use filter
+    const useFilterShadow = el.type === "shape" || el.type === "text";
 
-    if (element.shadow?.enabled) {
-        const { color, blur, x, y, spread } = element.shadow;
+    if (el.shadow?.enabled) {
+        const { color, blur, x, y, spread } = el.shadow;
         if (useFilterShadow) {
-            // SVG/Text use drop-shadow filter
-            // Note: spread is not supported in drop-shadow, ignored
             effectStyle.filter = `drop-shadow(${x}px ${y}px ${blur}px ${color})`;
         } else {
-            // Box/Image/Video/Group use box-shadow
             effectStyle.boxShadow = `${x}px ${y}px ${blur}px ${spread ?? 0}px ${color}`;
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 4. CLIPPING (Masks)
-    // -------------------------------------------------------------------------
     const clipStyle: React.CSSProperties = {};
-    if (element.clip && element.clip.type !== "none") {
+    if (el.clip && el.clip.type !== "none") {
         clipStyle.overflow = "hidden";
-        if (element.clip.type === "circle") {
+        if (el.clip.type === "circle") {
             clipStyle.borderRadius = "9999px";
-        } else if (element.clip.type === "roundRect") {
-            // If explicit radius provided, use it. Else fall back to element's native radius or 0.
-            // Note: Some elements (Box) have native borderRadius. We use clip radius if present.
-            if (typeof element.clip.radius === "number") {
-                clipStyle.borderRadius = element.clip.radius;
-            } else {
-                // Keep native borderRadius if no clip radius specified?
-                // Actually, if clip is roundRect without radius, user likely expects 0 or inherited.
-                // We'll trust native props if clip.radius is undefined.
+        } else if (el.clip.type === "roundRect") {
+            if (typeof el.clip.radius === "number") {
+                clipStyle.borderRadius = el.clip.radius;
             }
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 5. COMBINED STYLE (Inner Wrapper)
-    // -------------------------------------------------------------------------
-    // Opacity is applied here (common prop).
     const innerStyle: React.CSSProperties = {
         width: "100%",
         height: "100%",
@@ -159,59 +388,58 @@ export function ElementRenderer({
         transition: "inherit",
     };
 
-    // -------------------------------------------------------------------------
-    // 6. RENDERERS
-    // -------------------------------------------------------------------------
+    // COMPONENT INSTANCE
+    if (el.type === "componentInstance") {
+        const inst = el as OverlayComponentInstanceElement;
 
-    // --- COMPONENT INSTANCE ---
-    if (element.type === "componentInstance") {
-        const inst = element as OverlayComponentInstanceElement;
-
-        // Cycle Check
-        if (visited && visited.has(element.id)) return null;
+        if (visited && visited.has(el.id)) return null;
         const nextVisited = new Set(visited);
-        nextVisited.add(element.id);
+        nextVisited.add(el.id);
 
-        const def = overlayComponents?.find(c => c.id === inst.componentId);
+        const def = overlayComponents?.find((c) => c.id === inst.componentId);
         if (!def) {
-            // Render a missing component placeholder in editor/debug mode?
             return (
                 <div style={baseStyle}>
-                    <div style={{ ...innerStyle, border: '2px dashed red', background: 'rgba(255,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'red', fontSize: 10 }}>
+                    <div
+                        style={{
+                            ...innerStyle,
+                            border: "2px dashed red",
+                            background: "rgba(255,0,0,0.1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "red",
+                            fontSize: 10,
+                        }}
+                    >
                         Missing Component
                     </div>
                 </div>
             );
         }
 
-        // We apply prop overrides here eventually (Phase 3).
-        // For now we just render the master elements at the origin of this component container.
         const mergedData = { ...data, ...inst.propOverrides };
+        const masterElementsById = Object.fromEntries(def.elements.map((e) => [e.id, e]));
 
-        // Ensure child elements map correctly if `elements` is flat
-        // If master definition has grouping, it should provide a hierarchy via childIds.
-        // We'll trust that the master definition 'elements' is self-contained.
-        const masterElementsById = Object.fromEntries(def.elements.map(e => [e.id, e]));
-
-        // Root elements of the component definition are those that aren't children of any group inside the def
         const childIds = new Set<string>();
-        def.elements.forEach(c => {
-            if (c.type === 'group' && Array.isArray((c as any).childIds)) {
+        def.elements.forEach((c) => {
+            if ((c.type === "group" || c.type === "mask") && Array.isArray((c as any).childIds)) {
                 (c as any).childIds.forEach((cid: string) => childIds.add(cid));
             }
         });
 
-        const roots = def.elements.filter(e => !childIds.has(e.id));
+        const roots = def.elements.filter((e) => !childIds.has(e.id));
 
         return (
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {roots.map(child => (
+                    {roots.map((child) => (
                         <ElementRenderer
                             key={child.id}
                             element={child}
                             elementsById={masterElementsById}
-                            overlayComponents={overlayComponents} // pass down!
+                            overlayComponents={overlayComponents}
+                            animationPhase={undefined}
                             data={mergedData}
                             layout="absolute"
                             visited={nextVisited}
@@ -222,25 +450,26 @@ export function ElementRenderer({
         );
     }
 
-    // --- MASK ---
-    if (element.type === "mask") {
-        const maskGroup = element as OverlayMaskElement;
-        const maskShapeId = maskGroup.childIds[0];
-        const contentId = maskGroup.childIds[1];
+    // MASK
+    if (el.type === "mask") {
+        const maskGroup = el as OverlayMaskElement;
+        const maskShapeId = maskGroup.childIds?.[0];
+        const contentId = maskGroup.childIds?.[1];
 
-        const maskEl = elementsById?.[maskShapeId] as OverlayShapeElement;
-        const contentEl = elementsById?.[contentId];
+        const maskEl = elementsById?.[maskShapeId] as OverlayShapeElement | undefined;
+        const contentEl = contentId ? elementsById?.[contentId] : undefined;
 
         if (!maskEl || !contentEl) return null;
 
-        if (visited && visited.has(element.id)) return null;
+        if (visited && visited.has(el.id)) return null;
         const nextVisited = new Set(visited);
-        nextVisited.add(element.id);
+        nextVisited.add(el.id);
 
-        const gx = element.x ?? 0;
-        const gy = element.y ?? 0;
+        const invert = !!(maskGroup as any).invert;
 
-        // Mask shape position relative to the mask group container
+        const gx = el.x ?? 0;
+        const gy = el.y ?? 0;
+
         const mx = (maskEl.x ?? 0) - gx;
         const my = (maskEl.y ?? 0) - gy;
         const mw = maskEl.width ?? 0;
@@ -248,90 +477,135 @@ export function ElementRenderer({
         const mcr = (maskEl as any).cornerRadiusPx ?? (maskEl as any).cornerRadius ?? 0;
         const shape = maskEl.shape ?? "rect";
 
-        // Content offset relative to the clip box
-        // The clip box is at (maskEl.x, maskEl.y) in overlay space.
-        // The content is at (contentEl.x, contentEl.y) in overlay space.
-        // So inside the clip box, the content starts at (contentEl.x - maskEl.x, contentEl.y - maskEl.y).
         const offsetX = (contentEl.x ?? 0) - (maskEl.x ?? 0);
         const offsetY = (contentEl.y ?? 0) - (maskEl.y ?? 0);
         const contentW = contentEl.width ?? mw;
         const contentH = contentEl.height ?? mh;
 
-        // Shape-specific clip for non-rect shapes
-        let clipPathOnBox: string | undefined;
-        if (shape === "circle") {
-            clipPathOnBox = "ellipse(50% 50% at 50% 50%)";
-        } else if (shape === "triangle") {
-            clipPathOnBox = "polygon(50% 0%, 100% 100%, 0% 100%)";
+        const normalClipPath = shapeClipPath(shape, mcr);
+        const svgMaskId = `mask-${el.id}`;
+
+        if (!invert) {
+            return (
+                <div style={baseStyle}>
+                    <div style={{ ...innerStyle, position: "relative" }}>
+                        <div
+                            style={{
+                                position: "absolute",
+                                left: mx,
+                                top: my,
+                                width: mw,
+                                height: mh,
+                                overflow: "hidden",
+                                borderRadius: shape === "rect" ? mcr : undefined,
+                                clipPath: normalClipPath,
+                                WebkitClipPath: normalClipPath,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    position: "absolute",
+                                    left: offsetX,
+                                    top: offsetY,
+                                    width: contentW,
+                                    height: contentH,
+                                }}
+                            >
+                                <ElementRenderer
+                                    element={contentEl}
+                                    elementsById={elementsById}
+                                    overlayComponents={overlayComponents}
+                                    animationPhase={animationPhases?.[contentEl.id]?.phase}
+                                    animationPhases={animationPhases}
+                                    data={data}
+                                    layout="fill"
+                                    visited={nextVisited}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
-        // Structure:
-        // 1. Clip box — at mask shape's position, sized mw × mh, overflow:hidden
-        // 2. Offset div — inside clip box, positioned at (offsetX, offsetY) = (content.x - mask.x, content.y - mask.y)
-        //                  sized to content dimensions
-        // 3. Content via layout="fill" — fills the offset div
-        //
-        // Groups: group.x is still contentEl.x (unchanged), group renders children at
-        //   child.x - element.x = child.x - contentEl.x from the offset div's top-left.
-        //   Offset div is at (contentEl.x - maskEl.x) from clip box.
-        //   → child appears at (contentEl.x - maskEl.x) + (child.x - contentEl.x) = child.x - maskEl.x from clip box.
-        //   Clip box is at maskEl.x in overlay → child at child.x in overlay. ✓
+        const groupW = el.width ?? 0;
+        const groupH = el.height ?? 0;
 
         return (
             <div style={baseStyle}>
-                <div style={{ ...innerStyle, position: "relative" }}>
-                    {/* Clip box: the mask shape's window */}
-                    <div style={{
-                        position: "absolute",
-                        left: mx,
-                        top: my,
-                        width: mw,
-                        height: mh,
-                        overflow: "hidden",
-                        borderRadius: shape === "rect" ? mcr : undefined,
-                        clipPath: clipPathOnBox,
-                        WebkitClipPath: clipPathOnBox,
-                    }}>
-                        {/* Offset div: positions content at correct overlay location within clip box */}
-                        <div style={{
-                            position: "absolute",
-                            left: offsetX,
-                            top: offsetY,
-                            width: contentW,
-                            height: contentH,
-                        }}>
-                            <ElementRenderer
-                                element={contentEl}
-                                elementsById={elementsById}
-                                overlayComponents={overlayComponents}
-                                data={data}
-                                layout="fill"
-                                visited={nextVisited}
-                            />
-                        </div>
-                    </div>
+                <div style={{ ...innerStyle, position: "relative", overflow: "hidden" }}>
+                    <svg
+                        width="100%"
+                        height="100%"
+                        viewBox={`0 0 ${groupW} ${groupH}`}
+                        preserveAspectRatio="none"
+                        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+                    >
+                        <defs>
+                            <mask id={svgMaskId} maskUnits="userSpaceOnUse">
+                                <rect x="0" y="0" width={groupW} height={groupH} fill="white" />
+                                {renderSvgMaskShape(shape, mx, my, mw, mh, mcr, "black")}
+                            </mask>
+                        </defs>
+
+                        <foreignObject
+                            x="0"
+                            y="0"
+                            width={groupW}
+                            height={groupH}
+                            mask={`url(#${svgMaskId})`}
+                        >
+                            <div
+                                style={{
+                                    position: "relative",
+                                    width: `${groupW}px`,
+                                    height: `${groupH}px`,
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        position: "absolute",
+                                        left: (contentEl.x ?? 0) - gx,
+                                        top: (contentEl.y ?? 0) - gy,
+                                        width: contentW,
+                                        height: contentH,
+                                    }}
+                                >
+                                    <ElementRenderer
+                                        element={contentEl}
+                                        elementsById={elementsById}
+                                        overlayComponents={overlayComponents}
+                                        animationPhase={animationPhases?.[contentEl.id]?.phase}
+                                        animationPhases={animationPhases}
+                                        data={data}
+                                        layout="fill"
+                                        visited={nextVisited}
+                                    />
+                                </div>
+                            </div>
+                        </foreignObject>
+                    </svg>
                 </div>
             </div>
         );
     }
 
-    // --- GROUP ---
-    if (element.type === "group") {
-        const group = element as OverlayGroupElement;
+    // GROUP
+    if (el.type === "group") {
+        const group = el as OverlayGroupElement;
 
-        // Cycle Check
-        if (visited && visited.has(element.id)) return null;
+        if (visited && visited.has(el.id)) return null;
         const nextVisited = new Set(visited);
-        nextVisited.add(element.id);
+        nextVisited.add(el.id);
 
         const groupStyle: React.CSSProperties = {
             ...innerStyle,
             backgroundColor: group.backgroundColor,
             borderRadius: group.borderRadiusPx,
-            border: group.borderWidth ? `${group.borderWidth}px solid ${group.borderColor}` : undefined,
-            // Groups often need relative positioning context for their children
-            // But here children are rendered with (child.x - group.x) logic?
-            // "child absolute position should be offset by -group.x/-group.y"
+            border: group.borderWidth
+                ? `${group.borderWidth}px solid ${group.borderColor}`
+                : undefined,
             position: "relative",
         };
 
@@ -342,10 +616,8 @@ export function ElementRenderer({
                         const child = elementsById?.[childId];
                         if (!child) return null;
 
-                        // Calculate relative position for the child
-                        // We create a phantom child object shifted to (0,0) relative to group
-                        const relX = child.x - element.x;
-                        const relY = child.y - element.y;
+                        const relX = (child.x ?? 0) - (el.x ?? 0);
+                        const relY = (child.y ?? 0) - (el.y ?? 0);
 
                         const relChild = {
                             ...child,
@@ -358,8 +630,11 @@ export function ElementRenderer({
                                 key={child.id}
                                 element={relChild}
                                 elementsById={elementsById}
+                                overlayComponents={overlayComponents}
+                                animationPhase={animationPhases?.[child.id]?.phase}
+                                animationPhases={animationPhases}
                                 data={data}
-                                layout="absolute" // force absolute for children inside group
+                                layout="absolute"
                                 visited={nextVisited}
                             />
                         );
@@ -369,34 +644,44 @@ export function ElementRenderer({
         );
     }
 
-    // --- BOX ---
-    if (element.type === "box") {
-        const box = element as OverlayBoxElement;
+    // BOX
+    if (el.type === "box") {
+        const box = el as OverlayBoxElement;
         const br = box.borderRadiusPx ?? (box as any).borderRadius ?? 16;
+        const patternStyle = getBoxPatternStyle(box.pattern);
 
-        // If clip active, it handled borderRadius in innerStyle (if clip.radius set).
-        // If clip NOT active, we use native borderRadius.
-        // If clip IS active but no radius, we use native borderRadius.
-        const effectiveBr = (element.clip && element.clip.type !== "none")
-            ? (clipStyle.borderRadius ?? br)
-            : br;
+        const effectiveBr =
+            el.clip && el.clip.type !== "none"
+                ? clipStyle.borderRadius ?? br
+                : br;
 
         return (
             <div style={baseStyle}>
                 <div
                     style={{
                         ...innerStyle,
+                        position: "relative",
+                        overflow: "hidden",
                         background: box.backgroundColor || "rgba(15,23,42,0.8)",
                         borderRadius: effectiveBr,
                     }}
-                />
+                >
+                    {patternStyle && (
+                        <div
+                            style={{
+                                ...patternStyle,
+                                borderRadius: effectiveBr,
+                            }}
+                        />
+                    )}
+                </div>
             </div>
         );
     }
 
-    // --- TEXT ---
-    if (element.type === "text") {
-        const textEl = element as OverlayTextElement;
+    // TEXT
+    if (el.type === "text") {
+        const textEl = el as OverlayTextElement;
         let justify: React.CSSProperties["justifyContent"] = "flex-start";
         if (textEl.textAlign === "center") justify = "center";
         if (textEl.textAlign === "right") justify = "flex-end";
@@ -404,7 +689,6 @@ export function ElementRenderer({
         const fontSize = textEl.fontSizePx ?? (textEl as any).fontSize ?? 24;
         const strokeWidth = textEl.strokeWidthPx ?? (textEl as any).strokeWidth ?? 0;
         const strokeColor = textEl.strokeColor;
-
         const content = resolveText(textEl.text, data);
 
         return (
@@ -423,9 +707,6 @@ export function ElementRenderer({
                         lineHeight: 1.1,
                         boxSizing: "border-box",
                         whiteSpace: "pre-wrap",
-                        // Note: textShadow conflicts with drop-shadow filter if both used. 
-                        // Plan said "use text-stroke-shadow OR filter".
-                        // Use textShadow for stroke only.
                         textShadow:
                             strokeWidth > 0 && strokeColor
                                 ? [
@@ -443,9 +724,9 @@ export function ElementRenderer({
         );
     }
 
-    // --- SHAPE (SVG) ---
-    if (element.type === "shape") {
-        const s = element as OverlayShapeElement;
+    // SHAPE
+    if (el.type === "shape") {
+        const s = el as OverlayShapeElement;
         const w = Math.max(1, s.width ?? 1);
         const h = Math.max(1, s.height ?? 1);
 
@@ -453,17 +734,26 @@ export function ElementRenderer({
         const fillOpacity = typeof s.fillOpacity === "number" ? s.fillOpacity : 1;
 
         const stroke = s.strokeColor ?? "rgba(56,189,248,0.95)";
-        const strokeWidth =
-            s.strokeWidthPx ?? (s as any).strokeWidth ?? 2;
+        const strokeWidth = s.strokeWidthPx ?? (s as any).strokeWidth ?? 2;
 
-        const strokeOpacity = typeof s.strokeOpacity === "number" ? s.strokeOpacity : 1;
-        const dash = Array.isArray(s.strokeDash) && s.strokeDash.length ? s.strokeDash : undefined;
+        const strokeOpacity =
+            typeof s.strokeOpacity === "number" ? s.strokeOpacity : 1;
+        const dash =
+            Array.isArray(s.strokeDash) && s.strokeDash.length ? s.strokeDash : undefined;
+        const patternEnabled = hasPatternSource(s.pattern) && s.shape !== "line";
+        const patternId = `shape-pattern-${patternScopeId}-${s.id}`;
+        const patternFit = s.pattern?.fit ?? "tile";
+        const patternScale = getPatternScale(s.pattern);
+        const patternOpacity = getPatternOpacity(s.pattern);
+        const tileWidth = Math.max(1, w * (patternScale / 100));
+        const tileHeight = Math.max(1, h * (patternScale / 100));
+        const scaledWidth = Math.max(1, w * (patternScale / 100));
+        const scaledHeight = Math.max(1, h * (patternScale / 100));
+        const patternImageX = (w - scaledWidth) / 2;
+        const patternImageY = (h - scaledHeight) / 2;
 
-        const cr = s.cornerRadiusPx ?? (s as any).cornerRadius ?? 0;
-
-        const common = {
-            fill,
-            fillOpacity,
+        const strokeProps = {
+            fill: "none",
             stroke,
             strokeWidth,
             strokeOpacity,
@@ -473,103 +763,109 @@ export function ElementRenderer({
         return (
             <div style={baseStyle}>
                 <div style={innerStyle}>
-                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                        {s.shape === "rect" && (
-                            <rect
-                                x={strokeWidth / 2}
-                                y={strokeWidth / 2}
-                                width={Math.max(0, w - strokeWidth)}
-                                height={Math.max(0, h - strokeWidth)}
-                                rx={cr}
-                                ry={cr}
-                                {...common}
-                            />
+                    <svg
+                        width="100%"
+                        height="100%"
+                        viewBox={`0 0 ${w} ${h}`}
+                        preserveAspectRatio="none"
+                    >
+                        {patternEnabled && (
+                            <defs>
+                                <pattern
+                                    id={patternId}
+                                    patternUnits="userSpaceOnUse"
+                                    width={patternFit === "tile" ? tileWidth : w}
+                                    height={patternFit === "tile" ? tileHeight : h}
+                                >
+                                    <image
+                                        href={s.pattern!.src}
+                                        x={patternFit === "tile" ? 0 : patternImageX}
+                                        y={patternFit === "tile" ? 0 : patternImageY}
+                                        width={patternFit === "tile" ? tileWidth : scaledWidth}
+                                        height={patternFit === "tile" ? tileHeight : scaledHeight}
+                                        preserveAspectRatio={
+                                            patternFit === "cover"
+                                                ? "xMidYMid slice"
+                                                : patternFit === "contain"
+                                                    ? "xMidYMid meet"
+                                                    : "none"
+                                        }
+                                        opacity={patternOpacity}
+                                    />
+                                </pattern>
+                            </defs>
                         )}
 
-                        {s.shape === "circle" && (
-                            <ellipse
-                                cx={w / 2}
-                                cy={h / 2}
-                                rx={Math.max(0, w / 2 - strokeWidth / 2)}
-                                ry={Math.max(0, h / 2 - strokeWidth / 2)}
-                                {...common}
-                            />
-                        )}
+                        {renderShapeGeometry(s, w, h, strokeWidth, {
+                            fill,
+                            fillOpacity,
+                            stroke: "none",
+                        })}
 
-                        {s.shape === "line" && (
-                            <line
-                                x1={s.line ? s.line.x1 * w : 0}
-                                y1={s.line ? s.line.y1 * h : h / 2}
-                                x2={s.line ? s.line.x2 * w : w}
-                                y2={s.line ? s.line.y2 * h : h / 2}
-                                {...common}
-                                fill="none"
-                            />
-                        )}
+                        {patternEnabled &&
+                            renderShapeGeometry(s, w, h, strokeWidth, {
+                                fill: `url(#${patternId})`,
+                                stroke: "none",
+                            })}
 
-                        {s.shape === "triangle" && (
-                            <polygon
-                                points={`${w / 2},${strokeWidth / 2} ${w - strokeWidth / 2},${h - strokeWidth / 2} ${strokeWidth / 2},${h - strokeWidth / 2}`}
-                                {...common}
-                            />
-                        )}
+                        {renderShapeGeometry(s, w, h, strokeWidth, strokeProps)}
                     </svg>
                 </div>
             </div>
         );
     }
 
-    // --- IMAGE ---
-    if (element.type === "image") {
-        const img = element as OverlayImageElement;
+    // IMAGE
+    if (el.type === "image") {
+        const img = el as OverlayImageElement;
         const br = img.borderRadiusPx ?? (img as any).borderRadius ?? 0;
-        // Clip radius takes precedence if set
-        const effectiveBr = (element.clip && element.clip.type !== "none" && typeof element.clip.radius === 'number')
-            ? element.clip.radius
-            : br;
+        const effectiveBr =
+            el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number"
+                ? el.clip.radius
+                : br;
 
-        const fit = fitToObjectFit(img.fit);
         const src = img.src || "";
+        const mixBlendMode = toCssBlendMode(img.blendMode);
+        const imageStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div style={baseStyle}>
+            <div style={imageStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <img
-                            src={src}
-                            alt=""
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
-                        />
+                        <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
                 </div>
             </div>
         );
     }
 
-    // --- VIDEO ---
-    if (element.type === "video") {
-        const vid = element as OverlayVideoElement;
+    // VIDEO
+    if (el.type === "video") {
+        const vid = el as OverlayVideoElement;
         const br = vid.borderRadiusPx ?? (vid as any).borderRadius ?? 0;
-        const effectiveBr = (element.clip && element.clip.type !== "none" && typeof element.clip.radius === 'number')
-            ? element.clip.radius
-            : br;
+        const effectiveBr =
+            el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number"
+                ? el.clip.radius
+                : br;
 
-        const fit = fitToObjectFit(vid.fit);
         const src = vid.src || "";
+        const mixBlendMode = toCssBlendMode(vid.blendMode);
+        const videoStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div style={baseStyle}>
+            <div style={videoStyle}>
                 <div style={{ ...innerStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
-                        <video
+                        <KeyedMedia
+                            kind="video"
                             src={src}
-                            poster={vid.poster || undefined}
-                            autoPlay={!!vid.autoplay}
+                            fit={vid.fit}
+                            keying={vid.keying}
+                            poster={vid.poster}
+                            autoplay={!!vid.autoplay}
                             muted={vid.muted !== false}
                             loop={!!vid.loop}
                             controls={!!vid.controls}
-                            playsInline
-                            style={{ width: "100%", height: "100%", objectFit: fit as any }}
                         />
                     )}
                 </div>
@@ -577,13 +873,11 @@ export function ElementRenderer({
         );
     }
 
-    // --- PROGRESS BAR ---
-    if (element.type === "progressBar") {
-        const bar = element as OverlayProgressBarElement;
+    // PROGRESS BAR
+    if (el.type === "progressBar") {
+        const bar = el as OverlayProgressBarElement;
         const val = Math.max(0, Math.min(1, bar.value ?? 0));
         const br = bar.borderRadiusPx ?? 0;
-        const w = Math.max(0, element.width || 0);
-        const h = Math.max(0, element.height || 0);
 
         let progressStyle: React.CSSProperties = {
             position: "absolute",
@@ -602,31 +896,33 @@ export function ElementRenderer({
 
         return (
             <div style={baseStyle}>
-                <div style={{
-                    ...innerStyle,
-                    backgroundColor: bar.backgroundColor ?? "rgba(255,255,255,0.1)",
-                    borderRadius: br,
-                    overflow: "hidden"
-                }}>
+                <div
+                    style={{
+                        ...innerStyle,
+                        backgroundColor: bar.backgroundColor ?? "rgba(255,255,255,0.1)",
+                        borderRadius: br,
+                        overflow: "hidden",
+                    }}
+                >
                     <div style={progressStyle} />
                 </div>
             </div>
         );
     }
 
-    // --- PROGRESS RING ---
-    if (element.type === "progressRing") {
-        const ring = element as OverlayProgressRingElement;
+    // PROGRESS RING
+    if (el.type === "progressRing") {
+        const ring = el as OverlayProgressRingElement;
         const val = Math.max(0, Math.min(1, ring.value ?? 0));
         const sw = ring.strokeWidthPx ?? 4;
-        const w = element.width || 1;
-        const h = element.height || 1;
+        const w = el.width || 1;
+        const h = el.height || 1;
         const r = Math.max(0.1, Math.min(w, h) / 2 - sw / 2);
         const cx = w / 2;
         const cy = h / 2;
         const circumference = 2 * Math.PI * r;
         const offset = circumference * (1 - val);
-        const startAngle = (ring.startAngleDeg ?? -90); // default top
+        const startAngle = ring.startAngleDeg ?? -90;
 
         return (
             <div style={baseStyle}>
@@ -637,7 +933,6 @@ export function ElementRenderer({
                         viewBox={`0 0 ${w} ${h}`}
                         style={{ transform: `rotate(${startAngle}deg)` }}
                     >
-                        {/* Track */}
                         <circle
                             cx={cx}
                             cy={cy}
@@ -646,7 +941,6 @@ export function ElementRenderer({
                             stroke={ring.backgroundColor ?? "rgba(255,255,255,0.1)"}
                             strokeWidth={sw}
                         />
-                        {/* Progress */}
                         <circle
                             cx={cx}
                             cy={cy}
@@ -664,12 +958,10 @@ export function ElementRenderer({
         );
     }
 
-    // --- LOWER THIRD ---
-    if (element.type === "lower_third") {
-        const lt = element as OverlayLowerThirdElement;
+    // LOWER THIRD
+    if (el.type === "lower_third") {
+        const lt = el as OverlayLowerThirdElement;
 
-        // 1. Data Binding & Active State
-        // Defaults
         const keys = {
             active: lt.bind?.activeKey || "lower_third.active",
             text: lt.bind?.textKey || "lower_third",
@@ -683,54 +975,43 @@ export function ElementRenderer({
         const rawSubtitle = data?.[keys.subtitle] || "";
         const hasContent = Boolean(rawText || rawTitle || rawSubtitle);
 
-        // Active logical check: activeKey truthy OR fallback to hasContent
-        // Note: The new plan says "primary visibility gate is activeKey truthy"
-        //       "Fallback: if activeKey absent from data, treat non-empty bound content as active"
         const isActive = activeVal
-            ? (activeVal !== "0" && activeVal !== "false")
+            ? activeVal !== "0" && activeVal !== "false"
             : hasContent;
 
-        // 2. Animation Retention
-        const [renderState, setRenderState] = React.useState<{ show: boolean; mounting: boolean }>({
+        const [renderState, setRenderState] = React.useState<{
+            show: boolean;
+            mounting: boolean;
+        }>({
             show: isActive,
-            mounting: false // true = enter, false = exit or stable
+            mounting: false,
         });
 
         React.useEffect(() => {
             if (isActive) {
-                // Showing
                 setRenderState({ show: true, mounting: true });
-                // Remove mounting class after duration to stabilize?
-                // Actually simple approach:
-                // class "enter" -> normal
-                // class "exit" -> unmount
             } else {
-                // Hiding
-                setRenderState(prev => prev.show ? { show: true, mounting: false } : prev);
+                setRenderState((prev) => (prev.show ? { show: true, mounting: false } : prev));
 
                 const dur = lt.animation?.durationMs ?? 450;
                 const tm = setTimeout(() => {
-                    setRenderState(prev => (!isActive ? { show: false, mounting: false } : prev));
+                    setRenderState((prev) => (!isActive ? { show: false, mounting: false } : prev));
                 }, dur);
                 return () => clearTimeout(tm);
             }
         }, [isActive, lt.animation?.durationMs]);
 
-        // If completely hidden and animation done, don't render
         if (!renderState.show && !isActive) return null;
 
-        // 3. Styles & Layout
         const variant = lt.style?.variant || "accent-bar";
         const layoutMode = lt.layout?.mode || "stacked";
 
-        // Colors
         const bgColor = lt.style?.bgColor || "#111";
         const bgOpacity = lt.style?.bgOpacity ?? 0.75;
         const accent = lt.style?.accentColor || "#4f46e5";
         const titleColor = lt.style?.titleColor || "#fff";
         const subtitleColor = lt.style?.subtitleColor || "rgba(255,255,255,0.85)";
 
-        // Metrics
         const padding = lt.style?.paddingPx ?? 20;
         const radius = lt.style?.cornerRadiusPx ?? 18;
         const titleSize = lt.style?.titleSizePx ?? 40;
@@ -738,81 +1019,30 @@ export function ElementRenderer({
         const titleWeight = lt.style?.titleWeight === "normal" ? 400 : 700;
         const font = getFontStack(lt.style?.fontFamily);
 
-        // Animation Classes / Styles
-        const animIn = lt.animation?.in || "slideUp";
         const animOut = lt.animation?.out || "slideDown";
         const animDur = lt.animation?.durationMs ?? 450;
         const ease = lt.animation?.easing || "cubic-bezier(0.2, 0.9, 0.2, 1)";
-
-        // We'll use inline styles for animation to avoid new global CSS.
-        // State:
-        //  - isActive + renderState.show => ENTERING (or stable shown)
-        //  - !isActive + renderState.show => EXITING
-
-        // Ideally we start from "out" state, transition to "in".
-        // But for React retention, we can just use a key or simple prop.
-        // Let's use a transition wrapper.
-
         const isExiting = !isActive && renderState.show;
 
-        // Compute transform/opacity based on state
         const getAnimStyle = (type: string): React.CSSProperties => {
             if (type === "none") return {};
             if (type === "fade") return { opacity: 0 };
             if (type === "slideUp") return { transform: "translateY(100%)", opacity: 0 };
-            if (type === "slideDown") return { transform: "translateY(100%)", opacity: 0 }; // same direction usually
+            if (type === "slideDown") return { transform: "translateY(100%)", opacity: 0 };
             if (type === "slideLeft") return { transform: "translateX(-50px)", opacity: 0 };
             if (type === "slideRight") return { transform: "translateX(50px)", opacity: 0 };
             return {};
         };
 
-        // Base state is "idle/shown".
-        // Enter state: start at valid 'out' position, transition to idle.
-        // Exit state: transition from idle to valid 'out' position.
-
-        const baseTrans: React.CSSProperties = {
+        const combinedAnimStyle = {
             transition: `all ${animDur}ms ${ease}`,
             opacity: 1,
             transform: "translate(0,0)",
+            ...(isExiting ? getAnimStyle(animOut) : {}),
         };
 
-        const outStyle = isExiting ? getAnimStyle(animOut) : {};
-        // Initial mount check is harder in pure function component without more state.
-        // We'll rely on the fact that if it *was* unmounted, it starts fresh.
-        // To animate IN, we need a layout effect or CSS animation. 
-        // CSS animation keyframes are cleaner but we can't inject easily.
-        // Let's use a simple mounting flag with setTimeout to trigger "enter".
-
-        // Actually, simpler:
-        // Use a persistent opacity/transform.
-        // If isActive, style = idle.
-        // If !isActive, style = outStyle.
-        // But for ENTER, it defaults to idle immediately.
-        // We need 'start-state'.
-
-        // To fix enter animation, we can allow the 'enter' style to persist for one tick.
-        // But simpler: just toggle a class or data-attr if we had CSS.
-        // We will settle for: Exiting works well. Entering might pop unless we hold state.
-        // Let's try to just render "Exiting" state correctly, and for "Entering" we accept pop 
-        // OR we use a "hasMounted" ref to suppress transition on very first render? No, we want animation.
-        // We will skip complex enter-animation logic for this V1 patch to minimize lines 
-        // and just rely on transition from "out" state if possible. 
-        // Retaining "isExiting" logic is good.
-
-        const combinedAnimStyle = {
-            ...baseTrans,
-            ...(isExiting ? outStyle : {}),
-            // To animate IN, we normally need to start at "outStyle" then frame -> normal.
-            // This requires `useEffect` to set a 'vis' state after mount.
-        };
-
-        // --- Content Rendering ---
-
-        // Resolvers
         const titleText = resolveText(rawTitle || rawText, data);
         const subText = resolveText(rawSubtitle, data);
-
-        // Layout: Single (only text/title), Stacked (Title \n Sub), Split (Title | Sub)
 
         let contentNode: React.ReactNode;
 
@@ -823,13 +1053,23 @@ export function ElementRenderer({
                 </div>
             );
         } else if (layoutMode === "split") {
-            const ratio = lt.layout?.splitRatio ?? 0.6; // e.g. 60% left
+            const ratio = lt.layout?.splitRatio ?? 0.6;
             const leftW = `${ratio * 100}%`;
             const rightW = `${(1 - ratio) * 100}%`;
 
             contentNode = (
                 <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center" }}>
-                    <div style={{ width: leftW, paddingRight: padding, textAlign: "right", borderRight: `2px solid ${accent}`, fontSize: titleSize, fontWeight: titleWeight, color: titleColor }}>
+                    <div
+                        style={{
+                            width: leftW,
+                            paddingRight: padding,
+                            textAlign: "right",
+                            borderRight: `2px solid ${accent}`,
+                            fontSize: titleSize,
+                            fontWeight: titleWeight,
+                            color: titleColor,
+                        }}
+                    >
                         {titleText}
                     </div>
                     <div style={{ width: rightW, paddingLeft: padding, fontSize: subSize, color: subtitleColor }}>
@@ -838,24 +1078,21 @@ export function ElementRenderer({
                 </div>
             );
         } else {
-            // Stacked
             contentNode = (
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     {titleText && (
-                        <div style={{ fontSize: titleSize, fontWeight: titleWeight, color: titleColor }}>{titleText}</div>
+                        <div style={{ fontSize: titleSize, fontWeight: titleWeight, color: titleColor }}>
+                            {titleText}
+                        </div>
                     )}
                     {subText && (
-                        <div style={{ fontSize: subSize, color: subtitleColor, marginTop: 4 }}>{subText}</div>
+                        <div style={{ fontSize: subSize, color: subtitleColor, marginTop: 4 }}>
+                            {subText}
+                        </div>
                     )}
                 </div>
             );
         }
-
-        // --- Container Styles (Variant) ---
-        // "accent-bar" -> Left border accent
-        // "glass" -> Blur bg
-        // "solid" -> Solid bg
-        // "minimal" -> No bg, just text?
 
         const containerStyle: React.CSSProperties = {
             width: "100%",
@@ -864,11 +1101,11 @@ export function ElementRenderer({
             padding: padding,
             boxSizing: "border-box",
             display: "flex",
-            flexDirection: "column", // defaulting to flex col unless content overrides
+            flexDirection: "column",
             justifyContent: "center",
             fontFamily: font,
             position: "relative",
-            overflow: "hidden", // for glass/fills
+            overflow: "hidden",
         };
 
         if (variant === "glass") {
@@ -877,9 +1114,8 @@ export function ElementRenderer({
             containerStyle.border = "1px solid rgba(255,255,255,0.1)";
         } else if (variant === "minimal") {
             containerStyle.backgroundColor = "transparent";
-            containerStyle.padding = 0; // minimal usually implies raw text placement
+            containerStyle.padding = 0;
         } else {
-            // solid / accent-bar
             containerStyle.backgroundColor = hexToRgba(bgColor, bgOpacity);
             if (variant === "accent-bar") {
                 containerStyle.borderLeft = `6px solid ${accent}`;
@@ -888,12 +1124,9 @@ export function ElementRenderer({
 
         return (
             <div style={baseStyle}>
-                {/* Animation Wrapper */}
                 <div style={{ width: "100%", height: "100%", ...combinedAnimStyle }}>
                     <div style={innerStyle}>
-                        <div style={containerStyle}>
-                            {contentNode}
-                        </div>
+                        <div style={containerStyle}>{contentNode}</div>
                     </div>
                 </div>
             </div>
@@ -903,11 +1136,10 @@ export function ElementRenderer({
     return null;
 }
 
-// Helper
 function hexToRgba(hex: string, alpha: number) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
-    if (isNaN(r)) return hex; // fallback
+    if (isNaN(r)) return hex;
     return `rgba(${r},${g},${b},${alpha})`;
 }

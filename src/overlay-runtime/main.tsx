@@ -3,9 +3,12 @@ import { createRoot } from "react-dom/client";
 import {
   OverlayElement,
   OverlayConfigV0,
+  OverlayTimelineProperty,
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
+import { useElementAnimationPhases } from "./useElementAnimationPhases";
+import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 
 
 declare global {
@@ -36,6 +39,43 @@ type OverlayStateV0 = {
   events: any[];
   triggers: any[];
 };
+
+const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
+  "x",
+  "y",
+  "width",
+  "height",
+  "opacity",
+  "rotationDeg",
+];
+
+function applyTimelineOverrides(
+  element: OverlayElement,
+  timelineValues?: Partial<Record<OverlayTimelineProperty, number>>
+) {
+  if (!timelineValues) return element;
+
+  const nextBindings = element.bindings ? { ...element.bindings } : undefined;
+  let removedBinding = false;
+
+  for (const property of TIMELINE_PROPERTIES) {
+    if (timelineValues[property] === undefined) continue;
+    if (nextBindings && property in nextBindings) {
+      delete nextBindings[property];
+      removedBinding = true;
+    }
+  }
+
+  return {
+    ...element,
+    ...timelineValues,
+    bindings: removedBinding
+      ? Object.keys(nextBindings || {}).length > 0
+        ? nextBindings
+        : undefined
+      : element.bindings,
+  } as OverlayElement;
+}
 
 
 
@@ -330,6 +370,10 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
   const [state, setState] = useState<OverlayStateV0 | null>(null);
+  const [playheadMs, setPlayheadMs] = useState(0);
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const playbackStartRef = useRef<number | null>(null);
+  const overlayConfigHashRef = useRef<string>("");
 
   // ... (existing refs/state) ...
   const pinnedMeasureRef = useRef<HTMLDivElement>(null);
@@ -343,35 +387,95 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // We need the elements list to find targets
   const baseElements = overlay?.elements ?? [];
   const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements);
+  const timelineValues = useMemo(
+    () => evaluateTimeline(overlay?.timeline, playheadMs),
+    [overlay?.timeline, playheadMs]
+  );
 
   // Apply Overrides Merge
   const elements = React.useMemo(() => {
     return baseElements.map(el => {
       const ov = overrides[el.id];
-      if (ov) return { ...el, ...ov } as OverlayElement;
-      return el;
+      const merged = ov ? ({ ...el, ...ov } as OverlayElement) : el;
+      return applyTimelineOverrides(merged, timelineValues[el.id]);
     });
-  }, [baseElements, overrides]);
+  }, [baseElements, overrides, timelineValues]);
+
+  const animationPhases = useElementAnimationPhases(elements);
 
 
-  // Load config (static-ish)
+  // Load config and refresh it periodically so persistent OBS browser sources
+  // pick up saved timeline changes without needing a manual source refresh.
   useEffect(() => {
     let cancelled = false;
+    let timer: number | null = null;
 
-    (async () => {
-      const res = await fetch(`/api/overlays/public/${encodeURIComponent(publicId)}`);
+    const loadConfig = async () => {
+      const res = await fetch(`/api/overlays/public/${encodeURIComponent(publicId)}`, {
+        cache: "no-store",
+      });
       if (!res.ok) {
         console.error("Failed to load overlay config", res.status);
         return;
       }
       const data = (await res.json()) as OverlayConfigV0;
-      if (!cancelled) setOverlay(data);
-    })().catch((e) => console.error("Failed to load overlay config", e));
+      const nextHash = JSON.stringify(data);
+      if (cancelled) return;
+      if (nextHash === overlayConfigHashRef.current) return;
+
+      overlayConfigHashRef.current = nextHash;
+      setOverlay(data);
+    };
+
+    loadConfig().catch((e) => console.error("Failed to load overlay config", e));
+    timer = window.setInterval(() => {
+      loadConfig().catch((e) => console.error("Failed to refresh overlay config", e));
+    }, 2000);
 
     return () => {
       cancelled = true;
+      if (timer) window.clearInterval(timer);
     };
   }, [publicId]);
+
+  useEffect(() => {
+    const durationMs = overlay?.timeline?.durationMs ?? 0;
+    setPlayheadMs(0);
+    setIsTimelinePlaying(durationMs > 0);
+  }, [overlay?.timeline?.durationMs, overlay?.timeline?.tracks]);
+
+  useEffect(() => {
+    if (!isTimelinePlaying) return;
+
+    const durationMs = overlay?.timeline?.durationMs ?? 0;
+    if (durationMs <= 0) {
+      setIsTimelinePlaying(false);
+      return;
+    }
+
+    let frameId = 0;
+    const startOffset = playheadMs;
+    playbackStartRef.current = performance.now() - startOffset;
+
+    const tick = (now: number) => {
+      const startedAt = playbackStartRef.current ?? now;
+      const next = Math.min(durationMs, now - startedAt);
+      setPlayheadMs(next);
+
+      if (next >= durationMs) {
+        setIsTimelinePlaying(false);
+        playbackStartRef.current = null;
+      } else {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      playbackStartRef.current = null;
+    };
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs, playheadMs]);
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {
@@ -555,6 +659,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                     y: 0,
                   }}
                   elementsById={elementsById}
+                  animationPhase={animationPhases[el.id]?.phase}
+                  animationPhases={animationPhases}
                   data={{}} // Test data placeholder
                   visited={new Set()}
                 />
@@ -570,6 +676,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 element={el}
                 yOffset={pinnedHeight}
                 elementsById={elementsById}
+                animationPhase={animationPhases[el.id]?.phase}
+                animationPhases={animationPhases}
                 data={eventData}
                 visited={new Set()}
               />

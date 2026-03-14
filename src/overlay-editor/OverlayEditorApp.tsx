@@ -1,8 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Rnd, RndDragCallback, RndResizeCallback } from "react-rnd";
 import {
+  OverlayAnimation,
   OverlayConfigV0,
   OverlayElement,
+  OverlayPatternFill,
+  OverlayPatternFit,
+  OverlayTimeline,
+  OverlayTimelineKeyframe,
+  OverlayTimelineProperty,
+  OverlayTimelineTrack,
   OverlayTextElement,
   OverlayBoxElement,
   OverlayShapeElement,
@@ -11,13 +18,20 @@ import {
   OverlayShapeKind,
   OverlayMediaFit,
   OverlayLowerThirdElement,
-  OverlayComponentDef
+  OverlayComponentDef,
+  OverlayMotionPreset
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
 import { BindingPicker } from "./BindingPicker";
 import { SourceCatalog } from "../shared/bindingEngine";
 import { FontPicker } from "./FontPicker";
+import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
+import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
+import { TimelinePanel } from "./components/TimelinePanel";
+import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
+import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
+import { uiClasses } from "./uiTokens";
 
 
 interface ServerOverlay {
@@ -64,6 +78,10 @@ type GuideState = {
   show: boolean;
   v?: GuideLine[];
   h?: GuideLine[];
+  spacing?: Array<
+    | { axis: "x"; y: number; start: number; end: number; label: string }
+    | { axis: "y"; x: number; start: number; end: number; label: string }
+  >;
 };
 
 type SnapOptions = {
@@ -88,6 +106,31 @@ type AssetItem = {
   kind: AssetKind;
   addedAt: number;
 };
+
+const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
+  "x",
+  "y",
+  "width",
+  "height",
+  "opacity",
+  "rotationDeg",
+];
+
+const DEFAULT_TIMELINE_DURATION_MS = 5000;
+const KEYFRAME_TIME_EPSILON_MS = 10;
+const TOOL_ICON_PROPS = {
+  width: 16,
+  height: 16,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+const ACCENT_TINT = "#818cf8";
+const ACCENT_TINT_SOFT = "rgba(129,140,248,0.2)";
+const ACCENT_FILL_SOFT = "rgba(129,140,248,0.12)";
 
 function genId(prefix: string) {
   const rand =
@@ -116,6 +159,341 @@ function isTypingTarget(el: Element | null) {
 
 function uniq<T>(arr: T[]) {
   return Array.from(new Set(arr));
+}
+
+function ensureTimeline(timeline?: OverlayTimeline): OverlayTimeline {
+  return {
+    durationMs: Math.max(100, timeline?.durationMs ?? DEFAULT_TIMELINE_DURATION_MS),
+    tracks: [...(timeline?.tracks ?? [])],
+  };
+}
+
+function isTimelineEligibleElement(element: OverlayElement) {
+  return element.type !== "lower_third";
+}
+
+function applyTimelineOverridesToElement(
+  element: OverlayElement,
+  timelineValues?: Partial<Record<OverlayTimelineProperty, number>>
+) {
+  if (!timelineValues) return element;
+
+  const nextBindings = element.bindings ? { ...element.bindings } : undefined;
+  let removedBinding = false;
+
+  for (const property of TIMELINE_PROPERTIES) {
+    if (timelineValues[property] === undefined) continue;
+    if (nextBindings && property in nextBindings) {
+      delete nextBindings[property];
+      removedBinding = true;
+    }
+  }
+
+  return {
+    ...element,
+    ...timelineValues,
+    bindings: removedBinding
+      ? Object.keys(nextBindings || {}).length > 0
+        ? nextBindings
+        : undefined
+      : element.bindings,
+  } as OverlayElement;
+}
+
+function snapRotationValue(value: number, allowFreeform: boolean) {
+  if (allowFreeform) return value;
+  return Math.round(value / 15) * 15;
+}
+
+type ResizeHandleKind = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+
+function rotateVector(x: number, y: number, deg: number) {
+  const rad = (deg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
+  };
+}
+
+function handleAxes(handle: ResizeHandleKind) {
+  return {
+    sx: handle.includes("e") ? 1 : handle.includes("w") ? -1 : 0,
+    sy: handle.includes("s") ? 1 : handle.includes("n") ? -1 : 0,
+  };
+}
+
+function getResizeCursor(handle: ResizeHandleKind, rotationDeg: number) {
+  const cursors = ["ew-resize", "nesw-resize", "ns-resize", "nwse-resize", "ew-resize", "nesw-resize", "ns-resize", "nwse-resize"];
+  const baseAngle = {
+    e: 0,
+    ne: 45,
+    n: 90,
+    nw: 135,
+    w: 180,
+    sw: 225,
+    s: 270,
+    se: 315,
+  } as const;
+  const angle = (((baseAngle[handle] + rotationDeg) % 360) + 360) % 360;
+  const index = Math.round(angle / 45) % 8;
+  return cursors[index];
+}
+
+function getElementRadiusValue(el: AnyEl) {
+  if (el.type === "box") return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
+  if (el.type === "shape" && (el as any).shape === "rect") return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
+  return 0;
+}
+
+function supportsRadiusHandle(el: AnyEl) {
+  return el.type === "box" || (el.type === "shape" && (el as any).shape === "rect");
+}
+
+function getRadiusPatch(el: AnyEl, radius: number): Partial<AnyEl> {
+  if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius } as any;
+  if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius } as any;
+  return {};
+}
+
+function computeResizeDraft(
+  origin: { x: number; y: number; width: number; height: number; rotationDeg: number },
+  handle: ResizeHandleKind,
+  deltaWorld: { x: number; y: number },
+  options: { preserveAspect: boolean; resizeFromCenter: boolean }
+) {
+  const minSize = 8;
+  const { sx, sy } = handleAxes(handle);
+  const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -origin.rotationDeg);
+  const aspect = origin.height !== 0 ? origin.width / origin.height : 1;
+  let left = -origin.width / 2;
+  let right = origin.width / 2;
+  let top = -origin.height / 2;
+  let bottom = origin.height / 2;
+  let centerLocalX = 0;
+  let centerLocalY = 0;
+
+  if (options.resizeFromCenter) {
+    let width = origin.width;
+    let height = origin.height;
+    if (sx !== 0) width = Math.max(minSize, origin.width + sx * deltaLocal.x * 2);
+    if (sy !== 0) height = Math.max(minSize, origin.height + sy * deltaLocal.y * 2);
+
+    if (options.preserveAspect) {
+      if (sx === 0 && sy !== 0) width = Math.max(minSize, height * aspect);
+      else if (sy === 0 && sx !== 0) height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+      else if (sx !== 0 && sy !== 0) {
+        const widthScale = width / Math.max(origin.width, minSize);
+        const heightScale = height / Math.max(origin.height, minSize);
+        if (Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)) {
+          height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+        } else {
+          width = Math.max(minSize, height * aspect);
+        }
+      }
+    }
+
+    left = -width / 2;
+    right = width / 2;
+    top = -height / 2;
+    bottom = height / 2;
+  } else {
+    if (sx === -1) left += deltaLocal.x;
+    if (sx === 1) right += deltaLocal.x;
+    if (sy === -1) top += deltaLocal.y;
+    if (sy === 1) bottom += deltaLocal.y;
+
+    if (options.preserveAspect) {
+      if (sx === 0 && sy !== 0) {
+        const height = Math.max(minSize, bottom - top);
+        const width = Math.max(minSize, height * aspect);
+        const cx = (left + right) / 2;
+        left = cx - width / 2;
+        right = cx + width / 2;
+      } else if (sy === 0 && sx !== 0) {
+        const width = Math.max(minSize, right - left);
+        const height = Math.max(minSize, width / Math.max(aspect, 0.0001));
+        const cy = (top + bottom) / 2;
+        top = cy - height / 2;
+        bottom = cy + height / 2;
+      } else if (sx !== 0 && sy !== 0) {
+        const width = Math.max(minSize, right - left);
+        const height = Math.max(minSize, bottom - top);
+        const widthScale = width / Math.max(origin.width, minSize);
+        const heightScale = height / Math.max(origin.height, minSize);
+        if (Math.abs(widthScale - 1) >= Math.abs(heightScale - 1)) {
+          const nextHeight = Math.max(minSize, width / Math.max(aspect, 0.0001));
+          if (sy < 0) top = bottom - nextHeight;
+          else bottom = top + nextHeight;
+        } else {
+          const nextWidth = Math.max(minSize, height * aspect);
+          if (sx < 0) left = right - nextWidth;
+          else right = left + nextWidth;
+        }
+      }
+    }
+
+    if (right - left < minSize) {
+      if (sx < 0) left = right - minSize;
+      if (sx > 0) right = left + minSize;
+    }
+    if (bottom - top < minSize) {
+      if (sy < 0) top = bottom - minSize;
+      if (sy > 0) bottom = top + minSize;
+    }
+
+    centerLocalX = (left + right) / 2;
+    centerLocalY = (top + bottom) / 2;
+  }
+
+  const nextWidth = Math.max(minSize, right - left);
+  const nextHeight = Math.max(minSize, bottom - top);
+  const originCenter = { x: origin.x + origin.width / 2, y: origin.y + origin.height / 2 };
+  const centerOffsetWorld = rotateVector(centerLocalX, centerLocalY, origin.rotationDeg);
+  const nextCenter = {
+    x: originCenter.x + centerOffsetWorld.x,
+    y: originCenter.y + centerOffsetWorld.y,
+  };
+
+  return {
+    x: nextCenter.x - nextWidth / 2,
+    y: nextCenter.y - nextHeight / 2,
+    width: nextWidth,
+    height: nextHeight,
+  };
+}
+
+function collectDescendantIds(elementsById: Record<string, AnyEl>, id: string, acc = new Set<string>()) {
+  const el = elementsById[id];
+  if (!el) return acc;
+  if (el.type !== "group" && el.type !== "mask") return acc;
+
+  for (const childId of (el as any).childIds ?? []) {
+    if (acc.has(childId)) continue;
+    acc.add(childId);
+    collectDescendantIds(elementsById, childId, acc);
+  }
+  return acc;
+}
+
+function scaleDescendantRect(
+  rect: { x: number; y: number; width: number; height: number },
+  origin: { x: number; y: number; width: number; height: number },
+  next: { x: number; y: number; width: number; height: number }
+) {
+  const scaleX = next.width / Math.max(origin.width, 1);
+  const scaleY = next.height / Math.max(origin.height, 1);
+  return {
+    x: next.x + (rect.x - origin.x) * scaleX,
+    y: next.y + (rect.y - origin.y) * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  };
+}
+
+function scaleNumericValue(value: unknown, scale: number) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return undefined;
+  return numeric * scale;
+}
+
+function getScaledTextPatch(
+  el: AnyEl,
+  origin: { width: number; height: number },
+  next: { width: number; height: number }
+): Partial<AnyEl> {
+  if (el.type !== "text") return {};
+
+  const scaleX = next.width / Math.max(origin.width, 1);
+  const scaleY = next.height / Math.max(origin.height, 1);
+  const textScale = Math.max(0.1, Math.min(scaleX, scaleY));
+  const patch: Partial<AnyEl> = {};
+
+  const fontSizePx = scaleNumericValue((el as any).fontSizePx, textScale);
+  if (fontSizePx !== undefined) patch.fontSizePx = fontSizePx as any;
+
+  const fontSize = scaleNumericValue((el as any).fontSize, textScale);
+  if (fontSize !== undefined) patch.fontSize = fontSize as any;
+
+  const strokeWidthPx = scaleNumericValue((el as any).strokeWidthPx, textScale);
+  if (strokeWidthPx !== undefined) patch.strokeWidthPx = strokeWidthPx as any;
+
+  const strokeWidth = scaleNumericValue((el as any).strokeWidth, textScale);
+  if (strokeWidth !== undefined) patch.strokeWidth = strokeWidth as any;
+
+  if ((el as any).shadow && typeof (el as any).shadow === "object") {
+    const shadow = (el as any).shadow;
+    patch.shadow = {
+      ...shadow,
+      blur: scaleNumericValue(shadow.blur, textScale) ?? shadow.blur,
+      x: scaleNumericValue(shadow.x, textScale) ?? shadow.x,
+      y: scaleNumericValue(shadow.y, textScale) ?? shadow.y,
+      spread: scaleNumericValue(shadow.spread, textScale) ?? shadow.spread,
+    } as any;
+  }
+
+  return patch;
+}
+
+function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
+  return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
+}
+
+function hasHorizontalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
+  return Math.min(a.r, b.r) - Math.max(a.l, b.l) > 12;
+}
+
+function computeEqualSpacingGuides(
+  rect: ReturnType<typeof rectFromEl>,
+  others: AnyEl[],
+  threshold: number
+): GuideState["spacing"] {
+  const guides: NonNullable<GuideState["spacing"]> = [];
+
+  const horizontal = others
+    .map((el) => ({ el, rect: rectFromEl(el) }))
+    .filter(({ rect: other }) => hasVerticalOverlap(rect, other));
+  const left = horizontal
+    .filter(({ rect: other }) => other.r <= rect.l)
+    .sort((a, b) => b.rect.r - a.rect.r)[0];
+  const right = horizontal
+    .filter(({ rect: other }) => other.l >= rect.r)
+    .sort((a, b) => a.rect.l - b.rect.l)[0];
+
+  if (left && right) {
+    const leftGap = rect.l - left.rect.r;
+    const rightGap = right.rect.l - rect.r;
+    if (leftGap >= 0 && rightGap >= 0 && Math.abs(leftGap - rightGap) <= threshold) {
+      const y = rect.cy;
+      const label = `${Math.round((leftGap + rightGap) / 2)}px`;
+      guides.push({ axis: "x", y, start: left.rect.r, end: rect.l, label });
+      guides.push({ axis: "x", y, start: rect.r, end: right.rect.l, label });
+    }
+  }
+
+  const vertical = others
+    .map((el) => ({ el, rect: rectFromEl(el) }))
+    .filter(({ rect: other }) => hasHorizontalOverlap(rect, other));
+  const top = vertical
+    .filter(({ rect: other }) => other.b <= rect.t)
+    .sort((a, b) => b.rect.b - a.rect.b)[0];
+  const bottom = vertical
+    .filter(({ rect: other }) => other.t >= rect.b)
+    .sort((a, b) => a.rect.t - b.rect.t)[0];
+
+  if (top && bottom) {
+    const topGap = rect.t - top.rect.b;
+    const bottomGap = bottom.rect.t - rect.b;
+    if (topGap >= 0 && bottomGap >= 0 && Math.abs(topGap - bottomGap) <= threshold) {
+      const x = rect.cx;
+      const label = `${Math.round((topGap + bottomGap) / 2)}px`;
+      guides.push({ axis: "y", x, start: top.rect.b, end: rect.t, label });
+      guides.push({ axis: "y", x, start: rect.b, end: bottom.rect.t, label });
+    }
+  }
+
+  return guides;
 }
 
 function rectFromEl(el: AnyEl) {
@@ -353,9 +731,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit");
   const [manualScale, setManualScale] = useState(1);
+  const [zoomAnimating, setZoomAnimating] = useState(false);
 
   // PAN (space/middle-mouse)
   const [spaceDown, setSpaceDown] = useState(false);
+  const [shiftDown, setShiftDown] = useState(false);
+  const [altDown, setAltDown] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const [panPx, setPanPx] = useState({ x: 0, y: 0 });
@@ -363,6 +744,31 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Marquee
   const [marquee, setMarquee] = useState<MarqueeState>({ active: false, shift: false, start: null, cur: null });
   const marqueeStartSelectedRef = useRef<string[]>([]);
+  const clickCycleRef = useRef<{ x: number; y: number; ids: string[]; index: number } | null>(null);
+  const dragDuplicateRef = useRef<{ sourceId: string; duplicateId: string } | null>(null);
+  const dragStartRef = useRef<Record<string, { x: number; y: number }>>({});
+  const rndRefs = useRef<Record<string, any>>({});
+  const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
+  const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
+  const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
+  const [draftElementPatches, setDraftElementPatches] = useState<Record<string, Partial<AnyEl>>>({});
+  const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
+  const [primaryDragSession, setPrimaryDragSession] = useState<{
+    id: string;
+    startStage: { x: number; y: number };
+    origin: { x: number; y: number };
+  } | null>(null);
+  const [resizeDragSession, setResizeDragSession] = useState<{
+    id: string;
+    handle: ResizeHandleKind;
+    startStage: { x: number; y: number };
+    origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
+    descendants?: Record<string, { x: number; y: number; width: number; height: number }>;
+  } | null>(null);
+  const [radiusDragSession, setRadiusDragSession] = useState<{
+    id: string;
+    origin: { x: number; y: number; width: number; height: number; rotationDeg: number };
+  } | null>(null);
 
   // Layers rename UX
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -380,6 +786,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Template Picker State
   // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [showShortcutModal, setShowShortcutModal] = useState(false);
+  const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
+  const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const [selectedTimelineTrackId, setSelectedTimelineTrackId] = useState<string | null>(null);
+  const [selectedTimelineKeyframeId, setSelectedTimelineKeyframeId] = useState<string | null>(null);
+  const timelinePlaybackStartRef = useRef<number | null>(null);
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
   const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
@@ -387,6 +800,29 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [originalIsMaster, setOriginalIsMaster] = useState(false);
   const [originalName, setOriginalName] = useState("");
   const [originalSlug, setOriginalSlug] = useState("");
+  const [previewVisibilityOverrides, setPreviewVisibilityOverrides] = useState<Record<string, boolean | undefined>>({});
+  const [previewAnimationResetKeys, setPreviewAnimationResetKeys] = useState<Record<string, number>>({});
+  const previewStartTimersRef = useRef<Record<string, number[]>>({});
+  const statusTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      for (const timerIds of Object.values(previewStartTimersRef.current)) {
+        timerIds.forEach((timerId) => window.clearTimeout(timerId));
+      }
+      previewStartTimersRef.current = {};
+      if (statusTimerRef.current) window.clearTimeout(statusTimerRef.current);
+    };
+  }, []);
+
+  const showEditorStatus = useCallback((title: string, detail?: string) => {
+    if (statusTimerRef.current) window.clearTimeout(statusTimerRef.current);
+    setEditorStatus({ title, detail });
+    statusTimerRef.current = window.setTimeout(() => {
+      setEditorStatus(null);
+      statusTimerRef.current = null;
+    }, 3200);
+  }, []);
 
   // Fetch components
   useEffect(() => {
@@ -448,16 +884,92 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   const { baseResolution } = config;
+  const timeline = useMemo(() => ensureTimeline(config.timeline), [config.timeline]);
+  const timelineValues = useMemo(
+    () => evaluateTimeline(timeline, timelinePlayheadMs),
+    [timeline, timelinePlayheadMs]
+  );
+
+  const previewElements = useMemo(
+    () =>
+      config.elements.map((el) => {
+        const overrideVisible = previewVisibilityOverrides[el.id];
+        const visibilityResolved =
+          typeof overrideVisible === "boolean"
+            ? ({ ...el, visible: overrideVisible } as OverlayElement)
+            : el;
+        return applyTimelineOverridesToElement(
+          visibilityResolved,
+          timelineValues[el.id]
+        ) as AnyEl;
+      }),
+    [config.elements, previewVisibilityOverrides, timelineValues]
+  );
 
   // Memoize elementsById using the SAME logic as runtime
   // This allows O(1) lookup for recursive rendering
   const elementsById = useMemo(() => {
     const map: Record<string, AnyEl> = {};
     for (const el of config.elements) {
-      map[el.id] = el;
+      map[el.id] = el as AnyEl;
     }
     return map;
   }, [config.elements]);
+
+  const previewElementsById = useMemo(() => {
+    const map: Record<string, AnyEl> = {};
+    for (const el of previewElements) {
+      const draft = draftRects[el.id];
+      const draftRotation = draftRotationDegs[el.id];
+      const draftRadius = draftRadiusValues[el.id];
+      const draftPatch = draftElementPatches[el.id];
+      map[el.id] = {
+        ...(el as AnyEl),
+        ...(draft ? draft : {}),
+        ...(draftRotation !== undefined ? { rotationDeg: draftRotation } : {}),
+        ...(draftRadius !== undefined ? getRadiusPatch(el as AnyEl, draftRadius) : {}),
+        ...(draftPatch ? draftPatch : {}),
+      } as AnyEl;
+    }
+    return map;
+  }, [draftElementPatches, previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
+
+  const previewAnimationPhases = useElementAnimationPhases(
+    previewElements as OverlayElement[],
+    previewAnimationResetKeys
+  );
+
+  useEffect(() => {
+    const durationMs = timeline.durationMs;
+    setTimelinePlayheadMs((prev) => clamp(prev, 0, durationMs));
+  }, [timeline.durationMs]);
+
+  useEffect(() => {
+    if (!isTimelinePlaying) return;
+
+    let frameId = 0;
+    const startOffset = timelinePlayheadMs;
+    timelinePlaybackStartRef.current = performance.now() - startOffset;
+
+    const tick = (now: number) => {
+      const startedAt = timelinePlaybackStartRef.current ?? now;
+      const next = Math.min(timeline.durationMs, now - startedAt);
+      setTimelinePlayheadMs(next);
+
+      if (next >= timeline.durationMs) {
+        setIsTimelinePlaying(false);
+        timelinePlaybackStartRef.current = null;
+      } else {
+        frameId = window.requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      timelinePlaybackStartRef.current = null;
+    };
+  }, [isTimelinePlaying, timeline.durationMs, timelinePlayheadMs]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
@@ -488,26 +1000,37 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       "lower_third.subtitle": ltPreview.subtitle,
     };
   }, [testData, ltPreview, primarySelectedId, config.elements]);
+
+  useEffect(() => {
+    if (!primarySelectedId) return;
+
+    setPreviewVisibilityOverrides((prev) => {
+      if (!(primarySelectedId in prev)) return prev;
+      const next = { ...prev };
+      delete next[primarySelectedId];
+      return next;
+    });
+  }, [primarySelectedId]);
   const canvasOuterRef = useRef<HTMLDivElement | null>(null);
   const [canvasBox, setCanvasBox] = useState({ w: 1000, h: 700 });
 
   // Throttle guide updates
   const rafRef = useRef<number | null>(null);
-  const lastGuideRef = useRef<{ v: GuideLine[]; h: GuideLine[] } | null>(null);
+  const lastGuideRef = useRef<{ v: GuideLine[]; h: GuideLine[]; spacing?: GuideState["spacing"] } | null>(null);
 
   const clearGuides = useCallback(() => {
     lastGuideRef.current = null;
-    setGuides({ show: false, v: [], h: [] });
+    setGuides({ show: false, v: [], h: [], spacing: [] });
   }, []);
 
-  const updateGuidesThrottled = useCallback((next: { v: GuideLine[]; h: GuideLine[] }) => {
+  const updateGuidesThrottled = useCallback((next: { v: GuideLine[]; h: GuideLine[]; spacing?: GuideState["spacing"] }) => {
     lastGuideRef.current = next;
     if (rafRef.current != null) return;
     rafRef.current = window.requestAnimationFrame(() => {
       rafRef.current = null;
       const g = lastGuideRef.current;
       if (!g) return;
-      setGuides({ show: true, v: g.v, h: g.h });
+      setGuides({ show: true, v: g.v, h: g.h, spacing: g.spacing ?? [] });
     });
   }, []);
 
@@ -536,7 +1059,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const scale = zoomMode === "fit" ? fitScale : clamp(manualScale, 0.1, 2);
 
   const elementsAny = useMemo(() => config.elements.map((e) => e as AnyEl), [config.elements]);
-
   const selectedEls = useMemo(() => {
     const set = new Set(selectedIds);
     return elementsAny
@@ -552,6 +1074,31 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!primarySelectedId) return null;
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
+
+  const selectedTimelineState = useMemo(() => {
+    if (!primarySelectedId) {
+      return {
+        playheadMs: timelinePlayheadMs,
+        hasAnimatedProperties: false,
+        properties: {} as Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>,
+      };
+    }
+
+    const properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>> = {};
+    let hasAnimatedProperties = false;
+
+    for (const property of TIMELINE_PROPERTIES) {
+      const track = timeline.tracks.find((candidate) => candidate.elementId === primarySelectedId && candidate.property === property);
+      if (!track) continue;
+      hasAnimatedProperties = true;
+      properties[property] = {
+        hasTrack: true,
+        hasKeyframeAtPlayhead: track.keyframes.some((keyframe) => Math.abs(keyframe.t - timelinePlayheadMs) <= KEYFRAME_TIME_EPSILON_MS),
+      };
+    }
+
+    return { playheadMs: timelinePlayheadMs, hasAnimatedProperties, properties };
+  }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
 
   const canGroup = selectedIds.length > 0;
   const canUngroup = !!primarySelectedEl && primarySelectedEl.type === 'group';
@@ -576,15 +1123,229 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
-    config.elements.forEach(e => {
+    previewElements.forEach(e => {
       if (e.type === 'group' || e.type === 'mask') {
         (e as any).childIds?.forEach((cid: string) => s.add(cid));
       }
     });
     return s;
-  }, [config.elements]);
+  }, [previewElements]);
+
+  function setTimeline(nextTimelineOrUpdater: OverlayTimeline | ((current: OverlayTimeline) => OverlayTimeline)) {
+    setConfig((prev) => {
+      const currentTimeline = ensureTimeline(prev.timeline);
+      const nextTimeline =
+        typeof nextTimelineOrUpdater === "function"
+          ? nextTimelineOrUpdater(currentTimeline)
+          : nextTimelineOrUpdater;
+      return { ...prev, timeline: nextTimeline };
+    });
+  }
+
+  function upsertKeyframeAtPlayhead(
+    currentTimeline: OverlayTimeline,
+    elementId: string,
+    property: OverlayTimelineProperty,
+    value: number
+  ) {
+    const nextTimeline = ensureTimeline(currentTimeline);
+    const nextTracks = [...nextTimeline.tracks];
+    const trackIndex = nextTracks.findIndex(
+      (track) => track.elementId === elementId && track.property === property
+    );
+
+    const nextKeyframe: OverlayTimelineKeyframe = {
+      id: genId("kf"),
+      t: clamp(Math.round(timelinePlayheadMs), 0, nextTimeline.durationMs),
+      value,
+      easing: "linear",
+    };
+
+    if (trackIndex === -1) {
+      const nextTrack: OverlayTimelineTrack = {
+        id: genId("track"),
+        elementId,
+        property,
+        keyframes: [nextKeyframe],
+      };
+      nextTracks.push(nextTrack);
+      return {
+        timeline: { ...nextTimeline, tracks: nextTracks },
+        keyframeId: nextKeyframe.id,
+        trackId: nextTrack.id,
+      };
+    }
+
+    const track = nextTracks[trackIndex];
+    const keyframes = [...track.keyframes];
+    const existingIndex = keyframes.findIndex(
+      (keyframe) => Math.abs(keyframe.t - nextKeyframe.t) <= KEYFRAME_TIME_EPSILON_MS
+    );
+
+    if (existingIndex >= 0) {
+      const currentKeyframe = keyframes[existingIndex];
+      keyframes[existingIndex] = {
+        ...currentKeyframe,
+        t: nextKeyframe.t,
+        value,
+      };
+      nextTracks[trackIndex] = {
+        ...track,
+        keyframes: keyframes.sort((a, b) => a.t - b.t),
+      };
+      return {
+        timeline: { ...nextTimeline, tracks: nextTracks },
+        keyframeId: currentKeyframe.id,
+        trackId: track.id,
+      };
+    }
+
+    nextTracks[trackIndex] = {
+      ...track,
+      keyframes: [...keyframes, nextKeyframe].sort((a, b) => a.t - b.t),
+    };
+
+    return {
+      timeline: { ...nextTimeline, tracks: nextTracks },
+      keyframeId: nextKeyframe.id,
+      trackId: track.id,
+    };
+  }
+
+  function addTimelineTrack(elementId: string, property: OverlayTimelineProperty) {
+    const element = previewElementsById[elementId];
+    if (!element) return;
+
+    setConfig((prev) => {
+      const ensured = ensureTimeline(prev.timeline);
+      if (ensured.tracks.some((track) => track.elementId === elementId && track.property === property)) {
+        return prev;
+      }
+
+      const value = Number((element as any)[property] ?? 0);
+      const keyframe: OverlayTimelineKeyframe = {
+        id: genId("kf"),
+        t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
+        value,
+        easing: "linear",
+      };
+
+      const nextTimeline: OverlayTimeline = {
+        ...ensured,
+        tracks: [
+          ...ensured.tracks,
+          {
+            id: genId("track"),
+            elementId,
+            property,
+            keyframes: [keyframe],
+          },
+        ],
+      };
+
+      setSelectedTimelineTrackId(nextTimeline.tracks[nextTimeline.tracks.length - 1].id);
+      setSelectedTimelineKeyframeId(keyframe.id);
+      return { ...prev, timeline: nextTimeline };
+    });
+  }
+
+  function moveTimelineKeyframe(trackId: string, keyframeId: string, nextTimeMs: number) {
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        return {
+          ...track,
+          keyframes: track.keyframes
+            .map((keyframe) =>
+              keyframe.id === keyframeId
+                ? { ...keyframe, t: clamp(Math.round(nextTimeMs), 0, currentTimeline.durationMs) }
+                : keyframe
+            )
+            .sort((a, b) => a.t - b.t),
+        };
+      }),
+    }));
+  }
+
+  function addTimelineKeyframeAtTime(trackId: string, timeMs: number) {
+    setTimeline((currentTimeline) => {
+      const ensured = ensureTimeline(currentTimeline);
+      return {
+        ...ensured,
+        tracks: ensured.tracks.map((track) => {
+          if (track.id !== trackId) return track;
+          const sorted = [...track.keyframes].sort((a, b) => a.t - b.t);
+          const clampedTime = clamp(Math.round(timeMs), 0, ensured.durationMs);
+          let value = sorted[0]?.value ?? 0;
+          for (const keyframe of sorted) {
+            if (keyframe.t <= clampedTime) value = keyframe.value;
+          }
+          return {
+            ...track,
+            keyframes: [...track.keyframes, {
+              id: genId("kf"),
+              t: clampedTime,
+              value,
+              easing: "linear",
+            }].sort((a, b) => a.t - b.t),
+          };
+        }),
+      };
+    });
+  }
+
+  function duplicateTimelineKeyframe(trackId: string, keyframeId: string, nextTimeMs: number) {
+    let createdId: string | null = null;
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        const source = track.keyframes.find((keyframe) => keyframe.id === keyframeId);
+        if (!source) return track;
+        createdId = genId("kf");
+        return {
+          ...track,
+          keyframes: [
+            ...track.keyframes,
+            {
+              ...source,
+              id: createdId,
+              t: clamp(Math.round(nextTimeMs), 0, currentTimeline.durationMs),
+            },
+          ].sort((a, b) => a.t - b.t),
+        };
+      }),
+    }));
+    if (createdId) {
+      setSelectedTimelineTrackId(trackId);
+      setSelectedTimelineKeyframeId(createdId);
+    }
+    return createdId;
+  }
+
+  function deleteSelectedTimelineKeyframe() {
+    if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return;
+
+    setTimeline((currentTimeline) => ({
+      ...currentTimeline,
+      tracks: currentTimeline.tracks
+        .map((track) => {
+          if (track.id !== selectedTimelineTrackId) return track;
+          return {
+            ...track,
+            keyframes: track.keyframes.filter((keyframe) => keyframe.id !== selectedTimelineKeyframeId),
+          };
+        })
+        .filter((track) => track.keyframes.length > 0),
+    }));
+
+    setSelectedTimelineTrackId(null);
+    setSelectedTimelineKeyframeId(null);
+  }
 
   function updateElement(id: string, patch: Partial<AnyEl>) {
+    const touchedTimelineProperties = TIMELINE_PROPERTIES.filter((property) => patch[property] !== undefined);
     setConfig((prev) => {
       const nextEls = [...prev.elements];
       const idx = nextEls.findIndex(e => e.id === id);
@@ -592,6 +1353,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const oldEl = nextEls[idx];
       nextEls[idx] = { ...oldEl, ...patch } as any;
+      let nextTimeline = prev.timeline;
+      const timelineElement = nextEls[idx] as OverlayElement;
+      let timelineKeyframeId: string | null = null;
+      let timelineTrackId: string | null = null;
+
+      if (isTimelineEligibleElement(timelineElement)) {
+        for (const property of TIMELINE_PROPERTIES) {
+          if (patch[property] === undefined) continue;
+          const numericValue = Number(patch[property]);
+          if (!Number.isFinite(numericValue)) continue;
+          const result = upsertKeyframeAtPlayhead(
+            ensureTimeline(nextTimeline),
+            id,
+            property,
+            numericValue
+          );
+          nextTimeline = result.timeline;
+          timelineKeyframeId = result.keyframeId;
+          timelineTrackId = result.trackId;
+        }
+      }
 
       // Propagate group movement to children (recursive)
       if (oldEl.type === 'group' && (patch.x !== undefined || patch.y !== undefined)) {
@@ -623,13 +1405,60 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           });
         }
       }
-      return { ...prev, elements: nextEls };
+      if (timelineKeyframeId) {
+        setSelectedTimelineTrackId(timelineTrackId);
+        setSelectedTimelineKeyframeId(timelineKeyframeId);
+      }
+      return { ...prev, elements: nextEls, timeline: nextTimeline };
     });
+    if (touchedTimelineProperties.length > 0) {
+      showEditorStatus(
+        `Timeline edit at ${formatTimelineTime(timelinePlayheadMs)}`,
+        `Updated ${touchedTimelineProperties.join(", ")} keyframe${touchedTimelineProperties.length > 1 ? "s" : ""}.`
+      );
+    }
   }
 
   function deleteElement(id: string) {
     setConfig((prev) => ({ ...prev, elements: prev.elements.filter((e) => e.id !== id) }));
     setSelectedIds((prevSel) => prevSel.filter((x) => x !== id));
+  }
+
+  function triggerPreviewVisibility(id: string, action: "enter" | "exit" | "reset") {
+    const activeTimers = previewStartTimersRef.current[id];
+    if (activeTimers) {
+      activeTimers.forEach((timerId) => window.clearTimeout(timerId));
+      delete previewStartTimersRef.current[id];
+    }
+
+    if (action === "reset") {
+      setPreviewVisibilityOverrides((prev) => {
+        if (!(id in prev)) return prev;
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      return;
+    }
+
+    if (action === "exit") {
+      setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
+      return;
+    }
+
+    setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
+    setPreviewAnimationResetKeys((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+
+    const frameTimer = window.setTimeout(() => {
+      const startTimer = window.setTimeout(() => {
+        setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
+        delete previewStartTimersRef.current[id];
+      }, 16);
+
+      previewStartTimersRef.current[id] = [frameTimer, startTimer];
+    }, 16);
+
+    previewStartTimersRef.current[id] = [frameTimer];
   }
 
   function addText() {
@@ -896,6 +1725,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   function handleMaskElement(shapeId: string) {
     const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
+    let createdContentLabel = "content";
+
     setConfig(prev => {
       const els = [...prev.elements];
       const shapeIdx = els.findIndex(e => e.id === shapeId);
@@ -903,39 +1734,85 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const shapeEl = els[shapeIdx];
 
-      // Prefer the OTHER currently selected element as content.
-      // This lets the user explicitly select mask shape + content before clicking mask.
-      const otherSelectedId = selectedIds.find(id => id !== shapeId);
-      let contentEl = otherSelectedId
-        ? els.find(e => e.id === otherSelectedId)
-        : undefined;
+      // Use ALL selected ids except the shape itself as content candidates.
+      const contentIds = selectedIds.filter(id => id !== shapeId);
 
-      // Fall back to the element below in z-order if nothing else selected.
-      if (!contentEl) {
+      let contentNode: AnyEl | undefined;
+
+      if (contentIds.length === 1) {
+        contentNode = els.find(e => e.id === contentIds[0]) as AnyEl | undefined;
+        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode as AnyEl);
+      } else if (contentIds.length > 1) {
+        const contentEls = els.filter(e => contentIds.includes(e.id)) as AnyEl[];
+        if (!contentEls.length) return prev;
+
+        const minX = Math.min(...contentEls.map(e => e.x ?? 0));
+        const minY = Math.min(...contentEls.map(e => e.y ?? 0));
+        const maxX = Math.max(...contentEls.map(e => (e.x ?? 0) + (e.width ?? 0)));
+        const maxY = Math.max(...contentEls.map(e => (e.y ?? 0) + (e.height ?? 0)));
+
+        const groupId = genId("group");
+        const groupEl: AnyEl = {
+          id: groupId,
+          type: "group",
+          name: "Masked Content",
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY,
+          visible: true,
+          locked: false,
+          opacity: 1,
+          childIds: contentEls.map(e => e.id),
+        } as any;
+
+        els.push(groupEl);
+        contentNode = groupEl;
+        createdContentLabel = "Masked Content";
+      } else {
+        // No explicit content selected: fall back to the layer below in z-order.
         if (shapeIdx <= 0) return prev;
-        contentEl = els[shapeIdx - 1];
+        contentNode = els[shapeIdx - 1] as AnyEl | undefined;
+        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode as AnyEl);
       }
 
-      if (!contentEl) return prev;
+      if (!contentNode) return prev;
 
-      const x = Math.min(shapeEl.x, contentEl.x);
-      const y = Math.min(shapeEl.y, contentEl.y);
-      const w = Math.max(shapeEl.x + shapeEl.width, contentEl.x + contentEl.width) - x;
-      const h = Math.max(shapeEl.y + shapeEl.height, contentEl.y + contentEl.height) - y;
+      const x = Math.min(shapeEl.x ?? 0, contentNode.x ?? 0);
+      const y = Math.min(shapeEl.y ?? 0, contentNode.y ?? 0);
+      const w = Math.max(
+        (shapeEl.x ?? 0) + (shapeEl.width ?? 0),
+        (contentNode.x ?? 0) + (contentNode.width ?? 0)
+      ) - x;
+      const h = Math.max(
+        (shapeEl.y ?? 0) + (shapeEl.height ?? 0),
+        (contentNode.y ?? 0) + (contentNode.height ?? 0)
+      ) - y;
 
-      const maskGroup: any = {
+      const maskGroup: AnyEl = {
         id: maskId,
         type: "mask",
         name: `Mask (${shapeEl.name || "Shape"})`,
-        x, y, width: w, height: h,
-        visible: true, locked: false, opacity: 1,
-        childIds: [shapeId, contentEl.id]
-      };
+        x,
+        y,
+        width: w,
+        height: h,
+        visible: true,
+        locked: false,
+        opacity: 1,
+        invert: false,
+        childIds: [shapeId, contentNode.id],
+      } as any;
 
-      const newElements = [...els, maskGroup];
-      return { ...prev, elements: newElements };
+      return {
+        ...prev,
+        elements: [...els, maskGroup as any],
+      };
     });
+
     setSelectedIds([maskId]);
+    const shapeLabel = elementsById[shapeId]?.name || defaultElementLabel((elementsById[shapeId] as AnyEl) ?? ({ type: "shape" } as AnyEl));
+    showEditorStatus("Mask created", `${shapeLabel} is now the mask shape. ${createdContentLabel} is now the masked content.`);
   }
 
   function handleReleaseMask(maskId: string) {
@@ -1127,18 +2004,161 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([copyId]);
   }
 
-  function moveLayer(id: string, dir: "up" | "down") {
+  function createDragDuplicate(source: AnyEl) {
+    const prefix =
+      source.type === "text"
+        ? "text"
+        : source.type === "box"
+          ? "box"
+          : source.type === "shape"
+            ? "shape"
+            : source.type === "image"
+              ? "image"
+              : source.type === "video"
+                ? "video"
+                : source.type === "lower_third"
+                  ? "lt"
+                  : source.type === "componentInstance"
+                    ? "instance"
+                    : "el";
+
+    const duplicateId = genId(prefix);
+    const copy: AnyEl = {
+      ...(source as any),
+      id: duplicateId,
+      name: `${source.name || defaultElementLabel(source)} copy`,
+      x: source.x ?? 0,
+      y: source.y ?? 0,
+    };
+
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy as any] }));
+    setDraftRects((prev) => ({
+      ...prev,
+      [duplicateId]: {
+        x: source.x ?? 0,
+        y: source.y ?? 0,
+        width: source.width ?? 0,
+        height: source.height ?? 0,
+      },
+    }));
+    return duplicateId;
+  }
+
+  function moveLayerBy(id: string, delta: number) {
     setConfig((prev) => {
       const idx = prev.elements.findIndex((e) => e.id === id);
       if (idx < 0) return prev;
 
-      const target = dir === "up" ? idx + 1 : idx - 1;
-      if (target < 0 || target >= prev.elements.length) return prev;
+      const el = prev.elements[idx] as any;
+
+      // V1 rule: do not reorder children inside masks.
+      // Mask child order is structural: [maskShape, content]
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+      if (parentMask) return prev;
 
       const next = prev.elements.slice();
+
+      // If this element is inside a group, reorder within group.childIds only.
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const childIdx = childIds.indexOf(id);
+        if (childIdx === -1) return prev;
+
+        const targetIdx = Math.max(0, Math.min(childIds.length - 1, childIdx + delta));
+        if (targetIdx === childIdx) return prev;
+
+        childIds.splice(childIdx, 1);
+        childIds.splice(targetIdx, 0, id);
+
+        return {
+          ...prev,
+          elements: next.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      // Otherwise reorder at root level in the flat elements array.
+      const target = idx + delta;
+      if (target < 0 || target >= next.length) return prev;
+
       const [picked] = next.splice(idx, 1);
       next.splice(target, 0, picked);
       return { ...prev, elements: next };
+    });
+  }
+
+  function bringLayerToFront(id: string) {
+    setConfig((prev) => {
+      const el = prev.elements.find((e) => e.id === id) as any;
+      if (!el) return prev;
+
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      );
+      if (parentMask) return prev;
+
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const idx = childIds.indexOf(id);
+        if (idx === -1 || idx === childIds.length - 1) return prev;
+        childIds.splice(idx, 1);
+        childIds.push(id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const kept = prev.elements.filter((e) => e.id !== id);
+      return { ...prev, elements: [...kept, el] };
+    });
+  }
+
+  function sendLayerToBack(id: string) {
+    setConfig((prev) => {
+      const el = prev.elements.find((e) => e.id === id) as any;
+      if (!el) return prev;
+
+      const parentMask = prev.elements.find(
+        (e) => e.type === "mask" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      );
+      if (parentMask) return prev;
+
+      const parentGroup = prev.elements.find(
+        (e) => e.type === "group" && Array.isArray((e as any).childIds) && (e as any).childIds.includes(id)
+      ) as any | undefined;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const idx = childIds.indexOf(id);
+        if (idx <= 0) return prev;
+        childIds.splice(idx, 1);
+        childIds.unshift(id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const kept = prev.elements.filter((e) => e.id !== id);
+      return { ...prev, elements: [el, ...kept] };
     });
   }
 
@@ -1306,22 +2326,51 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Space key tracking + hotkeys
   useEffect(() => {
+    if (!zoomAnimating) return;
+    const timer = window.setTimeout(() => setZoomAnimating(false), 180);
+    return () => window.clearTimeout(timer);
+  }, [zoomAnimating]);
+
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (isTypingTarget(document.activeElement)) return;
+
+      if (shortcutMatchesEvent("show-shortcuts", e)) {
+        e.preventDefault();
+        setShowShortcutModal(true);
+        return;
+      }
 
       if (e.code === "Space") {
         e.preventDefault();
         setSpaceDown(true);
       }
+      if (e.key === "Shift") setShiftDown(true);
+      if (e.key === "Alt") setAltDown(true);
 
-      if (e.key.toLowerCase() === "g") {
+      if (shortcutMatchesEvent("toggle-grid", e)) {
         e.preventDefault();
         setShowGrid((v) => !v);
+        return;
+      }
+
+      if (shortcutMatchesEvent("group", e)) {
+        e.preventDefault();
+        groupSelected();
+        return;
+      }
+
+      if (shortcutMatchesEvent("ungroup", e)) {
+        e.preventDefault();
+        ungroupSelected();
+        return;
       }
     };
 
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") setSpaceDown(false);
+      if (e.key === "Shift") setShiftDown(false);
+      if (e.key === "Alt") setAltDown(false);
     };
 
     window.addEventListener("keydown", onKeyDown, { passive: false } as any);
@@ -1335,13 +2384,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Keyboard UX (nudge, delete, duplicate, zoom)
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      if (showShortcutModal && e.key === "Escape") {
+        e.preventDefault();
+        setShowShortcutModal(false);
+        return;
+      }
       if (isTypingTarget(document.activeElement)) return;
 
       const hasSel = !!primarySelectedEl;
       const step = e.shiftKey ? 10 : 1;
 
       // Duplicate: Ctrl/Cmd + D
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+      if (shortcutMatchesEvent("duplicate", e)) {
         e.preventDefault();
         duplicateSelected();
         return;
@@ -1351,21 +2405,43 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (e.ctrlKey || e.metaKey) {
         if (e.key === "=" || e.key === "+") {
           e.preventDefault();
+          setZoomAnimating(true);
           setZoomMode("manual");
           setManualScale((s) => clamp(s + 0.1, 0.1, 2));
           return;
         }
         if (e.key === "-" || e.key === "_") {
           e.preventDefault();
+          setZoomAnimating(true);
           setZoomMode("manual");
           setManualScale((s) => clamp(s - 0.1, 0.1, 2));
           return;
         }
-        if (e.key === "0") {
+        if (shortcutMatchesEvent("zoom-fit", e)) {
           e.preventDefault();
-          setZoomMode("fit");
+          zoomFit();
           return;
         }
+        if (shortcutMatchesEvent("zoom-100", e)) {
+          e.preventDefault();
+          zoom100();
+          return;
+        }
+        if (shortcutMatchesEvent("select-matching", e) && primarySelectedEl) {
+          e.preventDefault();
+          const matchType = primarySelectedEl.type;
+          const nextIds = config.elements
+            .filter((el) => el.type === matchType && el.locked !== true)
+            .map((el) => el.id);
+          setSelectedIds(nextIds);
+          return;
+        }
+      }
+
+      if (shortcutMatchesEvent("zoom-selection", e)) {
+        e.preventDefault();
+        zoomToSelection();
+        return;
       }
 
       // Delete (primary selection)
@@ -1383,31 +2459,72 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         e.preventDefault();
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        const touchedTimelineProperties: OverlayTimelineProperty[] = [];
+        if (dx !== 0) touchedTimelineProperties.push("x");
+        if (dy !== 0) touchedTimelineProperties.push("y");
 
         setConfig((prev) => {
           const sel = new Set(selectedIds);
+          let nextTimeline = prev.timeline;
+          let lastTimelineTrackId: string | null = null;
+          let lastTimelineKeyframeId: string | null = null;
           const next = prev.elements.map((raw) => {
             if (!sel.has(raw.id)) return raw;
 
             const el = raw as AnyEl;
             const nx = (el.x ?? 0) + dx;
             const ny = (el.y ?? 0) + dy;
+            const nextX = Math.round(nx);
+            const nextY = Math.round(ny);
+
+            if (isTimelineEligibleElement(el as OverlayElement)) {
+              if (dx !== 0) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  el.id,
+                  "x",
+                  nextX
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+              if (dy !== 0) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  el.id,
+                  "y",
+                  nextY
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+            }
 
             return {
               ...(raw as any),
-              x: snapEnabled ? roundToGrid(nx, gridSize) : Math.round(nx),
-              y: snapEnabled ? roundToGrid(ny, gridSize) : Math.round(ny),
+              x: nextX,
+              y: nextY,
             };
           });
 
-          return { ...prev, elements: next };
+          if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
+          if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+          return { ...prev, elements: next, timeline: nextTimeline };
         });
+        if (touchedTimelineProperties.length > 0) {
+          showEditorStatus(
+            `Timeline edit at ${formatTimelineTime(timelinePlayheadMs)}`,
+            `Updated ${touchedTimelineProperties.join(", ")} keyframe${touchedTimelineProperties.length > 1 ? "s" : ""}.`
+          );
+        }
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize]);
+  }, [primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
@@ -1519,6 +2636,264 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     [baseResolution.width, baseResolution.height, panPx.x, panPx.y, scale]
   );
 
+  useEffect(() => {
+    if (!rotationDragRef.current) return;
+
+    const onMove = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      if (!active) return;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const rawDeg = Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90;
+      const nextDeg = snapRotationValue(rawDeg, e.altKey);
+      setDraftRotationDegs((prev) => ({ ...prev, [active.id]: nextDeg }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = rotationDragRef.current;
+      rotationDragRef.current = null;
+      if (!active) return;
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const draft = draftRotationDegs[active.id];
+      const resolvedDeg =
+        draft ?? (stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0);
+
+      updateElement(active.id, { rotationDeg: resolvedDeg } as any);
+      setDraftRotationDegs((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRotationDegs]);
+
+  useEffect(() => {
+    if (!resizeDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = resizeDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const draft = computeResizeDraft(
+        active.origin,
+        active.handle,
+        { x: stagePoint.x - active.startStage.x, y: stagePoint.y - active.startStage.y },
+        { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
+      );
+
+      const nextDrafts: Record<string, { x: number; y: number; width: number; height: number }> = {
+        [active.id]: draft,
+      };
+      const nextPatches: Record<string, Partial<AnyEl>> = {};
+      if (active.descendants) {
+        for (const [descendantId, rect] of Object.entries(active.descendants)) {
+          nextDrafts[descendantId] = scaleDescendantRect(rect, active.origin, draft);
+          const descendantEl = previewElementsById[descendantId];
+          if (descendantEl?.type === "text") {
+            nextPatches[descendantId] = getScaledTextPatch(descendantEl as AnyEl, active.origin, draft);
+          }
+        }
+      }
+
+      rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
+      rndRefs.current[active.id]?.updateSize?.({ width: draft.width, height: draft.height });
+      setResizeStatus(draft);
+      setDraftRects((prev) => ({ ...prev, ...nextDrafts }));
+      setDraftElementPatches((prev) => ({ ...prev, ...nextPatches }));
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = resizeDragSession;
+      setResizeDragSession(null);
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const draft =
+        draftRects[active.id] ??
+        (stagePoint
+          ? computeResizeDraft(
+              active.origin,
+              active.handle,
+              { x: stagePoint.x - active.startStage.x, y: stagePoint.y - active.startStage.y },
+              { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
+            )
+          : active.origin);
+
+      let nx = Math.round(draft.x);
+      let ny = Math.round(draft.y);
+      let nw = Math.round(draft.width);
+      let nh = Math.round(draft.height);
+
+      if (snapEnabled) {
+        nx = roundToGrid(nx, gridSize);
+        ny = roundToGrid(ny, gridSize);
+        nw = roundToGrid(nw, gridSize);
+        nh = roundToGrid(nh, gridSize);
+      }
+
+      const nextGroupRect = { x: nx, y: ny, width: nw, height: nh };
+      if (!active.descendants || Object.keys(active.descendants).length === 0) {
+        updateElement(active.id, { x: nx, y: ny, width: nw, height: nh });
+      } else {
+        setConfig((prev) => {
+          let nextTimeline = prev.timeline;
+          let lastTimelineTrackId: string | null = null;
+          let lastTimelineKeyframeId: string | null = null;
+          const nextElements = prev.elements.map((raw) => {
+            if (raw.id === active.id) {
+              const base = raw as AnyEl;
+              if (isTimelineEligibleElement(base as OverlayElement)) {
+                for (const [property, value] of Object.entries(nextGroupRect) as [OverlayTimelineProperty, number][]) {
+                  const result = upsertKeyframeAtPlayhead(
+                    ensureTimeline(nextTimeline),
+                    raw.id,
+                    property,
+                    value
+                  );
+                  nextTimeline = result.timeline;
+                  lastTimelineTrackId = result.trackId;
+                  lastTimelineKeyframeId = result.keyframeId;
+                }
+              }
+              return { ...base, ...nextGroupRect };
+            }
+
+            const descendantRect = active.descendants?.[raw.id];
+            if (!descendantRect) return raw;
+            const scaled = scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
+            const rounded = {
+              x: Math.round(scaled.x),
+              y: Math.round(scaled.y),
+              width: Math.round(scaled.width),
+              height: Math.round(scaled.height),
+            };
+            const base = raw as AnyEl;
+            const textPatch = getScaledTextPatch(base, active.origin, nextGroupRect);
+            if (isTimelineEligibleElement(base as OverlayElement)) {
+              for (const [property, value] of Object.entries(rounded) as [OverlayTimelineProperty, number][]) {
+                const result = upsertKeyframeAtPlayhead(
+                  ensureTimeline(nextTimeline),
+                  raw.id,
+                  property,
+                  value
+                );
+                nextTimeline = result.timeline;
+                lastTimelineTrackId = result.trackId;
+                lastTimelineKeyframeId = result.keyframeId;
+              }
+            }
+            return { ...base, ...rounded, ...textPatch };
+          });
+
+          if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
+          if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+
+          return {
+            ...prev,
+            elements: nextElements,
+            timeline: nextTimeline,
+          };
+        });
+      }
+      setResizeStatus(null);
+      setDraftRects((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        if (active.descendants) {
+          for (const descendantId of Object.keys(active.descendants)) delete next[descendantId];
+        }
+        return next;
+      });
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
+        if (active.descendants) {
+          for (const descendantId of Object.keys(active.descendants)) delete next[descendantId];
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRects, gridSize, resizeDragSession, snapEnabled]);
+
+  useEffect(() => {
+    if (!radiusDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = radiusDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+
+      const centerX = active.origin.x + active.origin.width / 2;
+      const centerY = active.origin.y + active.origin.height / 2;
+      const localPoint = rotateVector(stagePoint.x - centerX, stagePoint.y - centerY, -active.origin.rotationDeg);
+      const radius = clamp(
+        Math.min(localPoint.x + active.origin.width / 2, localPoint.y + active.origin.height / 2),
+        0,
+        Math.min(active.origin.width, active.origin.height) / 2
+      );
+
+      setDraftRadiusValues((prev) => ({ ...prev, [active.id]: radius }));
+      const target = elementsById[active.id] as AnyEl | undefined;
+      if (target) {
+        updateElement(active.id, getRadiusPatch(target, Math.round(radius)) as any);
+      }
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = radiusDragSession;
+      setRadiusDragSession(null);
+
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      let radius = draftRadiusValues[active.id];
+      if (radius === undefined && stagePoint) {
+        const centerX = active.origin.x + active.origin.width / 2;
+        const centerY = active.origin.y + active.origin.height / 2;
+        const localPoint = rotateVector(stagePoint.x - centerX, stagePoint.y - centerY, -active.origin.rotationDeg);
+        radius = clamp(
+          Math.min(localPoint.x + active.origin.width / 2, localPoint.y + active.origin.height / 2),
+          0,
+          Math.min(active.origin.width, active.origin.height) / 2
+        );
+      }
+
+      const nextRadius = Math.round(radius ?? getElementRadiusValue((elementsById[active.id] as AnyEl) ?? ({ type: "box" } as AnyEl)));
+      const target = elementsById[active.id] as AnyEl | undefined;
+      if (target) {
+        updateElement(active.id, getRadiusPatch(target, nextRadius) as any);
+      }
+
+      setDraftRadiusValues((prev) => {
+        const next = { ...prev };
+        delete next[active.id];
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRadiusValues, elementsById, radiusDragSession]);
+
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
     const x1 = marquee.start.x;
@@ -1539,6 +2914,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     const hits = elementsAny
       .filter((el) => el.visible !== false)
+      .filter((el) => el.locked !== true)
       .filter((el) => rectsIntersect(rect, rectFromEl(el)))
       .map((el) => el.id);
 
@@ -1565,7 +2941,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const onMove = (e: MouseEvent) => {
       const p = clientToStage(e.clientX, e.clientY);
       if (!p) return;
-      setMarquee((m) => (m.active ? { ...m, cur: p } : m));
+      setMarquee((m) => {
+        if (!m.active) return m;
+        return { ...m, cur: p };
+      });
+      window.requestAnimationFrame(() => applyMarqueeSelection());
     };
 
     const onUp = (e: MouseEvent) => {
@@ -1588,8 +2968,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const elId = String(id);
     const el = elementsAny.find((x) => x.id === elId);
     if (!el) return;
+    const duplicate = dragDuplicateRef.current?.sourceId === elId ? dragDuplicateRef.current : null;
+    const commitId = duplicate?.duplicateId || elId;
 
     const exclude = new Set<string>([elId]);
+    if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
     const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
 
     const rect = {
@@ -1616,11 +2999,67 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       ny = roundToGrid(ny, gridSize);
     }
 
-    updateElement(elId, { x: nx, y: ny });
+    const dx = nx - (el.x ?? 0);
+    const dy = ny - (el.y ?? 0);
+
+    setConfig((prev) => {
+      const prevMap = Object.fromEntries(prev.elements.map((item) => [item.id, item as AnyEl])) as Record<string, AnyEl>;
+      const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(prevMap, elId));
+      const movedIds = new Set([commitId, ...descendantIds]);
+      let nextTimeline = prev.timeline;
+      let lastTimelineTrackId: string | null = null;
+      let lastTimelineKeyframeId: string | null = null;
+
+      const nextElements = prev.elements.map((raw) => {
+        if (!movedIds.has(raw.id)) return raw;
+        const base = raw as AnyEl;
+        const nextX = raw.id === commitId ? nx : Math.round((base.x ?? 0) + dx);
+        const nextY = raw.id === commitId ? ny : Math.round((base.y ?? 0) + dy);
+
+        if (isTimelineEligibleElement(base as OverlayElement)) {
+          const xResult = upsertKeyframeAtPlayhead(
+            ensureTimeline(nextTimeline),
+            raw.id,
+            "x",
+            nextX
+          );
+          nextTimeline = xResult.timeline;
+          lastTimelineTrackId = xResult.trackId;
+          lastTimelineKeyframeId = xResult.keyframeId;
+
+          const yResult = upsertKeyframeAtPlayhead(
+            ensureTimeline(nextTimeline),
+            raw.id,
+            "y",
+            nextY
+          );
+          nextTimeline = yResult.timeline;
+          lastTimelineTrackId = yResult.trackId;
+          lastTimelineKeyframeId = yResult.keyframeId;
+        }
+
+        return { ...base, x: nextX, y: nextY };
+      });
+
+      if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
+      if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+
+      return {
+        ...prev,
+        elements: nextElements,
+        timeline: nextTimeline,
+      };
+    });
     clearGuides();
     setDraftRects((prev) => {
       const next = { ...prev };
-      delete next[elId];
+      delete next[commitId];
+      if (!duplicate) {
+        for (const movedId of collectDescendantIds(previewElementsById, elId)) delete next[movedId];
+      }
+      if (duplicate?.duplicateId) {
+        delete next[duplicate.duplicateId];
+      }
       return next;
     });
   };
@@ -1632,6 +3071,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     let ny = Math.round(pos.y);
     let nw = Math.round(ref.offsetWidth);
     let nh = Math.round(ref.offsetHeight);
+    const origin = resizeOriginRef.current[elId];
+
+    if (altDown && origin) {
+      const dw = nw - origin.width;
+      const dh = nh - origin.height;
+      nx = Math.round(origin.x - dw / 2);
+      ny = Math.round(origin.y - dh / 2);
+    }
 
     if (snapEnabled) {
       nx = roundToGrid(nx, gridSize);
@@ -1643,6 +3090,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     updateElement(elId, { x: nx, y: ny, width: nw, height: nh });
     clearGuides();
     setResizeStatus(null);
+    delete resizeOriginRef.current[elId];
     setDraftRects((prev) => {
       const next = { ...prev };
       delete next[elId];
@@ -1651,27 +3099,42 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   };
 
   const handleDragLive = useCallback(
-    (id: string, x: number, y: number) => {
+    (id: string, x: number, y: number, options?: { shiftKey?: boolean }) => {
       const el = elementsAny.find((e) => e.id === id);
       if (!el) return;
+      const duplicate = dragDuplicateRef.current?.sourceId === id ? dragDuplicateRef.current : null;
+      const draftId = duplicate?.duplicateId || id;
+      const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(elementsById, id));
+      const axisLock = options?.shiftKey === true;
 
       let nx = x;
       let ny = y;
+      const start = dragStartRef.current[id] ?? { x: el.x ?? 0, y: el.y ?? 0 };
+      if (axisLock) {
+        const dx = x - start.x;
+        const dy = y - start.y;
+        if (Math.abs(dx) >= Math.abs(dy)) {
+          ny = start.y;
+        } else {
+          nx = start.x;
+        }
+      }
 
       if (guideSnapEnabled) {
         const exclude = new Set<string>([id]);
+        if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
         const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
 
         const rect = {
           ...rectFromEl(el),
-          x,
-          y,
-          l: x,
-          r: x + (el.width ?? 0),
-          t: y,
-          b: y + (el.height ?? 0),
-          cx: x + (el.width ?? 0) / 2,
-          cy: y + (el.height ?? 0) / 2,
+          x: nx,
+          y: ny,
+          l: nx,
+          r: nx + (el.width ?? 0),
+          t: ny,
+          b: ny + (el.height ?? 0),
+          cx: nx + (el.width ?? 0) / 2,
+          cy: ny + (el.height ?? 0) / 2,
           w: el.width ?? 0,
           h: el.height ?? 0,
         };
@@ -1679,7 +3142,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         const snap = snapRectToLines(rect, lines, { enabled: true, threshold: 6 });
         nx += snap.dx;
         ny += snap.dy;
-        updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h });
+        const spacing = computeEqualSpacingGuides(
+          {
+            ...rect,
+            x: nx,
+            y: ny,
+            l: nx,
+            r: nx + rect.w,
+            t: ny,
+            b: ny + rect.h,
+            cx: nx + rect.w / 2,
+            cy: ny + rect.h / 2,
+          },
+          elementsAny.filter((candidate) => candidate.id !== id && (!duplicate || candidate.id !== duplicate.duplicateId)),
+          6
+        );
+        updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h, spacing });
       } else {
         clearGuides();
       }
@@ -1689,18 +3167,86 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         ny = roundToGrid(ny, gridSize);
       }
 
+      const dx = nx - (el.x ?? 0);
+      const dy = ny - (el.y ?? 0);
       setDraftRects((prev) => ({
         ...prev,
-        [id]: {
+        [id]: duplicate
+          ? {
+              x: start.x,
+              y: start.y,
+              width: prev[id]?.width ?? el.width ?? 0,
+              height: prev[id]?.height ?? el.height ?? 0,
+            }
+          : {
+              x: nx,
+              y: ny,
+              width: prev[id]?.width ?? el.width ?? 0,
+              height: prev[id]?.height ?? el.height ?? 0,
+            },
+        [draftId]: {
           x: nx,
           y: ny,
-          width: prev[id]?.width ?? el.width ?? 0,
-          height: prev[id]?.height ?? el.height ?? 0,
+          width: prev[draftId]?.width ?? el.width ?? 0,
+          height: prev[draftId]?.height ?? el.height ?? 0,
         },
+        ...Object.fromEntries(
+          descendantIds.map((childId) => {
+            const child = elementsById[childId];
+            const childDraft = prev[childId];
+            return [
+              childId,
+              {
+                x: Math.round((child?.x ?? 0) + dx),
+                y: Math.round((child?.y ?? 0) + dy),
+                width: childDraft?.width ?? child?.width ?? 0,
+                height: childDraft?.height ?? child?.height ?? 0,
+              },
+            ];
+          })
+        ),
       }));
     },
-    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, baseResolution.width, baseResolution.height, updateGuidesThrottled]
+    [guideSnapEnabled, snapEnabled, gridSize, elementsAny, elementsById, baseResolution.width, baseResolution.height, updateGuidesThrottled]
   );
+
+  useEffect(() => {
+    if (!primaryDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = primaryDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const nextX = active.origin.x + (stagePoint.x - active.startStage.x);
+      const nextY = active.origin.y + (stagePoint.y - active.startStage.y);
+      handleDragLive(active.id, nextX, nextY, { shiftKey: e.shiftKey });
+    };
+
+    const onUp = (e: MouseEvent) => {
+      const active = primaryDragSession;
+      setPrimaryDragSession(null);
+      const draft = draftRects[active.id];
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
+      const fallbackY = active.origin.y + ((stagePoint?.y ?? active.startStage.y) - active.startStage.y);
+      handleDragStop(e, { x: draft?.x ?? fallbackX, y: draft?.y ?? fallbackY }, active.id);
+      const duplicateRequested = dragDuplicateRef.current?.sourceId === active.id;
+      const duplicateId = dragDuplicateRef.current?.duplicateId;
+      dragDuplicateRef.current = null;
+      delete dragStartRef.current[active.id];
+      if (duplicateRequested && duplicateId) {
+        setSelectedIds([duplicateId]);
+      }
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftRects, handleDragLive, primaryDragSession]);
 
   // Group drag (selection bounds Rnd)
   const groupDragStartRef = useRef<{
@@ -1725,6 +3271,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     let gx = d.x;
     let gy = d.y;
+    if (shiftDown) {
+      const dx = gx - start.startX;
+      const dy = gy - start.startY;
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        gy = start.startY;
+      } else {
+        gx = start.startX;
+      }
+    }
 
     if (guideSnapEnabled) {
       const exclude = new Set<string>(selectedIds);
@@ -1747,7 +3302,22 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const snap = snapRectToLines(rect, lines, { enabled: true, threshold: 6 });
       gx += snap.dx;
       gy += snap.dy;
-      updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h });
+      const spacing = computeEqualSpacingGuides(
+        {
+          ...rect,
+          x: gx,
+          y: gy,
+          l: gx,
+          r: gx + rect.w,
+          t: gy,
+          b: gy + rect.h,
+          cx: gx + rect.w / 2,
+          cy: gy + rect.h / 2,
+        },
+        elementsAny.filter((candidate) => !selectedIds.includes(candidate.id)),
+        6
+      );
+      updateGuidesThrottled({ v: snap.guides.v, h: snap.guides.h, spacing });
     } else {
       clearGuides();
     }
@@ -1841,19 +3411,99 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   };
 
   function zoomIn() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale((s) => clamp(s + 0.1, 0.1, 2));
   }
+
+  function reorderLayerRelative(id: string, targetId: string, placement: "before" | "after") {
+    if (id === targetId) return;
+
+    setConfig((prev) => {
+      const picked = prev.elements.find((el) => el.id === id);
+      const target = prev.elements.find((el) => el.id === targetId);
+      if (!picked || !target) return prev;
+
+      const maskFor = (elementId: string) =>
+        prev.elements.find(
+          (el) => el.type === "mask" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+        ) as any | undefined;
+      if (maskFor(id) || maskFor(targetId)) return prev;
+
+      const groupFor = (elementId: string) =>
+        prev.elements.find(
+          (el) => el.type === "group" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
+        ) as any | undefined;
+
+      const parentGroup = groupFor(id);
+      const targetParentGroup = groupFor(targetId);
+      const pickedParentId = parentGroup?.id ?? null;
+      const targetParentId = targetParentGroup?.id ?? null;
+      if (pickedParentId !== targetParentId) return prev;
+
+      if (parentGroup) {
+        const childIds = [...(parentGroup.childIds || [])];
+        const fromIndex = childIds.indexOf(id);
+        const targetIndex = childIds.indexOf(targetId);
+        if (fromIndex === -1 || targetIndex === -1) return prev;
+
+        childIds.splice(fromIndex, 1);
+        const insertIndex = placement === "before"
+          ? (fromIndex < targetIndex ? targetIndex - 1 : targetIndex)
+          : (fromIndex < targetIndex ? targetIndex : targetIndex + 1);
+        childIds.splice(Math.max(0, Math.min(childIds.length, insertIndex)), 0, id);
+
+        return {
+          ...prev,
+          elements: prev.elements.map((item) =>
+            item.id === parentGroup.id ? { ...(item as any), childIds } : item
+          ),
+        };
+      }
+
+      const next = prev.elements.slice();
+      const fromIndex = next.findIndex((el) => el.id === id);
+      const targetIndex = next.findIndex((el) => el.id === targetId);
+      if (fromIndex === -1 || targetIndex === -1) return prev;
+
+      const [moved] = next.splice(fromIndex, 1);
+      const adjustedTargetIndex = next.findIndex((el) => el.id === targetId);
+      const insertIndex = placement === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
+      next.splice(Math.max(0, Math.min(next.length, insertIndex)), 0, moved);
+      return { ...prev, elements: next };
+    });
+  }
   function zoomOut() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale((s) => clamp(s - 0.1, 0.1, 2));
   }
   function zoom100() {
+    setZoomAnimating(true);
     setZoomMode("manual");
     setManualScale(1);
   }
   function zoomFit() {
+    setZoomAnimating(true);
     setZoomMode("fit");
+  }
+
+  function zoomToSelection() {
+    if (!selectionBounds) return;
+    const pad = 80;
+    const fit = Math.min(
+      Math.max(0.1, (canvasBox.w - pad * 2) / Math.max(1, selectionBounds.w)),
+      Math.max(0.1, (canvasBox.h - pad * 2) / Math.max(1, selectionBounds.h))
+    );
+    setZoomAnimating(true);
+    setZoomMode("manual");
+    setManualScale(clamp(fit, 0.1, 2));
+    const cx = baseResolution.width / 2;
+    const cy = baseResolution.height / 2;
+    setPanPx({
+      x: (cx - selectionBounds.cx) * fit,
+      y: (cy - selectionBounds.cy) * fit,
+    });
   }
 
   const onSelectElement = useCallback((id: string, additive: boolean) => {
@@ -1863,6 +3513,36 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       return [...prev, id];
     });
   }, []);
+
+  const cycleSelectAtPoint = useCallback((clientX: number, clientY: number, additive: boolean, includeChildren = false) => {
+    const stagePoint = clientToStage(clientX, clientY);
+    if (!stagePoint) return null;
+
+    const hits = config.elements
+      .filter((el) => includeChildren || !allChildIds.has(el.id))
+      .filter((el) => el.visible !== false && el.locked !== true)
+      .filter((el) => pointInRect(stagePoint.x, stagePoint.y, rectFromEl(el as AnyEl)))
+      .map((el) => el.id)
+      .reverse();
+
+    if (!hits.length) {
+      clickCycleRef.current = null;
+      return null;
+    }
+
+    const prev = clickCycleRef.current;
+    const samePoint =
+      prev &&
+      Math.abs(prev.x - stagePoint.x) < 4 &&
+      Math.abs(prev.y - stagePoint.y) < 4 &&
+      prev.ids.join(",") === hits.join(",");
+
+    const index = samePoint ? (prev.index + 1) % hits.length : 0;
+    clickCycleRef.current = { x: stagePoint.x, y: stagePoint.y, ids: hits, index };
+    const nextId = hits[index];
+    onSelectElement(nextId, additive);
+    return nextId;
+  }, [allChildIds, clientToStage, config.elements, onSelectElement]);
 
   const openPicker = useCallback((kind: AssetKind, onPick: (url: string) => void) => {
     setAssetPicker({
@@ -1875,7 +3555,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, []);
 
   return (
-    <div className="flex w-full h-[calc(100vh-2rem)] overflow-hidden bg-slate-950 text-slate-200">
+    <div className="flex h-[calc(100vh-2rem)] w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (
@@ -1896,16 +3576,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
 
       {/* LEFT SIDEBAR: Creation & Layers */}
-      <div className="w-60 flex-none flex flex-col border-r border-slate-800 bg-slate-900/80 backdrop-blur-sm z-10">
+      <div className="z-10 flex w-60 flex-none flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {/* Header */}
-        <div className="p-3 border-b border-slate-800 space-y-2">
+        <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] p-3">
           <input
-            className="w-full bg-transparent border border-transparent hover:border-slate-700 focus:border-indigo-500 rounded px-1 py-0.5 text-sm font-bold text-slate-100 placeholder-slate-500 transition-colors"
+            className="h-7 w-full rounded-md border border-transparent bg-transparent px-2 text-[14px] leading-[1.4] font-semibold text-slate-100 placeholder-slate-500 transition-colors hover:border-[rgba(255,255,255,0.08)] focus:border-indigo-500 focus:outline-none"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Untitled Overlay"
           />
-          <div className="flex gap-2 text-[10px] text-slate-500 font-mono pl-1">
+          <div className="flex gap-2 pl-1 font-mono text-[11px] leading-[1.4] text-slate-500">
             <span>{baseResolution.width} x {baseResolution.height}</span>
             <span className="text-slate-700">|</span>
             <span className="truncate max-w-[120px]" title={slug}>/o/{slug}</span>
@@ -1962,19 +3642,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         />
 
         {/* Sidebar Tabs */}
-        <div className="flex border-b border-slate-800 bg-slate-900 border-t mt-2">
+        <div className="mt-2 flex border-b border-t border-[rgba(255,255,255,0.08)] bg-[#111113]">
           <button
             onClick={() => setLeftTab("layers")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "layers" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "layers" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
             <span>Layers</span>
           </button>
           <button
             onClick={() => setLeftTab("components")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${leftTab === "components" ? "text-indigo-400 border-b-2 border-indigo-500 bg-slate-800/50" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span>Components</span>
           </button>
         </div>
@@ -1991,6 +3671,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onToggleLock={(id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) })}
                 onMask={handleMaskElement}
                 onReleaseMask={handleReleaseMask}
+                onMoveUp={(id) => moveLayerBy(id, 1)}
+                onMoveDown={(id) => moveLayerBy(id, -1)}
+                onBringToFront={bringLayerToFront}
+                onSendToBack={sendLayerToBack}
+                onReorderLayer={reorderLayerRelative}
+                renamingId={renamingId}
+                renameDraft={renameDraft}
+                onBeginRename={(id) => {
+                  const el = elementsById[id] as AnyEl | undefined;
+                  if (el) beginRename(el);
+                }}
+                onRenameDraftChange={setRenameDraft}
+                onCommitRename={commitRename}
+                onCancelRename={cancelRename}
               />
             </div>
           )}
@@ -2035,32 +3729,34 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         </div>
 
         {/* Footer / Shortcuts */}
-        <div className="p-2 border-t border-slate-800 text-[10px] text-slate-600 flex justify-between">
+        <div className="flex justify-between border-t border-[rgba(255,255,255,0.08)] p-2 text-[11px] leading-[1.4] text-slate-600">
           <span>Ctrl+D Duplicate</span>
-          <span>Del Delete</span>
+          <span>? Shortcuts</span>
         </div>
       </div>
 
+      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-h-0 flex min-w-0">
       {/* CENTER: Canvas */}
-      <div className="flex-1 flex flex-col relative min-w-0 bg-[#0f172a]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#0b0b0c]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
 
         {/* Top Data Bar / Canvas Settings */}
-        <div className="h-10 border-b border-slate-800 flex items-center justify-between px-4 bg-slate-900 z-10">
+        <div className="z-10 flex h-8 items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[#111113] px-4">
           <div className="flex items-center gap-4">
             {/* Grid / Snap Controls */}
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
-                <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
+                <input type="checkbox" checked={snapEnabled} onChange={e => setSnapEnabled(e.target.checked)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" />
                 <span>Snap</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
-                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="rounded border-slate-700 bg-slate-800 accent-indigo-500" />
+              <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
+                <input type="checkbox" checked={showGrid} onChange={e => setShowGrid(e.target.checked)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" />
                 <span>Grid</span>
               </label>
               <select
                 value={gridSize}
                 onChange={e => setGridSize(Number(e.target.value))}
-                className="bg-slate-800 border-none rounded text-[10px] text-slate-300 py-0.5 pl-2 pr-6 disabled:opacity-50"
+                className={`${uiClasses.field} pr-6 text-[12px] disabled:opacity-50`}
                 disabled={!snapEnabled}
               >
                 <option value={8}>8px</option>
@@ -2069,39 +3765,50 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               </select>
             </div>
 
-            <div className="w-px h-4 bg-slate-800" />
+            <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
 
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
-              <button onClick={() => alignSelection("left")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Left">
-                <span className="text-[10px]">|&lt;</span>
+              <button onClick={() => alignSelection("left")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Left">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="6" y1="5" x2="6" y2="19" /><line x1="10" y1="7" x2="10" y2="17" /><line x1="14" y1="9" x2="14" y2="15" /></svg>
+                </span>
               </button>
-              <button onClick={() => alignSelection("hcenter")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Center">
-                <span className="text-[10px]">|</span>
+              <button onClick={() => alignSelection("hcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Center">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="8" y1="7" x2="8" y2="17" /><line x1="16" y1="7" x2="16" y2="17" /></svg>
+                </span>
               </button>
-              <button onClick={() => alignSelection("right")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Right">
-                <span className="text-[10px]">&gt;|</span>
+              <button onClick={() => alignSelection("right")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Right">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="18" y1="5" x2="18" y2="19" /><line x1="14" y1="7" x2="14" y2="17" /><line x1="10" y1="9" x2="10" y2="15" /></svg>
+                </span>
               </button>
-              <button onClick={() => alignSelection("top")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Top">
-                <span className="text-[10px]">T</span>
+              <button onClick={() => alignSelection("top")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Top">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="6" x2="19" y2="6" /><line x1="7" y1="10" x2="17" y2="10" /><line x1="9" y1="14" x2="15" y2="14" /></svg>
+                </span>
               </button>
-              <button onClick={() => alignSelection("vcenter")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Middle">
-                <span className="text-[10px]">-</span>
+              <button onClick={() => alignSelection("vcenter")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Middle">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="12" x2="19" y2="12" /><line x1="7" y1="8" x2="17" y2="8" /><line x1="7" y1="16" x2="17" y2="16" /></svg>
+                </span>
               </button>
-              <button onClick={() => alignSelection("bottom")} disabled={selectedIds.length < 2} className="p-1 hover:bg-slate-800 rounded disabled:opacity-20 text-slate-400 hover:text-white" title="Align Bottom">
-                <span className="text-[10px]">_</span>
+              <button onClick={() => alignSelection("bottom")} disabled={selectedIds.length < 2} className={`${uiClasses.iconButton} disabled:opacity-20`} title="Align Bottom">
+                <span className="relative -top-px flex items-center justify-center">
+                  <svg {...TOOL_ICON_PROPS}><line x1="5" y1="18" x2="19" y2="18" /><line x1="7" y1="14" x2="17" y2="14" /><line x1="9" y1="10" x2="15" y2="10" /></svg>
+                </span>
               </button>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={zoomOut} className="p-1 hover:bg-slate-800 rounded text-slate-400">－</button>
-            <span className="text-xs font-mono w-10 text-center text-slate-300">{Math.round(scale * 100)}%</span>
-            <button onClick={zoomIn} className="p-1 hover:bg-slate-800 rounded text-slate-400">＋</button>
-            <button onClick={zoomFit} className="ml-1 text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-300 hover:bg-slate-700">Fit</button>
+            <button onClick={zoomOut} className={uiClasses.iconButton} title={formatShortcutTooltip("zoom-canvas", "Zoom Out")}>－</button>
+            <span className="w-10 text-center font-mono text-[12px] leading-[1.4] text-slate-300">{Math.round(scale * 100)}%</span>
+            <button onClick={zoomIn} className={uiClasses.iconButton} title={formatShortcutTooltip("zoom-canvas", "Zoom In")}>＋</button>
+            <button onClick={zoomFit} className={uiClasses.button} title={formatShortcutTooltip("zoom-fit")}>Fit</button>
           </div>
         </div>
-
         {/* Canvas Inner */}
         <div
           ref={canvasOuterRef}
@@ -2131,18 +3838,26 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           }}
         >
+          {editorStatus && (
+            <div className="absolute right-4 top-4 z-[70] max-w-[360px] rounded-md border border-indigo-400/15 bg-[#161618]/95 px-3 py-2 shadow-xl shadow-black/35 backdrop-blur-sm">
+              <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">{editorStatus.title}</div>
+              {editorStatus.detail && (
+                <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">{editorStatus.detail}</div>
+              )}
+            </div>
+          )}
           {editingMasterId && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] flex items-center gap-3 bg-indigo-600 text-white px-4 py-2 rounded-full shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="flex items-center gap-2 text-indigo-100">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                <span className="text-[10px] font-black uppercase tracking-[0.15em]">Isolation Mode</span>
+            <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30">
+              <div className="flex items-center gap-2 text-indigo-200">
+                <span className="relative -top-px"><svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
+                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Isolation Mode</span>
               </div>
               <div className="w-px h-3 bg-indigo-400/50" />
-              <div className="text-xs font-bold truncate max-w-[200px]">{name}</div>
+              <div className="max-w-[200px] truncate text-[13px] leading-[1.4] font-semibold">{name}</div>
               <div className="w-px h-3 bg-indigo-400/50" />
               <button
                 onClick={exitIsolationMode}
-                className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-[10px] font-black transition-colors uppercase tracking-widest"
+                className={uiClasses.buttonGhost}
               >
                 Exit
               </button>
@@ -2156,6 +3871,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               height: baseResolution.height * scale,
               transform: `translate(-50%, -50%) translate(${panPx.x}px, ${panPx.y}px)`,
               transformOrigin: "center",
+              transition: zoomAnimating ? "transform 160ms ease-out, width 160ms ease-out, height 160ms ease-out" : undefined,
             }}
             onMouseDown={(e) => {
               const isMiddle = (e as any).button === 1;
@@ -2167,12 +3883,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }}
           >
             <div
-              className="bg-slate-800 relative"
+              className="relative bg-[#0f1012]"
               style={{
                 width: baseResolution.width,
                 height: baseResolution.height,
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
+                transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
               }}
               onMouseDown={(e) => {
                 if (spaceDown || (e as any).button === 1) return;
@@ -2220,17 +3937,62 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   {(guides.v || []).map((g, idx) => (
                     <div
                       key={`gv_${idx}_${g.kind}_${g.pos}`}
-                      className={"absolute top-0 bottom-0 w-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-sky-400/80")}
+                      className={"absolute top-0 bottom-0 w-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-fuchsia-400/80")}
                       style={{ left: g.pos }}
                     />
                   ))}
                   {(guides.h || []).map((g, idx) => (
                     <div
                       key={`gh_${idx}_${g.kind}_${g.pos}`}
-                      className={"absolute left-0 right-0 h-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-sky-400/80")}
+                      className={"absolute left-0 right-0 h-px " + (g.kind === "stage" ? "bg-amber-400/80" : "bg-fuchsia-400/80")}
                       style={{ top: g.pos }}
                     />
                   ))}
+                  {(guides.spacing || []).map((g, idx) =>
+                    g.axis === "x" ? (
+                      <React.Fragment key={`gsx_${idx}_${g.start}_${g.end}_${g.y}`}>
+                        <div
+                          className="absolute h-px bg-fuchsia-300/90"
+                          style={{ left: g.start, top: g.y, width: Math.max(0, g.end - g.start) }}
+                        />
+                        <div
+                          className="absolute w-px h-2 bg-fuchsia-300/90"
+                          style={{ left: g.start, top: g.y - 3 }}
+                        />
+                        <div
+                          className="absolute w-px h-2 bg-fuchsia-300/90"
+                          style={{ left: g.end, top: g.y - 3 }}
+                        />
+                        <div
+                          className="absolute -translate-x-1/2 -translate-y-full rounded-md border border-fuchsia-200/15 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] text-fuchsia-100 shadow-sm shadow-black/20"
+                          style={{ left: (g.start + g.end) / 2, top: g.y - 6 }}
+                        >
+                          {g.label}
+                        </div>
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment key={`gsy_${idx}_${g.start}_${g.end}_${g.x}`}>
+                        <div
+                          className="absolute w-px bg-fuchsia-300/90"
+                          style={{ left: g.x, top: g.start, height: Math.max(0, g.end - g.start) }}
+                        />
+                        <div
+                          className="absolute h-px w-2 bg-fuchsia-300/90"
+                          style={{ left: g.x - 3, top: g.start }}
+                        />
+                        <div
+                          className="absolute h-px w-2 bg-fuchsia-300/90"
+                          style={{ left: g.x - 3, top: g.end }}
+                        />
+                        <div
+                          className="absolute -translate-y-1/2 rounded-md border border-fuchsia-200/15 bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] text-fuchsia-100 shadow-sm shadow-black/20"
+                          style={{ left: g.x + 8, top: (g.start + g.end) / 2 }}
+                        >
+                          {g.label}
+                        </div>
+                      </React.Fragment>
+                    )
+                  )}
                 </div>
               )}
 
@@ -2241,8 +4003,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 return (
                   <div className="absolute inset-0 pointer-events-none">
                     <div
-                      className="absolute border border-sky-300/90 bg-sky-500/10"
-                      style={{ left: r.l, top: r.t, width: r.w, height: r.h }}
+                      className="absolute border bg-transparent"
+                      style={{ left: r.l, top: r.t, width: r.w, height: r.h, borderColor: ACCENT_TINT, background: ACCENT_FILL_SOFT }}
                     />
                   </div>
                 );
@@ -2251,8 +4013,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Resize Dimensions Overlay */}
               {resizeStatus && (
                 <div
-                  className="absolute z-50 pointer-events-none bg-sky-500 text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-sm"
+                  className="absolute z-50 pointer-events-none rounded-md border bg-[#161618] px-2 py-1 font-mono text-[11px] leading-[1.4] tracking-[-0.02em] shadow-sm shadow-black/20"
                   style={{
+                    borderColor: ACCENT_TINT_SOFT,
+                    color: "#e0e7ff",
                     left: (resizeStatus.x ?? 0) + (resizeStatus.width ?? 0) / 2,
                     top: (resizeStatus.y ?? 0) + (resizeStatus.height ?? 0) + 10,
                     transform: "translateX(-50%)"
@@ -2275,10 +4039,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   onDragStart={onGroupDragStart}
                   onDrag={onGroupDrag}
                   onDragStop={onGroupDragStop}
-                  className="cursor-move border border-sky-400 border-dashed"
+                  className="cursor-move border border-dashed"
+                  style={{ borderColor: ACCENT_TINT }}
                 >
                   <div className="w-full h-full bg-transparent">
-                    <div className="absolute -top-6 left-0 text-[10px] px-2 py-1 rounded-md bg-black/60 text-white border border-white/10">
+                    <div className="absolute -top-6 left-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-200 shadow-sm shadow-black/20">
                       Group ({selectedIds.length})
                     </div>
                   </div>
@@ -2288,21 +4053,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Empty State Hint */}
               {config.elements.length === 0 && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
-                  <div className="w-16 h-16 border-2 border-dashed border-slate-500 rounded-xl mb-4 flex items-center justify-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-[rgba(255,255,255,0.12)]">
                     <span className="text-3xl text-slate-500">+</span>
                   </div>
-                  <p className="text-slate-400 font-medium">Canvas is empty</p>
-                  <p className="text-slate-600 text-xs mt-1">Select a tool to add content</p>
+                  <p className="text-[13px] leading-[1.4] font-medium text-slate-400">Canvas is empty</p>
+                  <p className="mt-1 text-[12px] leading-[1.4] text-slate-600">Select a tool to add content</p>
                 </div>
               )}
 
-              {config.elements.map((raw) => {
+              {previewElements.map((raw) => {
                 const el = raw as AnyEl;
-                if (el.visible === false) return null;
-                if (allChildIds.has(el.id)) return null;
+                if (allChildIds.has(el.id) && !selectedIds.includes(el.id)) return null;
 
                 const isLocked = el.locked === true;
                 const isSelected = selectedIds.includes(el.id);
+                const isPrimary = selectedIds[0] === el.id;
+                const animationPhase = previewAnimationPhases[el.id]?.phase;
+                if (animationPhase === "hidden" && !isSelected) return null;
 
                 // Draft state
                 const draft = draftRects[el.id];
@@ -2310,61 +4077,266 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 const y = draft?.y ?? el.y;
                 const w = draft?.width ?? el.width;
                 const h = draft?.height ?? el.height;
+                const rotationDeg = draftRotationDegs[el.id] ?? Number(el.rotationDeg ?? 0);
+                const draftRadius = draftRadiusValues[el.id];
+                const draftPatch = draftElementPatches[el.id];
+                const renderedEl = ({
+                  ...el,
+                  ...(draft ? draft : {}),
+                  ...(draftRotationDegs[el.id] !== undefined ? { rotationDeg: draftRotationDegs[el.id] } : {}),
+                  ...(draftRadius !== undefined ? getRadiusPatch(el, draftRadius) : {}),
+                  ...(draftPatch ? draftPatch : {}),
+                } as AnyEl);
+                const radiusValue = clamp(
+                  draftRadius ?? getElementRadiusValue(renderedEl),
+                  0,
+                  Math.min(Math.max(1, w), Math.max(1, h)) / 2
+                );
+                const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marquee.active && selectedIds.length === 1;
+                const forcePlainWrapper =
+                  (renderedEl.type === "image" || renderedEl.type === "video") &&
+                  ((renderedEl as any).blendMode ?? "normal") !== "normal";
 
                 // Figma-style high-contrast selection border
-                const selectionStyle = isSelected
-                  ? { boxShadow: "0 0 0 1px #3b82f6, 0 0 0 2px white inset" }
-                  : {};
+                const selectionStyle = isPrimary
+                  ? {}
+                  : isSelected
+                    ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
+                    : {};
 
-                // Custom resize handle styles
-                const handleStyle = {
-                  width: 4, height: 4, background: "white", border: "1px solid #3b82f6", borderRadius: 1,
-                  pointerEvents: 'auto' as const
-                };
+                const contentNode = (
+                  <>
+                    <ElementRenderer
+                      element={renderedEl as any}
+                      layout="fill"
+                      elementsById={previewElementsById}
+                      overlayComponents={overlayComponents}
+                      animationPhase={animationPhase}
+                      animationPhases={previewAnimationPhases}
+                      data={renderData}
+                      visited={new Set()}
+                    />
+
+                    {isPrimary && !resizeStatus && (
+                      <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
+                        {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
+                        {isLocked ? " (Locked)" : ""}
+                      </div>
+                    )}
+                    {showTransformOverlay && (
+                      <div className="absolute inset-0 overflow-visible pointer-events-none">
+                        <div
+                          className="absolute inset-0"
+                          style={{ transform: `rotate(${rotationDeg}deg)`, transformOrigin: "center center" }}
+                        >
+                          <div
+                            className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
+                            style={{
+                              borderColor: ACCENT_TINT,
+                              borderRadius: supportsRadiusHandle(renderedEl) ? radiusValue : 2,
+                            }}
+                          />
+                          {([
+                            ["nw", 0, 0],
+                            ["n", (w ?? 0) / 2, 0],
+                            ["ne", w ?? 0, 0],
+                            ["e", w ?? 0, (h ?? 0) / 2],
+                            ["se", w ?? 0, h ?? 0],
+                            ["s", (w ?? 0) / 2, h ?? 0],
+                            ["sw", 0, h ?? 0],
+                            ["w", 0, (h ?? 0) / 2],
+                          ] as [ResizeHandleKind, number, number][]).map(([handle, left, top]) => (
+                            <button
+                              key={`${el.id}_${handle}`}
+                              type="button"
+                              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+                              style={{ left, top, cursor: getResizeCursor(handle, rotationDeg), pointerEvents: "auto" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                if (!stagePoint) return;
+                                const descendants =
+                                  renderedEl.type === "group" || renderedEl.type === "mask"
+                                    ? Object.fromEntries(
+                                        Array.from(collectDescendantIds(previewElementsById, el.id))
+                                          .map((childId) => {
+                                            const child = previewElementsById[childId];
+                                            if (!child) return null;
+                                            return [
+                                              childId,
+                                              {
+                                                x: child.x ?? 0,
+                                                y: child.y ?? 0,
+                                                width: child.width ?? 0,
+                                                height: child.height ?? 0,
+                                              },
+                                            ] as const;
+                                          })
+                                          .filter(Boolean) as [string, { x: number; y: number; width: number; height: number }][]
+                                      )
+                                    : undefined;
+                                setResizeDragSession({
+                                  id: el.id,
+                                  handle,
+                                  startStage: stagePoint,
+                                  origin: {
+                                    x: x ?? 0,
+                                    y: y ?? 0,
+                                    width: w ?? 0,
+                                    height: h ?? 0,
+                                    rotationDeg,
+                                  },
+                                  descendants,
+                                });
+                                setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
+                              }}
+                              aria-label={`Resize ${handle}`}
+                            />
+                          ))}
+                          {supportsRadiusHandle(renderedEl) && (
+                            <button
+                              type="button"
+                              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+                              style={{
+                                left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w ?? 0) / 2)),
+                                top: 0,
+                                cursor: "grab",
+                                pointerEvents: "auto",
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setRadiusDragSession({
+                                  id: el.id,
+                                  origin: {
+                                    x: x ?? 0,
+                                    y: y ?? 0,
+                                    width: w ?? 0,
+                                    height: h ?? 0,
+                                    rotationDeg,
+                                  },
+                                });
+                                setDraftRadiusValues((prev) => ({ ...prev, [el.id]: radiusValue }));
+                              }}
+                              aria-label="Adjust corner radius"
+                            />
+                          )}
+                          <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
+                          <button
+                            type="button"
+                            className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
+                            style={{ pointerEvents: "auto" }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const centerX = (x ?? 0) + (w ?? 0) / 2;
+                              const centerY = (y ?? 0) + (h ?? 0) / 2;
+                              rotationDragRef.current = { id: el.id, cx: centerX, cy: centerY };
+                              const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                              if (!stagePoint) return;
+                              const rawDeg = Math.atan2(stagePoint.y - centerY, stagePoint.x - centerX) * (180 / Math.PI) + 90;
+                              setDraftRotationDegs((prev) => ({
+                                ...prev,
+                                [el.id]: snapRotationValue(rawDeg, (e as any).altKey === true),
+                              }));
+                            }}
+                            title="Rotate (snaps to 15deg, hold Alt for free rotate)"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+
+                if (showTransformOverlay || forcePlainWrapper) {
+                  return (
+                    <div
+                      key={el.id}
+                      className={(isLocked ? "cursor-not-allowed " : showTransformOverlay ? "cursor-move " : "") + "absolute"}
+                      style={{ left: x, top: y, width: w, height: h, ...(isSelected ? selectionStyle : {}) }}
+                      onMouseDown={(e) => {
+                        if (spaceDown || (e as any).button === 1) return;
+                        if (marquee.active || isLocked) return;
+                        if ((e as any).ctrlKey || (e as any).metaKey) {
+                          cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                          return;
+                        }
+                        if (!showTransformOverlay && (e as any).shiftKey === true) {
+                          onSelectElement(el.id, true);
+                          return;
+                        }
+                        if (!showTransformOverlay) {
+                          cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
+                          return;
+                        }
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+                        if ((e as any).altKey === true) {
+                          dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
+                        } else {
+                          dragDuplicateRef.current = null;
+                        }
+                        const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                        if (!stagePoint) return;
+                        setPrimaryDragSession({
+                          id: el.id,
+                          startStage: stagePoint,
+                          origin: { x: x ?? 0, y: y ?? 0 },
+                        });
+                      }}
+                    >
+                      {contentNode}
+                    </div>
+                  );
+                }
 
                 return (
                   <Rnd
                     key={el.id}
                     id={el.id}
+                    ref={(node) => {
+                      if (node) rndRefs.current[el.id] = node;
+                      else delete rndRefs.current[el.id];
+                    }}
                     size={{ width: w, height: h }}
                     position={{ x, y }}
                     bounds="parent"
                     scale={scale}
                     disableDragging={isLocked || isPanning || marquee.active}
-                    enableResizing={!isLocked && !isPanning && !marquee.active}
-                    resizeHandleStyles={{
-                      topLeft: { ...handleStyle, left: -2, top: -2 },
-                      topRight: { ...handleStyle, left: '100%', top: -2, marginLeft: -2 },
-                      bottomLeft: { ...handleStyle, left: -2, top: '100%', marginTop: -2 },
-                      bottomRight: { ...handleStyle, left: '100%', top: '100%', marginLeft: -2, marginTop: -2 },
-                      top: { ...handleStyle, left: '50%', top: -2, marginLeft: -2, cursor: 'n-resize' },
-                      bottom: { ...handleStyle, left: '50%', top: '100%', marginLeft: -2, marginTop: -2, cursor: 's-resize' },
-                      left: { ...handleStyle, top: '50%', left: -2, marginTop: -2, cursor: 'w-resize' },
-                      right: { ...handleStyle, top: '50%', left: '100%', marginLeft: -2, marginTop: -2, cursor: 'e-resize' },
+                    enableResizing={false}
+                    onDragStart={(e) => {
+                      dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+                      if ((e as any).altKey === true) {
+                        dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
+                      } else {
+                        dragDuplicateRef.current = null;
+                      }
                     }}
-                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y)}
-                    onDragStop={(e, d) => handleDragStop(e, d, el.id)}
-
-                    onResizeStart={() => setResizeStatus({ x: el.x, y: el.y, width: el.width, height: el.height })}
-                    onResize={(e, dir, ref, delta, pos) => {
-                      const nw = ref.offsetWidth;
-                      const nh = ref.offsetHeight;
-                      const nx = pos.x;
-                      const ny = pos.y;
-                      setResizeStatus({
-                        x: nx, y: ny,
-                        width: nw, height: nh
-                      });
-                      setDraftRects((prev) => ({
-                        ...prev,
-                        [el.id]: { x: nx, y: ny, width: nw, height: nh },
-                      }));
+                    onDrag={(e, d) => handleDragLive(el.id, d.x, d.y, { shiftKey: (e as any).shiftKey === true })}
+                    onDragStop={(e, d) => {
+                      handleDragStop(e, d, el.id);
+                      const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
+                      const duplicateId = dragDuplicateRef.current?.duplicateId;
+                      dragDuplicateRef.current = null;
+                      delete dragStartRef.current[el.id];
+                      if (duplicateRequested && duplicateId) {
+                        setSelectedIds([duplicateId]);
+                      }
                     }}
-                    onResizeStop={(e, dir, ref, delta, pos) => handleResizeStop(e, dir, ref, delta, pos, el.id)}
                     onMouseDown={(e) => {
                       if (spaceDown || (e as any).button === 1) return;
                       if (marquee.active) return;
-                      onSelectElement(el.id, (e as any).shiftKey === true);
+                      if ((e as any).ctrlKey || (e as any).metaKey) {
+                        cycleSelectAtPoint((e as any).clientX, (e as any).clientY, true, true);
+                        return;
+                      }
+                      if ((e as any).shiftKey === true) {
+                        onSelectElement(el.id, true);
+                        return;
+                      }
+                      cycleSelectAtPoint((e as any).clientX, (e as any).clientY, false);
                     }}
                     className={
                       (isLocked ? "cursor-not-allowed " : "cursor-move ") +
@@ -2372,21 +4344,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                     }
                     style={isSelected ? selectionStyle : undefined}
                   >
-                    <ElementRenderer
-                      element={el as any}
-                      layout="fill"
-                      elementsById={elementsById}
-                      overlayComponents={overlayComponents}
-                      data={renderData}
-                      visited={new Set()}
-                    />
-
-                    {isSelected && !resizeStatus && (
-                      <div className="absolute -top-6 left-0 text-[10px] px-2 py-0.5 rounded bg-blue-600 text-white font-medium shadow-sm">
-                        {el.name || defaultElementLabel(el)}
-                        {isLocked ? " 🔒" : ""}
-                      </div>
-                    )}
+                    {contentNode}
                   </Rnd>
                 );
               })}
@@ -2396,10 +4354,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       </div> {/* Close Center Column */}
 
       {/* Right Column / Inspector */}
-      <div className="w-80 border-l border-slate-800 bg-slate-900 flex flex-col overflow-y-auto">
+      <div className="flex w-80 flex-col overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {primarySelectedEl ? (
           <InspectorPanel
-            element={elementsById[selectedIds[0]]}
+            element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
             onChange={(u) => updateElement(selectedIds[0], u)}
             onRename={(n) => updateElement(selectedIds[0], { name: n })}
             onPickImage={() => {
@@ -2408,7 +4366,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 kind: "images",
                 scope: "profiles",
                 title: "Pick Image",
-                onPick: (url) => updateElement(selectedIds[0], { url } as any)
+                onPick: (url) => updateElement(selectedIds[0], { src: url } as any)
+              });
+            }}
+            onPickPatternImage={() => {
+              const currentElement = elementsById[selectedIds[0]] as AnyEl | undefined;
+              setAssetPicker({
+                open: true,
+                kind: "images",
+                scope: "overlays",
+                title: "Pick Pattern",
+                onPick: (url) =>
+                  updateElement(selectedIds[0], {
+                    pattern: {
+                      ...ensurePatternFill(currentElement?.pattern as OverlayPatternFill | undefined),
+                      src: url,
+                    },
+                  } as any),
               });
             }}
             onPickVideo={() => {
@@ -2450,9 +4424,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
+            previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
+            onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
+            timelineState={selectedTimelineState}
           />
         ) : (
-          <div className="flex flex-col items-center justify-center h-40 text-slate-500 text-xs">
+          <div className="flex h-40 flex-col items-center justify-center text-[12px] leading-[1.4] text-slate-500">
             <p>Select an element to edit</p>
           </div>
         )}
@@ -2468,8 +4445,53 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           }}
         />
       </div>
+      </div>
+
+      <TimelinePanel
+        timeline={timeline}
+        elements={config.elements}
+        selectedIds={selectedIds}
+        playheadMs={timelinePlayheadMs}
+        isPlaying={isTimelinePlaying}
+        selectedKeyframeId={selectedTimelineKeyframeId}
+        onSelectKeyframe={(trackId, keyframeId) => {
+          setSelectedTimelineTrackId(trackId);
+          setSelectedTimelineKeyframeId(keyframeId);
+        }}
+        onPlay={() => {
+          if (timelinePlayheadMs >= timeline.durationMs) {
+            setTimelinePlayheadMs(0);
+          }
+          setIsTimelinePlaying(true);
+        }}
+        onPause={() => setIsTimelinePlaying(false)}
+        onStop={() => {
+          setIsTimelinePlaying(false);
+          setTimelinePlayheadMs(0);
+        }}
+        onSetPlayhead={(timeMs) => {
+          setIsTimelinePlaying(false);
+          setTimelinePlayheadMs(clamp(timeMs, 0, timeline.durationMs));
+        }}
+        onSetDuration={(durationMs) => {
+          const nextDuration = Math.max(100, durationMs);
+          setTimeline((currentTimeline) => ({ ...currentTimeline, durationMs: nextDuration }));
+          setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
+        }}
+        onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
+        onAddTrack={addTimelineTrack}
+        onMoveKeyframe={moveTimelineKeyframe}
+        onDuplicateKeyframe={duplicateTimelineKeyframe}
+        onAddKeyframeAtTime={addTimelineKeyframeAtTime}
+      />
+      <ShortcutCheatsheetModal open={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
+      </div>
     </div>
   );
+}
+
+function pointInRect(x: number, y: number, rect: { l: number; r: number; t: number; b: number }) {
+  return x >= rect.l && x <= rect.r && y >= rect.t && y <= rect.b;
 }
 
 function defaultElementLabel(el: AnyEl) {
@@ -2497,6 +4519,7 @@ interface InspectorProps {
   onChange: (patch: Partial<AnyEl>) => void;
   onRename: (name: string) => void;
   onPickImage: () => void;
+  onPickPatternImage: () => void;
   onPickVideo: () => void;
   ltPreview: { text: string; title: string; subtitle: string };
   onLtPreviewChange: (v: { text: string; title: string; subtitle: string }) => void;
@@ -2507,11 +4530,57 @@ interface InspectorProps {
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  previewVisible?: boolean;
+  onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
+  timelineState?: {
+    playheadMs: number;
+    hasAnimatedProperties: boolean;
+    properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>;
+  };
+}
+
+function formatTimelineTime(ms: number) {
+  return `${(Math.max(0, ms) / 1000).toFixed(2)}s`;
+}
+
+function TimelinePropertyMarker({
+  state,
+}: {
+  state?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+}) {
+  if (!state?.hasTrack) {
+    return <span className="inline-block h-2.5 w-2.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-transparent rotate-45" />;
+  }
+
+  return (
+    <span
+      className={`inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] border ${
+        state.hasKeyframeAtPlayhead
+          ? "border-indigo-200 bg-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.22)]"
+          : "border-indigo-300/60 bg-indigo-500/20"
+      }`}
+    />
+  );
+}
+
+function TimelineFieldLabel({
+  label,
+  timelineState,
+}: {
+  label: string;
+  timelineState?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <TimelinePropertyMarker state={timelineState} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
   return (
-    <div className={`relative overflow-hidden rounded border border-slate-600 shadow-sm flex-none ${className || "w-5 h-5"}`}>
+    <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
       <div className="absolute inset-0" style={{ background: value }} />
       <input
         type="color"
@@ -2559,51 +4628,298 @@ function ExposeButton({
     <button
       onClick={toggle}
       title={isBound ? `Bound to: ${boundKey}` : "Expose as Component Prop"}
-      className={`p-1 rounded ml-1 transition-colors flex-none ${isBound ? "bg-indigo-600 text-white" : "text-slate-600 hover:bg-slate-800 hover:text-slate-400"}`}
+      className={`ml-1 flex-none ${uiClasses.iconButton} ${isBound ? "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white" : ""}`}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+      <LinkIcon />
     </button>
   );
 }
 
+function EyeIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M3 3l18 18" />
+      <path d="M10.6 6.2A10.7 10.7 0 0 1 12 6c6.5 0 10 6 10 6a18.8 18.8 0 0 1-4.2 4.7" />
+      <path d="M6.7 6.7A18.1 18.1 0 0 0 2 12s3.5 6 10 6a9.8 9.8 0 0 0 3.4-.6" />
+      <path d="M9.9 9.9A3 3 0 0 0 14.1 14.1" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+    </svg>
+  );
+}
+
+function UnlockIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <rect x="4" y="11" width="16" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 7.2-2.4" />
+    </svg>
+  );
+}
+
+function MaskIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M12 3a9 9 0 1 0 0 18c2.3 0 4.3-.9 5.9-2.4A9 9 0 0 1 12 3Z" />
+      <path d="M12 3a9 9 0 0 1 0 18" />
+    </svg>
+  );
+}
+
+function FolderIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M3 7h6l2 2h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      <path d="M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
+}
+
+function BoltIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M13 2 5 13h5l-1 9 8-11h-5l1-9Z" />
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7" />
+      <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7" />
+    </svg>
+  );
+}
+
+const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string }> = [
+  { value: "none", label: "None" },
+  { value: "fade", label: "Fade" },
+  { value: "slideUp", label: "Slide Up" },
+  { value: "slideDown", label: "Slide Down" },
+  { value: "slideLeft", label: "Slide Left" },
+  { value: "slideRight", label: "Slide Right" },
+];
+
+const GENERIC_EASING_OPTIONS: Array<NonNullable<OverlayAnimation["easing"]>> = [
+  "ease-out",
+  "ease-in",
+  "ease-in-out",
+  "linear",
+];
+
+const PATTERN_FIT_OPTIONS: Array<{ value: OverlayPatternFit; label: string }> = [
+  { value: "tile", label: "Tile" },
+  { value: "cover", label: "Cover" },
+  { value: "contain", label: "Contain" },
+];
+
+function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
+  return {
+    src: pattern?.src ?? "",
+    fit: pattern?.fit ?? "tile",
+    scale: pattern?.scale ?? 100,
+    opacity: pattern?.opacity ?? 1,
+  };
+}
+
+function ensureKeying(keying?: any) {
+  return {
+    mode: keying?.mode ?? "none",
+    threshold: keying?.threshold ?? 0.2,
+    softness: keying?.softness ?? 0.15,
+    keyColor: keying?.keyColor ?? "#00ff00",
+    tolerance: keying?.tolerance ?? 0.2,
+    spillReduction: keying?.spillReduction ?? 0,
+  };
+}
+
+function PatternFillControls({
+  pattern,
+  onChange,
+  onPickImage,
+}: {
+  pattern?: OverlayPatternFill;
+  onChange: (pattern: OverlayPatternFill) => void;
+  onPickImage: () => void;
+}) {
+  const nextPattern = ensurePatternFill(pattern);
+  const [imageState, setImageState] = useState<"idle" | "ok" | "error">("idle");
+
+  useEffect(() => {
+    if (!nextPattern.src.trim()) {
+      setImageState("idle");
+      return;
+    }
+
+    let cancelled = false;
+    const img = new window.Image();
+    img.onload = () => {
+      if (!cancelled) setImageState("ok");
+    };
+    img.onerror = () => {
+      if (!cancelled) setImageState("error");
+    };
+    img.src = nextPattern.src;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [nextPattern.src]);
+
+  return (
+    <div className="ml-14 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Image</label>
+        <input
+          type="text"
+          className={`flex-1 font-mono ${uiClasses.field}`}
+          value={nextPattern.src}
+          onChange={(e) => onChange({ ...nextPattern, src: e.target.value })}
+          placeholder="/uploads/pattern.png"
+        />
+        <button
+          type="button"
+          onClick={onPickImage}
+          className={uiClasses.button}
+          title="Pick pattern image"
+        >
+          <FolderIcon />
+        </button>
+      </div>
+
+      {imageState !== "idle" && (
+        <div className={`text-[11px] leading-[1.4] ${imageState === "ok" ? "text-emerald-400" : "text-amber-400"}`}>
+          {imageState === "ok"
+            ? "Pattern image loaded."
+            : "Pattern image could not be loaded. Renderer will fall back to solid fill."}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fit</label>
+        <select
+          className={`flex-1 ${uiClasses.field}`}
+          value={nextPattern.fit}
+          onChange={(e) => onChange({ ...nextPattern, fit: e.target.value as OverlayPatternFit })}
+        >
+          {PATTERN_FIT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Scale</label>
+        <div className="w-20 relative">
+          <NumberField
+            label=""
+            value={Math.round(nextPattern.scale ?? 100)}
+            onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
+            noLabel
+          />
+          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+        </div>
+        <div className="flex-1 text-[11px] leading-[1.4] text-slate-600">
+          Scale now applies to tile, cover, and contain.
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Opacity</label>
+        <div className="w-20 relative">
+          <NumberField
+            label=""
+            value={Math.round((nextPattern.opacity ?? 1) * 100)}
+            onChange={(v) => onChange({ ...nextPattern, opacity: Math.max(0, Math.min(1, v / 100)) })}
+            noLabel
+          />
+          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InspectorPanel({
-  element, onChange, onRename, onPickImage, onPickVideo,
+  element, onChange, onRename, onPickImage, onPickPatternImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask
+  onEditMaster, onReleaseMask,
+  previewVisible,
+  onPreviewVisibilityAction,
+  timelineState,
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
+  const fieldClass = uiClasses.field;
+  const fieldLabelClass = uiClasses.fieldLabel;
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto pb-10 custom-scrollbar">
+    <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
       {/* Header: Name & Global Status */}
-      <div className="p-3 border-b border-slate-800 space-y-2 bg-slate-900/50">
-        <label className="block text-[10px] text-slate-500 uppercase font-bold tracking-wider">Layer</label>
+      <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3">
+        <label className={`block ${uiClasses.label}`}>Layer</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
-            className="flex-1 bg-slate-950 border border-slate-700 rounded-md px-2 py-1.5 text-xs font-medium text-slate-200 focus:border-indigo-500 focus:outline-none"
+            className={`flex-1 ${fieldClass}`}
             value={element.name ?? ""}
             placeholder={defaultElementLabel(element)}
             onChange={(e) => onRename(e.target.value)}
           />
           <button
             onClick={() => onChange({ visible: !isVisible })}
-            className={`p-1.5 rounded hover:bg-slate-800 ${!isVisible ? "text-slate-600" : "text-slate-400"}`}
+            className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-600" : "text-slate-400"}`}
             title="Toggle Visibility"
           >
-            {isVisible ? "👁️" : "🙈"}
+            {isVisible ? <EyeIcon /> : <EyeOffIcon />}
           </button>
           <button
             onClick={() => onChange({ locked: !isLocked })}
-            className={`p-1.5 rounded hover:bg-slate-800 ${isLocked ? "text-amber-500" : "text-slate-400"}`}
+            className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500" : "text-slate-400"}`}
             title="Toggle Lock"
           >
-            {isLocked ? "🔒" : "🔓"}
+            {isLocked ? <LockIcon /> : <UnlockIcon />}
           </button>
         </div>
+        {timelineState?.hasAnimatedProperties && element.type !== "lower_third" && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">
+              Editing animated state at {formatTimelineTime(timelineState.playheadMs)}
+            </div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              Marked properties have timeline tracks. Editing them here updates keyframes at the current playhead.
+            </div>
+          </div>
+        )}
+        {element.type === "mask" && (
+          <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2">
+            <div className="text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100">Mask group selected</div>
+            <div className="mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+              This container uses its first child as the mask shape and clips the content child beneath it.
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Transform Section */}
@@ -2611,36 +4927,36 @@ function InspectorPanel({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">X</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="X" timelineState={timelineState?.properties.x} /></label>
               <NumberField label="" value={element.x ?? 0} onChange={(v) => onChange({ x: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">Y</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="Y" timelineState={timelineState?.properties.y} /></label>
               <NumberField label="" value={element.y ?? 0} onChange={(v) => onChange({ y: v })} noLabel className="flex-1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">W</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="W" timelineState={timelineState?.properties.width} /></label>
               <NumberField label="" value={element.width ?? 0} onChange={(v) => onChange({ width: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-[10px] text-slate-500 w-3">H</label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} /></label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/50">
-            <label className="text-[10px] text-slate-500 w-12 flex-none">Rotation</label>
+          <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1">
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Rotation" timelineState={timelineState?.properties.rotationDeg} /></label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="-180" max="180"
-                className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={(element as any).rotationDeg ?? 0}
-                onChange={(e) => onChange({ rotationDeg: Number(e.target.value) } as any)}
+                onChange={(e) => onChange({ rotationDeg: snapRotationValue(Number(e.target.value), altDown) } as any)}
               />
               <div className="w-12">
-                <NumberField label="" value={(element as any).rotationDeg ?? 0} onChange={(v) => onChange({ rotationDeg: v } as any)} noLabel />
+                <NumberField label="" value={(element as any).rotationDeg ?? 0} onChange={(v) => onChange({ rotationDeg: snapRotationValue(v, altDown) } as any)} noLabel />
               </div>
             </div>
           </div>
@@ -2653,37 +4969,37 @@ function InspectorPanel({
 
           {/* Opacity (Global) */}
           <div className="flex items-center gap-2">
-            <label className="text-[10px] text-slate-500 w-12 flex-none">Opacity</label>
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Opacity" timelineState={timelineState?.properties.opacity} /></label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="0" max="1" step="0.01"
-                className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={typeof element.opacity === "number" ? element.opacity : 1}
                 onChange={(e) => onChange({ opacity: clamp(Number(e.target.value), 0, 1) })}
               />
               <div className="w-12 relative">
                 <input
                   type="number"
-                  className="w-full bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-xs text-right pr-3"
+                  className={`w-full pr-3 text-right ${fieldClass}`}
                   value={Math.round((typeof element.opacity === "number" ? element.opacity : 1) * 100)}
                   onChange={(e) => onChange({ opacity: clamp(Number(e.target.value) / 100, 0, 1) })}
                 />
-                <span className="absolute right-1 top-1 text-[10px] text-slate-500">%</span>
+                <span className="absolute right-2 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
               </div>
             </div>
           </div>
 
-          <div className="h-px bg-slate-800/50 my-2" />
+          <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
             <div className="space-y-4">
-              <label className="text-[10px] uppercase font-bold text-slate-500">Component Properties</label>
+              <label className={uiClasses.label}>Component Properties</label>
               {(() => {
                 const def = overlayComponents.find(c => c.id === (element as any).componentId);
-                if (!def) return <div className="text-xs text-red-500">Master Definition Missing</div>;
+                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Master Definition Missing</div>;
                 if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
-                  return <div className="text-[10px] text-slate-500">No properties exposed by master.</div>;
+                  return <div className="text-[11px] leading-[1.4] text-slate-500">No properties exposed by master.</div>;
                 }
                 const schemaKeys = Object.keys(def.propsSchema);
                 return schemaKeys.map(key => {
@@ -2692,12 +5008,12 @@ function InspectorPanel({
                   const val = overrides[key] !== undefined ? overrides[key] : fieldDef.default;
                   return (
                     <div key={key} className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-16 truncate" title={fieldDef.label || key}>{fieldDef.label || key}</label>
+                      <label className="w-16 truncate text-[11px] leading-[1.4] text-slate-500" title={fieldDef.label || key}>{fieldDef.label || key}</label>
                       {fieldDef.type === "color" ? (
                         <ColorSwatch value={val} onChange={(v) => onChange({ propOverrides: { ...overrides, [key]: v } } as any)} />
                       ) : (
                         <input
-                          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                          className={`flex-1 ${fieldClass}`}
                           value={val}
                           onChange={(e) => onChange({ propOverrides: { ...overrides, [key]: e.target.value } } as any)}
                         />
@@ -2709,9 +5025,9 @@ function InspectorPanel({
               <div className="pt-2">
                 <button
                   onClick={() => onEditMaster?.((element as any).componentId)}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded shadow-sm transition-colors flex items-center justify-center gap-2 border border-slate-600 hover:border-indigo-500"
+                  className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                   Edit Master Component
                 </button>
               </div>
@@ -2722,11 +5038,11 @@ function InspectorPanel({
           {element.type === "lower_third" && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Layout</label>
+                <label className={uiClasses.label}>Layout</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Mode</label>
+                  <label className={`${fieldLabelClass} w-12`}>Mode</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).layout?.mode ?? "stacked"}
                     onChange={(e) => onChange({ layout: { ...(element as any).layout, mode: e.target.value } } as any)}
                   >
@@ -2737,10 +5053,10 @@ function InspectorPanel({
                 </div>
                 {(element as any).layout?.mode === "split" && (
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-slate-500 w-12">Ratio</label>
+                    <label className={`${fieldLabelClass} w-12`}>Ratio</label>
                     <input
                       type="range" min="0.2" max="0.8" step="0.05"
-                      className="flex-1 h-1 bg-slate-800 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-slate-400 [&::-webkit-slider-thumb]:rounded-full"
+                      className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                       value={(element as any).layout?.splitRatio ?? 0.6}
                       onChange={(e) => onChange({ layout: { ...(element as any).layout, splitRatio: parseFloat(e.target.value) } } as any)}
                     />
@@ -2748,14 +5064,14 @@ function InspectorPanel({
                 )}
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Style</label>
+                <label className={uiClasses.label}>Style</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Variant</label>
+                  <label className={`${fieldLabelClass} w-12`}>Variant</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).style?.variant ?? "solid"}
                     onChange={(e) => onChange({ style: { ...(element as any).style, variant: e.target.value } } as any)}
                   >
@@ -2766,36 +5082,36 @@ function InspectorPanel({
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Bg</label>
+                  <label className={`${fieldLabelClass} w-12`}>Bg</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.bgColor} onChange={(v) => onChange({ style: { ...(element as any).style, bgColor: v } } as any)} />
                     <ColorSwatch value={(element as any).style?.accentColor} onChange={(v) => onChange({ style: { ...(element as any).style, accentColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Title</label>
+                  <label className={`${fieldLabelClass} w-12`}>Title</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.titleColor} onChange={(v) => onChange({ style: { ...(element as any).style, titleColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Sub</label>
+                  <label className={`${fieldLabelClass} w-12`}>Sub</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).style?.subtitleColor} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleColor: v } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Pad/Rad</label>
+                  <label className={`${fieldLabelClass} w-12`}>Pad/Rad</label>
                   <NumberField label="" value={(element as any).style?.paddingPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, paddingPx: v } } as any)} noLabel className="flex-1" />
                   <NumberField label="" value={(element as any).style?.cornerRadiusPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, cornerRadiusPx: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Preview (Editor Only)</label>
-                <div className="text-[10px] text-slate-500 mb-2">
+                <label className={uiClasses.label}>Preview (Editor Only)</label>
+                <div className="mb-2 text-[11px] leading-[1.4] text-slate-500">
                   Auto-preview active when selected.
                 </div>
 
@@ -2804,13 +5120,13 @@ function InspectorPanel({
                 <div className="flex gap-2 mb-2">
                   <button
                     onClick={() => onTestLowerThird("show")}
-                    className="flex-1 bg-green-900/40 hover:bg-green-800/60 text-green-200 text-[10px] py-1 rounded border border-green-800 transition-colors"
+                    className="h-7 flex-1 rounded-md border border-emerald-800 bg-emerald-900/30 text-[12px] leading-[1.4] text-emerald-200 transition-colors hover:bg-emerald-800/40"
                   >
                     Test Show (5s)
                   </button>
                   <button
                     onClick={() => onTestLowerThird("hide")}
-                    className="flex-1 bg-red-900/40 hover:bg-red-800/60 text-red-200 text-[10px] py-1 rounded border border-red-800 transition-colors"
+                    className="h-7 flex-1 rounded-md border border-red-800 bg-red-900/30 text-[12px] leading-[1.4] text-red-200 transition-colors hover:bg-red-800/40"
                   >
                     Test Hide
                   </button>
@@ -2818,9 +5134,9 @@ function InspectorPanel({
 
                 {(element as any).layout?.mode === "single" ? (
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] text-slate-500 w-12">Text</label>
+                    <label className={`${fieldLabelClass} w-12`}>Text</label>
                     <input
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                      className={`flex-1 ${fieldClass}`}
                       value={ltPreview.text}
                       onChange={(e) => onLtPreviewChange({ ...ltPreview, text: e.target.value })}
                     />
@@ -2828,17 +5144,17 @@ function InspectorPanel({
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-12">Title</label>
+                      <label className={`${fieldLabelClass} w-12`}>Title</label>
                       <input
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                        className={`flex-1 ${fieldClass}`}
                         value={ltPreview.title}
                         onChange={(e) => onLtPreviewChange({ ...ltPreview, title: e.target.value })}
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <label className="text-[10px] text-slate-500 w-12">Sub</label>
+                      <label className={`${fieldLabelClass} w-12`}>Sub</label>
                       <input
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                        className={`flex-1 ${fieldClass}`}
                         value={ltPreview.subtitle}
                         onChange={(e) => onLtPreviewChange({ ...ltPreview, subtitle: e.target.value })}
                       />
@@ -2847,14 +5163,14 @@ function InspectorPanel({
                 )}
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="space-y-2">
-                <label className="text-[10px] uppercase font-bold text-slate-500">Animation</label>
+                <label className={uiClasses.label}>Animation</label>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">In/Out</label>
+                  <label className={`${fieldLabelClass} w-12`}>In/Out</label>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).animation?.in ?? "slideUp"}
                     onChange={(e) => onChange({ animation: { ...(element as any).animation, in: e.target.value } } as any)}
                   >
@@ -2864,7 +5180,7 @@ function InspectorPanel({
                     <option value="scale">Scale</option>
                   </select>
                   <select
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                    className={`flex-1 ${fieldClass}`}
                     value={(element as any).animation?.out ?? "slideDown"}
                     onChange={(e) => onChange({ animation: { ...(element as any).animation, out: e.target.value } } as any)}
                   >
@@ -2875,7 +5191,7 @@ function InspectorPanel({
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Dur (ms)</label>
+                  <label className={`${fieldLabelClass} w-12`}>Dur (ms)</label>
                   <NumberField label="" value={(element as any).animation?.durationMs ?? 400} onChange={(v) => onChange({ animation: { ...(element as any).animation, durationMs: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
@@ -2886,15 +5202,37 @@ function InspectorPanel({
           {element.type === "box" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fill</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
                 <div className="flex-1 flex gap-1 items-center">
                   <ColorSwatch value={(element as any).backgroundColor} onChange={(v) => onChange({ backgroundColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
                   {isComponentMaster && <ExposeButton element={element} propPath="backgroundColor" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Radius</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).pattern ? "pattern" : "solid"}
+                  onChange={(e) =>
+                    onChange({
+                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
+                    } as any)
+                  }
+                >
+                  <option value="solid">Solid</option>
+                  <option value="pattern">Pattern</option>
+                </select>
+              </div>
+              {(element as any).pattern && (
+                <PatternFillControls
+                  pattern={(element as any).pattern}
+                  onChange={(pattern) => onChange({ pattern } as any)}
+                  onPickImage={onPickPatternImage}
+                />
+              )}
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -2904,9 +5242,9 @@ function InspectorPanel({
           {element.type === "shape" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Shape</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Shape</label>
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs"
+                  className={`flex-1 ${fieldClass}`}
                   value={(element as any).shape ?? "rect"}
                   onChange={(e) => onChange({ shape: e.target.value } as any)}
                 >
@@ -2918,33 +5256,60 @@ function InspectorPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fill</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).fillColor} onChange={(v) => onChange({ fillColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-14">
-                <label className="text-[10px] text-slate-500 w-8 flex-none">Opac.</label>
+                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Opac.</label>
                 <div className="w-16 relative">
                   <NumberField label="" value={Math.round(((element as any).fillOpacity ?? 1) * 100)} onChange={(v) => onChange({ fillOpacity: v / 100 } as any)} noLabel />
-                  <span className="absolute right-4 top-1 text-[10px] text-slate-500">%</span>
+                  <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
                 </div>
               </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
+                <select
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).pattern ? "pattern" : "solid"}
+                  onChange={(e) =>
+                    onChange({
+                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
+                    } as any)
+                  }
+                >
+                  <option value="solid">Solid</option>
+                  <option value="pattern">Pattern</option>
+                </select>
+              </div>
+              {(element as any).pattern && (
+                <PatternFillControls
+                  pattern={(element as any).pattern}
+                  onChange={(pattern) => onChange({ pattern } as any)}
+                  onPickImage={onPickPatternImage}
+                />
+              )}
+              {(element as any).shape === "line" && (element as any).pattern && (
+                <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
+                  Pattern fill is ignored for line shapes in this pass.
+                </div>
+              )}
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Stroke</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-14">
                 <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v, strokeWidth: v } as any)} noLabel className="w-16" />
                 <select
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs h-[26px]"
+                  className={`flex-1 ${fieldClass}`}
                   value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
                   onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
                 >
@@ -2954,7 +5319,7 @@ function InspectorPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Radius</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).cornerRadiusPx ?? 0} onChange={(v) => onChange({ cornerRadiusPx: v, cornerRadius: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -2965,7 +5330,7 @@ function InspectorPanel({
             <div className="space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-slate-400 text-xs font-semibold">Content</label>
+                  <label className="text-[12px] leading-[1.4] font-semibold text-slate-300">Content</label>
                   <div className="flex items-center gap-2">
                     <BindingPicker
                       propName="text"
@@ -2983,20 +5348,20 @@ function InspectorPanel({
                 </div>
                 {!element.bindings?.["text"] ? (
                   <textarea
-                    className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs min-h-[60px] font-mono text-slate-200 focus:border-indigo-500 focus:outline-none"
+                    className={`min-h-[60px] w-full font-mono ${fieldClass}`}
                     value={(element as any).text ?? ""}
                     onChange={(e) => onChange({ text: e.target.value } as any)}
                     placeholder="Enter static text..."
                   />
                 ) : (
-                  <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic">
+                  <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300">
                     Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["text"]?.sourceId)?.label}</span>.
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Font</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Font</label>
                 <div className="flex-1">
                   <FontPicker
                     value={(element as any).fontFamily}
@@ -3008,12 +5373,12 @@ function InspectorPanel({
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-8 flex-none">Size</label>
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Size</label>
                   <NumberField label="" value={(element as any).fontSize ?? 24} onChange={(v) => onChange({ fontSize: v } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-8 flex-none">Wgt</label>
-                  <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-xs" value={(element as any).fontWeight ?? "normal"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
+                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Wgt</label>
+                  <select className={`flex-1 ${fieldClass}`} value={(element as any).fontWeight ?? "normal"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
                     <option value="normal">Reg</option>
                     <option value="bold">Bold</option>
                     <option value="100">Thin</option>
@@ -3022,12 +5387,14 @@ function InspectorPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Align</label>
-                <div className="flex-1 flex border border-slate-700 rounded overflow-hidden">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Align</label>
+                <div className="flex flex-1 overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]">
                   {["left", "center", "right"].map(a => (
                     <button
                       key={a}
-                      className={`flex-1 py-1 text-[10px] uppercase ${(element as any).textAlign === a ? "bg-slate-700 text-white" : "bg-slate-900 text-slate-400 hover:bg-slate-800"}`}
+                      className={`h-7 flex-1 text-[11px] leading-[1.4] uppercase ${(
+                        element as any
+                      ).textAlign === a ? "bg-[#1d1d20] text-white" : "bg-[#161618] text-slate-400 hover:bg-[#1d1d20]"}`}
                       onClick={() => onChange({ textAlign: a } as any)}
                     >
                       {a === 'left' ? '|<' : a === 'right' ? '>|' : '=|='}
@@ -3036,20 +5403,20 @@ function InspectorPanel({
                 </div>
               </div>
 
-              <div className="h-px bg-slate-800/50 my-2" />
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Color</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).color} onChange={(v) => onChange({ color: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).color ?? ""} onChange={(e) => onChange({ color: e.target.value } as any)} />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).color ?? ""} onChange={(e) => onChange({ color: e.target.value } as any)} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Stroke</label>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                   <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-12" />
                 </div>
               </div>
@@ -3059,9 +5426,117 @@ function InspectorPanel({
           {/* IMAGE/VIDEO */}
           {(element.type === "image" || element.type === "video") && (
             <div className="space-y-3">
+              {(() => {
+                const keying = ensureKeying((element as any).keying);
+                return (
+                  <div className="space-y-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-3">
+                    <div className="flex items-center gap-2">
+                      <label className={`${fieldLabelClass} w-16 flex-none`}>Keying</label>
+                      <select
+                        className={`flex-1 ${fieldClass}`}
+                        value={keying.mode}
+                        onChange={(e) =>
+                          onChange({
+                            keying: e.target.value === "none"
+                              ? { ...keying, mode: "none" }
+                              : { ...keying, mode: e.target.value },
+                          } as any)
+                        }
+                      >
+                        <option value="none">None</option>
+                        <option value="alphaBlack">Alpha from Black</option>
+                        <option value="alphaWhite">Alpha from White</option>
+                        <option value="chromaKey">Chroma Key</option>
+                      </select>
+                    </div>
+                    {keying.mode !== "none" && (
+                      <>
+                        {(keying.mode === "alphaBlack" || keying.mode === "alphaWhite") && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Threshold</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.threshold * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, threshold: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.threshold * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.softness * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                            </div>
+                          </>
+                        )}
+                        {keying.mode === "chromaKey" && (
+                          <>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Color</label>
+                              <ColorSwatch value={keying.keyColor} onChange={(v) => onChange({ keying: { ...keying, keyColor: v } } as any)} />
+                              <input
+                                type="text"
+                                className={`flex-1 font-mono ${fieldClass}`}
+                                value={keying.keyColor}
+                                onChange={(e) => onChange({ keying: { ...keying, keyColor: e.target.value } } as any)}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Tolerance</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.tolerance * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, tolerance: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.tolerance * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.softness * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className={`${fieldLabelClass} w-16 flex-none`}>Spill</label>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={Math.round(keying.spillReduction * 100)}
+                                onChange={(e) => onChange({ keying: { ...keying, spillReduction: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
+                                className="flex-1 accent-indigo-500"
+                              />
+                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.spillReduction * 100)}</span>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-slate-400 text-xs font-semibold">Source</label>
+                  <label className="text-[12px] leading-[1.4] font-semibold text-slate-300">Source</label>
                   <BindingPicker
                     propName="src"
                     type="image"
@@ -3076,34 +5551,47 @@ function InspectorPanel({
                 </div>
                 {!element.bindings?.["src"] ? (
                   <div className="flex gap-2">
-                    <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs focus:border-indigo-500 focus:outline-none" value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
-                    <button onClick={element.type === "image" ? onPickImage : onPickVideo} className="bg-slate-800 border border-slate-700 rounded px-2 text-xs hover:bg-slate-700 transition-colors">📂</button>
+                    <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).src ?? ""} onChange={(e) => onChange({ src: e.target.value } as any)} placeholder="URL" />
+                    <button onClick={element.type === "image" ? onPickImage : onPickVideo} className={uiClasses.button}><FolderIcon /></button>
                   </div>
                 ) : (
-                  <div className="p-2.5 bg-indigo-500/5 border border-indigo-500/10 rounded text-[10px] text-indigo-300 italic flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300">
                     <span>Bound to <span className="font-bold text-indigo-400">{SourceCatalog.find(s => s.id === element.bindings?.["src"]?.sourceId)?.label}</span></span>
                   </div>
                 )}
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12 flex-none">Fit</label>
-                <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).fit ?? "cover"} onChange={(e) => onChange({ fit: e.target.value } as any)}>
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Fit</label>
+                <select className={`flex-1 ${fieldClass}`} value={(element as any).fit ?? "cover"} onChange={(e) => onChange({ fit: e.target.value } as any)}>
                   <option value="cover">Cover</option>
                   <option value="contain">Contain</option>
                   <option value="fill">Fill</option>
                 </select>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>Blend Mode</label>
+                <select className={`flex-1 ${fieldClass}`} value={(element as any).blendMode ?? "normal"} onChange={(e) => onChange({ blendMode: e.target.value } as any)}>
+                  <option value="normal">Normal</option>
+                  <option value="screen">Screen</option>
+                  <option value="multiply">Multiply</option>
+                </select>
+              </div>
+              {((element as any).blendMode ?? "normal") !== "normal" && (
+                <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  Screen is useful for effects on black backgrounds.
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
 
               {element.type === "video" && (
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).autoplay !== false} onChange={(e) => onChange({ autoplay: e.target.checked } as any)} /> Auto</label>
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).loop !== false} onChange={(e) => onChange({ loop: e.target.checked } as any)} /> Loop</label>
-                  <label className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).muted !== false} onChange={(e) => onChange({ muted: e.target.checked } as any)} /> Mute</label>
+                <div className="grid grid-cols-2 gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).autoplay !== false} onChange={(e) => onChange({ autoplay: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Auto</label>
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).loop !== false} onChange={(e) => onChange({ loop: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Loop</label>
+                  <label className="flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200"><input type="checkbox" checked={(element as any).muted !== false} onChange={(e) => onChange({ muted: e.target.checked } as any)} className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" /> Mute</label>
                 </div>
               )}
             </div>
@@ -3113,30 +5601,30 @@ function InspectorPanel({
           {(element.type === "progressBar" || element.type === "progressRing") && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Fill</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).fillColor} onChange={e => onChange({ fillColor: e.target.value } as any)} />
+                <label className={`${fieldLabelClass} w-12`}>Fill</label>
+                <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor} onChange={e => onChange({ fillColor: e.target.value } as any)} />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Track</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).backgroundColor} onChange={e => onChange({ backgroundColor: e.target.value } as any)} />
+                <label className={`${fieldLabelClass} w-12`}>Track</label>
+                <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor} onChange={e => onChange({ backgroundColor: e.target.value } as any)} />
               </div>
               {element.type === "progressRing" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Stroke</label>
+                  <label className={`${fieldLabelClass} w-12`}>Stroke</label>
                   <NumberField label="" value={(element as any).strokeWidthPx ?? 4} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="flex-1" />
                 </div>
               )}
               {element.type === "progressBar" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                  <label className={`${fieldLabelClass} w-12`}>Radius</label>
                   <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
                 </div>
               )}
 
               {element.type === "progressBar" && (
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12">Dir</label>
-                  <select className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).direction ?? "ltr"} onChange={(e) => onChange({ direction: e.target.value } as any)}>
+                  <label className={`${fieldLabelClass} w-12`}>Dir</label>
+                  <select className={`flex-1 ${fieldClass}`} value={(element as any).direction ?? "ltr"} onChange={(e) => onChange({ direction: e.target.value } as any)}>
                     <option value="ltr">L → R</option>
                     <option value="rtl">R → L</option>
                     <option value="ttb">T → B</option>
@@ -3151,18 +5639,18 @@ function InspectorPanel({
           {element.type === "group" && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Bg</label>
-                <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="Transparent" />
+                <label className={`${fieldLabelClass} w-12`}>Bg</label>
+                <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="Transparent" />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Border</label>
+                <label className={`${fieldLabelClass} w-12`}>Border</label>
                 <div className="flex-1 flex gap-2">
-                  <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs" value={(element as any).borderColor ?? ""} onChange={(e) => onChange({ borderColor: e.target.value } as any)} placeholder="None" />
+                  <input type="text" className={`flex-1 ${fieldClass}`} value={(element as any).borderColor ?? ""} onChange={(e) => onChange({ borderColor: e.target.value } as any)} placeholder="None" />
                   <NumberField label="" value={(element as any).borderWidth ?? 0} onChange={(v) => onChange({ borderWidth: v } as any)} noLabel className="w-12" />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-[10px] text-slate-500 w-12">Radius</label>
+                <label className={`${fieldLabelClass} w-12`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadiusPx: v } as any)} noLabel className="flex-1" />
               </div>
             </div>
@@ -3171,33 +5659,70 @@ function InspectorPanel({
           {/* MASK */}
           {element.type === "mask" && (
             <div className="space-y-3">
-              <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded">
+              <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">🎭</span>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md border border-indigo-400/20 bg-[#161618] text-indigo-300">
+                    <MaskIcon />
+                  </div>
                   <div>
-                    <div className="text-xs font-bold text-indigo-300">Mask Group</div>
-                    <div className="text-[10px] text-slate-500">Clips second child to first child geometry.</div>
+                    <div className="text-[12px] leading-[1.4] font-semibold text-indigo-300">
+                      {(element as any).invert ? "Inverse Mask" : "Mask Group"}
+                    </div>
+                    <div className="text-[11px] leading-[1.4] text-slate-500">
+                      {(element as any).invert
+                        ? "The shape cuts a hole through the content so only the outside remains visible."
+                        : "The shape clips the content so only the area inside the mask stays visible."}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-1 mt-3">
-                  <div className="flex justify-between text-[10px]">
+                <div className="space-y-2 mt-3">
+                  <div className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] px-3 py-2">
+                    <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">Mask workflow</div>
+                    <div className="mt-1 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200">
+                      Child 1 is the mask shape. Child 2 is the clipped content.
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-[11px] leading-[1.4]">
                     <span className="text-slate-500">Mask Shape:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[0]}</span>
                   </div>
-                  <div className="flex justify-between text-[10px]">
+                  <div className="flex justify-between text-[11px] leading-[1.4]">
                     <span className="text-slate-500">Content Layer:</span>
                     <span className="text-slate-300 font-mono">{(element as any).childIds?.[1]}</span>
                   </div>
                 </div>
 
+                <div className="mt-4 pt-3 border-t border-indigo-500/10">
+                  <label className="flex items-center justify-between gap-3 cursor-pointer">
+                    <div>
+                      <div className="text-[12px] leading-[1.4] font-semibold text-slate-200">Invert Mask</div>
+                      <div className="text-[11px] leading-[1.4] text-slate-500">
+                        Cut a hole instead of clipping to the shape
+                      </div>
+                    </div>
+
+                    <input
+                      type="checkbox"
+                      checked={!!(element as any).invert}
+                      onChange={(e) => onChange({ invert: e.target.checked } as any)}
+                      className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
+                    />
+                  </label>
+                </div>
+
                 {onReleaseMask && (
-                  <button
-                    onClick={() => onReleaseMask(element.id)}
-                    className="w-full mt-4 py-1.5 bg-slate-800 hover:bg-red-900/40 text-slate-300 hover:text-red-200 text-xs font-semibold rounded border border-slate-700 hover:border-red-500/50 transition-all"
-                  >
-                    Release Mask
-                  </button>
+                  <div className="mt-4 space-y-2">
+                    <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                      Release keeps the underlying layers and removes this mask container.
+                    </div>
+                    <button
+                      onClick={() => onReleaseMask(element.id)}
+                      className="h-8 w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-300 transition-all hover:border-red-500/50 hover:bg-red-900/30 hover:text-red-200"
+                    >
+                      Release Mask Group
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -3205,6 +5730,146 @@ function InspectorPanel({
 
         </div>
       </AccordionSection >
+
+      {element.type !== "lower_third" && (
+        <AccordionSection title="Animation" defaultOpen={true}>
+          <div className="space-y-3">
+            <div className="text-[11px] leading-[1.4] text-slate-500">
+              Delay is in milliseconds. Start always resets the element to its hidden baseline first, then runs the configured enter animation without saving visibility changes.
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("enter")}
+                className="h-7 flex-1 rounded-md border border-emerald-800 bg-emerald-900/30 text-[12px] leading-[1.4] text-emerald-200 transition-colors hover:bg-emerald-800/40"
+              >
+                Start
+              </button>
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("exit")}
+                className="h-7 flex-1 rounded-md border border-amber-800 bg-amber-900/30 text-[12px] leading-[1.4] text-amber-200 transition-colors hover:bg-amber-800/40"
+              >
+                Test Exit
+              </button>
+              <button
+                type="button"
+                onClick={() => onPreviewVisibilityAction?.("reset")}
+                className="h-7 flex-1 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] text-slate-200 transition-colors hover:bg-[#1d1d20]"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="text-[11px] leading-[1.4] text-slate-500">
+              Preview state: <span className="text-slate-300">{previewVisible ? "Visible" : "Hidden"}</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Enter</label>
+              <select
+                className={`flex-1 ${fieldClass}`}
+                value={(element as any).animation?.enter ?? "none"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      enter: e.target.value as OverlayMotionPreset,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_MOTION_OPTIONS.map((option) => (
+                  <option key={`enter-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Exit</label>
+              <select
+                className={`flex-1 ${fieldClass}`}
+                value={(element as any).animation?.exit ?? "none"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      exit: e.target.value as OverlayMotionPreset,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_MOTION_OPTIONS.map((option) => (
+                  <option key={`exit-${option.value}`} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Dur</label>
+              <NumberField
+                label=""
+                value={(element as any).animation?.durationMs ?? 400}
+                onChange={(v) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      durationMs: v,
+                    },
+                  } as any)
+                }
+                noLabel
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Delay</label>
+              <NumberField
+                label=""
+                value={(element as any).animation?.delayMs ?? 0}
+                onChange={(v) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      delayMs: v,
+                    },
+                  } as any)
+                }
+                noLabel
+                className="flex-1"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Ease</label>
+              <select
+                className={`flex-1 ${fieldClass}`}
+                value={(element as any).animation?.easing ?? "ease-out"}
+                onChange={(e) =>
+                  onChange({
+                    animation: {
+                      ...(element as any).animation,
+                      easing: e.target.value as NonNullable<OverlayAnimation["easing"]>,
+                    },
+                  } as any)
+                }
+              >
+                {GENERIC_EASING_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </AccordionSection>
+      )}
 
       {/* Effects Section (Collapsed by default) */}
       {/* Effects Section (Collapsed by default) */}
@@ -3218,43 +5883,43 @@ function InspectorPanel({
                   const s = (element as any).shadow || { color: "#000000", blur: 10, x: 0, y: 4 };
                   onChange({ shadow: { ...s, enabled: e.target.checked } } as any);
                 }}
-                className="rounded border-slate-700 bg-slate-800 accent-indigo-500"
+                className="rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500"
               />
-              <span className="text-xs font-medium text-slate-300">Shadow / Glow</span>
+              <span className="text-[12px] leading-[1.4] font-medium text-slate-300">Shadow / Glow</span>
             </label>
             {(element as any).shadow?.enabled && (
-              <div className="space-y-2 pl-2 border-l-2 border-slate-800 ml-1">
+              <div className="ml-1 space-y-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Color</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
                   <div className="flex-1 flex gap-2">
                     <ColorSwatch value={(element as any).shadow?.color} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, color: v } } as any)} />
-                    <input type="text" className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono" value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
+                    <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).shadow?.color} onChange={(e) => onChange({ shadow: { ...(element as any).shadow, color: e.target.value } } as any)} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Blur</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Blur</label>
                   <NumberField label="" value={(element as any).shadow?.blur} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, blur: v } } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Offset X</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset X</label>
                   <NumberField label="" value={(element as any).shadow?.x} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, x: v } } as any)} noLabel className="flex-1" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <label className="text-[10px] text-slate-500 w-12 flex-none">Offset Y</label>
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Offset Y</label>
                   <NumberField label="" value={(element as any).shadow?.y} onChange={(v) => onChange({ shadow: { ...(element as any).shadow, y: v } } as any)} noLabel className="flex-1" />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="h-px bg-slate-800/50" />
+          <div className="h-px bg-[rgba(255,255,255,0.06)]" />
 
           {/* Clip */}
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <label className="text-xs font-semibold text-slate-300 flex-1">Masking</label>
+              <label className="flex-1 text-[12px] leading-[1.4] font-semibold text-slate-300">Masking</label>
               <select
-                className="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-[10px] w-24"
+                className={`w-24 ${fieldClass}`}
                 value={(element as any).clip?.type ?? "none"}
                 onChange={(e) => onChange({ clip: { ...(element as any).clip, type: e.target.value } } as any)}
               >
@@ -3264,8 +5929,8 @@ function InspectorPanel({
               </select>
             </div>
             {(element as any).clip?.type === "roundRect" && (
-              <div className="flex items-center gap-2 pl-2 border-l-2 border-slate-800 ml-1 mt-2">
-                <label className="text-[10px] text-slate-500 w-10 flex-none">Radius</label>
+              <div className="mt-2 ml-1 flex items-center gap-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2">
+                <label className="w-10 flex-none text-[11px] leading-[1.4] text-slate-500">Radius</label>
                 <NumberField label="" value={(element as any).clip?.radius ?? 0} onChange={(v) => onChange({ clip: { ...(element as any).clip, radius: v } } as any)} noLabel className="flex-1" />
               </div>
             )}
@@ -3280,18 +5945,18 @@ function InspectorPanel({
             <div className="space-y-3">
               {(element.type === "progressBar" || element.type === "progressRing") && (
                 <div>
-                  <label className="block mb-1 text-slate-400 text-xs">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
+                  <label className="mb-1 block text-[12px] leading-[1.4] text-slate-400">Value ({Math.round(((element as any).value ?? 0) * 100)}%)</label>
                   <input
                     type="range" min="0" max="1" step="0.01"
-                    className="w-full h-1 bg-slate-800 rounded-full"
+                    className="h-1 w-full rounded-full bg-[#161618]"
                     value={(element as any).value ?? 0}
                     onChange={(e) => onChange({ value: Number(e.target.value) } as any)}
                   />
                 </div>
               )}
               {element.type === "text" && (
-                <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                  <div className="mb-1 text-slate-300 font-semibold">Variable Injection</div>
+                <div className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-2 text-[12px] leading-[1.4] text-slate-400">
+                  <div className="mb-1 text-[12px] leading-[1.4] font-semibold text-slate-300">Variable Injection</div>
                   Use <code>{`{{variable}}`}</code> in the text content to bind data from the Test Data panel.
                 </div>
               )}
@@ -3305,15 +5970,51 @@ function InspectorPanel({
 }
 
 
+function resolveRelativeNumberInput(currentValue: number, raw: string) {
+  const trimmed = raw.trim();
+  if (!trimmed) return currentValue;
+
+  if (/^[+\-*/]\s*-?\d+(\.\d+)?$/.test(trimmed)) {
+    const op = trimmed[0];
+    const operand = Number(trimmed.slice(1).trim());
+    if (!Number.isFinite(operand)) return currentValue;
+    if (op === "+") return currentValue + operand;
+    if (op === "-") return currentValue - operand;
+    if (op === "*") return currentValue * operand;
+    if (op === "/") return operand === 0 ? currentValue : currentValue / operand;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : currentValue;
+}
+
 function NumberField({ label, value, onChange, className, noLabel }: { label: string; value: number; onChange: (v: number) => void, className?: string; noLabel?: boolean }) {
+  const [draft, setDraft] = useState<string>(String(Number.isFinite(value) ? value : 0));
+
+  useEffect(() => {
+    setDraft(String(Number.isFinite(value) ? value : 0));
+  }, [value]);
+
   return (
     <div className={className}>
-      {!noLabel && <label className="block mb-1 text-slate-400 text-[10px]">{label}</label>}
+      {!noLabel && <label className={`mb-1 block ${uiClasses.fieldLabel}`}>{label}</label>}
       <input
-        type="number"
-        className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:border-indigo-500 focus:outline-none"
-        value={Number.isFinite(value) ? value : 0}
-        onChange={(e) => onChange(Number(e.target.value))}
+        type="text"
+        className={`w-full ${uiClasses.field}`}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const next = resolveRelativeNumberInput(value, draft);
+          setDraft(String(next));
+          onChange(next);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const next = resolveRelativeNumberInput(value, draft);
+            setDraft(String(next));
+            onChange(next);
+          }
+        }}
       />
     </div>
   );
@@ -3378,13 +6079,13 @@ function AssetPickerModal({
       <div className="absolute inset-0 bg-black/70" onMouseDown={onClose} />
       <div className="absolute inset-0 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-3xl rounded-xl border border-slate-800 bg-slate-950 shadow-xl"
+          className="w-full max-w-3xl rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] shadow-xl"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-            <div className="text-sm font-semibold text-slate-100">{title}</div>
+          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+            <div className="text-[14px] leading-[1.4] font-semibold text-slate-100">{title}</div>
             <button
-              className="rounded-md bg-slate-900 border border-slate-800 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800"
+              className={uiClasses.buttonGhost}
               onClick={onClose}
             >
               Close
@@ -3393,7 +6094,7 @@ function AssetPickerModal({
 
           <div className="p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-xs text-slate-400">
+              <div className="text-[12px] leading-[1.4] text-slate-400">
                 Scope: <span className="text-slate-200">{scope}</span> • Kind:{" "}
                 <span className="text-slate-200">{kind}</span>
               </div>
@@ -3414,29 +6115,30 @@ function AssetPickerModal({
                 <button
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
-                  className="rounded-md bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-60"
+                  className="flex h-8 items-center justify-center gap-2 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/20 disabled:opacity-60"
                 >
+                  <FolderIcon />
                   {busy ? "Uploading..." : "Upload file"}
                 </button>
               </div>
             </div>
 
-            {err && <div className="text-xs text-red-400">{err}</div>}
+            {err && <div className="text-[12px] leading-[1.4] text-red-400">{err}</div>}
 
-            <div className="border border-slate-800 rounded-lg overflow-hidden">
-              <div className="px-3 py-2 bg-slate-900/60 border-b border-slate-800">
-                <div className="text-[11px] uppercase tracking-wide text-slate-400">Recent</div>
+            <div className="overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]">
+              <div className="border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2">
+                <div className="text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400">Recent</div>
               </div>
 
               {recent.length === 0 ? (
-                <div className="p-4 text-xs text-slate-500">No recent uploads yet. Upload something.</div>
+                <div className="p-4 text-[12px] leading-[1.4] text-slate-500">No recent uploads yet. Upload something.</div>
               ) : (
                 <div className="p-3 grid grid-cols-2 md:grid-cols-3 gap-3">
                   {recent.map((a) => (
                     <button
                       key={a.url}
                       onClick={() => onPick(a.url)}
-                      className="group rounded-lg border border-slate-800 bg-slate-900/40 hover:bg-slate-900/70 overflow-hidden text-left"
+                      className="group overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-left transition-colors hover:bg-[#1d1d20]"
                       title={a.url}
                     >
                       <div className="aspect-video bg-black/30 flex items-center justify-center overflow-hidden">
@@ -3447,8 +6149,8 @@ function AssetPickerModal({
                         )}
                       </div>
                       <div className="p-2">
-                        <div className="text-xs text-slate-200 truncate">{a.name || a.url.split("/").pop() || a.url}</div>
-                        <div className="text-[10px] text-slate-500 truncate">{a.url}</div>
+                        <div className="truncate text-[12px] leading-[1.4] text-slate-200">{a.name || a.url.split("/").pop() || a.url}</div>
+                        <div className="truncate text-[11px] leading-[1.4] text-slate-500">{a.url}</div>
                       </div>
                     </button>
                   ))}
@@ -3456,7 +6158,7 @@ function AssetPickerModal({
               )}
             </div>
 
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] leading-[1.4] text-slate-500">
               Phase 1: “recent” is localStorage-based (no DB, no server directory listing yet).
             </div>
           </div>
@@ -3470,25 +6172,27 @@ function TestDataPanel({ data, onChange }: { data: Record<string, string>; onCha
   const [newKey, setNewKey] = useState("");
 
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 mt-2">
-      <div className="text-xs uppercase tracking-wide text-slate-400 mb-2">Test Data (Variables)</div>
+    <div className="mt-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-4">
+      <div className="mb-2 text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400">Test Data (Variables)</div>
       <div className="space-y-2">
         {Object.entries(data).map(([k, v]) => (
           <div key={k} className="flex items-center gap-2">
-            <div className="text-xs text-slate-500 font-mono w-1/3 truncate" title={k}>{k}</div>
+            <div className="w-1/3 truncate font-mono text-[12px] leading-[1.4] text-slate-500" title={k}>{k}</div>
             <input
               type="text"
-              className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs font-mono text-slate-200"
+              className={`flex-1 font-mono ${uiClasses.field}`}
               value={v}
               onChange={e => onChange(k, e.target.value)}
             />
-            <button onClick={() => onChange(k, "")} className="text-slate-600 hover:text-red-400 px-1">×</button>
+            <button onClick={() => onChange(k, "")} className="flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-red-400" aria-label={`Clear ${k}`}>
+              <svg {...TOOL_ICON_PROPS}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+            </button>
           </div>
         ))}
-        <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
+        <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
           <input
             type="text"
-            className="w-1/3 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"
+            className={`w-1/3 ${uiClasses.field}`}
             placeholder="New key..."
             value={newKey}
             onChange={e => setNewKey(e.target.value)}
@@ -3500,12 +6204,12 @@ function TestDataPanel({ data, onChange }: { data: Record<string, string>; onCha
                 setNewKey("");
               }
             }}
-            className="text-xs bg-slate-800 px-2 py-1 rounded hover:bg-slate-700 text-slate-300"
+            className={uiClasses.button}
           >
             Add
           </button>
         </div>
-        <div className="text-[10px] text-slate-500">
+        <div className="text-[11px] leading-[1.4] text-slate-500">
           Use in text as <code>{`{{key}}`}</code>
         </div>
       </div>
@@ -3519,19 +6223,21 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
   const [val, setVal] = useState("");
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-full max-w-sm flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-white">Save Template</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-sm flex-col overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+          <h3 className="text-[14px] leading-[1.4] font-semibold text-white">Save Template</h3>
+          <button onClick={onClose} className={uiClasses.iconButton} aria-label="Close">
+            <svg {...TOOL_ICON_PROPS}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+          </button>
         </div>
 
         <div className="p-4 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1">Template Name</label>
+            <label className="mb-1 block text-[12px] leading-[1.4] font-medium text-slate-400">Template Name</label>
             <input
               autoFocus
-              className="w-full bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:border-indigo-500 focus:outline-none"
+              className={`w-full ${uiClasses.field}`}
               placeholder="My Lower Third"
               value={val}
               onChange={(e) => setVal(e.target.value)}
@@ -3542,16 +6248,13 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
-            <button
-              onClick={onClose}
-              className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-            >
+            <button onClick={onClose} className={uiClasses.buttonGhost}>
               Cancel
             </button>
             <button
               onClick={() => val.trim() && onSave(val.trim())}
               disabled={!val.trim()}
-              className="px-3 py-1.5 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-8 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Save Template
             </button>
@@ -3565,15 +6268,15 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
 function AccordionSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-slate-800 last:border-0 border-t first:border-t-0">
+    <div className="border-b border-[rgba(255,255,255,0.06)] last:border-0 border-t first:border-t-0">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900/40 select-none bg-slate-950/20"
+        className="flex h-8 w-full items-center justify-between bg-[rgba(255,255,255,0.03)] px-3 text-[14px] leading-[1.4] font-medium text-slate-300 select-none transition-colors hover:bg-[rgba(255,255,255,0.05)]"
       >
         <span>{title}</span>
         <span className={`transform transition-transform text-slate-500 ${open ? "rotate-90" : ""}`}>›</span>
       </button>
-      {open && <div className="p-3 bg-slate-900/10 space-y-3">{children}</div>}
+      {open && <div className="space-y-3 bg-[#111113] p-3">{children}</div>}
     </div>
   );
 }
@@ -3596,32 +6299,32 @@ function ToolButton({
       onClick={onClick}
       disabled={disabled}
       className={`
-        flex items-center justify-center w-9 h-9 rounded-lg transition-all border
+        flex h-8 w-8 items-center justify-center rounded-md border transition-all
         ${active
-          ? "bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow-lg shadow-indigo-500/10"
-          : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          ? "border-indigo-400/30 bg-indigo-500/15 text-indigo-100 shadow-lg shadow-indigo-500/5"
+          : "border-[rgba(255,255,255,0.06)] bg-[#161618] text-slate-400 hover:bg-[#1d1d20] hover:text-slate-200"
         }
         ${disabled ? "opacity-20 cursor-not-allowed" : ""}
       `}
       title={label}
     >
-      <div className="flex items-center justify-center scale-90">{icon}</div>
+      <div className="relative -top-px flex items-center justify-center">{icon}</div>
     </button>
   );
 }
 
 const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
-  text: <span className="font-serif font-bold text-lg">T</span>,
-  box: <div className="w-4 h-4 border-2 border-current rounded-sm" />,
-  image: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
-  video: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  bar: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
-  ring: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8" /></svg>,
-  rect: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
-  circle: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /></svg>,
-  triangle: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3l10 18H2L12 3z" /></svg>,
-  line: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="20" x2="20" y2="4" /></svg>,
-  lower_third: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
+  text: <span className="font-serif text-[14px] font-bold leading-none">T</span>,
+  box: <div className="h-4 w-4 rounded-sm border-[1.5px] border-current" />,
+  image: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
+  video: <svg {...TOOL_ICON_PROPS}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
+  bar: <svg {...TOOL_ICON_PROPS}><rect x="2" y="10" width="20" height="4" rx="2" /></svg>,
+  ring: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="8" /></svg>,
+  rect: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
+  circle: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="9" /></svg>,
+  triangle: <svg {...TOOL_ICON_PROPS}><path d="M12 3l10 18H2L12 3z" /></svg>,
+  line: <svg {...TOOL_ICON_PROPS}><line x1="4" y1="20" x2="20" y2="4" /></svg>,
+  lower_third: <svg {...TOOL_ICON_PROPS}><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
 };
 
 function CreationToolbar({
@@ -3664,26 +6367,26 @@ function CreationToolbar({
   onTestEvent: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 p-3 border-b border-slate-800 bg-slate-900/50">
-      <div className="flex items-center justify-between mb-1">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tools</label>
+    <div className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3">
+      <div className="mb-1 flex items-center justify-between">
+        <label className={uiClasses.label}>Tools</label>
 
         <div className="flex gap-1">
           <button
             onClick={onGroup}
             disabled={!canGroup}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded"
-            title="Group Selection (Ctrl+G)"
+            className={`${uiClasses.iconButton} disabled:opacity-20`}
+            title={formatShortcutTooltip("group")}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>
+            <svg {...TOOL_ICON_PROPS}><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>
           </button>
           <button
             onClick={onUngroup}
             disabled={!canUngroup}
-            className="p-1.5 text-slate-400 hover:text-white disabled:opacity-20 hover:bg-slate-800 rounded"
-            title="Ungroup (Ctrl+Shift+G)"
+            className={`${uiClasses.iconButton} disabled:opacity-20`}
+            title={formatShortcutTooltip("ungroup")}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
           </button>
         </div>
       </div>
@@ -3696,7 +6399,7 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
         <ToolButton
-          icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
+          icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
           label="Conversion Selection to Component"
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
@@ -3711,21 +6414,21 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.line} label="Add Line" onClick={() => onAddShape("line")} />
       </div>
 
-      <div className="pt-3 mt-1 border-t border-slate-800 flex gap-2">
+      <div className="mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">
         <button
           onClick={onTestEvent}
-          className="flex-none px-3 py-2 rounded-lg text-xs font-semibold shadow-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700"
+          className={`${uiClasses.button} w-8 flex-none px-0`}
           title="Send Test Event"
         >
-          ⚡
+          <BoltIcon />
         </button>
 
         <button
           onClick={onSave}
           disabled={saving}
-          className={`flex-1 py-2 rounded-lg text-xs font-semibold shadow-md transition-all flex items-center justify-center gap-2 ${saveOk ? "bg-emerald-600 text-white" :
-            saveError ? "bg-red-600 text-white" :
-              "bg-indigo-600 hover:bg-indigo-500 text-white"
+          className={`flex h-8 flex-1 items-center justify-center gap-2 rounded-md border text-[12px] leading-[1.4] tracking-[-0.02em] font-semibold transition-all ${saveOk ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" :
+            saveError ? "border-red-500/40 bg-red-500/15 text-red-100" :
+              "border-indigo-400/30 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/20"
             }`}
         >
           {saving ? (
@@ -3734,28 +6437,17 @@ function CreationToolbar({
               <span>Saving...</span>
             </>
           ) : saveOk ? (
-            <><span>✓</span><span>Saved!</span></>
+            <><svg {...TOOL_ICON_PROPS}><polyline points="20 6 9 17 4 12" /></svg><span>Saved</span></>
           ) : (
             <><span>Save Changes</span></>
           )}
 
-          {saveError && <span className="ml-1 text-[10px] opacity-80">(Error)</span>}
+          {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
         </button>
       </div>
     </div>
   );
 }
-
-const LAYERS_PANEL_ICONS: Record<string, React.ReactNode> = {
-  group: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" /></svg>,
-  text: <span className="font-serif font-bold text-[10px]">T</span>,
-  image: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>,
-  video: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>,
-  box: <div className="w-2.5 h-2.5 border border-current rounded-sm" />,
-  shape: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l10 20H2L12 2z" /></svg>, // Default shape
-  mask: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v18" /><path d="M3 12h18" /><circle cx="12" cy="12" r="9" /></svg>,
-  progress: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10" strokeOpacity="0.3" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
-};
 
 function LayersPanel({
   elements,
@@ -3765,7 +6457,18 @@ function LayersPanel({
   onToggleVisible,
   onToggleLock,
   onMask,
-  onReleaseMask
+  onReleaseMask,
+  onMoveUp,
+  onMoveDown,
+  onBringToFront,
+  onSendToBack,
+  onReorderLayer,
+  renamingId,
+  renameDraft,
+  onBeginRename,
+  onRenameDraftChange,
+  onCommitRename,
+  onCancelRename
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -3775,8 +6478,21 @@ function LayersPanel({
   onToggleLock: (id: string) => void;
   onMask?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onBringToFront: (id: string) => void;
+  onSendToBack: (id: string) => void;
+  onReorderLayer: (id: string, targetId: string, placement: "before" | "after") => void;
+  renamingId: string | null;
+  renameDraft: string;
+  onBeginRename: (id: string) => void;
+  onRenameDraftChange: (value: string) => void;
+  onCommitRename: () => void;
+  onCancelRename: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const draggedIdRef = useRef<string | null>(null);
+  const [dragState, setDragState] = useState<{ draggedId: string; overId: string; placement: "before" | "after" } | null>(null);
 
   // Scroll to selection
   useEffect(() => {
@@ -3799,10 +6515,17 @@ function LayersPanel({
   const roots = layersTopToBottom.filter(el => !allChildIds.has(el.id));
 
   // Recursive render function
-  const renderItem = (el: OverlayElement, depth: number, isLastChild: boolean, parentTree: boolean[]) => {
+  const renderItem = (
+    el: OverlayElement,
+    depth: number,
+    isLastChild: boolean,
+    parentTree: boolean[],
+    roleLabel?: string
+  ) => {
     const isSelected = selectedIds.includes(el.id);
     const isVisible = el.visible !== false;
     const isLocked = el.locked === true;
+    const isRenaming = renamingId === el.id;
 
     // Find children
     const isContainer = el.type === 'group' || el.type === 'mask';
@@ -3811,19 +6534,69 @@ function LayersPanel({
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
     }
 
-    const icon = LAYERS_PANEL_ICONS[el.type] || LAYERS_PANEL_ICONS[el.type.startsWith('progress') ? 'progress' : 'box'];
-
     return (
       <React.Fragment key={el.id}>
         <div
           data-layer-id={el.id}
-          className={`
-            group flex items-center h-8 pr-2 select-none cursor-pointer border-b border-white/5 relative
-            ${isSelected ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"}
-          `}
-          style={{ paddingLeft: `${depth * 16 + 12}px` }}
+          draggable={el.locked !== true}
+          className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-500/15 text-indigo-50" : "text-slate-400 hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-200"}`}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            onBeginRename(el.id);
+          }}
+          onDragStart={(e) => {
+            if (isRenaming) {
+              e.preventDefault();
+              return;
+            }
+            e.stopPropagation();
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", el.id);
+            draggedIdRef.current = el.id;
+            setDragState({ draggedId: el.id, overId: el.id, placement: "after" });
+          }}
+          onDragOver={(e) => {
+            const draggedId = draggedIdRef.current;
+            if (!draggedId || draggedId === el.id) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const placement = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+            setDragState({ draggedId, overId: el.id, placement });
+          }}
+          onDragLeave={(e) => {
+            if (!(e.currentTarget as HTMLDivElement).contains(e.relatedTarget as Node | null)) {
+              setDragState((prev) => (prev?.overId === el.id ? null : prev));
+            }
+          }}
+          onDrop={(e) => {
+            const draggedId = draggedIdRef.current;
+            if (!draggedId || draggedId === el.id) {
+              draggedIdRef.current = null;
+              setDragState(null);
+              return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            const bounds = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+            const placement = e.clientY < bounds.top + bounds.height / 2 ? "before" : "after";
+            onReorderLayer(draggedId, el.id, placement);
+            draggedIdRef.current = null;
+            setDragState(null);
+          }}
+          onDragEnd={() => {
+            draggedIdRef.current = null;
+            setDragState(null);
+          }}
         >
+          {dragState?.overId === el.id && dragState.draggedId !== el.id && (
+            <div
+              className="absolute left-1 right-1 h-px bg-indigo-300 pointer-events-none"
+              style={{ top: dragState.placement === "before" ? 0 : undefined, bottom: dragState.placement === "after" ? 0 : undefined }}
+            />
+          )}
           {/* Tree Guides */}
           {depth > 0 && (
             <div className="absolute left-0 top-0 bottom-0 w-full pointer-events-none overflow-hidden">
@@ -3831,62 +6604,97 @@ function LayersPanel({
                 hasNextSibling && (
                   <div
                     key={idx}
-                    className="absolute bg-slate-700/30 w-px top-0 bottom-0"
-                    style={{ left: `${idx * 16 + 15}px` }}
+                    className="absolute top-0 bottom-0 w-px bg-[rgba(255,255,255,0.08)]"
+                    style={{ left: `${idx * 16 + 11}px` }}
                   />
                 )
               ))}
               <div
-                className="absolute bg-slate-700/50 w-px top-0 h-4"
-                style={{ left: `${depth * 16 - 1}px` }}
+                className="absolute top-0 h-3 w-px bg-[rgba(255,255,255,0.12)]"
+                style={{ left: `${depth * 16 - 5}px` }}
               />
               <div
-                className="absolute bg-slate-700/50 h-px w-2 top-4"
-                style={{ left: `${depth * 16 - 1}px` }}
+                className="absolute top-3 h-px w-3 bg-[rgba(255,255,255,0.12)]"
+                style={{ left: `${depth * 16 - 5}px` }}
               />
             </div>
           )}
 
-          {/* Icon */}
-          <span className={`w-5 flex items-center justify-center opacity-70 mr-2 flex-shrink-0 ${isSelected ? "text-white" : "text-slate-500"}`}>
-            {icon}
-          </span>
-
           {/* Label */}
-          <span className="flex-1 text-xs truncate font-medium">
-            {el.name || defaultElementLabel(el)}
-          </span>
+          {isRenaming ? (
+            <input
+              autoFocus
+              value={renameDraft}
+              onChange={(e) => onRenameDraftChange(e.target.value)}
+              onBlur={onCommitRename}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") onCommitRename();
+                if (e.key === "Escape") onCancelRename();
+              }}
+              className={`min-w-0 flex-1 ${uiClasses.field} h-6`}
+            />
+          ) : (
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
+                {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
+              </div>
+              {roleLabel && (
+                <div className="truncate text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  {roleLabel}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Controls (Hover/Selected) */}
-          <div className={`flex items-center gap-1 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+          <div
+            className={`flex flex-shrink-0 items-center gap-1 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              }`}
+          >
             <button
               onClick={(e) => { e.stopPropagation(); onToggleLock(el.id); }}
-              className={`p-1 rounded hover:bg-white/10 ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
+              className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
+              title={isLocked ? "Unlock" : "Lock"}
             >
-              {isLocked ? "🔒" : "🔓"}
+              <span className="relative -top-px flex items-center justify-center">
+                {isLocked ? <LockIcon /> : <UnlockIcon />}
+              </span>
             </button>
+
             <button
               onClick={(e) => { e.stopPropagation(); onToggleVisible(el.id); }}
-              className={`p-1 rounded hover:bg-white/10 ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
+              className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
+              title={isVisible ? "Hide" : "Show"}
             >
-              {isVisible ? "👁️" : "🙈"}
+              <span className="relative -top-px flex items-center justify-center">
+                {isVisible ? <EyeIcon /> : <EyeOffIcon />}
+              </span>
             </button>
-            {el.type === 'shape' && onMask && (
+
+            {el.type === "shape" && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
-                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-indigo-400"
+                className={`${uiClasses.iconButton} hover:text-indigo-400`}
                 title="Use as Mask"
               >
-                🎭
+                <span className="relative -top-px flex items-center justify-center">
+                  <MaskIcon />
+                </span>
               </button>
             )}
-            {el.type === 'mask' && onReleaseMask && (
+
+            {el.type === "mask" && onReleaseMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onReleaseMask(el.id); }}
-                className="p-1 rounded hover:bg-white/10 text-slate-500 hover:text-red-400"
+                className={`${uiClasses.iconButton} hover:text-red-400`}
                 title="Release Mask"
               >
-                🔓
+                <span className="relative -top-px flex items-center justify-center">
+                  <UnlockIcon />
+                </span>
               </button>
             )}
           </div>
@@ -3895,7 +6703,15 @@ function LayersPanel({
         {/* Render children if group */}
         {children.length > 0 && (
           <div className="relative">
-            {children.map((c, idx) => renderItem(c, depth + 1, idx === children.length - 1, [...parentTree, !isLastChild]))}
+            {children.map((c, idx) =>
+              renderItem(
+                c,
+                depth + 1,
+                idx === children.length - 1,
+                [...parentTree, !isLastChild],
+                el.type === "mask" ? (idx === 0 ? "Mask Shape" : "Mask Content") : undefined
+              )
+            )}
           </div>
         )}
       </React.Fragment>
@@ -3903,8 +6719,8 @@ function LayersPanel({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-col h-full bg-slate-900 overflow-y-auto pb-10 custom-scrollbar">
-      {roots.length === 0 && <div className="p-4 text-xs text-slate-600 text-center italic">No layers</div>}
+    <div ref={containerRef} className="flex h-full flex-col overflow-y-auto bg-[#111113] pb-10 custom-scrollbar">
+      {roots.length === 0 && <div className="p-4 text-center text-[12px] leading-[1.4] italic text-slate-600">No layers</div>}
       {roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))}
     </div>
   );
@@ -3919,8 +6735,8 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
   if (!components || components.length === 0) {
     return (
       <div className="p-4 text-center">
-        <div className="text-slate-400 text-sm mb-2">No Components Found</div>
-        <div className="text-slate-600 text-xs">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
+        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Components Found</div>
+        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
       </div>
     );
   }
@@ -3933,35 +6749,35 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete }: {
         return (
           <div
             key={comp.id}
-            className="group relative flex items-center justify-between p-3 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500 cursor-pointer transition-colors"
+            className="group relative flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] p-3 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20] cursor-pointer"
             onClick={() => onInsert(comp)}
           >
             <div className="flex flex-col truncate">
-              <span className="text-sm font-semibold text-slate-200 truncate pr-2" title={comp.name}>{comp.name}</span>
-              <span className="text-[10px] text-slate-500 mt-0.5">{comp.elements?.length || 0} nodes</span>
+              <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
+              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">{comp.elements?.length || 0} nodes</span>
             </div>
-            <div className="flex items-center gap-1.5 translate-x-2 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
               <button
-                className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-slate-600 transition-colors border border-slate-700"
+                className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
                 title="Edit Master"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
               {!isBuiltin && (
                 <button
-                  className="text-slate-400 hover:text-red-400 p-1.5 rounded-md bg-slate-900/50 hover:bg-red-900/30 transition-colors border border-slate-700"
+                  className={`${uiClasses.iconButton} hover:text-red-400`}
                   onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
                   title="Delete"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  <svg {...TOOL_ICON_PROPS}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
               )}
               <button
-                className="text-slate-400 hover:text-white p-1.5 rounded-md bg-slate-900/50 hover:bg-indigo-600 transition-colors border border-slate-700"
+                className={`${uiClasses.iconButton} hover:bg-indigo-500/15 hover:text-indigo-100`}
                 title="Insert Instance"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               </button>
             </div>
           </div>
