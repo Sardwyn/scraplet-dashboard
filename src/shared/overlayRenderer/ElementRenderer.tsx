@@ -306,6 +306,8 @@ function renderPathSvg(
             d={pathD}
             fill={style.fill ?? "none"}
             fillOpacity={style.fillOpacity}
+            fillRule="evenodd"
+            clipRule="evenodd"
             stroke={style.stroke}
             strokeWidth={style.strokeWidth}
             strokeOpacity={style.strokeOpacity}
