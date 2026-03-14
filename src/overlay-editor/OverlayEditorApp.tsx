@@ -460,6 +460,82 @@ function getElementWithDraft(
   } as AnyEl;
 }
 
+type PathAnchor = {
+  commandIndex: number;
+  x: number;
+  y: number;
+};
+
+function getPathAnchors(path: OverlayPath): PathAnchor[] {
+  const anchors: PathAnchor[] = [];
+  path.commands.forEach((command, commandIndex) => {
+    if (command.type === "move" || command.type === "line" || command.type === "curve") {
+      anchors.push({ commandIndex, x: command.x, y: command.y });
+    }
+  });
+  return anchors;
+}
+
+function updatePathAnchor(path: OverlayPath, commandIndex: number, nextPoint: { x: number; y: number }) {
+  const commands = path.commands.map((command) => ({ ...command })) as PathCommand[];
+  const current = commands[commandIndex] as any;
+  if (!current || current.type === "close") return path;
+  const dx = nextPoint.x - current.x;
+  const dy = nextPoint.y - current.y;
+  current.x = nextPoint.x;
+  current.y = nextPoint.y;
+  if (current.type === "curve") {
+    current.x2 += dx;
+    current.y2 += dy;
+  }
+
+  const nextCurve = commands[commandIndex + 1] as any;
+  if (nextCurve?.type === "curve") {
+    nextCurve.x1 += dx;
+    nextCurve.y1 += dy;
+  }
+
+  const prevCurve = commands[commandIndex - 1] as any;
+  if (prevCurve?.type === "curve") {
+    prevCurve.x2 += dx;
+    prevCurve.y2 += dy;
+  }
+
+  return { commands };
+}
+
+function removePathAnchor(path: OverlayPath, commandIndex: number) {
+  const removable = getPathAnchors(path);
+  if (removable.length <= 2) return path;
+  const commands = path.commands.filter((_, index) => index !== commandIndex);
+  const firstDrawableIndex = commands.findIndex((command) => command.type !== "close");
+  if (firstDrawableIndex >= 0 && commands[firstDrawableIndex].type !== "move") {
+    commands[firstDrawableIndex] = { ...(commands[firstDrawableIndex] as any), type: "move" };
+  }
+  return { commands };
+}
+
+function addPathAnchorAfterSelection(path: OverlayPath, commandIndex: number) {
+  const anchors = getPathAnchors(path);
+  const currentAnchorIndex = anchors.findIndex((anchor) => anchor.commandIndex === commandIndex);
+  if (currentAnchorIndex === -1) return path;
+  const currentAnchor = anchors[currentAnchorIndex];
+  const isClosed = path.commands.some((command) => command.type === "close");
+  const nextAnchor = anchors[currentAnchorIndex + 1] ?? (isClosed ? anchors[0] : undefined);
+  if (!nextAnchor) return path;
+  const midpoint = {
+    x: (currentAnchor.x + nextAnchor.x) / 2,
+    y: (currentAnchor.y + nextAnchor.y) / 2,
+  };
+  const nextCommands = [...path.commands];
+  const insertIndex =
+    currentAnchorIndex === anchors.length - 1 && isClosed
+      ? nextCommands.findIndex((command) => command.type === "close")
+      : nextAnchor.commandIndex;
+  nextCommands.splice(Math.max(0, insertIndex), 0, { type: "line", ...midpoint } as PathCommand);
+  return { commands: nextCommands };
+}
+
 function hasVerticalOverlap(a: ReturnType<typeof rectFromEl>, b: ReturnType<typeof rectFromEl>) {
   return Math.min(a.b, b.b) - Math.max(a.t, b.t) > 12;
 }
@@ -783,6 +859,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const [draftElementPatches, setDraftElementPatches] = useState<Record<string, Partial<AnyEl>>>({});
+  const [selectedPathAnchor, setSelectedPathAnchor] = useState<{ elementId: string; commandIndex: number } | null>(null);
+  const [pathAnchorDragSession, setPathAnchorDragSession] = useState<{
+    elementId: string;
+    commandIndex: number;
+    startStage: { x: number; y: number };
+    originPath: OverlayPath;
+    rotationDeg: number;
+  } | null>(null);
   const rotationDragRef = useRef<{ id: string; cx: number; cy: number } | null>(null);
   const [primaryDragSession, setPrimaryDragSession] = useState<{
     id: string;
@@ -1105,6 +1189,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!primarySelectedId) return null;
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
+
+  useEffect(() => {
+    if (!selectedPathAnchor) return;
+    if (primarySelectedEl?.type !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
+      setSelectedPathAnchor(null);
+    }
+  }, [primarySelectedEl, selectedPathAnchor]);
 
   const selectedTimelineState = useMemo(() => {
     if (!primarySelectedId) {
@@ -1545,8 +1636,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const { width: bw, height: bh } = baseResolution;
 
     // Defaults matching requirements
-    const w = kind === "line" ? 200 : 200;
-    const h = kind === "line" ? 40 : 200;
+    const w = kind === "line" ? 200 : kind === "arrow" ? 260 : 200;
+    const h = kind === "line" ? 40 : kind === "arrow" ? 140 : 200;
 
     // Center in base resolution
     const x = Math.round(bw / 2 - w / 2);
@@ -1555,7 +1646,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const el: AnyEl = {
       id,
       type: "shape" as any,
-      name: kind === "rect" ? "Rectangle" : kind === "circle" ? "Circle" : kind === "line" ? "Line" : "Triangle",
+      name:
+        kind === "rect"
+          ? "Rectangle"
+          : kind === "circle"
+            ? "Circle"
+            : kind === "line"
+              ? "Line"
+              : kind === "polygon"
+                ? "Polygon"
+                : kind === "star"
+                  ? "Star"
+                  : kind === "arrow"
+                    ? "Arrow"
+                    : "Triangle",
       x,
       y,
       width: w,
@@ -1570,6 +1674,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       strokeOpacity: 1,
       strokeDash: [],
       cornerRadiusPx: 0,
+      polygon: kind === "polygon" ? { sides: 6, rotationDeg: -90 } : undefined,
+      star: kind === "star" ? { points: 5, innerRatio: 0.5, rotationDeg: -90 } : undefined,
+      arrow: kind === "arrow" ? { direction: "right", shaftRatio: 0.42, headRatio: 0.34 } : undefined,
     } as any;
 
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
@@ -1723,6 +1830,21 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       removeIds: [primarySelectedEl.id],
       insertAtId: primarySelectedEl.id,
     });
+  }
+
+  function addSelectedPathNode() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    updateElement(primarySelectedEl.id, {
+      path: addPathAnchorAfterSelection((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+    } as any);
+  }
+
+  function removeSelectedPathNode() {
+    if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
+    updateElement(primarySelectedEl.id, {
+      path: removePathAnchor((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+    } as any);
+    setSelectedPathAnchor(null);
   }
 
   function commitPenDraft(closePath = false) {
@@ -2688,6 +2810,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         return;
       }
 
+      if (selectedPathAnchor && primarySelectedEl?.type === "path" && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        updateElement(primarySelectedEl.id, {
+          path: removePathAnchor((primarySelectedEl as any).path, selectedPathAnchor.commandIndex),
+        } as any);
+        setSelectedPathAnchor(null);
+        return;
+      }
+
       // Delete (primary selection)
       if (hasSel && (e.key === "Delete" || e.key === "Backspace")) {
         e.preventDefault();
@@ -2768,7 +2899,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeCreationTool, commitPenDraft, primarySelectedEl, selectedIds, selectedEls, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
+  }, [activeCreationTool, commitPenDraft, primarySelectedEl, selectedIds, selectedEls, selectedPathAnchor, selectionHasLocked, snapEnabled, gridSize, showShortcutModal, timelinePlayheadMs, showEditorStatus]);
 
   // ===== Pan handlers =====
   const beginPan = useCallback(
@@ -3166,6 +3297,61 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.removeEventListener("mouseup", onUp as any);
     };
   }, [clientToStage, draftRadiusValues, elementsById, radiusDragSession]);
+
+  useEffect(() => {
+    if (!pathAnchorDragSession) return;
+
+    const onMove = (e: MouseEvent) => {
+      e.preventDefault();
+      const active = pathAnchorDragSession;
+      const stagePoint = clientToStage(e.clientX, e.clientY);
+      if (!stagePoint) return;
+      const deltaWorld = {
+        x: stagePoint.x - active.startStage.x,
+        y: stagePoint.y - active.startStage.y,
+      };
+      const deltaLocal = rotateVector(deltaWorld.x, deltaWorld.y, -active.rotationDeg);
+      const originAnchor = getPathAnchors(active.originPath).find((anchor) => anchor.commandIndex === active.commandIndex);
+      if (!originAnchor) return;
+      const nextPath = updatePathAnchor(active.originPath, active.commandIndex, {
+        x: originAnchor.x + deltaLocal.x,
+        y: originAnchor.y + deltaLocal.y,
+      });
+      setDraftElementPatches((prev) => ({
+        ...prev,
+        [active.elementId]: {
+          ...(prev[active.elementId] ?? {}),
+          path: nextPath,
+        },
+      }));
+    };
+
+    const onUp = () => {
+      const active = pathAnchorDragSession;
+      setPathAnchorDragSession(null);
+      const patch = draftElementPatches[active.elementId];
+      const nextPath = patch?.path as OverlayPath | undefined;
+      if (nextPath) {
+        updateElement(active.elementId, { path: nextPath } as any);
+      }
+      setDraftElementPatches((prev) => {
+        const next = { ...prev };
+        if (next[active.elementId]) {
+          next[active.elementId] = { ...next[active.elementId] };
+          delete next[active.elementId].path;
+          if (!Object.keys(next[active.elementId]).length) delete next[active.elementId];
+        }
+        return next;
+      });
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: false } as any);
+    window.addEventListener("mouseup", onUp, { passive: false } as any);
+    return () => {
+      window.removeEventListener("mousemove", onMove as any);
+      window.removeEventListener("mouseup", onUp as any);
+    };
+  }, [clientToStage, draftElementPatches, pathAnchorDragSession]);
 
   const getMarqueeRect = useCallback(() => {
     if (!marquee.active || !marquee.start || !marquee.cur) return null;
@@ -4526,6 +4712,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   ...(draftRadius !== undefined ? getRadiusPatch(el, draftRadius) : {}),
                   ...(draftPatch ? draftPatch : {}),
                 } as AnyEl);
+                const editablePath = renderedEl.type === "path" ? elementToOverlayPath(renderedEl as any) : null;
+                const pathAnchors = editablePath ? getPathAnchors(editablePath) : [];
                 const radiusValue = clamp(
                   draftRadius ?? getElementRadiusValue(renderedEl),
                   0,
@@ -4631,6 +4819,38 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                                 setResizeStatus({ x: x ?? 0, y: y ?? 0, width: w ?? 0, height: h ?? 0 });
                               }}
                               aria-label={`Resize ${handle}`}
+                            />
+                          ))}
+                          {renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => (
+                            <button
+                              key={`${el.id}_anchor_${anchor.commandIndex}`}
+                              type="button"
+                              className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${
+                                selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex
+                                  ? "border-indigo-100 bg-indigo-300"
+                                  : "border-white bg-[#111113]"
+                              }`}
+                              style={{ left: anchor.x, top: anchor.y, cursor: "grab", pointerEvents: "auto" }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                                if (!stagePoint || !editablePath) return;
+                                setSelectedPathAnchor({ elementId: el.id, commandIndex: anchor.commandIndex });
+                                setPathAnchorDragSession({
+                                  elementId: el.id,
+                                  commandIndex: anchor.commandIndex,
+                                  startStage: stagePoint,
+                                  originPath: editablePath,
+                                  rotationDeg,
+                                });
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedPathAnchor({ elementId: el.id, commandIndex: anchor.commandIndex });
+                              }}
+                              title={`Path point ${anchorIndex + 1}`}
                             />
                           ))}
                           {supportsRadiusHandle(renderedEl) && (
@@ -4866,6 +5086,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onReleaseBoolean={ungroupSelected}
             onFlattenBoolean={flattenBooleanSelected}
             onConvertToPath={convertSelectedToPath}
+            selectedPathAnchor={selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null}
+            onAddPathNode={addSelectedPathNode}
+            onRemovePathNode={removeSelectedPathNode}
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
             timelineState={selectedTimelineState}
@@ -4977,6 +5200,9 @@ interface InspectorProps {
   onReleaseBoolean?: () => void;
   onFlattenBoolean?: () => void;
   onConvertToPath?: () => void;
+  selectedPathAnchor?: number | null;
+  onAddPathNode?: () => void;
+  onRemovePathNode?: () => void;
   previewVisible?: boolean;
   onPreviewVisibilityAction?: (action: "enter" | "exit" | "reset") => void;
   timelineState?: {
@@ -5312,6 +5538,7 @@ function InspectorPanel({
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
   onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath,
+  selectedPathAnchor, onAddPathNode, onRemovePathNode,
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
@@ -5401,6 +5628,26 @@ function InspectorPanel({
                 >
                   Release Boolean
                 </button>
+              </div>
+            )}
+            {element.type === "path" && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  onClick={() => onAddPathNode?.()}
+                  className={`${uiClasses.buttonGhost} h-7`}
+                >
+                  Add Point
+                </button>
+                <button
+                  onClick={() => onRemovePathNode?.()}
+                  disabled={selectedPathAnchor == null}
+                  className={`${uiClasses.buttonGhost} h-7 disabled:opacity-30`}
+                >
+                  Remove Point
+                </button>
+                <div className="flex items-center text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                  {selectedPathAnchor == null ? "Select a path point to edit it." : `Selected point #${selectedPathAnchor + 1}`}
+                </div>
               </div>
             )}
           </div>
@@ -5753,9 +6000,82 @@ function InspectorPanel({
                     <option value="rect">Rectangle</option>
                     <option value="circle">Circle</option>
                     <option value="triangle">Triangle</option>
+                    <option value="polygon">Polygon</option>
+                    <option value="star">Star</option>
+                    <option value="arrow">Arrow</option>
                     <option value="line">Line</option>
                   </select>
                 </div>
+              )}
+
+              {element.type === "shape" && (element as any).shape === "polygon" && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Sides</label>
+                  <NumberField
+                    label=""
+                    value={(element as any).polygon?.sides ?? 6}
+                    onChange={(v) => onChange({ polygon: { ...(element as any).polygon, sides: Math.max(3, Math.round(v)) } } as any)}
+                    noLabel
+                    className="flex-1"
+                  />
+                </div>
+              )}
+
+              {element.type === "shape" && (element as any).shape === "star" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Points</label>
+                    <NumberField
+                      label=""
+                      value={(element as any).star?.points ?? 5}
+                      onChange={(v) => onChange({ star: { ...(element as any).star, points: Math.max(3, Math.round(v)) } } as any)}
+                      noLabel
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Inner</label>
+                    <div className="w-16 relative">
+                      <NumberField
+                        label=""
+                        value={Math.round(((element as any).star?.innerRatio ?? 0.5) * 100)}
+                        onChange={(v) => onChange({ star: { ...(element as any).star, innerRatio: clamp(v / 100, 0.05, 0.95) } } as any)}
+                        noLabel
+                      />
+                      <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {element.type === "shape" && (element as any).shape === "arrow" && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Dir</label>
+                    <select
+                      className={`flex-1 ${fieldClass}`}
+                      value={(element as any).arrow?.direction ?? "right"}
+                      onChange={(e) => onChange({ arrow: { ...(element as any).arrow, direction: e.target.value } } as any)}
+                    >
+                      <option value="right">Right</option>
+                      <option value="left">Left</option>
+                      <option value="up">Up</option>
+                      <option value="down">Down</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Shaft</label>
+                    <div className="w-16 relative">
+                      <NumberField
+                        label=""
+                        value={Math.round(((element as any).arrow?.shaftRatio ?? 0.42) * 100)}
+                        onChange={(v) => onChange({ arrow: { ...(element as any).arrow, shaftRatio: clamp(v / 100, 0.1, 0.8) } } as any)}
+                        noLabel
+                      />
+                      <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+                    </div>
+                  </div>
+                </>
               )}
 
               {element.type === "boolean" && (
@@ -6849,6 +7169,9 @@ const TOOLBAR_ICONS: Record<string, React.ReactNode> = {
   rect: <svg {...TOOL_ICON_PROPS}><rect x="4" y="4" width="16" height="16" rx="1" /></svg>,
   circle: <svg {...TOOL_ICON_PROPS}><circle cx="12" cy="12" r="9" /></svg>,
   triangle: <svg {...TOOL_ICON_PROPS}><path d="M12 3l10 18H2L12 3z" /></svg>,
+  polygon: <svg {...TOOL_ICON_PROPS}><path d="M12 3l8 5v8l-8 5-8-5V8l8-5Z" /></svg>,
+  star: <svg {...TOOL_ICON_PROPS}><path d="m12 3 2.6 5.8 6.4.6-4.8 4.2 1.4 6.4L12 17l-5.6 3 1.4-6.4L3 9.4l6.4-.6L12 3Z" /></svg>,
+  arrow: <svg {...TOOL_ICON_PROPS}><path d="M4 12h10" /><path d="m11 6 7 6-7 6" /></svg>,
   line: <svg {...TOOL_ICON_PROPS}><line x1="4" y1="20" x2="20" y2="4" /></svg>,
   lower_third: <svg {...TOOL_ICON_PROPS}><rect x="2" y="14" width="20" height="6" rx="1" /><line x1="2" y1="14" x2="22" y2="14" /></svg>
 };
@@ -6877,7 +7200,7 @@ function CreationToolbar({
 }: {
   onAddText: () => void;
   onAddBox: () => void;
-  onAddShape: (type: "rect" | "circle" | "triangle" | "line") => void;
+  onAddShape: (type: OverlayShapeKind) => void;
   onTogglePenTool: () => void;
   penToolActive: boolean;
   onAddImage: () => void;
@@ -6943,6 +7266,9 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.circle} label="Add Circle" onClick={() => onAddShape("circle")} />
         <ToolButton icon={TOOLBAR_ICONS.triangle} label="Add Triangle" onClick={() => onAddShape("triangle")} />
         <ToolButton icon={TOOLBAR_ICONS.line} label="Add Line" onClick={() => onAddShape("line")} />
+        <ToolButton icon={TOOLBAR_ICONS.polygon} label="Add Polygon" onClick={() => onAddShape("polygon")} />
+        <ToolButton icon={TOOLBAR_ICONS.star} label="Add Star" onClick={() => onAddShape("star")} />
+        <ToolButton icon={TOOLBAR_ICONS.arrow} label="Add Arrow" onClick={() => onAddShape("arrow")} />
       </div>
 
       <div className="mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">

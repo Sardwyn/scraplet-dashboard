@@ -110,6 +110,111 @@ function trianglePath(width: number, height: number, direction: OverlayShapeElem
   return { commands };
 }
 
+function regularPolygonPath(width: number, height: number, sides = 6, rotationDeg = -90): OverlayPath {
+  const count = Math.max(3, Math.round(sides));
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2;
+  const ry = height / 2;
+  const radOffset = (rotationDeg * Math.PI) / 180;
+  const commands: PathCommand[] = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = radOffset + (i / count) * Math.PI * 2;
+    const x = cx + Math.cos(angle) * rx;
+    const y = cy + Math.sin(angle) * ry;
+    if (i === 0) pushMove(commands, x, y);
+    else pushLine(commands, x, y);
+  }
+  pushClose(commands);
+  return { commands };
+}
+
+function starPath(width: number, height: number, points = 5, innerRatio = 0.5, rotationDeg = -90): OverlayPath {
+  const count = Math.max(3, Math.round(points));
+  const cx = width / 2;
+  const cy = height / 2;
+  const outerRx = width / 2;
+  const outerRy = height / 2;
+  const innerRx = outerRx * Math.max(0.05, Math.min(innerRatio, 0.95));
+  const innerRy = outerRy * Math.max(0.05, Math.min(innerRatio, 0.95));
+  const radOffset = (rotationDeg * Math.PI) / 180;
+  const commands: PathCommand[] = [];
+
+  for (let i = 0; i < count * 2; i += 1) {
+    const outer = i % 2 === 0;
+    const radiusX = outer ? outerRx : innerRx;
+    const radiusY = outer ? outerRy : innerRy;
+    const angle = radOffset + (i / (count * 2)) * Math.PI * 2;
+    const x = cx + Math.cos(angle) * radiusX;
+    const y = cy + Math.sin(angle) * radiusY;
+    if (i === 0) pushMove(commands, x, y);
+    else pushLine(commands, x, y);
+  }
+  pushClose(commands);
+  return { commands };
+}
+
+function arrowPath(
+  width: number,
+  height: number,
+  direction: NonNullable<OverlayShapeElement["arrow"]>["direction"] = "right",
+  shaftRatio = 0.42,
+  headRatio = 0.34
+): OverlayPath {
+  const shaft = Math.max(0.1, Math.min(shaftRatio, 0.8));
+  const head = Math.max(0.15, Math.min(headRatio, 0.8));
+  const horizontal = direction === "left" || direction === "right";
+  const shaftHalf = ((horizontal ? height : width) * shaft) / 2;
+  const headStart = (horizontal ? width : height) * (1 - head);
+
+  const points =
+    direction === "left"
+      ? [
+          { x: width, y: height / 2 - shaftHalf },
+          { x: width - headStart, y: height / 2 - shaftHalf },
+          { x: width - headStart, y: 0 },
+          { x: 0, y: height / 2 },
+          { x: width - headStart, y: height },
+          { x: width - headStart, y: height / 2 + shaftHalf },
+          { x: width, y: height / 2 + shaftHalf },
+        ]
+      : direction === "up"
+        ? [
+            { x: width / 2 - shaftHalf, y: height },
+            { x: width / 2 - shaftHalf, y: headStart },
+            { x: 0, y: headStart },
+            { x: width / 2, y: 0 },
+            { x: width, y: headStart },
+            { x: width / 2 + shaftHalf, y: headStart },
+            { x: width / 2 + shaftHalf, y: height },
+          ]
+        : direction === "down"
+          ? [
+              { x: width / 2 - shaftHalf, y: 0 },
+              { x: width / 2 - shaftHalf, y: height - headStart },
+              { x: 0, y: height - headStart },
+              { x: width / 2, y: height },
+              { x: width, y: height - headStart },
+              { x: width / 2 + shaftHalf, y: height - headStart },
+              { x: width / 2 + shaftHalf, y: 0 },
+            ]
+          : [
+              { x: 0, y: height / 2 - shaftHalf },
+              { x: headStart, y: height / 2 - shaftHalf },
+              { x: headStart, y: 0 },
+              { x: width, y: height / 2 },
+              { x: headStart, y: height },
+              { x: headStart, y: height / 2 + shaftHalf },
+              { x: 0, y: height / 2 + shaftHalf },
+            ];
+  const commands: PathCommand[] = [];
+  pushMove(commands, points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i += 1) pushLine(commands, points[i].x, points[i].y);
+  pushClose(commands);
+  return { commands };
+}
+
 function linePath(width: number, height: number, line?: OverlayShapeElement["line"]): OverlayPath {
   return {
     commands: [
@@ -131,6 +236,12 @@ export function shapeElementToPath(shape: OverlayShapeElement): OverlayPath {
       return ellipsePath(width, height);
     case "triangle":
       return trianglePath(width, height, shape.triangle?.direction);
+    case "polygon":
+      return regularPolygonPath(width, height, shape.polygon?.sides, shape.polygon?.rotationDeg);
+    case "star":
+      return starPath(width, height, shape.star?.points, shape.star?.innerRatio, shape.star?.rotationDeg);
+    case "arrow":
+      return arrowPath(width, height, shape.arrow?.direction, shape.arrow?.shaftRatio, shape.arrow?.headRatio);
     case "line":
       return linePath(width, height, shape.line);
     case "rect":

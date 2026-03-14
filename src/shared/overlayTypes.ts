@@ -267,7 +267,7 @@ export interface OverlayBoxElement extends OverlayElementBase {
    SHAPES
 ========================= */
 
-export type OverlayShapeKind = "rect" | "circle" | "line" | "triangle";
+export type OverlayShapeKind = "rect" | "circle" | "line" | "triangle" | "polygon" | "star" | "arrow";
 
 export type OverlayStrokeLineCap = "butt" | "round" | "square";
 export type OverlayStrokeLineJoin = "miter" | "round" | "bevel";
@@ -307,6 +307,23 @@ export interface OverlayShapeElement extends OverlayElementBase {
    */
   triangle?: {
     direction?: "up" | "down" | "left" | "right";
+  };
+
+  polygon?: {
+    sides?: number;
+    rotationDeg?: number;
+  };
+
+  star?: {
+    points?: number;
+    innerRatio?: number;
+    rotationDeg?: number;
+  };
+
+  arrow?: {
+    direction?: "up" | "down" | "left" | "right";
+    shaftRatio?: number;
+    headRatio?: number;
   };
 }
 
