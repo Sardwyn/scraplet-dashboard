@@ -205,8 +205,58 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
         if (!msg.data) return;
         const packet = JSON.parse(msg.data);
         const { header, payload } = packet || {};
+        const componentInstanceId = header?.scope?.componentInstanceId;
 
         console.log("[OverlayEvents] Packet:", header?.type, payload);
+
+        if (componentInstanceId && String(header?.type || "").startsWith("component.")) {
+          const instance = elements.find(
+            (element) => element.id === componentInstanceId && element.type === "componentInstance"
+          ) as any;
+
+          if (instance) {
+            setOverrides((prev) => {
+              const current = (prev[componentInstanceId] || {}) as any;
+              const next = { ...prev };
+              const nextInstance = { ...current };
+              const currentPropOverrides = {
+                ...(instance.propOverrides || {}),
+                ...(current.propOverrides || {}),
+              };
+              const currentRuntimeState = {
+                ...(instance.runtimeState || {}),
+                ...(current.runtimeState || {}),
+              };
+
+              if (header.type === "component.show") {
+                nextInstance.visible = true;
+              } else if (header.type === "component.hide") {
+                nextInstance.visible = false;
+              } else if (header.type === "component.setProp") {
+                nextInstance.propOverrides = {
+                  ...currentPropOverrides,
+                  ...((payload && payload.patch) || {}),
+                };
+              } else if (header.type === "component.setState") {
+                nextInstance.runtimeState = {
+                  ...currentRuntimeState,
+                  ...((payload && payload.patch) || {}),
+                };
+              } else if (header.type === "component.dispatch") {
+                nextInstance.runtimeState = {
+                  ...currentRuntimeState,
+                  ...((payload && payload.data && typeof payload.data === "object") ? payload.data : {}),
+                  __dispatchEvent: payload?.event || "",
+                  __dispatchTs: String(header.ts || Date.now()),
+                };
+              }
+
+              next[componentInstanceId] = nextInstance;
+              return next;
+            });
+          }
+        }
+
         // Producer → Overlay events
         if (header?.type === "overlay.lower_third.show") {
           // 1. Resolve payload

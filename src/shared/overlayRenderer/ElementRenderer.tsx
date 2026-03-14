@@ -990,7 +990,7 @@ export function ElementRenderer({
             );
         }
 
-        const mergedData = { ...data, ...inst.propOverrides };
+        const mergedData = { ...data, ...(inst.runtimeState || {}), ...inst.propOverrides };
         const masterElementsById = Object.fromEntries(def.elements.map((e) => [e.id, e]));
 
         const childIds = new Set<string>();

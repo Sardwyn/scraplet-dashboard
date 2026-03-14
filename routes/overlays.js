@@ -4,6 +4,7 @@ import db from "../db.js";
 import crypto from "crypto";
 import requireAuth from "../utils/requireAuth.js";
 import { overlayGate } from "../services/overlayGate.js";
+import { OVERLAY_RUNTIME_PACKET_V1 } from "../packages/contracts/overlayRuntime.js";
 
 const router = express.Router();
 
@@ -198,6 +199,7 @@ router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
 
     const packet = {
       header: {
+        version: OVERLAY_RUNTIME_PACKET_V1,
         id: uuid,
         type: req.body.type || "test.ping",
         ts: Date.now(),
@@ -232,5 +234,3 @@ router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
 
 
 export default router;
-
-

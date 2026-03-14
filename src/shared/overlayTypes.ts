@@ -655,6 +655,7 @@ export interface OverlayComponentInstanceElement extends OverlayElementBase {
   type: "componentInstance";
   componentId: string; // The ID of the OverlayComponentDef this instantiates
   propOverrides: Record<string, any>; // User-edited field overrides matching propsSchema
+  runtimeState?: Record<string, any>;
 }
 
 export interface OverlayComponentDef {

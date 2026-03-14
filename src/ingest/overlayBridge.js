@@ -1,6 +1,7 @@
 import db from "../../db.js";
 import { overlayGate } from "../../services/overlayGate.js";
 import crypto from "crypto";
+import { OVERLAY_RUNTIME_PACKET_V1 } from "../../packages/contracts/overlayRuntime.js";
 
 // Allowed Event Types (Conservative V1 list)
 const ALLOWED_TYPES = new Set([
@@ -81,6 +82,7 @@ export async function publishOverlayIngestEvent(tenantId, normalizedEvent, { pla
         for (const row of rows) {
             const packet = {
                 header: {
+                    version: OVERLAY_RUNTIME_PACKET_V1,
                     id: uuid,
                     type: gateType,
                     ts: ts,

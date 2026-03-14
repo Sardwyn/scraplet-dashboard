@@ -1,32 +1,14 @@
 import Redis from "ioredis";
+import {
+  OVERLAY_RUNTIME_PACKET_V1,
+  assertOverlayRuntimePacketV1,
+} from "../packages/contracts/overlayRuntime.js";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
 const pub = new Redis(REDIS_URL);
 
 const HEARTBEAT_INTERVAL_MS = 20000;
-
-// Strict Packet Validator (same as before)
-function validatePacket(packet) {
-  if (!packet || typeof packet !== "object") throw new Error("Packet must be an object");
-  if (!packet.header || typeof packet.header !== "object") throw new Error("Packet header missing");
-
-  const h = packet.header;
-  if (!h.id || typeof h.id !== "string") throw new Error("header.id missing or invalid");
-  if (!h.type || typeof h.type !== "string") throw new Error("header.type missing or invalid");
-  if (!h.ts || typeof h.ts !== "number") throw new Error("header.ts missing or invalid");
-
-  if (!h.producer) throw new Error("header.producer missing");
-  if (!h.platform) throw new Error("header.platform missing");
-
-  if (!h.scope || typeof h.scope !== "object") throw new Error("header.scope missing");
-  if (!h.scope.tenantId) throw new Error("header.scope.tenantId missing");
-  if (!h.scope.overlayPublicId) throw new Error("header.scope.overlayPublicId missing");
-
-  if (!packet.payload || typeof packet.payload !== "object") {
-    throw new Error("packet.payload missing or invalid");
-  }
-}
 
 function channelKey(tenantId, publicId) {
   return `overlay:${tenantId}:${publicId}`;
@@ -90,10 +72,20 @@ export const overlayGate = {
     const channel = channelKey(tenantId, publicId);
 
     try {
-      validatePacket(packet);
+      assertOverlayRuntimePacketV1(packet, { allowLegacy: true });
     } catch (e) {
       console.error("[OverlayGate] Packet validation failed:", e.message, packet);
       return;
+    }
+
+    if (!packet.header.version) {
+      packet = {
+        ...packet,
+        header: {
+          ...packet.header,
+          version: OVERLAY_RUNTIME_PACKET_V1,
+        },
+      };
     }
 
     // Verify scope matches args

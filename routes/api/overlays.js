@@ -4,6 +4,7 @@ import db from "../../db.js";
 import requireAuth from "../../utils/requireAuth.js";
 import { overlayGate } from '../../services/overlayGate.js';
 import crypto from 'crypto';
+import { OVERLAY_RUNTIME_PACKET_V1 } from "../../packages/contracts/overlayRuntime.js";
 
 const router = express.Router();
 
@@ -80,6 +81,7 @@ router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
     // 2. Construct Canonical Header Test Packet
     const packet = {
       header: {
+        version: OVERLAY_RUNTIME_PACKET_V1,
         id: crypto.randomUUID(),
         type: "test.ping",
         ts: Date.now(),
@@ -132,6 +134,7 @@ router.post("/overlays/:id/test-lower-third/show", requireAuth, express.json(), 
     // Standard Envelope
     const packet = {
       header: {
+        version: OVERLAY_RUNTIME_PACKET_V1,
         id: crypto.randomUUID(),
         type: "overlay.lower_third.show",
         ts: Date.now(),
@@ -179,6 +182,7 @@ router.post("/overlays/:id/test-lower-third/hide", requireAuth, express.json(), 
 
     const packet = {
       header: {
+        version: OVERLAY_RUNTIME_PACKET_V1,
         id: crypto.randomUUID(),
         type: "overlay.lower_third.hide",
         ts: Date.now(),
