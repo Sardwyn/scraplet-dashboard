@@ -5768,6 +5768,18 @@ function LinkIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg {...TOOL_ICON_PROPS}>
+      <path d="M4 6h16" />
+      <path d="M9 3h6" />
+      <path d="M6 6v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6" />
+      <path d="M10 9v6" />
+      <path d="M14 9v6" />
+    </svg>
+  );
+}
+
 const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string }> = [
   { value: "none", label: "None" },
   { value: "fade", label: "Fade" },
