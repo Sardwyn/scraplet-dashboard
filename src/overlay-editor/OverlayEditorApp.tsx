@@ -10,6 +10,8 @@ import {
   OverlayElement,
   OverlayPath,
   OverlayPathElement,
+  OverlayFill,
+  OverlayFillStop,
   OverlayPatternFill,
   OverlayPatternFit,
   OverlayStrokeAlign,
@@ -5786,6 +5788,7 @@ const PATTERN_FIT_OPTIONS: Array<{ value: OverlayPatternFit; label: string }> = 
   { value: "tile", label: "Tile" },
   { value: "cover", label: "Cover" },
   { value: "contain", label: "Contain" },
+  { value: "stretch", label: "Stretch" },
 ];
 
 const STROKE_ALIGN_OPTIONS: Array<{ value: OverlayStrokeAlign; label: string }> = [
@@ -5802,11 +5805,51 @@ const CORNER_TYPE_OPTIONS: Array<{ value: OverlayCornerType; label: string }> = 
 
 function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
   return {
+    type: "pattern",
     src: pattern?.src ?? "",
     fit: pattern?.fit ?? "tile",
     scale: pattern?.scale ?? 100,
     opacity: pattern?.opacity ?? 1,
+    offsetX: pattern?.offsetX ?? 0,
+    offsetY: pattern?.offsetY ?? 0,
+    rotationDeg: pattern?.rotationDeg ?? 0,
   };
+}
+
+function defaultGradientStops(): OverlayFillStop[] {
+  return [
+    { color: "#ffffff", opacity: 1, position: 0 },
+    { color: "#7c3aed", opacity: 1, position: 100 },
+  ];
+}
+
+function ensureFill(fill?: OverlayFill): OverlayFill {
+  if (!fill) return { type: "solid", color: "#ffffff", opacity: 1 };
+  if (fill.type === "solid") return { type: "solid", color: fill.color ?? "#ffffff", opacity: fill.opacity ?? 1, id: fill.id };
+  if (fill.type === "pattern") return ensurePatternFill(fill);
+  return {
+    type: fill.type,
+    id: fill.id,
+    opacity: fill.opacity ?? 1,
+    angleDeg: fill.angleDeg ?? 0,
+    stops: Array.isArray(fill.stops) && fill.stops.length ? fill.stops : defaultGradientStops(),
+  };
+}
+
+function getElementFills(element: AnyEl): OverlayFill[] {
+  if (Array.isArray((element as any).fills) && (element as any).fills.length) {
+    return (element as any).fills.map((fill: OverlayFill) => ensureFill(fill));
+  }
+  if (element.type === "box") {
+    const fills: OverlayFill[] = [];
+    if ((element as any).backgroundColor) fills.push({ type: "solid", color: (element as any).backgroundColor, opacity: 1 });
+    if ((element as any).pattern?.src) fills.push(ensurePatternFill((element as any).pattern));
+    return fills.length ? fills : [{ type: "solid", color: "#0f172a", opacity: 1 }];
+  }
+  const fills: OverlayFill[] = [];
+  if ((element as any).fillColor) fills.push({ type: "solid", color: (element as any).fillColor, opacity: (element as any).fillOpacity ?? 1 });
+  if ((element as any).pattern?.src) fills.push(ensurePatternFill((element as any).pattern));
+  return fills.length ? fills : [{ type: "solid", color: "#ffffff", opacity: 1 }];
 }
 
 function ensureCornerRadii(radius: number, cornerRadii?: OverlayCornerRadii): OverlayCornerRadii {
@@ -5934,6 +5977,190 @@ function PatternFillControls({
           <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
         </div>
       </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off X</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off Y</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Rot</label>
+          <NumberField label="" value={Math.round(nextPattern.rotationDeg ?? 0)} onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })} noLabel className="flex-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FillStackControls({
+  element,
+  onChange,
+  onPickPatternImage,
+}: {
+  element: AnyEl;
+  onChange: (patch: Partial<AnyEl>) => void;
+  onPickPatternImage: () => void;
+}) {
+  const fills = getElementFills(element);
+  const setFills = (nextFills: OverlayFill[]) => {
+    if (element.type === "box") {
+      const firstSolid = nextFills.find((fill) => fill.type === "solid") as any;
+      const firstPattern = nextFills.find((fill) => fill.type === "pattern") as any;
+      onChange({
+        fills: nextFills,
+        backgroundColor: firstSolid?.color,
+        pattern: firstPattern,
+      } as any);
+      return;
+    }
+    const firstSolid = nextFills.find((fill) => fill.type === "solid") as any;
+    const firstPattern = nextFills.find((fill) => fill.type === "pattern") as any;
+    onChange({
+      fills: nextFills,
+      fillColor: firstSolid?.color,
+      fillOpacity: firstSolid?.opacity,
+      pattern: firstPattern,
+    } as any);
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      {fills.map((fill, index) => {
+        const nextFill = ensureFill(fill);
+        return (
+          <div key={nextFill.id ?? `${nextFill.type}-${index}`} className="space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3">
+            <div className="flex items-center gap-2">
+              <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fill</label>
+              <select
+                className={`flex-1 ${uiClasses.field}`}
+                value={nextFill.type}
+                onChange={(e) => {
+                  const replacement =
+                    e.target.value === "solid"
+                      ? ({ type: "solid", color: "#ffffff", opacity: 1 } as OverlayFill)
+                      : e.target.value === "pattern"
+                        ? (ensurePatternFill() as OverlayFill)
+                        : ({ type: e.target.value as any, opacity: 1, angleDeg: 0, stops: defaultGradientStops() } as OverlayFill);
+                  setFills(fills.map((candidate, candidateIndex) => (candidateIndex === index ? replacement : candidate)));
+                }}
+              >
+                <option value="solid">Solid</option>
+                <option value="linear">Linear</option>
+                <option value="radial">Radial</option>
+                <option value="conic">Conic</option>
+                <option value="pattern">Pattern</option>
+              </select>
+              <button type="button" className={uiClasses.iconButton} onClick={() => setFills(fills.filter((_, candidateIndex) => candidateIndex !== index))}>
+                <TrashIcon />
+              </button>
+            </div>
+
+            {nextFill.type === "solid" && (
+              <div className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Color</label>
+                <div className="flex-1 flex gap-2">
+                  <ColorSwatch value={nextFill.color} onChange={(v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: v } : candidate))} />
+                  <input type="text" className={`flex-1 font-mono ${uiClasses.field}`} value={nextFill.color} onChange={(e) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: e.target.value } : candidate))} />
+                </div>
+              </div>
+            )}
+
+            {(nextFill.type === "linear" || nextFill.type === "radial" || nextFill.type === "conic") && (
+              <>
+                <div className="flex items-center gap-2">
+                  <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Angle</label>
+                  <NumberField label="" value={Math.round(nextFill.angleDeg ?? 0)} onChange={(v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v } : candidate))} noLabel className="flex-1" />
+                </div>
+                {[0, 1].map((stopIndex) => {
+                  const stop = nextFill.stops[stopIndex] ?? defaultGradientStops()[stopIndex];
+                  return (
+                    <div key={stopIndex} className="grid grid-cols-[48px_1fr_80px] items-center gap-2">
+                      <label className={uiClasses.fieldLabel}>{stopIndex === 0 ? "From" : "To"}</label>
+                      <div className="flex gap-2">
+                        <ColorSwatch
+                          value={stop.color}
+                          onChange={(v) =>
+                            setFills(
+                              fills.map((candidate, candidateIndex) =>
+                                candidateIndex === index
+                                  ? {
+                                      ...nextFill,
+                                      stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                        candidateStopIndex === stopIndex ? { ...candidateStop, color: v } : candidateStop
+                                      ),
+                                    }
+                                  : candidate
+                              )
+                            )
+                          }
+                        />
+                        <input
+                          type="text"
+                          className={`flex-1 font-mono ${uiClasses.field}`}
+                          value={stop.color}
+                          onChange={(e) =>
+                            setFills(
+                              fills.map((candidate, candidateIndex) =>
+                                candidateIndex === index
+                                  ? {
+                                      ...nextFill,
+                                      stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                        candidateStopIndex === stopIndex ? { ...candidateStop, color: e.target.value } : candidateStop
+                                      ),
+                                    }
+                                  : candidate
+                              )
+                            )
+                          }
+                        />
+                      </div>
+                      <NumberField
+                        label=""
+                        value={Math.round(stop.position ?? (stopIndex === 0 ? 0 : 100))}
+                        onChange={(v) =>
+                          setFills(
+                            fills.map((candidate, candidateIndex) =>
+                              candidateIndex === index
+                                ? {
+                                    ...nextFill,
+                                    stops: nextFill.stops.map((candidateStop, candidateStopIndex) =>
+                                      candidateStopIndex === stopIndex ? { ...candidateStop, position: v } : candidateStop
+                                    ),
+                                  }
+                                : candidate
+                            )
+                          )
+                        }
+                        noLabel
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {nextFill.type === "pattern" && (
+              <PatternFillControls
+                pattern={nextFill}
+                onChange={(pattern) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? pattern : candidate))}
+                onPickImage={onPickPatternImage}
+              />
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => setFills([...fills, { type: "solid", color: "#ffffff", opacity: 1 }])}
+      >
+        Add Fill
+      </button>
     </div>
   );
 }
@@ -6382,41 +6609,12 @@ function InspectorPanel({
           {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
+              <FillStackControls element={element} onChange={onChange} onPickPatternImage={onPickPatternImage} />
               {(() => {
                 const uniformRadius = (element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0;
                 const cornerRadii = ensureCornerRadii(uniformRadius, (element as any).cornerRadii);
                 return (
                   <>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
-                <div className="flex-1 flex gap-1 items-center">
-                  <ColorSwatch value={(element as any).backgroundColor} onChange={(v) => onChange({ backgroundColor: v } as any)} />
-                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).backgroundColor ?? ""} onChange={(e) => onChange({ backgroundColor: e.target.value } as any)} placeholder="CSS Color" />
-                  {isComponentMaster && <ExposeButton element={element} propPath="backgroundColor" propsSchema={propsSchema} onUpdateSchema={onUpdateSchema} onChange={onChange} />}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={(element as any).pattern ? "pattern" : "solid"}
-                  onChange={(e) =>
-                    onChange({
-                      pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
-                    } as any)
-                  }
-                >
-                  <option value="solid">Solid</option>
-                  <option value="pattern">Pattern</option>
-                </select>
-              </div>
-              {(element as any).pattern && (
-                <PatternFillControls
-                  pattern={(element as any).pattern}
-                  onChange={(pattern) => onChange({ pattern } as any)}
-                  onPickImage={onPickPatternImage}
-                />
-              )}
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
                 <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
@@ -6651,50 +6849,11 @@ function InspectorPanel({
                 </div>
               )}
 
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Fill</label>
-                <div className="flex-1 flex gap-2">
-                  <ColorSwatch value={(element as any).fillColor} onChange={(v) => onChange({ fillColor: v } as any)} />
-                  <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).fillColor ?? ""} onChange={(e) => onChange({ fillColor: e.target.value } as any)} />
+              <FillStackControls element={element} onChange={onChange} onPickPatternImage={onPickPatternImage} />
+              {element.type === "shape" && (element as any).shape === "line" && getElementFills(element).some((fill) => fill.type === "pattern") && (
+                <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
+                  Pattern fill is ignored for line shapes in this pass.
                 </div>
-              </div>
-              <div className="flex items-center gap-2 ml-14">
-                <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Opac.</label>
-                <div className="w-16 relative">
-                  <NumberField label="" value={Math.round(((element as any).fillOpacity ?? 1) * 100)} onChange={(v) => onChange({ fillOpacity: v / 100 } as any)} noLabel />
-                  <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
-                </div>
-              </div>
-              {element.type === "shape" && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <label className={`${fieldLabelClass} w-12 flex-none`}>Type</label>
-                    <select
-                      className={`flex-1 ${fieldClass}`}
-                      value={(element as any).pattern ? "pattern" : "solid"}
-                      onChange={(e) =>
-                        onChange({
-                          pattern: e.target.value === "pattern" ? ensurePatternFill((element as any).pattern) : undefined,
-                        } as any)
-                      }
-                    >
-                      <option value="solid">Solid</option>
-                      <option value="pattern">Pattern</option>
-                    </select>
-                  </div>
-                  {(element as any).pattern && (
-                    <PatternFillControls
-                      pattern={(element as any).pattern}
-                      onChange={(pattern) => onChange({ pattern } as any)}
-                      onPickImage={onPickPatternImage}
-                    />
-                  )}
-                  {(element as any).shape === "line" && (element as any).pattern && (
-                    <div className="ml-14 text-[11px] leading-[1.4] text-slate-500">
-                      Pattern fill is ignored for line shapes in this pass.
-                    </div>
-                  )}
-                </>
               )}
 
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />

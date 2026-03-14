@@ -166,17 +166,47 @@ export interface OverlayAnimation {
 }
 
 /* =========================
-   PATTERN FILLS
+   FILLS
 ========================= */
 
-export type OverlayPatternFit = "tile" | "cover" | "contain";
+export type OverlayPatternFit = "tile" | "cover" | "contain" | "stretch";
+export type OverlayFillType = "solid" | "linear" | "radial" | "conic" | "pattern";
 
-export interface OverlayPatternFill {
+export interface OverlayFillStop {
+  color: string;
+  opacity?: number;
+  position?: number;
+}
+
+export interface OverlayFillBase {
+  id?: string;
+  type: OverlayFillType;
+  opacity?: number;
+}
+
+export interface OverlaySolidFill extends OverlayFillBase {
+  type: "solid";
+  color: string;
+}
+
+export interface OverlayGradientFill extends OverlayFillBase {
+  type: "linear" | "radial" | "conic";
+  stops: OverlayFillStop[];
+  angleDeg?: number;
+}
+
+export interface OverlayPatternFill extends OverlayFillBase {
+  type: "pattern";
   src: string;
   fit?: OverlayPatternFit;
   scale?: number;
   opacity?: number;
+  offsetX?: number;
+  offsetY?: number;
+  rotationDeg?: number;
 }
+
+export type OverlayFill = OverlaySolidFill | OverlayGradientFill | OverlayPatternFill;
 
 /* =========================
    TIMELINE
@@ -253,6 +283,7 @@ export interface OverlayBoxElement extends OverlayElementBase {
   type: "box";
   backgroundColor?: string;
   pattern?: OverlayPatternFill;
+  fills?: OverlayFill[];
 
   borderRadiusPx?: number;
   borderRadiusRel?: number; // V1: 0..1 of min(viewportW, viewportH)
@@ -299,6 +330,7 @@ export interface OverlayShapeElement extends OverlayElementBase {
   type: "shape";
   shape: OverlayShapeKind;
   pattern?: OverlayPatternFill;
+  fills?: OverlayFill[];
 
   // Fill
   fillColor?: string;     // if omitted => transparent
@@ -364,6 +396,7 @@ export interface OverlayPathElement extends OverlayElementBase {
   };
   fillColor?: string;
   fillOpacity?: number;
+  fills?: OverlayFill[];
   strokeColor?: string;
   strokeWidthPx?: number;
   strokeOpacity?: number;
@@ -379,6 +412,7 @@ export interface OverlayBooleanElement extends OverlayElementBase {
   childIds: string[];
   fillColor?: string;
   fillOpacity?: number;
+  fills?: OverlayFill[];
   strokeColor?: string;
   strokeWidthPx?: number;
   strokeOpacity?: number;

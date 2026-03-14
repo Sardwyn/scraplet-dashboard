@@ -14,6 +14,8 @@ import {
     OverlayImageElement,
     OverlayVideoElement,
     OverlayGroupElement,
+    OverlayGradientFill,
+    OverlayFill,
     OverlayProgressBarElement,
     OverlayProgressRingElement,
     OverlayLowerThirdElement,
@@ -45,35 +47,6 @@ function getPatternOpacity(pattern?: OverlayPatternFill) {
 
 function hasPatternSource(pattern?: OverlayPatternFill) {
     return typeof pattern?.src === "string" && pattern.src.trim().length > 0;
-}
-
-function getBoxPatternStyle(pattern?: OverlayPatternFill): React.CSSProperties | null {
-    if (!hasPatternSource(pattern)) return null;
-
-    const fit = pattern?.fit ?? "tile";
-    const scale = getPatternScale(pattern);
-    const opacity = getPatternOpacity(pattern);
-
-    const style: React.CSSProperties = {
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "none",
-        opacity,
-        backgroundImage: `url("${pattern!.src}")`,
-        backgroundPosition: "center",
-    };
-
-    if (fit === "tile") {
-        style.backgroundRepeat = "repeat";
-        style.backgroundSize = `${scale}% auto`;
-        return style;
-    }
-
-    style.backgroundRepeat = "no-repeat";
-    style.backgroundSize = fit;
-    style.transform = `scale(${scale / 100})`;
-    style.transformOrigin = "center center";
-    return style;
 }
 
 function renderShapeGeometry(
@@ -319,6 +292,156 @@ function renderPathSvg(
             strokeLinejoin={style.strokeLineJoin as any}
         />
     );
+}
+
+function fillOpacityValue(fill?: OverlayFill) {
+    return Math.max(0, Math.min(1, fill?.opacity ?? 1));
+}
+
+function stopColor(fill: OverlayGradientFill, stop: { color: string; opacity?: number; position?: number }, index: number) {
+    const opacity = Math.max(0, Math.min(1, (stop.opacity ?? 1) * fillOpacityValue(fill)));
+    return (
+        <stop
+            key={`${fill.id ?? fill.type}-${index}`}
+            offset={`${Math.max(0, Math.min(100, stop.position ?? (fill.stops.length <= 1 ? 0 : (index / (fill.stops.length - 1)) * 100)))}%`}
+            stopColor={stop.color}
+            stopOpacity={opacity}
+        />
+    );
+}
+
+function legacyFillStack(element: OverlayBoxElement | OverlayShapeElement | OverlayPathElement | any): OverlayFill[] {
+    if (Array.isArray((element as any).fills) && (element as any).fills.length > 0) return (element as any).fills;
+
+    if (element.type === "box") {
+        const fills: OverlayFill[] = [];
+        if ((element as any).backgroundColor) {
+            fills.push({ type: "solid", color: (element as any).backgroundColor, opacity: 1, id: `${element.id}-fill-solid` });
+        }
+        if ((element as any).pattern?.src) {
+            fills.push({ ...(element as any).pattern, type: "pattern", id: `${element.id}-fill-pattern` });
+        }
+        return fills;
+    }
+
+    const fills: OverlayFill[] = [];
+    if ((element as any).fillColor) {
+        fills.push({
+            type: "solid",
+            color: (element as any).fillColor,
+            opacity: typeof (element as any).fillOpacity === "number" ? (element as any).fillOpacity : 1,
+            id: `${element.id}-fill-solid`,
+        });
+    }
+    if ((element as any).pattern?.src) {
+        fills.push({ ...(element as any).pattern, type: "pattern", id: `${element.id}-fill-pattern` });
+    }
+    return fills;
+}
+
+function renderFillDefs(
+    fills: OverlayFill[],
+    scopeId: string,
+    width: number,
+    height: number
+) {
+    return fills.map((fill, index) => {
+        if (fill.type === "linear") {
+            const angle = ((fill.angleDeg ?? 0) * Math.PI) / 180;
+            const x1 = 50 - Math.cos(angle) * 50;
+            const y1 = 50 - Math.sin(angle) * 50;
+            const x2 = 50 + Math.cos(angle) * 50;
+            const y2 = 50 + Math.sin(angle) * 50;
+            return (
+                <linearGradient key={`${scopeId}-linear-${index}`} id={`${scopeId}-linear-${index}`} x1={`${x1}%`} y1={`${y1}%`} x2={`${x2}%`} y2={`${y2}%`}>
+                    {fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex))}
+                </linearGradient>
+            );
+        }
+
+        if (fill.type === "radial") {
+            return (
+                <radialGradient key={`${scopeId}-radial-${index}`} id={`${scopeId}-radial-${index}`} cx="50%" cy="50%" r="70%">
+                    {fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex))}
+                </radialGradient>
+            );
+        }
+
+        if (fill.type === "conic") {
+            return (
+                <radialGradient key={`${scopeId}-conic-${index}`} id={`${scopeId}-conic-${index}`} cx="50%" cy="50%" r="70%">
+                    {fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex))}
+                </radialGradient>
+            );
+        }
+
+        if (fill.type === "pattern" && hasPatternSource(fill)) {
+            const fit = fill.fit ?? "tile";
+            const scale = getPatternScale(fill);
+            const opacity = getPatternOpacity(fill) * fillOpacityValue(fill);
+            const tileWidth = Math.max(1, width * (scale / 100));
+            const tileHeight = Math.max(1, height * (scale / 100));
+            const scaledWidth = Math.max(1, width * (scale / 100));
+            const scaledHeight = Math.max(1, height * (scale / 100));
+            const imageX = (fit === "tile" ? 0 : (width - scaledWidth) / 2) + (fill.offsetX ?? 0);
+            const imageY = (fit === "tile" ? 0 : (height - scaledHeight) / 2) + (fill.offsetY ?? 0);
+            const rotate = fill.rotationDeg ?? 0;
+            return (
+                <pattern
+                    key={`${scopeId}-pattern-${index}`}
+                    id={`${scopeId}-pattern-${index}`}
+                    patternUnits="userSpaceOnUse"
+                    width={fit === "tile" ? tileWidth : width}
+                    height={fit === "tile" ? tileHeight : height}
+                    patternTransform={rotate ? `rotate(${rotate} ${width / 2} ${height / 2})` : undefined}
+                >
+                    <image
+                        href={fill.src}
+                        x={imageX}
+                        y={imageY}
+                        width={fit === "tile" ? tileWidth : fit === "stretch" ? width : scaledWidth}
+                        height={fit === "tile" ? tileHeight : fit === "stretch" ? height : scaledHeight}
+                        preserveAspectRatio={
+                            fit === "cover"
+                                ? "xMidYMid slice"
+                                : fit === "contain"
+                                    ? "xMidYMid meet"
+                                    : fit === "stretch"
+                                        ? "none"
+                                        : "none"
+                        }
+                        opacity={opacity}
+                    />
+                </pattern>
+            );
+        }
+
+        return null;
+    });
+}
+
+function renderFillLayers(pathD: string, fills: OverlayFill[], scopeId: string) {
+    return fills.map((fill, index) => {
+        if (fill.type === "solid") {
+            return renderPathSvg(pathD, {
+                fill: fill.color,
+                fillOpacity: fillOpacityValue(fill),
+            });
+        }
+        if (fill.type === "linear") {
+            return renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` });
+        }
+        if (fill.type === "radial") {
+            return renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` });
+        }
+        if (fill.type === "conic") {
+            return renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` });
+        }
+        if (fill.type === "pattern" && hasPatternSource(fill)) {
+            return renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` });
+        }
+        return null;
+    });
 }
 
 function resolveRectCornerRadii(
@@ -805,17 +928,8 @@ export function ElementRenderer({
         const h = Math.max(1, box.height ?? 1);
         const boxPath = elementToOverlayPath(box);
         const pathD = svgPathFromCommands(boxPath ?? { commands: [] });
-        const patternEnabled = hasPatternSource(box.pattern);
-        const patternId = `box-pattern-${patternScopeId}-${box.id}`;
-        const patternFit = box.pattern?.fit ?? "tile";
-        const patternScale = getPatternScale(box.pattern);
-        const patternOpacity = getPatternOpacity(box.pattern);
-        const tileWidth = Math.max(1, w * (patternScale / 100));
-        const tileHeight = Math.max(1, h * (patternScale / 100));
-        const scaledWidth = Math.max(1, w * (patternScale / 100));
-        const scaledHeight = Math.max(1, h * (patternScale / 100));
-        const patternImageX = (w - scaledWidth) / 2;
-        const patternImageY = (h - scaledHeight) / 2;
+        const fills = legacyFillStack(box);
+        const fillScopeId = `box-fill-${patternScopeId}-${box.id}`;
         const strokeWidth = box.strokeWidthPx ?? 0;
         const strokeOpacity = typeof box.strokeOpacity === "number" ? box.strokeOpacity : 1;
         const strokeAlign = box.strokeAlign ?? "center";
@@ -824,41 +938,8 @@ export function ElementRenderer({
             <div style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative", overflow: "visible" }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
-                        {patternEnabled && (
-                            <defs>
-                                <pattern
-                                    id={patternId}
-                                    patternUnits="userSpaceOnUse"
-                                    width={patternFit === "tile" ? tileWidth : w}
-                                    height={patternFit === "tile" ? tileHeight : h}
-                                >
-                                    <image
-                                        href={box.pattern!.src}
-                                        x={patternFit === "tile" ? 0 : patternImageX}
-                                        y={patternFit === "tile" ? 0 : patternImageY}
-                                        width={patternFit === "tile" ? tileWidth : scaledWidth}
-                                        height={patternFit === "tile" ? tileHeight : scaledHeight}
-                                        preserveAspectRatio={
-                                            patternFit === "cover"
-                                                ? "xMidYMid slice"
-                                                : patternFit === "contain"
-                                                    ? "xMidYMid meet"
-                                                    : "none"
-                                        }
-                                        opacity={patternOpacity}
-                                    />
-                                </pattern>
-                            </defs>
-                        )}
-                        {pathD &&
-                            renderPathSvg(pathD, {
-                                fill: box.backgroundColor || "rgba(15,23,42,0.8)",
-                                fillOpacity: 1,
-                            })}
-                        {patternEnabled && pathD &&
-                            renderPathSvg(pathD, {
-                                fill: `url(#${patternId})`,
-                            })}
+                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
+                        {pathD && renderFillLayers(pathD, fills, fillScopeId)}
                         {box.strokeSides && strokeWidth > 0
                             ? renderRectPerSideStroke(
                                   w,
@@ -897,15 +978,15 @@ export function ElementRenderer({
         const h = Math.max(1, pathEl.height ?? 1);
         const scaledPath = elementToOverlayPath(pathEl);
         const pathD = svgPathFromCommands(scaledPath ?? pathEl.path);
+        const fills = legacyFillStack(pathEl);
+        const fillScopeId = `path-fill-${patternScopeId}-${pathEl.id}`;
 
         return (
             <div style={baseStyle}>
                 <div style={innerStyle}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                        {renderPathSvg(pathD, {
-                            fill: pathEl.fillColor ?? "rgba(56,189,248,0.18)",
-                            fillOpacity: typeof pathEl.fillOpacity === "number" ? pathEl.fillOpacity : 1,
-                        })}
+                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
+                        {renderFillLayers(pathD, fills, fillScopeId)}
                         {renderAlignedPathStroke(
                             pathD,
                             `path-${patternScopeId}-${pathEl.id}`,
@@ -978,15 +1059,15 @@ export function ElementRenderer({
         const w = Math.max(1, booleanEl.width ?? resolved.bounds.width ?? 1);
         const h = Math.max(1, booleanEl.height ?? resolved.bounds.height ?? 1);
         const pathD = svgPathFromCommands(resolved.path);
+        const fills = legacyFillStack(booleanEl);
+        const fillScopeId = `boolean-fill-${patternScopeId}-${booleanEl.id}`;
 
         return (
             <div style={baseStyle}>
                 <div style={innerStyle}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-                        {renderPathSvg(pathD, {
-                            fill: booleanEl.fillColor ?? "rgba(56,189,248,0.18)",
-                            fillOpacity: typeof booleanEl.fillOpacity === "number" ? booleanEl.fillOpacity : 1,
-                        })}
+                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
+                        {renderFillLayers(pathD, fills, fillScopeId)}
                         {renderAlignedPathStroke(
                             pathD,
                             `boolean-${patternScopeId}-${booleanEl.id}`,
@@ -1025,17 +1106,8 @@ export function ElementRenderer({
             typeof s.strokeOpacity === "number" ? s.strokeOpacity : 1;
         const dash =
             Array.isArray(s.strokeDash) && s.strokeDash.length ? s.strokeDash : undefined;
-        const patternEnabled = hasPatternSource(s.pattern) && s.shape !== "line";
-        const patternId = `shape-pattern-${patternScopeId}-${s.id}`;
-        const patternFit = s.pattern?.fit ?? "tile";
-        const patternScale = getPatternScale(s.pattern);
-        const patternOpacity = getPatternOpacity(s.pattern);
-        const tileWidth = Math.max(1, w * (patternScale / 100));
-        const tileHeight = Math.max(1, h * (patternScale / 100));
-        const scaledWidth = Math.max(1, w * (patternScale / 100));
-        const scaledHeight = Math.max(1, h * (patternScale / 100));
-        const patternImageX = (w - scaledWidth) / 2;
-        const patternImageY = (h - scaledHeight) / 2;
+        const fills = s.shape === "line" ? legacyFillStack({ ...s, fills: [] } as any) : legacyFillStack(s);
+        const fillScopeId = `shape-fill-${patternScopeId}-${s.id}`;
 
         const strokeProps = {
             fill: "none",
@@ -1054,42 +1126,8 @@ export function ElementRenderer({
                         viewBox={`0 0 ${w} ${h}`}
                         preserveAspectRatio="none"
                     >
-                        {patternEnabled && (
-                            <defs>
-                                <pattern
-                                    id={patternId}
-                                    patternUnits="userSpaceOnUse"
-                                    width={patternFit === "tile" ? tileWidth : w}
-                                    height={patternFit === "tile" ? tileHeight : h}
-                                >
-                                    <image
-                                        href={s.pattern!.src}
-                                        x={patternFit === "tile" ? 0 : patternImageX}
-                                        y={patternFit === "tile" ? 0 : patternImageY}
-                                        width={patternFit === "tile" ? tileWidth : scaledWidth}
-                                        height={patternFit === "tile" ? tileHeight : scaledHeight}
-                                        preserveAspectRatio={
-                                            patternFit === "cover"
-                                                ? "xMidYMid slice"
-                                                : patternFit === "contain"
-                                                    ? "xMidYMid meet"
-                                                    : "none"
-                                        }
-                                        opacity={patternOpacity}
-                                    />
-                                </pattern>
-                            </defs>
-                        )}
-
-                        {pathD && renderPathSvg(pathD, {
-                            fill,
-                            fillOpacity,
-                        })}
-
-                        {patternEnabled && pathD &&
-                            renderPathSvg(pathD, {
-                                fill: `url(#${patternId})`,
-                            })}
+                        <defs>{renderFillDefs(fills, fillScopeId, w, h)}</defs>
+                        {pathD && renderFillLayers(pathD, fills, fillScopeId)}
 
                         {s.shape === "rect" && s.strokeSides && strokeWidth > 0
                             ? renderRectPerSideStroke(
