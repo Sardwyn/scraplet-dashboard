@@ -1117,7 +1117,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setMetadata(defMetadata);
     setEditingMasterId(def.id);
     setEditingSourceInstanceId(sourceInstanceId || null);
-    setSelectedIds([]);
+    setSelectedIds(defElements[0]?.id ? [defElements[0].id] : []);
+    setPreviewVisibilityOverrides({});
+    setZoomMode("fit");
+    setPanPx({ x: 0, y: 0 });
   }
 
   function exitIsolationMode() {
@@ -1325,7 +1328,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const scale = zoomMode === "fit" ? fitScale : clamp(manualScale, 0.1, 2);
 
-  const elementsAny = useMemo(() => config.elements.map((e) => e as AnyEl), [config.elements]);
+  const elementsAny = useMemo(() => (Array.isArray(config.elements) ? config.elements : []).map((e) => e as AnyEl), [config.elements]);
   const selectedEls = useMemo(() => {
     const set = new Set(selectedIds);
     return elementsAny
