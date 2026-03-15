@@ -1102,7 +1102,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   ) {
     const def = directDef || overlayComponents.find(c => c.id === componentId);
     if (!def) {
-      alert("Graphic definition not found.");
+      alert("Component definition not found.");
       return;
     }
     const defElements = Array.isArray((def as any).elements) ? (def as any).elements : [];
@@ -1130,7 +1130,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function buildComponentCopyName(baseName: string) {
-    const cleanBase = (baseName || "Graphic").trim();
+    const cleanBase = (baseName || "Component").trim();
     const preferred = `My ${cleanBase}`;
     const existing = new Set(overlayComponents.map((component) => component.name.trim().toLowerCase()));
     if (!existing.has(preferred.toLowerCase())) return preferred;
@@ -1144,7 +1144,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   async function handleEditMasterComponent(componentId: string, sourceInstanceId?: string) {
     const def = overlayComponents.find((component) => component.id === componentId);
     if (!def) {
-      alert("Graphic definition not found.");
+      alert("Component definition not found.");
       return;
     }
 
@@ -1215,7 +1215,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       return;
     }
 
-    const requestedName = prompt("Rename graphic:", def.name || "Graphic");
+    const requestedName = prompt("Rename component:", def.name || "Component");
     if (requestedName === null) return;
     const nextName = requestedName.trim();
     if (!nextName || nextName === def.name) return;
@@ -1255,7 +1255,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setName(nextName);
     }
 
-    showEditorStatus("Graphic renamed", `${nextName} is now the library label for future placements.`);
+    showEditorStatus("Component renamed", `${nextName} is now the library label for future placements.`);
   }
 
   function exitIsolationMode() {
@@ -2834,7 +2834,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       childElements = config.elements.filter(e => childrenIds.includes(e.id));
     }
 
-    const componentName = prompt("Enter a name for this new graphic:", "My Graphic");
+    const componentName = prompt("Enter a name for this new component:", "My Component");
     if (!componentName) return;
 
     // Relative offset of children
@@ -5078,7 +5078,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            <span>Graphics</span>
+            <span>Components</span>
           </button>
         </div>
 
@@ -5144,7 +5144,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   const instanceEl: AnyEl = {
                     id: instId,
                     type: "componentInstance",
-                    name: comp.name || "Graphic",
+                    name: comp.name || "Component",
                     x: 50,
                     y: 50,
                     width: maxX - minX || 200,
@@ -5331,7 +5331,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30">
               <div className="flex items-center gap-2 text-indigo-200">
                 <span className="relative -top-px"><svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
-                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Edit Graphic</span>
+                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Edit Component</span>
               </div>
               <div className="w-px h-3 bg-indigo-400/50" />
               <div className="max-w-[200px] truncate text-[13px] leading-[1.4] font-semibold">{name}</div>
@@ -6322,7 +6322,7 @@ function ExposeButton({
   return (
     <button
       onClick={toggle}
-      title={isBound ? `Bound to: ${boundKey}` : "Expose as Graphic Prop"}
+      title={isBound ? `Bound to: ${boundKey}` : "Expose as Component Prop"}
       className={`ml-1 flex-none ${uiClasses.iconButton} ${isBound ? "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white" : ""}`}
     >
       <LinkIcon />
@@ -7820,10 +7820,10 @@ function InspectorPanel({
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
             <div className="space-y-4">
-              <label className={uiClasses.label}>Graphic Properties</label>
+              <label className={uiClasses.label}>Component Properties</label>
               {(() => {
                 const def = overlayComponents.find(c => c.id === (element as any).componentId);
-                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Graphic Definition Missing</div>;
+                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Component Definition Missing</div>;
                 if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
                   return <div className="text-[11px] leading-[1.4] text-slate-500">No editable properties exposed by this graphic.</div>;
                 }
@@ -7858,7 +7858,7 @@ function InspectorPanel({
                       className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                     >
                       <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                      {isBuiltIn ? "Make Editable Copy" : "Edit Graphic"}
+                      {isBuiltIn ? "Make Editable Copy" : "Edit Component"}
                     </button>
                   );
                 })()}
@@ -9609,10 +9609,10 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.frame} label="Add Frame" onClick={onAddFrame} />
-        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Place Lower Third Graphic" onClick={onAddLowerThird} />
+        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Place Lower Third" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
-          label="Convert Selection to Graphic"
+          label="Convert Selection to Component"
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
         />
@@ -9952,8 +9952,8 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
   if (!components || components.length === 0) {
     return (
       <div className="p-4 text-center">
-        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Graphics Found</div>
-        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Graphic" to build reusable graphics.</div>
+        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Components Found</div>
+        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Component" to build reusable components.</div>
       </div>
     );
   }
@@ -9987,7 +9987,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
               <button
                 className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
-                title={isBuiltin ? "Make Editable Copy" : "Edit Graphic"}
+                title={isBuiltin ? "Make Editable Copy" : "Edit Component"}
               >
                 <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
@@ -9995,7 +9995,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
                 <button
                   className={uiClasses.iconButton}
                   onClick={(e) => { e.stopPropagation(); onRename(comp.id); }}
-                  title="Rename Graphic"
+                  title="Rename Component"
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M4 20h4"></path><path d="M14.5 5.5a2.121 2.121 0 0 1 3 3L8 18l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
