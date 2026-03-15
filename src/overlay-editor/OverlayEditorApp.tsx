@@ -6030,7 +6030,7 @@ interface InspectorProps {
   metadata?: any;
   onUpdateSchema?: (schema: any) => void;
   onUpdateMetadata?: (metadata: any) => void;
-  onEditMaster?: (id: string, sourceInstanceId?: string) => void;
+  onEditMaster?: (id: string, directDef?: OverlayComponentDef, sourceInstanceId?: string) => void;
   onReleaseMask?: (id: string) => void;
   onReleaseBoolean?: () => void;
   onFlattenBoolean?: () => void;
@@ -7672,7 +7672,7 @@ function InspectorPanel({
               })()}
               <div className="pt-2">
                 <button
-                  onClick={() => onEditMaster?.((element as any).componentId, element.id)}
+                  onClick={() => onEditMaster?.((element as any).componentId, undefined, element.id)}
                   className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
