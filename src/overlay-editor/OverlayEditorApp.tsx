@@ -1043,6 +1043,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
   const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
+  const [editingSourceInstanceId, setEditingSourceInstanceId] = useState<string | null>(null);
   const [originalConfig, setOriginalConfig] = useState<OverlayConfigV0 | null>(null);
   const [originalIsMaster, setOriginalIsMaster] = useState(false);
   const [originalName, setOriginalName] = useState("");
@@ -1093,7 +1094,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // (legacy template functions removed)
 
-  function enterIsolationMode(componentId: string, directDef?: OverlayComponentDef) {
+  function enterIsolationMode(componentId: string, directDef?: OverlayComponentDef, sourceInstanceId?: string) {
     const def = directDef || overlayComponents.find(c => c.id === componentId);
     if (!def) {
       alert("Component definition not found.");
@@ -1112,12 +1113,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setPropsSchema(def.propsSchema);
     setMetadata(def.metadata);
     setEditingMasterId(def.id);
+    setEditingSourceInstanceId(sourceInstanceId || null);
     setSelectedIds([]);
   }
 
   function exitIsolationMode() {
     if (!originalConfig) {
       setEditingMasterId(null);
+      setEditingSourceInstanceId(null);
       setIsComponentMaster(false);
       return;
     }
@@ -1126,6 +1129,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setName(originalName);
     setSlug(originalSlug);
     setEditingMasterId(null);
+    setEditingSourceInstanceId(null);
     setOriginalConfig(null);
     setSelectedIds([]);
   }
@@ -3227,14 +3231,21 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setSaveOk(false);
 
       let url = `/dashboard/api/overlays/${initialOverlay.id}`;
+      let method = "PUT";
       let body: any = { name, slug, config_json: config };
 
       if (isComponentMaster) {
-        let idToSave = initialOverlay.id;
-        if (editingMasterId) {
-          idToSave = editingMasterId as any;
+        const isBuiltInMaster = Boolean(editingMasterId && String(editingMasterId).startsWith("preset_"));
+        if (isBuiltInMaster) {
+          url = `/dashboard/api/overlay-components`;
+          method = "POST";
+        } else {
+          let idToSave = initialOverlay.id;
+          if (editingMasterId) {
+            idToSave = editingMasterId as any;
+          }
+          url = `/dashboard/api/overlay-components/${idToSave}`;
         }
-        url = `/dashboard/api/overlay-components/${idToSave}`;
         body = {
           name,
           schemaVersion: (initialOverlay as any).schemaVersion || 1,
@@ -3245,12 +3256,41 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       }
 
       const res = await fetch(url, {
-        method: "PUT",
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      const saved = await res.json().catch(() => null);
+
+      if (isComponentMaster && method === "POST" && saved?.public_id) {
+        const forkedDef: OverlayComponentDef = {
+          id: saved.public_id,
+          name: saved.name || name,
+          schemaVersion: saved.schema_version || body.schemaVersion || 1,
+          elements: saved.component_json?.elements || config.elements,
+          propsSchema: saved.component_json?.propsSchema || propsSchema,
+          metadata: saved.component_json?.metadata || metadata,
+        };
+        setOverlayComponents((prev) => [forkedDef, ...prev.filter((component) => component.id !== forkedDef.id)]);
+        setEditingMasterId(forkedDef.id);
+        setSlug(`component-${forkedDef.id}`);
+        if (originalConfig && editingSourceInstanceId) {
+          setOriginalConfig({
+            ...originalConfig,
+            elements: originalConfig.elements.map((element) =>
+              element.id === editingSourceInstanceId && element.type === "componentInstance"
+                ? ({ ...element, componentId: forkedDef.id } as any)
+                : element
+            ),
+          });
+        }
+        setEditorStatus({
+          title: "Master forked",
+          detail: "Built-in components save as your own copy the first time you edit them.",
+        });
+      }
       setSaveOk(true);
     } catch (err: any) {
       setSaveError(err?.message || "Save failed");
@@ -5984,7 +6024,7 @@ interface InspectorProps {
   metadata?: any;
   onUpdateSchema?: (schema: any) => void;
   onUpdateMetadata?: (metadata: any) => void;
-  onEditMaster?: (id: string) => void;
+  onEditMaster?: (id: string, sourceInstanceId?: string) => void;
   onReleaseMask?: (id: string) => void;
   onReleaseBoolean?: () => void;
   onFlattenBoolean?: () => void;
@@ -7626,7 +7666,7 @@ function InspectorPanel({
               })()}
               <div className="pt-2">
                 <button
-                  onClick={() => onEditMaster?.((element as any).componentId)}
+                  onClick={() => onEditMaster?.((element as any).componentId, element.id)}
                   className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
