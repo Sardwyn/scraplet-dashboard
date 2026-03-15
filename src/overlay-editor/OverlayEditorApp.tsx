@@ -7679,7 +7679,12 @@ function InspectorPanel({
                   Edit Master Component
                 </button>
               </div>
-              {(element as any).componentId === "preset_lower_third" && (
+              {(() => {
+                const def = overlayComponents.find(c => c.id === (element as any).componentId);
+                const isLowerThirdRuntime =
+                  (def?.metadata as any)?.runtimeKind === "lowerThird" || (element as any).componentId === "preset_lower_third";
+                return isLowerThirdRuntime;
+              })() && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => onTestLowerThird?.("show")}

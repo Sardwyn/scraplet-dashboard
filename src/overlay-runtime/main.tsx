@@ -177,7 +177,7 @@ function DebugHud({ state, data }: { state: OverlayStateV0 | null, data?: Record
 ------------------------------*/
 type OverrideMap = Record<string, Partial<OverlayElement>>;
 
-function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
+function useOverlayEvents(publicId: string, elements: OverlayElement[], overlayComponents: OverlayComponentDef[]) {
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [data, setData] = useState<Record<string, string>>({});
   const [flash, setFlash] = useState(false);
@@ -259,6 +259,12 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
         }
 
         // Producer → Overlay events
+        const lowerThirdComponentIds = new Set(
+          overlayComponents
+            .filter((component: any) => component?.metadata?.runtimeKind === "lowerThird" || component?.id === "preset_lower_third")
+            .map((component) => component.id)
+        );
+
         if (header?.type === "overlay.lower_third.show") {
           // 1. Resolve payload
           const p = payload || {};
@@ -281,7 +287,9 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 
           // 4. Update Component Overrides (Phase 4)
           // Find any componentInstance that is a preset_lower_third
-          const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
+          const ltInstances = elements.filter(
+            (e) => e.type === "componentInstance" && lowerThirdComponentIds.has(String((e as any).componentId || ""))
+          );
 
           if (ltInstances.length > 0) {
             setOverrides(prev => {
@@ -307,7 +315,11 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 
           if (duration === undefined) {
             // Try to find ANY lower_third element to steal its default
-            const ltEl = elements.find(e => e.type === "lower_third" || (e.type === "componentInstance" && (e as any).componentId === "preset_lower_third")) as any;
+            const ltEl = elements.find(
+              (e) =>
+                e.type === "lower_third" ||
+                (e.type === "componentInstance" && lowerThirdComponentIds.has(String((e as any).componentId || "")))
+            ) as any;
             if (ltEl && typeof ltEl.defaultDurationMs === 'number') {
               duration = ltEl.defaultDurationMs;
             }
@@ -343,7 +355,9 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
             return next;
           });
           // Hide instances
-          const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
+          const ltInstances = elements.filter(
+            (e) => e.type === "componentInstance" && lowerThirdComponentIds.has(String((e as any).componentId || ""))
+          );
           setOverrides(prev => {
             const next = { ...prev };
             ltInstances.forEach(inst => {
@@ -412,7 +426,7 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
       es.close();
       console.log("[OverlayEvents] Disconnected");
     };
-  }, [publicId, elements]); // Re-bind if elements list changes drastically? Ideally stable.
+  }, [publicId, elements, overlayComponents]); // Re-bind if elements list changes drastically? Ideally stable.
 
   return { overrides, data, flash };
 }
@@ -440,7 +454,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // Enable Event System
   // We need the elements list to find targets
   const baseElements = overlay?.elements ?? [];
-  const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements);
+  const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements, overlayComponents);
   const timelineValues = useMemo(
     () => evaluateTimeline(overlay?.timeline, playheadMs),
     [overlay?.timeline, playheadMs]

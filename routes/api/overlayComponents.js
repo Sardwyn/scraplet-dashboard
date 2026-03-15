@@ -101,6 +101,7 @@ export const BUILTIN_PRESETS = [
                 subColor: { type: 'color', label: 'Sub Color', default: '#cbd5e1' }
             },
             metadata: {
+                runtimeKind: 'lowerThird',
                 durationMs: 8000,
                 animationIn: 'slideUp',
                 animationOut: 'slideDown',
