@@ -1094,7 +1094,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // (legacy template functions removed)
 
-  function enterIsolationMode(componentId: string, directDef?: OverlayComponentDef, sourceInstanceId?: string) {
+  function enterIsolationMode(
+    componentId: string,
+    directDef?: OverlayComponentDef,
+    sourceInstanceId?: string,
+    sourceConfigOverride?: OverlayConfigV0
+  ) {
     const def = directDef || overlayComponents.find(c => c.id === componentId);
     if (!def) {
       alert("Component definition not found.");
@@ -1104,12 +1109,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const defPropsSchema = def.propsSchema || {};
     const defMetadata = def.metadata || {};
 
-    setOriginalConfig(config);
+    const returnConfig = sourceConfigOverride || config;
+    setOriginalConfig(returnConfig);
     setOriginalIsMaster(isComponentMaster);
     setOriginalName(name);
     setOriginalSlug(slug);
 
-    setConfig({ ...config, elements: defElements });
+    setConfig({ ...returnConfig, elements: defElements });
     setIsComponentMaster(true);
     setName(def.name);
     setSlug(`component-${def.id}`);
@@ -1121,6 +1127,135 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setPreviewVisibilityOverrides({});
     setZoomMode("fit");
     setPanPx({ x: 0, y: 0 });
+  }
+
+  function buildComponentCopyName(baseName: string) {
+    const cleanBase = (baseName || "Component").trim();
+    const preferred = `My ${cleanBase}`;
+    const existing = new Set(overlayComponents.map((component) => component.name.trim().toLowerCase()));
+    if (!existing.has(preferred.toLowerCase())) return preferred;
+    let index = 2;
+    while (existing.has(`${preferred} ${index}`.toLowerCase())) {
+      index += 1;
+    }
+    return `${preferred} ${index}`;
+  }
+
+  async function handleEditMasterComponent(componentId: string, sourceInstanceId?: string) {
+    const def = overlayComponents.find((component) => component.id === componentId);
+    if (!def) {
+      alert("Component definition not found.");
+      return;
+    }
+
+    const isBuiltIn = String(def.id).startsWith("preset_");
+    if (!isBuiltIn) {
+      enterIsolationMode(componentId, undefined, sourceInstanceId);
+      return;
+    }
+
+    const suggestedName = buildComponentCopyName(def.name);
+    const requestedName = prompt("Name your editable copy:", suggestedName);
+    if (requestedName === null) return;
+    const copyName = requestedName.trim() || suggestedName;
+    const payload = {
+      name: copyName,
+      schemaVersion: def.schemaVersion || 1,
+      elements: def.elements || [],
+      propsSchema: def.propsSchema || {},
+      metadata: def.metadata || {},
+    };
+
+    const res = await fetch("/dashboard/api/overlay-components", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to duplicate component: ${res.status}`);
+    }
+
+    const saved = await res.json();
+    const forkedDef: OverlayComponentDef = {
+      id: saved.public_id,
+      name: saved.name || copyName,
+      schemaVersion: saved.schema_version || payload.schemaVersion,
+      elements: saved.component_json?.elements || payload.elements,
+      propsSchema: saved.component_json?.propsSchema || payload.propsSchema,
+      metadata: saved.component_json?.metadata || payload.metadata,
+    };
+
+    setOverlayComponents((prev) => [forkedDef, ...prev.filter((component) => component.id !== forkedDef.id)]);
+
+    const returnConfig = sourceInstanceId
+      ? {
+          ...config,
+          elements: config.elements.map((element) =>
+            element.id === sourceInstanceId && element.type === "componentInstance"
+              ? ({ ...element, componentId: forkedDef.id, name: forkedDef.name } as any)
+              : element
+          ),
+        }
+      : config;
+
+    setEditorStatus({
+      title: "Editable copy created",
+      detail: `${forkedDef.name} is now your own component master.`,
+    });
+
+    enterIsolationMode(forkedDef.id, forkedDef, sourceInstanceId, returnConfig);
+  }
+
+  async function renameComponent(componentId: string) {
+    const def = overlayComponents.find((component) => component.id === componentId);
+    if (!def) return;
+    if (String(def.id).startsWith("preset_")) {
+      alert("Built-in components cannot be renamed. Duplicate them first to create your own editable copy.");
+      return;
+    }
+
+    const requestedName = prompt("Rename component:", def.name || "Component");
+    if (requestedName === null) return;
+    const nextName = requestedName.trim();
+    if (!nextName || nextName === def.name) return;
+
+    const res = await fetch(`/dashboard/api/overlay-components/${componentId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: nextName,
+        schemaVersion: def.schemaVersion || 1,
+        elements: def.elements || [],
+        propsSchema: def.propsSchema || {},
+        metadata: def.metadata || {},
+        variantGroupId: def.variantGroupId,
+        variantName: def.variantName,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Rename failed: ${res.status}`);
+    }
+
+    setOverlayComponents((prev) =>
+      prev.map((component) => (component.id === componentId ? { ...component, name: nextName } : component))
+    );
+
+    setConfig((prev) => ({
+      ...prev,
+      elements: prev.elements.map((element) =>
+        element.type === "componentInstance" && (element as any).componentId === componentId
+          ? ({ ...element, name: nextName } as any)
+          : element
+      ),
+    }));
+
+    if (editingMasterId === componentId) {
+      setName(nextName);
+    }
+
+    showEditorStatus("Component renamed", `${nextName} is now the library label for future placements.`);
   }
 
   function exitIsolationMode() {
@@ -4953,7 +5088,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <div className="flex-1 min-h-0 flex flex-col pt-1">
               <ComponentLibraryPanel
                 components={overlayComponents}
-                onEdit={enterIsolationMode}
+                onEdit={(componentId) => {
+                  handleEditMasterComponent(componentId).catch((err) => {
+                    console.error("Failed to open component master", err);
+                    alert(err?.message || "Failed to open component master");
+                  });
+                }}
+                onRename={(componentId) => {
+                  renameComponent(componentId).catch((err) => {
+                    console.error("Failed to rename component", err);
+                    alert(err?.message || "Failed to rename component");
+                  });
+                }}
                 onDelete={deleteComponent}
                 onCreateVariant={createVariantFromComponent}
                 onInsert={(comp) => {
@@ -5869,7 +6015,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             metadata={metadata}
             onUpdateSchema={setPropsSchema}
             onUpdateMetadata={setMetadata}
-            onEditMaster={enterIsolationMode}
+            onEditMaster={(componentId, _directDef, sourceInstanceId) => {
+              handleEditMasterComponent(componentId, sourceInstanceId).catch((err) => {
+                console.error("Failed to open component master", err);
+                alert(err?.message || "Failed to open component master");
+              });
+            }}
             onReleaseMask={handleReleaseMask}
             onReleaseBoolean={ungroupSelected}
             onFlattenBoolean={flattenBooleanSelected}
@@ -7671,13 +7822,19 @@ function InspectorPanel({
                 });
               })()}
               <div className="pt-2">
-                <button
-                  onClick={() => onEditMaster?.((element as any).componentId, undefined, element.id)}
-                  className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
-                >
-                  <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                  Edit Master Component
-                </button>
+                {(() => {
+                  const def = overlayComponents.find(c => c.id === (element as any).componentId);
+                  const isBuiltIn = Boolean(def && String(def.id).startsWith("preset_"));
+                  return (
+                    <button
+                      onClick={() => onEditMaster?.((element as any).componentId, undefined, element.id)}
+                      className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
+                    >
+                      <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                      {isBuiltIn ? "Duplicate & Edit Master" : "Edit Master Component"}
+                    </button>
+                  );
+                })()}
               </div>
               {(() => {
                 const def = overlayComponents.find(c => c.id === (element as any).componentId);
@@ -9757,10 +9914,11 @@ function LayersPanel({
   );
 }
 
-function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreateVariant }: {
+function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelete, onCreateVariant }: {
   components: OverlayComponentDef[],
   onInsert: (c: OverlayComponentDef) => void,
   onEdit: (id: string) => void,
+  onRename: (id: string) => void,
   onDelete: (id: string) => void,
   onCreateVariant: (id: string) => void
 }) {
@@ -9802,10 +9960,19 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
               <button
                 className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
-                title="Edit Master"
+                title={isBuiltin ? "Duplicate to Edit Master" : "Edit Master"}
               >
                 <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
+              {!isBuiltin && (
+                <button
+                  className={uiClasses.iconButton}
+                  onClick={(e) => { e.stopPropagation(); onRename(comp.id); }}
+                  title="Rename Component"
+                >
+                  <svg {...TOOL_ICON_PROPS}><path d="M4 20h4"></path><path d="M14.5 5.5a2.121 2.121 0 0 1 3 3L8 18l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+              )}
               {!isBuiltin && (
                 <button
                   className={`${uiClasses.iconButton} hover:text-red-400`}
