@@ -7599,6 +7599,22 @@ function InspectorPanel({
                   Edit Master Component
                 </button>
               </div>
+              {(element as any).componentId === "preset_lower_third" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => onTestLowerThird?.("show")}
+                    className={uiClasses.buttonGhost}
+                  >
+                    Test Show
+                  </button>
+                  <button
+                    onClick={() => onTestLowerThird?.("hide")}
+                    className={uiClasses.buttonGhost}
+                  >
+                    Test Hide
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onDetachInstance?.()}

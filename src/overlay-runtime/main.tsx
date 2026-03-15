@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   OverlayElement,
   OverlayConfigV0,
+  OverlayComponentDef,
   OverlayTimelineProperty,
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
@@ -421,6 +422,7 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 ------------------------------*/
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
+  const [overlayComponents, setOverlayComponents] = useState<OverlayComponentDef[]>([]);
   const [state, setState] = useState<OverlayStateV0 | null>(null);
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
@@ -470,13 +472,18 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         console.error("Failed to load overlay config", res.status);
         return;
       }
-      const data = (await res.json()) as OverlayConfigV0;
-      const nextHash = JSON.stringify(data);
+      const raw = await res.json();
+      const nextOverlay = raw as OverlayConfigV0;
+      const nextComponents = Array.isArray((raw as any)?.overlayComponents)
+        ? ((raw as any).overlayComponents as OverlayComponentDef[])
+        : [];
+      const nextHash = JSON.stringify({ overlay: nextOverlay, overlayComponents: nextComponents });
       if (cancelled) return;
       if (nextHash === overlayConfigHashRef.current) return;
 
       overlayConfigHashRef.current = nextHash;
-      setOverlay(data);
+      setOverlay(nextOverlay);
+      setOverlayComponents(nextComponents);
     };
 
     loadConfig().catch((e) => console.error("Failed to load overlay config", e));
@@ -720,6 +727,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   animationPhase={animationPhases[el.id]?.phase}
                   animationPhases={animationPhases}
                   data={{}} // Test data placeholder
+                  overlayComponents={overlayComponents}
                   visited={new Set()}
                 />
               ))}
@@ -737,6 +745,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 animationPhase={animationPhases[el.id]?.phase}
                 animationPhases={animationPhases}
                 data={eventData}
+                overlayComponents={overlayComponents}
                 visited={new Set()}
               />
             ))}
