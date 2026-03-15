@@ -1102,7 +1102,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   ) {
     const def = directDef || overlayComponents.find(c => c.id === componentId);
     if (!def) {
-      alert("Component definition not found.");
+      alert("Graphic definition not found.");
       return;
     }
     const defElements = Array.isArray((def as any).elements) ? (def as any).elements : [];
@@ -1130,7 +1130,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function buildComponentCopyName(baseName: string) {
-    const cleanBase = (baseName || "Component").trim();
+    const cleanBase = (baseName || "Graphic").trim();
     const preferred = `My ${cleanBase}`;
     const existing = new Set(overlayComponents.map((component) => component.name.trim().toLowerCase()));
     if (!existing.has(preferred.toLowerCase())) return preferred;
@@ -1144,7 +1144,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   async function handleEditMasterComponent(componentId: string, sourceInstanceId?: string) {
     const def = overlayComponents.find((component) => component.id === componentId);
     if (!def) {
-      alert("Component definition not found.");
+      alert("Graphic definition not found.");
       return;
     }
 
@@ -1201,7 +1201,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
     setEditorStatus({
       title: "Editable copy created",
-      detail: `${forkedDef.name} is now your own component master.`,
+      detail: `${forkedDef.name} is now your own graphic.`,
     });
 
     enterIsolationMode(forkedDef.id, forkedDef, sourceInstanceId, returnConfig);
@@ -1211,11 +1211,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const def = overlayComponents.find((component) => component.id === componentId);
     if (!def) return;
     if (String(def.id).startsWith("preset_")) {
-      alert("Built-in components cannot be renamed. Duplicate them first to create your own editable copy.");
+      alert("Built-in graphics cannot be renamed. Make an editable copy first.");
       return;
     }
 
-    const requestedName = prompt("Rename component:", def.name || "Component");
+    const requestedName = prompt("Rename graphic:", def.name || "Graphic");
     if (requestedName === null) return;
     const nextName = requestedName.trim();
     if (!nextName || nextName === def.name) return;
@@ -1255,7 +1255,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setName(nextName);
     }
 
-    showEditorStatus("Component renamed", `${nextName} is now the library label for future placements.`);
+    showEditorStatus("Graphic renamed", `${nextName} is now the library label for future placements.`);
   }
 
   function exitIsolationMode() {
@@ -2834,7 +2834,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       childElements = config.elements.filter(e => childrenIds.includes(e.id));
     }
 
-    const componentName = prompt("Enter a name for this new component:", "My Component");
+    const componentName = prompt("Enter a name for this new graphic:", "My Graphic");
     if (!componentName) return;
 
     // Relative offset of children
@@ -3428,8 +3428,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           });
         }
         setEditorStatus({
-          title: "Master forked",
-          detail: "Built-in components save as your own copy the first time you edit them.",
+          title: "Editable copy created",
+          detail: "Built-in graphics save as your own copy the first time you edit them.",
         });
       }
       if (isComponentMaster && method === "PUT" && editingMasterId && saved?.public_id) {
@@ -5078,7 +5078,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            <span>Components</span>
+            <span>Graphics</span>
           </button>
         </div>
 
@@ -5117,8 +5117,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 components={overlayComponents}
                 onEdit={(componentId) => {
                   handleEditMasterComponent(componentId).catch((err) => {
-                    console.error("Failed to open component master", err);
-                    alert(err?.message || "Failed to open component master");
+      console.error("Failed to open graphic", err);
+      alert(err?.message || "Failed to open graphic");
                   });
                 }}
                 onRename={(componentId) => {
@@ -5144,7 +5144,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   const instanceEl: AnyEl = {
                     id: instId,
                     type: "componentInstance",
-                    name: comp.name || "Component",
+                    name: comp.name || "Graphic",
                     x: 50,
                     y: 50,
                     width: maxX - minX || 200,
@@ -5331,7 +5331,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <div className="absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30">
               <div className="flex items-center gap-2 text-indigo-200">
                 <span className="relative -top-px"><svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></span>
-                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Isolation Mode</span>
+                <span className="text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]">Edit Graphic</span>
               </div>
               <div className="w-px h-3 bg-indigo-400/50" />
               <div className="max-w-[200px] truncate text-[13px] leading-[1.4] font-semibold">{name}</div>
@@ -6042,10 +6042,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             metadata={metadata}
             onUpdateSchema={setPropsSchema}
             onUpdateMetadata={setMetadata}
-            onEditMaster={(componentId, _directDef, sourceInstanceId) => {
+                onEditMaster={(componentId, _directDef, sourceInstanceId) => {
               handleEditMasterComponent(componentId, sourceInstanceId).catch((err) => {
-                console.error("Failed to open component master", err);
-                alert(err?.message || "Failed to open component master");
+                console.error("Failed to open graphic", err);
+                alert(err?.message || "Failed to open graphic");
               });
             }}
             onReleaseMask={handleReleaseMask}
@@ -6322,7 +6322,7 @@ function ExposeButton({
   return (
     <button
       onClick={toggle}
-      title={isBound ? `Bound to: ${boundKey}` : "Expose as Component Prop"}
+      title={isBound ? `Bound to: ${boundKey}` : "Expose as Graphic Prop"}
       className={`ml-1 flex-none ${uiClasses.iconButton} ${isBound ? "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white" : ""}`}
     >
       <LinkIcon />
@@ -7820,12 +7820,12 @@ function InspectorPanel({
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
             <div className="space-y-4">
-              <label className={uiClasses.label}>Component Properties</label>
+              <label className={uiClasses.label}>Graphic Properties</label>
               {(() => {
                 const def = overlayComponents.find(c => c.id === (element as any).componentId);
-                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Master Definition Missing</div>;
+                if (!def) return <div className="text-[12px] leading-[1.4] text-red-400">Graphic Definition Missing</div>;
                 if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
-                  return <div className="text-[11px] leading-[1.4] text-slate-500">No properties exposed by master.</div>;
+                  return <div className="text-[11px] leading-[1.4] text-slate-500">No editable properties exposed by this graphic.</div>;
                 }
                 const schemaKeys = Object.keys(def.propsSchema);
                 return schemaKeys.map(key => {
@@ -7858,7 +7858,7 @@ function InspectorPanel({
                       className="flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]"
                     >
                       <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                      {isBuiltIn ? "Duplicate & Edit Master" : "Edit Master Component"}
+                      {isBuiltIn ? "Make Editable Copy" : "Edit Graphic"}
                     </button>
                   );
                 })()}
@@ -9609,10 +9609,10 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.frame} label="Add Frame" onClick={onAddFrame} />
-        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Place Lower Third" onClick={onAddLowerThird} />
+        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Place Lower Third Graphic" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
-          label="Conversion Selection to Component"
+          label="Convert Selection to Graphic"
           onClick={onCreateComponent}
           disabled={!canCreateComponent}
         />
@@ -9952,8 +9952,8 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
   if (!components || components.length === 0) {
     return (
       <div className="p-4 text-center">
-        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Components Found</div>
-        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
+        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Graphics Found</div>
+        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Graphic" to build reusable graphics.</div>
       </div>
     );
   }
@@ -9987,7 +9987,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
               <button
                 className={uiClasses.iconButton}
                 onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
-                title={isBuiltin ? "Duplicate to Edit Master" : "Edit Master"}
+                title={isBuiltin ? "Make Editable Copy" : "Edit Graphic"}
               >
                 <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               </button>
@@ -9995,7 +9995,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onRename, onDelet
                 <button
                   className={uiClasses.iconButton}
                   onClick={(e) => { e.stopPropagation(); onRename(comp.id); }}
-                  title="Rename Component"
+                  title="Rename Graphic"
                 >
                   <svg {...TOOL_ICON_PROPS}><path d="M4 20h4"></path><path d="M14.5 5.5a2.121 2.121 0 0 1 3 3L8 18l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
