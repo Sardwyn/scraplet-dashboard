@@ -1100,18 +1100,21 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       alert("Component definition not found.");
       return;
     }
+    const defElements = Array.isArray((def as any).elements) ? (def as any).elements : [];
+    const defPropsSchema = def.propsSchema || {};
+    const defMetadata = def.metadata || {};
 
     setOriginalConfig(config);
     setOriginalIsMaster(isComponentMaster);
     setOriginalName(name);
     setOriginalSlug(slug);
 
-    setConfig({ ...config, elements: def.elements });
+    setConfig({ ...config, elements: defElements });
     setIsComponentMaster(true);
     setName(def.name);
     setSlug(`component-${def.id}`);
-    setPropsSchema(def.propsSchema);
-    setMetadata(def.metadata);
+    setPropsSchema(defPropsSchema);
+    setMetadata(defMetadata);
     setEditingMasterId(def.id);
     setEditingSourceInstanceId(sourceInstanceId || null);
     setSelectedIds([]);
@@ -1143,7 +1146,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const previewElements = useMemo(
     () =>
-      config.elements.map((el) => {
+      (Array.isArray(config.elements) ? config.elements : []).map((el) => {
         const overrideVisible = previewVisibilityOverrides[el.id];
         const visibilityResolved =
           typeof overrideVisible === "boolean"
