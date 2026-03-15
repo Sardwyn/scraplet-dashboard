@@ -658,6 +658,35 @@ export interface OverlayComponentInstanceElement extends OverlayElementBase {
   runtimeState?: Record<string, any>;
 }
 
+export interface OverlayControllerQuickAction {
+  id: "show" | "hide" | "dispatch";
+  label: string;
+  event?: string;
+}
+
+export interface OverlayControllerInteractionZone {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  propKey?: string;
+  quickActionId?: string;
+}
+
+export interface OverlayComponentControllerExposure {
+  enabled: boolean;
+  label?: string;
+  editableProps?: string[];
+  quickActions?: OverlayControllerQuickAction[];
+  zones?: OverlayControllerInteractionZone[];
+}
+
+export interface OverlayComponentMetadata extends Record<string, any> {
+  controller?: OverlayComponentControllerExposure;
+}
+
 export interface OverlayComponentDef {
   id: string;
   name: string;
@@ -666,7 +695,7 @@ export interface OverlayComponentDef {
   propsSchema: {
     [propKey: string]: { type: "text" | "color" | "image" | "boolean"; label: string; default: any }
   };
-  metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
+  metadata: OverlayComponentMetadata; // Hooks e.g., durationMs, animationIn
   variantGroupId?: string;
   variantName?: string;
 }

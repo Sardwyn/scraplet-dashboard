@@ -5786,7 +5786,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             overlayComponents={overlayComponents}
             isComponentMaster={isComponentMaster}
             propsSchema={propsSchema}
+            metadata={metadata}
             onUpdateSchema={setPropsSchema}
+            onUpdateMetadata={setMetadata}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
             onReleaseBoolean={ungroupSelected}
@@ -5945,7 +5947,9 @@ interface InspectorProps {
   overlayComponents: OverlayComponentDef[];
   isComponentMaster?: boolean;
   propsSchema?: any;
+  metadata?: any;
   onUpdateSchema?: (schema: any) => void;
+  onUpdateMetadata?: (metadata: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
   onReleaseBoolean?: () => void;
@@ -7207,7 +7211,7 @@ function InspectorPanel({
   element, onChange, onRename, onPickImage, onPickPatternImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
   overlayComponents,
-  isComponentMaster, propsSchema, onUpdateSchema,
+  isComponentMaster, propsSchema, metadata, onUpdateSchema, onUpdateMetadata,
   onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
   selectedPathAnchor, onAddPathNode, onRemovePathNode, onSplitPath, onContinuePath, onJoinPaths, onExpandStroke, canContinuePath, canJoinPaths,
   previewVisible,
@@ -7228,6 +7232,24 @@ function InspectorPanel({
       : element.type === "boolean"
         ? (resolvedGeometry?.path.commands.length ?? 0)
         : null;
+  const controllerExposure = metadata?.controller || {};
+  const controllerQuickActions = Array.isArray(controllerExposure.quickActions)
+    ? controllerExposure.quickActions
+    : [];
+  const editablePropKeys = Array.isArray(controllerExposure.editableProps)
+    ? controllerExposure.editableProps
+    : [];
+
+  function updateControllerExposure(patch: Record<string, any>) {
+    if (!onUpdateMetadata) return;
+    onUpdateMetadata({
+      ...(metadata || {}),
+      controller: {
+        ...controllerExposure,
+        ...patch,
+      },
+    });
+  }
 
   return (
     <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
@@ -7367,6 +7389,96 @@ function InspectorPanel({
           </div>
         )}
       </div>
+
+      {isComponentMaster && (
+        <AccordionSection title="Controller" defaultOpen={true}>
+          <div className="space-y-3">
+            <label className="flex items-center justify-between gap-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+              <span className={uiClasses.label}>Expose in Controller</span>
+              <input
+                type="checkbox"
+                checked={controllerExposure.enabled === true}
+                onChange={(e) => updateControllerExposure({ enabled: e.target.checked })}
+              />
+            </label>
+
+            {controllerExposure.enabled === true && (
+              <>
+                <div className="space-y-1">
+                  <label className={fieldLabelClass}>Controller Label</label>
+                  <input
+                    type="text"
+                    className={fieldClass}
+                    value={controllerExposure.label || ""}
+                    placeholder={element.name || defaultElementLabel(element)}
+                    onChange={(e) => updateControllerExposure({ label: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className={fieldLabelClass}>Editable Props</label>
+                  {Object.keys(propsSchema || {}).length === 0 ? (
+                    <div className="text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                      Expose element properties to the component first, then choose which ones operators can edit.
+                    </div>
+                  ) : (
+                    Object.keys(propsSchema || {}).map((key) => {
+                      const checked = editablePropKeys.includes(key);
+                      const fieldDef = (propsSchema || {})[key];
+                      return (
+                        <label key={key} className="flex items-center justify-between gap-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+                          <span className="text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200">
+                            {fieldDef?.label || key}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...editablePropKeys, key]
+                                : editablePropKeys.filter((value: string) => value !== key);
+                              updateControllerExposure({ editableProps: next });
+                            }}
+                          />
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className={fieldLabelClass}>Quick Actions</label>
+                  {[
+                    { id: "show", label: "Show" },
+                    { id: "hide", label: "Hide" },
+                  ].map((action) => {
+                    const checked = controllerQuickActions.some((item: any) => item?.id === action.id);
+                    return (
+                      <label key={action.id} className="flex items-center justify-between gap-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] px-3 py-2">
+                        <span className="text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200">{action.label}</span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...controllerQuickActions, action]
+                              : controllerQuickActions.filter((item: any) => item?.id !== action.id);
+                            updateControllerExposure({ quickActions: next });
+                          }}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80">
+                  Controller hotspots use the component instance bounds for now. Custom zones can be added later if this proves out.
+                </div>
+              </>
+            )}
+          </div>
+        </AccordionSection>
+      )}
 
       {/* Transform Section */}
       <AccordionSection title="Transform" defaultOpen={true}>

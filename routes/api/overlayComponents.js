@@ -44,7 +44,7 @@ router.post('/overlay-components', requireAuth, async (req, res) => {
     }
 });
 
-const BUILTIN_PRESETS = [
+export const BUILTIN_PRESETS = [
     {
         id: 'preset_lower_third',
         public_id: 'preset_lower_third',
@@ -93,8 +93,8 @@ const BUILTIN_PRESETS = [
                 }
             ],
             propsSchema: {
-                title: { type: 'text', label: 'Title', default: 'John Doe' },
-                subtitle: { type: 'text', label: 'Subtitle', default: 'Streamer/Developer' },
+                title: { type: 'text', label: 'Guest Name', default: 'John Doe' },
+                subtitle: { type: 'text', label: 'Guest Title', default: 'Streamer/Developer' },
                 bgColor: { type: 'color', label: 'Background', default: 'rgba(0,0,0,0.8)' },
                 accentColor: { type: 'color', label: 'Accent', default: '#6366f1' },
                 titleColor: { type: 'color', label: 'Title Color', default: '#ffffff' },
@@ -103,7 +103,16 @@ const BUILTIN_PRESETS = [
             metadata: {
                 durationMs: 8000,
                 animationIn: 'slideUp',
-                animationOut: 'slideDown'
+                animationOut: 'slideDown',
+                controller: {
+                    enabled: true,
+                    label: 'Lower Third',
+                    editableProps: ['title', 'subtitle'],
+                    quickActions: [
+                        { id: 'show', label: 'Show' },
+                        { id: 'hide', label: 'Hide' }
+                    ]
+                }
             }
         }
     }
