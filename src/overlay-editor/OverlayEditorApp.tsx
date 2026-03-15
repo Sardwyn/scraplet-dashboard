@@ -2324,15 +2324,49 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   function addLowerThird() {
+    const lowerThirdComponent = overlayComponents.find((component) => component.id === "preset_lower_third");
+    if (lowerThirdComponent) {
+      const instId = genId("instance");
+      let minX = 0;
+      let minY = 0;
+      let maxX = 600;
+      let maxY = 120;
+
+      if (lowerThirdComponent.elements && lowerThirdComponent.elements.length > 0) {
+        minX = Math.min(...lowerThirdComponent.elements.map((e: any) => e.x));
+        minY = Math.min(...lowerThirdComponent.elements.map((e: any) => e.y));
+        maxX = Math.max(...lowerThirdComponent.elements.map((e: any) => e.x + e.width));
+        maxY = Math.max(...lowerThirdComponent.elements.map((e: any) => e.y + e.height));
+      }
+
+      const instanceEl: AnyEl = {
+        id: instId,
+        type: "componentInstance",
+        name: "Lower Third",
+        x: 60,
+        y: Math.max(40, baseResolution.height - ((maxY - minY) || 120) - 60),
+        width: maxX - minX || 600,
+        height: maxY - minY || 120,
+        visible: true,
+        locked: false,
+        opacity: 1,
+        componentId: lowerThirdComponent.id,
+        propOverrides: {},
+      } as any;
+      setConfig((prev) => ({ ...prev, elements: [...prev.elements, instanceEl] }));
+      setSelectedIds([instId]);
+      return;
+    }
+
+    // Fallback for older environments where the preset is unavailable.
     const id = genId("lt");
     const el: OverlayLowerThirdElement = {
       type: "lower_third",
       id,
       x: 0,
-      y: baseResolution.height - 300, // Bottom area
+      y: baseResolution.height - 300,
       width: baseResolution.width,
       height: 250,
-      // V1 uses global keys
       bind: {
         activeKey: "lower_third.active",
         textKey: "lower_third",
@@ -9340,7 +9374,7 @@ function CreationToolbar({
         <ToolButton icon={TOOLBAR_ICONS.image} label="Add Image" onClick={onAddImage} />
         <ToolButton icon={TOOLBAR_ICONS.video} label="Add Video" onClick={onAddVideo} />
         <ToolButton icon={TOOLBAR_ICONS.frame} label="Add Frame" onClick={onAddFrame} />
-        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Add Lower Third" onClick={onAddLowerThird} />
+        <ToolButton icon={TOOLBAR_ICONS.lower_third} label="Place Lower Third" onClick={onAddLowerThird} />
         <ToolButton
           icon={<svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
           label="Conversion Selection to Component"
