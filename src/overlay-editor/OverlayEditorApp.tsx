@@ -3432,6 +3432,33 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           detail: "Built-in components save as your own copy the first time you edit them.",
         });
       }
+      if (isComponentMaster && method === "PUT" && editingMasterId && saved?.public_id) {
+        const savedDef: OverlayComponentDef = {
+          id: saved.public_id,
+          name: saved.name || name,
+          schemaVersion: saved.schema_version || body.schemaVersion || 1,
+          elements: saved.component_json?.elements || config.elements,
+          propsSchema: saved.component_json?.propsSchema || propsSchema,
+          metadata: saved.component_json?.metadata || metadata,
+          variantGroupId: saved.component_json?.variantGroupId,
+          variantName: saved.component_json?.variantName,
+        };
+
+        setOverlayComponents((prev) =>
+          prev.map((component) => (component.id === editingMasterId ? savedDef : component))
+        );
+
+        if (originalConfig && editingSourceInstanceId) {
+          setOriginalConfig({
+            ...originalConfig,
+            elements: originalConfig.elements.map((element) =>
+              element.id === editingSourceInstanceId && element.type === "componentInstance"
+                ? ({ ...element, name: savedDef.name } as any)
+                : element
+            ),
+          });
+        }
+      }
       setSaveOk(true);
     } catch (err: any) {
       setSaveError(err?.message || "Save failed");
