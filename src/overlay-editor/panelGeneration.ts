@@ -125,6 +125,19 @@ export function getDefaultPanelConfig(): PanelGenerationConfig {
   };
 }
 
+function resolveFillColor(el: any): string | null {
+  if (Array.isArray(el?.fills) && el.fills.length) {
+    const fill = el.fills[0];
+    if (fill?.type === "solid" && typeof fill.color === "string") return fill.color;
+    if ((fill?.type === "linear" || fill?.type === "radial" || fill?.type === "conic") && fill.stops?.length) {
+      return fill.stops[0]?.color || null;
+    }
+  }
+  if (el?.fillColor) return el.fillColor;
+  if (el?.backgroundColor) return el.backgroundColor;
+  return null;
+}
+
 function toNodeLike(el: OverlayElement, elementsById: Record<string, OverlayElement>): NodeLike | null {
   if (el.visible === false) return null;
   if (el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean") {
@@ -188,7 +201,7 @@ function toNodeLike(el: OverlayElement, elementsById: Record<string, OverlayElem
       visible: el.visible,
       opacity: el.opacity,
       style: {
-        fill: box.backgroundColor,
+        fill: resolveFillColor(box),
         stroke: box.strokeColor,
         borderRadius: box.borderRadiusPx || (box as any).borderRadius,
       },
@@ -208,7 +221,7 @@ function toNodeLike(el: OverlayElement, elementsById: Record<string, OverlayElem
       visible: el.visible,
       opacity: el.opacity,
       style: {
-        fill: shape.fillColor,
+        fill: resolveFillColor(shape),
         stroke: shape.strokeColor,
         borderRadius: shape.cornerRadiusPx,
       },
@@ -275,6 +288,26 @@ function parseColor(input?: string) {
 function colorToHex(color: { r: number; g: number; b: number }) {
   const toHex = (v: number) => v.toString(16).padStart(2, "0");
   return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
+}
+
+function rgbToHsl(color: { r: number; g: number; b: number }) {
+  const r = color.r / 255;
+  const g = color.g / 255;
+  const b = color.b / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  let h = 0;
+  if (delta !== 0) {
+    if (max === r) h = ((g - b) / delta) % 6;
+    else if (max === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  const l = (max + min) / 2;
+  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  return { h, s, l };
 }
 
 function collectMostCommon<T>(entries: T[]) {
@@ -475,7 +508,16 @@ function collectMostCommonWeighted(entries: Array<{ color: string; weight: numbe
 
 function pickAccent(colors: string[], background: string) {
   const candidates = colors.filter((c) => c !== background);
-  return candidates[0] || null;
+  if (!candidates.length) return null;
+  const scored = candidates
+    .map((color) => {
+      const rgb = parseColor(color);
+      if (!rgb) return { color, score: 0 };
+      const hsl = rgbToHsl(rgb);
+      return { color, score: hsl.s };
+    })
+    .sort((a, b) => b.score - a.score);
+  return scored[0]?.color || candidates[0];
 }
 
 function mostCommon(values: number[]) {
