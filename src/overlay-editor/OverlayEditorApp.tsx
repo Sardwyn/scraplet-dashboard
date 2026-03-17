@@ -52,6 +52,9 @@ import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimatio
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
+import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
+import { generatePanelPackFromGroup, PanelPack } from "./panelGeneration";
+import { exportPanelPackPng, exportPanelPackZip, downloadBlob } from "./panelExport";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
 import { expandStrokePath, offsetOverlayPath } from "../shared/geometry/pathBoolean";
@@ -1032,7 +1035,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Template Picker State
   // (templates state removed)
-  const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [leftTab, setLeftTab] = useState<"layers" | "components" | "panels">("layers");
+  const [panelPack, setPanelPack] = useState<PanelPack | null>(null);
+  const [panelWarnings, setPanelWarnings] = useState<string[]>([]);
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
@@ -1479,6 +1484,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!primarySelectedId) return null;
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
+  const selectedGroupId = useMemo(() => {
+    if (!primarySelectedEl) return null;
+    if (
+      primarySelectedEl.type === "group" ||
+      primarySelectedEl.type === "frame" ||
+      primarySelectedEl.type === "mask" ||
+      primarySelectedEl.type === "boolean"
+    ) {
+      return primarySelectedEl.id;
+    }
+    return null;
+  }, [primarySelectedEl]);
 
   useEffect(() => {
     if (!selectedPathAnchor) return;
@@ -1537,6 +1554,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           ) as OverlayFrameElement | undefined) ?? null)
         : null,
     [config.elements, selectedIds]
+  );
+
+  const handleGeneratePanelPack = useCallback(
+    (configInput) => {
+      if (!selectedGroupId) {
+        setPanelPack(null);
+        setPanelWarnings(["Select a group or frame to generate a panel pack."]);
+        return;
+      }
+      const pack = generatePanelPackFromGroup(selectedGroupId, config.elements, configInput);
+      if (!pack) {
+        setPanelPack(null);
+        setPanelWarnings(["Unable to generate panel pack from selection."]);
+        return;
+      }
+      setPanelPack(pack);
+      setPanelWarnings(pack.warnings);
+    },
+    [selectedGroupId, config.elements]
+  );
+
+  const handleExportPanelPng = useCallback(
+    async (scale: number) => {
+      if (!panelPack) return;
+      const blobs = await exportPanelPackPng(panelPack, scale);
+      blobs.forEach((blob, idx) => {
+        const panel = panelPack.panels[idx];
+        downloadBlob(blob, `${panel.type}-${idx + 1}@${scale}x.png`);
+      });
+    },
+    [panelPack]
+  );
+
+  const handleExportPanelZip = useCallback(
+    async (scale: number) => {
+      if (!panelPack) return;
+      const zipBlob = await exportPanelPackZip(panelPack, scale);
+      downloadBlob(zipBlob, `panel-pack@${scale}x.zip`);
+    },
+    [panelPack]
   );
 
   const selectionBounds = useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
@@ -5080,6 +5137,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span>Components</span>
           </button>
+          <button
+            onClick={() => setLeftTab("panels")}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "panels" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+          >
+            <svg {...TOOL_ICON_PROPS}><path d="M4 4h16v6H4zM4 14h10v6H4zM16 14h4v6h-4z" /></svg>
+            <span>Panels</span>
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -5158,6 +5222,19 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   setConfig(prev => ({ ...prev, elements: [...prev.elements, instanceEl] }));
                   setSelectedIds([instId]);
                 }}
+              />
+            </div>
+          )}
+          {leftTab === "panels" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1">
+              <PanelGeneratorPanel
+                selectedGroupId={selectedGroupId}
+                panelPack={panelPack}
+                warnings={panelWarnings}
+                onGenerate={handleGeneratePanelPack}
+                onUpdatePack={setPanelPack}
+                onExportPng={handleExportPanelPng}
+                onExportZip={handleExportPanelZip}
               />
             </div>
           )}

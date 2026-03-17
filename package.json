@@ -29,6 +29,7 @@
     "express-session": "^1.18.2",
     "follower-count": "^0.5.0",
     "ioredis": "^5.9.2",
+    "jszip": "^3.10.1",
     "jsonwebtoken": "^9.0.3",
     "martinez-polygon-clipping": "^0.8.1",
     "multer": "^2.0.2",
