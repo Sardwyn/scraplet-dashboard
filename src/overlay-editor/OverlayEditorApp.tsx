@@ -1484,18 +1484,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!primarySelectedId) return null;
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
-  const selectedGroupId = useMemo(() => {
-    if (!primarySelectedEl) return null;
+  const selectedGroupEl = useMemo(() => {
+    const groupLike = selectedEls.find(
+      (el) => el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean"
+    );
+    if (groupLike) return groupLike;
     if (
-      primarySelectedEl.type === "group" ||
-      primarySelectedEl.type === "frame" ||
-      primarySelectedEl.type === "mask" ||
-      primarySelectedEl.type === "boolean"
+      primarySelectedEl &&
+      (primarySelectedEl.type === "group" ||
+        primarySelectedEl.type === "frame" ||
+        primarySelectedEl.type === "mask" ||
+        primarySelectedEl.type === "boolean")
     ) {
-      return primarySelectedEl.id;
+      return primarySelectedEl;
     }
     return null;
-  }, [primarySelectedEl]);
+  }, [selectedEls, primarySelectedEl]);
+  const selectedGroupId = selectedGroupEl ? selectedGroupEl.id : null;
 
   useEffect(() => {
     if (!selectedPathAnchor) return;
@@ -5229,6 +5234,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <div className="flex-1 min-h-0 flex flex-col pt-1">
               <PanelGeneratorPanel
                 selectedGroupId={selectedGroupId}
+                selectedGroupName={selectedGroupEl?.name || null}
                 panelPack={panelPack}
                 warnings={panelWarnings}
                 onGenerate={handleGeneratePanelPack}

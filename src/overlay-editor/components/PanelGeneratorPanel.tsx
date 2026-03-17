@@ -10,6 +10,7 @@ import {
 
 type Props = {
   selectedGroupId: string | null;
+  selectedGroupName?: string | null;
   panelPack: PanelPack | null;
   warnings: string[];
   onGenerate: (config: PanelGenerationConfig) => void;
@@ -56,6 +57,7 @@ function updateStyleToken(pack: PanelPack, token: keyof StyleProfile["colors"], 
 
 export function PanelGeneratorPanel({
   selectedGroupId,
+  selectedGroupName,
   panelPack,
   warnings,
   onGenerate,
@@ -85,6 +87,9 @@ export function PanelGeneratorPanel({
 
       <div className="flex flex-col gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#121216] p-3">
         <div className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Panel Types</div>
+        <div className="text-[11px] text-slate-500">
+          Source: {selectedGroupId ? (selectedGroupName || selectedGroupId) : "Select a group/frame"}
+        </div>
         <div className="flex flex-wrap gap-2">
           {ALL_TYPES.map((type) => (
             <button
