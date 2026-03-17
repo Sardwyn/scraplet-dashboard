@@ -42,6 +42,10 @@ export type StyleProfile = {
   };
   shape: {
     cornerRadius: number;
+    border: boolean;
+  };
+  spacing: {
+    base: number;
   };
   iconStyle: "outline" | "filled" | "image" | "mixed";
 };
@@ -96,6 +100,10 @@ const DEFAULT_PROFILE: StyleProfile = {
   },
   shape: {
     cornerRadius: 12,
+    border: false,
+  },
+  spacing: {
+    base: 12,
   },
   iconStyle: "mixed",
 };
@@ -273,38 +281,66 @@ function collectMostCommon<T>(entries: T[]) {
 }
 
 function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
-  const fills: string[] = [];
-  const textColors: string[] = [];
+  const fills: Array<{ color: string; weight: number }> = [];
+  const textColors: Array<{ color: string; weight: number }> = [];
   const fonts: string[] = [];
   const fontSizes: number[] = [];
+  const fontWeights: Array<{ weight: number; count: number }> = [];
   const radii: number[] = [];
+  const gaps: number[] = [];
   let iconFillCount = 0;
   let iconStrokeCount = 0;
   let imageCount = 0;
+  let borderSeen = false;
+
+  const sortedByY = nodes
+    .filter((n) => n.type !== "group")
+    .slice()
+    .sort((a, b) => a.y - b.y);
+
+  for (let i = 0; i < sortedByY.length - 1; i++) {
+    const cur = sortedByY[i];
+    const next = sortedByY[i + 1];
+    const gap = next.y - (cur.y + cur.height);
+    if (gap > 0) gaps.push(Math.round(gap));
+  }
 
   nodes.forEach((node) => {
+    const area = Math.max(1, node.width * node.height);
     if (node.style?.borderRadius) radii.push(node.style.borderRadius);
     if (node.type === "image") imageCount += 1;
     const fill = parseColor(node.style?.fill);
-    if (fill) fills.push(colorToHex(fill));
-    if (node.style?.stroke) iconStrokeCount += 1;
+    if (fill) fills.push({ color: colorToHex(fill), weight: area * (node.opacity ?? 1) });
+    if (node.style?.stroke) {
+      iconStrokeCount += 1;
+      borderSeen = true;
+    }
     if (node.type === "shape" || node.type === "box") {
       if (node.style?.fill) iconFillCount += 1;
     }
     if (node.type === "text") {
       const textFill = parseColor(node.style?.fill);
-      if (textFill) textColors.push(colorToHex(textFill));
+      if (textFill) textColors.push({ color: colorToHex(textFill), weight: area * (node.opacity ?? 1) });
       if (node.style?.fontFamily) fonts.push(node.style.fontFamily);
       if (node.style?.fontSize) fontSizes.push(node.style.fontSize);
+      const weightValue = node.style?.fontWeight ? Number(node.style.fontWeight) : 400;
+      if (!Number.isNaN(weightValue)) {
+        const existing = fontWeights.find((entry) => entry.weight === weightValue);
+        if (existing) existing.count += 1;
+        else fontWeights.push({ weight: weightValue, count: 1 });
+      }
     }
   });
 
-  const background = collectMostCommon(fills) || DEFAULT_PROFILE.colors.background;
-  const textPrimary = collectMostCommon(textColors) || DEFAULT_PROFILE.colors.textPrimary;
-  const accent = fills.find((c) => c !== background) || DEFAULT_PROFILE.colors.accent;
+  const background = collectMostCommonWeighted(fills) || DEFAULT_PROFILE.colors.background;
+  const textPrimary = collectMostCommonWeighted(textColors) || DEFAULT_PROFILE.colors.textPrimary;
+  const accent = pickAccent(fills.map((f) => f.color), background) || DEFAULT_PROFILE.colors.accent;
   const fontFamily = collectMostCommon(fonts) || DEFAULT_PROFILE.typography.fontFamily;
   const body = collectMostCommon(fontSizes) || DEFAULT_PROFILE.typography.body;
+  const headingWeight =
+    fontWeights.sort((a, b) => b.count - a.count)[0]?.weight || DEFAULT_PROFILE.typography.headingWeight;
   const cornerRadius = collectMostCommon(radii) || DEFAULT_PROFILE.shape.cornerRadius;
+  const spacingBase = clamp(mostCommon(gaps) || DEFAULT_PROFILE.spacing.base, 8, 20);
 
   let iconStyle: StyleProfile["iconStyle"] = "mixed";
   if (imageCount > 0) iconStyle = "image";
@@ -322,10 +358,14 @@ function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
     typography: {
       fontFamily,
       body,
-      headingWeight: DEFAULT_PROFILE.typography.headingWeight,
+      headingWeight,
     },
     shape: {
       cornerRadius,
+      border: borderSeen,
+    },
+    spacing: {
+      base: spacingBase,
     },
     iconStyle,
   };
@@ -366,18 +406,50 @@ function deriveTitle(nodes: NodeLike[]) {
   return words.join(" ") || "Panel";
 }
 
-function buildPanels(config: PanelGenerationConfig, title: string): Panel[] {
+function buildPanels(config: PanelGenerationConfig, title: string, styleProfile: StyleProfile): Panel[] {
   return config.panelTypes.map((type, index) => {
-    const variant = PANEL_VARIANTS[index % PANEL_VARIANTS.length];
+    let variant = { ...PANEL_VARIANTS[index % PANEL_VARIANTS.length] };
+    if (!styleProfile.shape.border && variant.highlight === "outline") {
+      variant.highlight = "none";
+    }
+    if (styleProfile.iconStyle === "image") {
+      variant.icon = "included";
+    } else if (styleProfile.iconStyle === "outline") {
+      variant.icon = "included";
+    } else if (styleProfile.iconStyle === "filled") {
+      variant.icon = "included";
+    }
     return {
       id: `panel_${type}_${index}_${Date.now().toString(36)}`,
       type,
       title,
       layout: variant.id,
       content: {},
-      styleVariant: variant,
+      styleVariant: { ...variant },
     };
   });
+}
+
+function collectMostCommonWeighted(entries: Array<{ color: string; weight: number }>) {
+  if (!entries.length) return null;
+  const bucket = new Map<string, number>();
+  entries.forEach((entry) => bucket.set(entry.color, (bucket.get(entry.color) || 0) + entry.weight));
+  return Array.from(bucket.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+}
+
+function pickAccent(colors: string[], background: string) {
+  const candidates = colors.filter((c) => c !== background);
+  return candidates[0] || null;
+}
+
+function mostCommon(values: number[]) {
+  const freq = new Map<number, number>();
+  values.forEach((v) => freq.set(Math.round(v), (freq.get(Math.round(v)) || 0) + 1));
+  return Array.from(freq.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 0;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 export function generatePanelPackFromGroup(
@@ -394,7 +466,7 @@ export function generatePanelPackFromGroup(
   const warnings = detectWarnings(nodes);
   const styleProfile = extractStyleProfile(nodes);
   const title = deriveTitle(nodes);
-  const panels = buildPanels(config, title);
+  const panels = buildPanels(config, title, styleProfile);
   return {
     styleProfile,
     panels,

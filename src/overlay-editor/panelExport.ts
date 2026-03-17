@@ -106,7 +106,7 @@ function drawText(ctx: CanvasRenderingContext2D, panel: Panel, profile: StylePro
 function renderPanel(panel: Panel, profile: StyleProfile, scale: number) {
   const width = DEFAULT_WIDTH * scale;
   const height = Math.max(72, profile.typography.body * 4) * scale;
-  const paddingX = Math.max(14, profile.typography.body) * scale;
+  const paddingX = Math.max(10, profile.spacing.base) * scale;
   const radius = Math.max(4, profile.shape.cornerRadius) * scale;
   const variant = panel.styleVariant;
 
