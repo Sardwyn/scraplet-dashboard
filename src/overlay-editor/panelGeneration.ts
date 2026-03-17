@@ -113,6 +113,10 @@ export const PANEL_VARIANTS: PanelStyleVariant[] = [
   { id: "rounded-top", shape: "rounded", highlight: "top", accent: true, icon: "included", textTreatment: "bold" },
   { id: "pill-side", shape: "pill", highlight: "side", accent: true, icon: "included", textTreatment: "plain" },
   { id: "tab-accent", shape: "tab", highlight: "none", accent: true, icon: "omitted", textTreatment: "secondaryGlyph" },
+  { id: "rounded-outline", shape: "rounded", highlight: "outline", accent: false, icon: "included", textTreatment: "plain" },
+  { id: "rect-top", shape: "rectangle", highlight: "top", accent: false, icon: "omitted", textTreatment: "bold" },
+  { id: "pill-none", shape: "pill", highlight: "none", accent: false, icon: "included", textTreatment: "plain" },
+  { id: "tab-side", shape: "tab", highlight: "side", accent: true, icon: "omitted", textTreatment: "secondaryGlyph" },
 ];
 
 export function getDefaultPanelConfig(): PanelGenerationConfig {
@@ -416,26 +420,48 @@ function deriveTitle(nodes: NodeLike[]) {
   return words.join(" ") || "Panel";
 }
 
+function clampTitle(text: string) {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "Panel";
+  return words.slice(0, 2).join(" ");
+}
+
+function filterVariants(styleProfile: StyleProfile) {
+  return PANEL_VARIANTS.map((variant) => {
+    const next = { ...variant };
+    if (!styleProfile.shape.border && next.highlight === "outline") next.highlight = "none";
+    if (styleProfile.iconStyle === "image") next.icon = "included";
+    if (styleProfile.iconStyle === "outline") next.icon = "included";
+    if (styleProfile.iconStyle === "filled") next.icon = "included";
+    return next;
+  });
+}
+
+function chooseVariants(styleProfile: StyleProfile, count: number) {
+  const pool = filterVariants(styleProfile);
+  const picked: PanelStyleVariant[] = [];
+  for (let i = 0; i < count; i++) {
+    picked.push(pool[i % pool.length]);
+  }
+  return picked;
+}
+
 function buildPanels(config: PanelGenerationConfig, title: string, styleProfile: StyleProfile): Panel[] {
+  const safeTitle = clampTitle(title);
+  const variants = chooseVariants(styleProfile, config.panelTypes.length);
   return config.panelTypes.map((type, index) => {
-    let variant = { ...PANEL_VARIANTS[index % PANEL_VARIANTS.length] };
-    if (!styleProfile.shape.border && variant.highlight === "outline") {
-      variant.highlight = "none";
-    }
-    if (styleProfile.iconStyle === "image") {
-      variant.icon = "included";
-    } else if (styleProfile.iconStyle === "outline") {
-      variant.icon = "included";
-    } else if (styleProfile.iconStyle === "filled") {
-      variant.icon = "included";
+    const variant = { ...variants[index] };
+    const wordCount = safeTitle.split(/\s+/).length;
+    if (wordCount > 2 && variant.textTreatment === "outline") {
+      variant.textTreatment = "plain";
     }
     return {
       id: `panel_${type}_${index}_${Date.now().toString(36)}`,
       type,
-      title,
+      title: safeTitle,
       layout: variant.id,
       content: {},
-      styleVariant: { ...variant },
+      styleVariant: variant,
     };
   });
 }
