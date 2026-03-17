@@ -323,6 +323,7 @@ function collectMostCommon<T>(entries: T[]) {
 
 function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
   const fills: Array<{ color: string; weight: number }> = [];
+  const strokes: Array<{ color: string; weight: number }> = [];
   const textColors: Array<{ color: string; weight: number }> = [];
   let largestFont: { size: number; family: string } | null = null;
   const fontSizes: number[] = [];
@@ -355,6 +356,8 @@ function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
     if (node.style?.stroke) {
       iconStrokeCount += 1;
       borderSeen = true;
+      const strokeColor = parseColor(node.style.stroke);
+      if (strokeColor) strokes.push({ color: colorToHex(strokeColor), weight: area * 0.2 });
     }
     if (node.type === "shape" || node.type === "box") {
       if (node.style?.fill) iconFillCount += 1;
@@ -379,9 +382,23 @@ function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
     }
   });
 
-  const background = collectMostCommonWeighted(fills) || DEFAULT_PROFILE.colors.background;
-  const textPrimary = collectMostCommonWeighted(textColors) || DEFAULT_PROFILE.colors.textPrimary;
-  const accent = pickAccent(fills.map((f) => f.color), background) || DEFAULT_PROFILE.colors.accent;
+  const palette = [...fills, ...strokes];
+  const background = collectMostCommonWeighted(palette) || collectMostCommonWeighted(textColors) || DEFAULT_PROFILE.colors.background;
+  let textPrimary =
+    collectMostCommonWeighted(textColors) ||
+    collectMostCommonWeighted(palette.filter((c) => c.color !== background)) ||
+    DEFAULT_PROFILE.colors.textPrimary;
+  if (textPrimary === background) {
+    textPrimary =
+      collectMostCommonWeighted(textColors.filter((c) => c.color !== background)) ||
+      collectMostCommonWeighted(palette.filter((c) => c.color !== background)) ||
+      DEFAULT_PROFILE.colors.textPrimary;
+  }
+  const accent =
+    pickAccent(
+      [...palette, ...textColors].map((f) => f.color),
+      background
+    ) || DEFAULT_PROFILE.colors.accent;
   const fontFamily = largestFont?.family || DEFAULT_PROFILE.typography.fontFamily;
   const body = collectMostCommon(fontSizes) || DEFAULT_PROFILE.typography.body;
   const headingWeight =
