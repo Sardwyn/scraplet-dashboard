@@ -50,7 +50,7 @@ export function PanelGeneratorPanel({
           Panel Generator
         </div>
         <div className="text-[12px] text-slate-400">
-          Panels are banners derived from a selected group. Choose types, then generate style variants.
+          Panels are banners derived from the overlay composition. Select a group or a selection for tighter control.
         </div>
       </div>
 
