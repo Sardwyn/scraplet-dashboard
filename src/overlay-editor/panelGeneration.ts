@@ -283,7 +283,7 @@ function collectMostCommon<T>(entries: T[]) {
 function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
   const fills: Array<{ color: string; weight: number }> = [];
   const textColors: Array<{ color: string; weight: number }> = [];
-  const fonts: string[] = [];
+  let largestFont: { size: number; family: string } | null = null;
   const fontSizes: number[] = [];
   const fontWeights: Array<{ weight: number; count: number }> = [];
   const radii: number[] = [];
@@ -321,8 +321,14 @@ function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
     if (node.type === "text") {
       const textFill = parseColor(node.style?.fill);
       if (textFill) textColors.push({ color: colorToHex(textFill), weight: area * (node.opacity ?? 1) });
-      if (node.style?.fontFamily) fonts.push(node.style.fontFamily);
-      if (node.style?.fontSize) fontSizes.push(node.style.fontSize);
+      if (node.style?.fontSize) {
+        fontSizes.push(node.style.fontSize);
+        if (node.style?.fontFamily) {
+          if (!largestFont || node.style.fontSize > largestFont.size) {
+            largestFont = { size: node.style.fontSize, family: node.style.fontFamily };
+          }
+        }
+      }
       const weightValue = node.style?.fontWeight ? Number(node.style.fontWeight) : 400;
       if (!Number.isNaN(weightValue)) {
         const existing = fontWeights.find((entry) => entry.weight === weightValue);
@@ -335,7 +341,7 @@ function extractStyleProfile(nodes: NodeLike[]): StyleProfile {
   const background = collectMostCommonWeighted(fills) || DEFAULT_PROFILE.colors.background;
   const textPrimary = collectMostCommonWeighted(textColors) || DEFAULT_PROFILE.colors.textPrimary;
   const accent = pickAccent(fills.map((f) => f.color), background) || DEFAULT_PROFILE.colors.accent;
-  const fontFamily = collectMostCommon(fonts) || DEFAULT_PROFILE.typography.fontFamily;
+  const fontFamily = largestFont?.family || DEFAULT_PROFILE.typography.fontFamily;
   const body = collectMostCommon(fontSizes) || DEFAULT_PROFILE.typography.body;
   const headingWeight =
     fontWeights.sort((a, b) => b.count - a.count)[0]?.weight || DEFAULT_PROFILE.typography.headingWeight;
