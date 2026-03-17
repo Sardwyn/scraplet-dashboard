@@ -1633,7 +1633,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setPanelPack(pack);
       setPanelWarnings(pack.warnings);
     },
-    [selectedGroupId, config.elements, selectedIdsList, panelSamplePalette, samplePaletteFromElements]
+    [selectedGroupId, config.elements, selectedIdsList, panelSamplePalette]
   );
 
   const handleExportPanelPng = useCallback(
