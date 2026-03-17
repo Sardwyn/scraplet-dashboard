@@ -1501,7 +1501,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return null;
   }, [selectedEls, primarySelectedEl]);
   const selectedGroupId = selectedGroupEl ? selectedGroupEl.id : null;
-  const selectedIdsList = useMemo(() => selectedEls.map((el) => el.id), [selectedEls]);
 
   useEffect(() => {
     if (!selectedPathAnchor) return;
@@ -1564,32 +1563,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const handleGeneratePanelPack = useCallback(
     (configInput) => {
-      let sourceId = selectedGroupId;
-      let sourceElements = config.elements;
-      if (!sourceId && selectedIdsList.length > 0) {
-        sourceId = "__panel_selection__";
-        sourceElements = [
-          ...config.elements,
-          {
-            id: sourceId,
-            type: "group",
-            name: "Selection",
-            x: 0,
-            y: 0,
-            width: 0,
-            height: 0,
-            childIds: selectedIdsList,
-            visible: true,
-            locked: true,
-          } as AnyEl,
-        ];
-      }
-      if (!sourceId) {
+      if (!selectedGroupId) {
         setPanelPack(null);
-        setPanelWarnings(["Select a group/frame or multiple elements to generate a panel pack."]);
+        setPanelWarnings(["Select a group or frame to generate a panel pack."]);
         return;
       }
-      const pack = generatePanelPackFromGroup(sourceId, sourceElements, configInput);
+      const pack = generatePanelPackFromGroup(selectedGroupId, config.elements, configInput);
       if (!pack) {
         setPanelPack(null);
         setPanelWarnings(["Unable to generate panel pack from selection."]);
@@ -1598,7 +1577,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setPanelPack(pack);
       setPanelWarnings(pack.warnings);
     },
-    [selectedGroupId, config.elements, selectedIdsList]
+    [selectedGroupId, config.elements]
   );
 
   const handleExportPanelPng = useCallback(
@@ -5254,8 +5233,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           {leftTab === "panels" && (
             <div className="flex-1 min-h-0 flex flex-col pt-1">
               <PanelGeneratorPanel
-                selectedGroupId={selectedGroupId || (selectedIdsList.length ? "__panel_selection__" : null)}
-                selectedGroupName={selectedGroupEl?.name || (selectedIdsList.length ? "Selection" : null)}
+                selectedGroupId={selectedGroupId}
+                selectedGroupName={selectedGroupEl?.name || null}
                 panelPack={panelPack}
                 warnings={panelWarnings}
                 onGenerate={handleGeneratePanelPack}
