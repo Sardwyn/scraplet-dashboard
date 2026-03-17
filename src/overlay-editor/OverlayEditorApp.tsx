@@ -54,7 +54,7 @@ import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
-import { generatePanelPackFromGroup, PanelPack } from "./panelGeneration";
+import { generatePanelPackFromGroup, PanelPack, PanelGenerationConfig, StyleProfile } from "./panelGeneration";
 import { exportPanelPackPng, exportPanelPackZip, downloadBlob } from "./panelExport";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
@@ -1573,7 +1573,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   );
 
   const handleGeneratePanelPack = useCallback(
-    (configInput) => {
+    async (configInput: PanelGenerationConfig) => {
       let sourceId = selectedGroupId;
       let sourceElements = config.elements;
       if (!sourceId && selectedIdsList.length > 0) {
@@ -1612,9 +1612,18 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           } as AnyEl,
         ];
       }
+      let paletteOverride = panelSamplePalette || null;
+      if (!paletteOverride) {
+        const autoPalette = await samplePaletteFromElements(sourceElements);
+        if (autoPalette) {
+          paletteOverride = autoPalette;
+          setPanelSampleLabel("Auto");
+        }
+      }
+
       const pack = generatePanelPackFromGroup(sourceId, sourceElements, {
         ...configInput,
-        sampledPalette: panelSamplePalette || undefined,
+        sampledPalette: paletteOverride || undefined,
       });
       if (!pack) {
         setPanelPack(null);
@@ -1624,7 +1633,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setPanelPack(pack);
       setPanelWarnings(pack.warnings);
     },
-    [selectedGroupId, config.elements, selectedIdsList, panelSamplePalette]
+    [selectedGroupId, config.elements, selectedIdsList, panelSamplePalette, samplePaletteFromElements]
   );
 
   const handleExportPanelPng = useCallback(
@@ -1725,6 +1734,228 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     });
     setPanelSampleLabel("Canvas");
   }, [canvasStageRef]);
+
+  const samplePaletteFromElements = useCallback(async (elements: OverlayElement[]) => {
+    const colorBuckets = new Map<string, number>();
+    const textBuckets = new Map<string, number>();
+    const imageElements: OverlayImageElement[] = [];
+
+    const addColor = (color: string | undefined, weight: number, bucket?: Map<string, number>) => {
+      if (!color) return;
+      const normalized = normalizeColor(color);
+      if (!normalized) return;
+      colorBuckets.set(normalized, (colorBuckets.get(normalized) || 0) + weight);
+      if (bucket) bucket.set(normalized, (bucket.get(normalized) || 0) + weight);
+    };
+
+    for (const el of elements) {
+      if ((el as any).visible === false) continue;
+      const area = Math.max(1, (el as any).width * (el as any).height);
+      if (el.type === "text") {
+        addColor((el as OverlayTextElement).color, area * 2, textBuckets);
+      }
+      if (el.type === "box") {
+        const box = el as OverlayBoxElement;
+        addColor(resolveFillColor(box), area);
+        addColor(box.strokeColor, area * 0.2);
+      }
+      if (el.type === "shape") {
+        const shape = el as OverlayShapeElement;
+        addColor(resolveFillColor(shape), area);
+        addColor(shape.strokeColor, area * 0.2);
+      }
+      if (el.type === "progressBar") {
+        addColor((el as any).backgroundColor, area * 0.8);
+        addColor((el as any).fillColor, area * 0.6);
+      }
+      if (el.type === "progressRing") {
+        addColor((el as any).backgroundColor, area * 0.6);
+        addColor((el as any).fillColor, area * 0.6);
+      }
+      if (el.type === "image") {
+        imageElements.push(el as OverlayImageElement);
+      }
+    }
+
+    if (imageElements.length) {
+      const sorted = imageElements
+        .slice()
+        .sort((a, b) => b.width * b.height - a.width * a.height)
+        .slice(0, 6);
+      await Promise.all(
+        sorted.map(async (imgEl) => {
+          const colors = await sampleImageColors(imgEl.src);
+          if (!colors) return;
+          for (const entry of colors) {
+            colorBuckets.set(entry.color, (colorBuckets.get(entry.color) || 0) + entry.weight);
+          }
+        })
+      );
+    }
+
+    const palette = Array.from(colorBuckets.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([color]) => color);
+    if (!palette.length) return null;
+
+    const background = palette[0];
+    const textCandidates = Array.from(textBuckets.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([color]) => color)
+      .filter((color) => color !== background);
+
+    let textPrimary = textCandidates[0];
+    if (!textPrimary) {
+      textPrimary = pickContrastColor(background, palette) || background;
+    }
+    const accent = pickAccentColor(background, textPrimary, palette) || textPrimary;
+
+    const colors: StyleProfile["colors"] = {
+      background,
+      primary: textPrimary,
+      accent,
+      textPrimary,
+      textSecondary: textPrimary,
+    };
+
+    setPanelSamplePalette(colors);
+    return colors;
+  }, []);
+
+  function resolveFillColor(el: any): string | undefined {
+    if (Array.isArray(el?.fills) && el.fills.length) {
+      const fill = el.fills[0];
+      if (fill?.type === "solid" && typeof fill.color === "string") return fill.color;
+      if ((fill?.type === "linear" || fill?.type === "radial" || fill?.type === "conic") && fill.stops?.length) {
+        return fill.stops[0]?.color || undefined;
+      }
+    }
+    return el?.fillColor || el?.backgroundColor || undefined;
+  }
+
+  function normalizeColor(input?: string) {
+    if (!input) return null;
+    const value = input.trim();
+    if (value.startsWith("#")) {
+      const hex = value.slice(1);
+      if (hex.length === 3) {
+        return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toLowerCase();
+      }
+      if (hex.length === 6) return `#${hex}`.toLowerCase();
+    }
+    const rgbMatch = value.match(/rgba?\(([^)]+)\)/i);
+    if (rgbMatch) {
+      const parts = rgbMatch[1].split(",").map((s) => parseFloat(s.trim()));
+      if (parts.length < 3) return null;
+      const [r, g, b] = parts;
+      if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+      return rgbToHex({ r, g, b });
+    }
+    return null;
+  }
+
+  function rgbToHex(color: { r: number; g: number; b: number }) {
+    const toHex = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+    return `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`;
+  }
+
+  function hexToRgb(hex: string) {
+    const value = hex.replace("#", "");
+    if (value.length !== 6) return null;
+    const r = parseInt(value.slice(0, 2), 16);
+    const g = parseInt(value.slice(2, 4), 16);
+    const b = parseInt(value.slice(4, 6), 16);
+    if ([r, g, b].some((v) => Number.isNaN(v))) return null;
+    return { r, g, b };
+  }
+
+  function luminance(color: { r: number; g: number; b: number }) {
+    const toLinear = (v: number) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    };
+    const r = toLinear(color.r);
+    const g = toLinear(color.g);
+    const b = toLinear(color.b);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+
+  function contrastRatio(bg: string, fg: string) {
+    const bgRgb = hexToRgb(bg);
+    const fgRgb = hexToRgb(fg);
+    if (!bgRgb || !fgRgb) return 1;
+    const l1 = luminance(bgRgb);
+    const l2 = luminance(fgRgb);
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  function saturation(hex: string) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return 0;
+    const r = rgb.r / 255;
+    const g = rgb.g / 255;
+    const b = rgb.b / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    if (delta === 0) return 0;
+    const l = (max + min) / 2;
+    return delta / (1 - Math.abs(2 * l - 1));
+  }
+
+  function pickContrastColor(background: string, palette: string[]) {
+    const candidates = palette.filter((c) => c !== background);
+    if (!candidates.length) return null;
+    return candidates
+      .map((color) => ({ color, ratio: contrastRatio(background, color) }))
+      .sort((a, b) => b.ratio - a.ratio)[0]?.color;
+  }
+
+  function pickAccentColor(background: string, textPrimary: string, palette: string[]) {
+    const candidates = palette.filter((c) => c !== background && c !== textPrimary);
+    if (!candidates.length) return null;
+    return candidates
+      .map((color) => ({ color, score: saturation(color) }))
+      .sort((a, b) => b.score - a.score)[0]?.color;
+  }
+
+  async function sampleImageColors(src: string): Promise<Array<{ color: string; weight: number }> | null> {
+    if (!src) return null;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    const promise = new Promise<HTMLImageElement>((resolve, reject) => {
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Image load failed"));
+    });
+    img.src = src;
+    try {
+      const loaded = await promise;
+      const w = Math.max(1, Math.min(64, loaded.width));
+      const h = Math.max(1, Math.min(64, loaded.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+      ctx.drawImage(loaded, 0, 0, w, h);
+      const { data } = ctx.getImageData(0, 0, w, h);
+      const bucket = new Map<string, number>();
+      for (let i = 0; i < data.length; i += 16) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3] / 255;
+        if (a < 0.2) continue;
+        const color = rgbToHex({ r: Math.round(r / 8) * 8, g: Math.round(g / 8) * 8, b: Math.round(b / 8) * 8 });
+        bucket.set(color, (bucket.get(color) || 0) + 1);
+      }
+      return Array.from(bucket.entries()).map(([color, weight]) => ({ color, weight }));
+    } catch (err) {
+      return null;
+    }
+  }
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
