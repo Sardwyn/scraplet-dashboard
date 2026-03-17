@@ -1650,8 +1650,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         set.add((el as OverlayTextElement).fontFamily!);
       }
     }
+    if (panelPack?.styleProfile?.typography?.fontFamily) {
+      set.add(panelPack.styleProfile.typography.fontFamily);
+    }
     return Array.from(set);
-  }, [config.elements]);
+  }, [config.elements, panelPack]);
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();

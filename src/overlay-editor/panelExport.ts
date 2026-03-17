@@ -103,7 +103,7 @@ function drawText(ctx: CanvasRenderingContext2D, panel: Panel, profile: StylePro
   ctx.fillText(text, x + maxWidth / 2, y);
 }
 
-function renderPanel(panel: Panel, profile: StyleProfile, scale: number) {
+async function renderPanel(panel: Panel, profile: StyleProfile, scale: number) {
   const width = DEFAULT_WIDTH * scale;
   const height = Math.max(72, profile.typography.body * 4) * scale;
   const paddingX = Math.max(10, profile.spacing.base) * scale;
@@ -116,6 +116,15 @@ function renderPanel(panel: Panel, profile: StyleProfile, scale: number) {
 
   canvas.width = width;
   canvas.height = height;
+
+  const fontFamily = profile.typography.fontFamily || "Arial";
+  try {
+    await (document as any).fonts?.load(
+      `${profile.typography.headingWeight} ${profile.typography.body}px ${fontFamily}`
+    );
+  } catch {
+    // ignore font load errors; browser will fall back
+  }
 
   ctx.save();
   ctx.beginPath();
@@ -143,7 +152,10 @@ function renderPanel(panel: Panel, profile: StyleProfile, scale: number) {
 }
 
 export async function exportPanelPackPng(panelPack: PanelPack, scale = 1) {
-  const canvases = panelPack.panels.map((panel) => renderPanel(panel, panelPack.styleProfile, scale));
+  const canvases = [];
+  for (const panel of panelPack.panels) {
+    canvases.push(await renderPanel(panel, panelPack.styleProfile, scale));
+  }
   return Promise.all(
     canvases.map(
       (canvas) =>

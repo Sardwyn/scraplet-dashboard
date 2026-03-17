@@ -160,7 +160,11 @@ function toNodeLike(el: OverlayElement, elementsById: Record<string, OverlayElem
       style: {
         fill: textEl.color,
         fontSize: textEl.fontSizePx || (textEl as any).fontSize,
-        fontFamily: textEl.fontFamily,
+        fontFamily:
+          textEl.fontFamily ||
+          (textEl as any).style?.fontFamily ||
+          (textEl as any).font?.family ||
+          (textEl as any).font,
         fontWeight: textEl.fontWeight === "bold" ? 700 : 400,
         textAlign: textEl.textAlign,
       },
