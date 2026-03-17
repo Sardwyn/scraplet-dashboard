@@ -58,6 +58,7 @@ export type PanelPack = {
 
 export type PanelGenerationConfig = {
   panelTypes: PanelTemplateType[];
+  sampledPalette?: StyleProfile["colors"];
 };
 
 type NodeLike = {
@@ -560,6 +561,9 @@ export function generatePanelPackFromGroup(
   const nodes = flattenNodes(node).filter((n) => n.type !== "group");
   const warnings = detectWarnings(nodes);
   const styleProfile = extractStyleProfile(nodes);
+  if (config.sampledPalette) {
+    styleProfile.colors = { ...styleProfile.colors, ...config.sampledPalette };
+  }
   const title = deriveTitle(nodes);
   const panels = buildPanels(config, title, styleProfile);
   return {

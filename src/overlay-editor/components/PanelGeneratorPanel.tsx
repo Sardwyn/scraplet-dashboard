@@ -13,6 +13,8 @@ type Props = {
   panelPack: PanelPack | null;
   warnings: string[];
   onGenerate: (config: { panelTypes: PanelTemplateType[] }) => void;
+  onSamplePalette: () => void;
+  sampledPaletteLabel?: string | null;
   onUpdatePack: (next: PanelPack) => void;
   onExportPng: (scale: number) => void;
   onExportZip: (scale: number) => void;
@@ -30,6 +32,8 @@ export function PanelGeneratorPanel({
   panelPack,
   warnings,
   onGenerate,
+  onSamplePalette,
+  sampledPaletteLabel,
   onUpdatePack,
   onExportPng,
   onExportZip,
@@ -57,6 +61,16 @@ export function PanelGeneratorPanel({
       <div className="flex flex-col gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#121216] p-3">
         <div className="text-[11px] uppercase tracking-[0.08em] text-slate-400">Source</div>
         <div className="text-[11px] text-slate-500">Selected: {sourceLabel}</div>
+        <div className="flex items-center gap-2 text-[11px] text-slate-500">
+          <button
+            type="button"
+            onClick={onSamplePalette}
+            className="rounded-md border border-[rgba(255,255,255,0.12)] px-2 py-1 text-[11px] text-slate-200"
+          >
+            Sample Canvas Palette
+          </button>
+          {sampledPaletteLabel ? <span>Using: {sampledPaletteLabel}</span> : <span>Using: Extracted</span>}
+        </div>
         <div className="mt-2 text-[11px] uppercase tracking-[0.08em] text-slate-400">Panel Types</div>
         <div className="flex flex-wrap gap-2">
           {PANEL_TYPES.map((type) => (

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import html2canvas from "html2canvas";
 import { Rnd, RndDragCallback, RndResizeCallback } from "react-rnd";
 import {
   OverlayAnimation,
@@ -1038,6 +1039,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [leftTab, setLeftTab] = useState<"layers" | "components" | "panels">("layers");
   const [panelPack, setPanelPack] = useState<PanelPack | null>(null);
   const [panelWarnings, setPanelWarnings] = useState<string[]>([]);
+  const [panelSamplePalette, setPanelSamplePalette] = useState<{
+    background: string;
+    primary: string;
+    accent: string;
+    textPrimary: string;
+    textSecondary: string;
+  } | null>(null);
+  const [panelSampleLabel, setPanelSampleLabel] = useState<string | null>(null);
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
@@ -1423,6 +1432,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }, [primarySelectedId]);
   const canvasOuterRef = useRef<HTMLDivElement | null>(null);
   const [canvasBox, setCanvasBox] = useState({ w: 1000, h: 700 });
+  const canvasStageRef = useRef<HTMLDivElement | null>(null);
 
   // Throttle guide updates
   const rafRef = useRef<number | null>(null);
@@ -1602,7 +1612,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           } as AnyEl,
         ];
       }
-      const pack = generatePanelPackFromGroup(sourceId, sourceElements, configInput);
+      const pack = generatePanelPackFromGroup(sourceId, sourceElements, {
+        ...configInput,
+        sampledPalette: panelSamplePalette || undefined,
+      });
       if (!pack) {
         setPanelPack(null);
         setPanelWarnings(["Unable to generate panel pack from selection."]);
@@ -1611,7 +1624,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       setPanelPack(pack);
       setPanelWarnings(pack.warnings);
     },
-    [selectedGroupId, config.elements, selectedIdsList]
+    [selectedGroupId, config.elements, selectedIdsList, panelSamplePalette]
   );
 
   const handleExportPanelPng = useCallback(
@@ -1655,6 +1668,63 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
     return Array.from(set);
   }, [config.elements, panelPack]);
+
+  const samplePaletteFromCanvas = useCallback(async () => {
+    if (!canvasStageRef.current) {
+      setPanelWarnings(["Canvas not ready for sampling."]);
+      return;
+    }
+    const canvas = await html2canvas(canvasStageRef.current, {
+      backgroundColor: null,
+      scale: 0.5,
+      useCORS: true,
+      logging: false,
+    });
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const step = Math.max(4, Math.floor(Math.min(width, height) / 64));
+    const bucket = new Map<string, number>();
+    for (let y = 0; y < height; y += step) {
+      for (let x = 0; x < width; x += step) {
+        const idx = (y * width + x) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3] / 255;
+        if (a < 0.2) continue;
+        const key = `${Math.round(r / 8) * 8}_${Math.round(g / 8) * 8}_${Math.round(b / 8) * 8}`;
+        bucket.set(key, (bucket.get(key) || 0) + 1);
+      }
+    }
+    const sorted = Array.from(bucket.entries()).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) return;
+    const parseKey = (key: string) => {
+      const [r, g, b] = key.split("_").map((v) => parseInt(v, 10));
+      return { r, g, b };
+    };
+    const toHex = (c: { r: number; g: number; b: number }) =>
+      `#${c.r.toString(16).padStart(2, "0")}${c.g.toString(16).padStart(2, "0")}${c.b
+        .toString(16)
+        .padStart(2, "0")}`;
+    const background = toHex(parseKey(sorted[0][0]));
+    const candidates = sorted.slice(1, 8).map((entry) => parseKey(entry[0]));
+    const isBright = (c: { r: number; g: number; b: number }) => (c.r + c.g + c.b) / 3 > 160;
+    const textPrimaryCandidate = candidates.find((c) => isBright(c)) || candidates[0] || parseKey(sorted[0][0]);
+    const textPrimary = toHex(textPrimaryCandidate);
+    const accentCandidate = candidates
+      .map((c) => ({ c, score: Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b) }))
+      .sort((a, b) => b.score - a.score)[0]?.c;
+    const accent = accentCandidate ? toHex(accentCandidate) : textPrimary;
+    setPanelSamplePalette({
+      background,
+      primary: textPrimary,
+      accent,
+      textPrimary,
+      textSecondary: textPrimary,
+    });
+    setPanelSampleLabel("Canvas");
+  }, [canvasStageRef]);
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
@@ -5277,6 +5347,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 panelPack={panelPack}
                 warnings={panelWarnings}
                 onGenerate={handleGeneratePanelPack}
+                onSamplePalette={samplePaletteFromCanvas}
+                sampledPaletteLabel={panelSampleLabel}
                 onUpdatePack={setPanelPack}
                 onExportPng={handleExportPanelPng}
                 onExportZip={handleExportPanelZip}
@@ -5476,6 +5548,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               transformOrigin: "center",
               transition: zoomAnimating ? "transform 160ms ease-out, width 160ms ease-out, height 160ms ease-out" : undefined,
             }}
+            ref={canvasStageRef}
             onMouseDown={(e) => {
               const isMiddle = (e as any).button === 1;
               const isSpaceLeft = spaceDown && (e as any).button === 0;
