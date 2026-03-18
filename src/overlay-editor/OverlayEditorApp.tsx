@@ -52,8 +52,10 @@ import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimatio
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
+import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
+import { deriveStyleProfile } from "./panelStyleEngine";
 import { expandStrokePath, offsetOverlayPath } from "../shared/geometry/pathBoolean";
 import {
   booleanContainerBounds,
@@ -1032,7 +1034,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Template Picker State
   // (templates state removed)
-  const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [leftTab, setLeftTab] = useState<"layers" | "components" | "panels">("layers");
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
@@ -1335,6 +1337,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
 
+
   useEffect(() => {
     if (!selectedPathAnchor) return;
     if (primarySelectedEl?.type !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
@@ -1402,6 +1405,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return els.reverse();
   }, [elementsAny]);
 
+  const panelStyleProfile = useMemo(
+    () => deriveStyleProfile(metadata, config.elements),
+    [metadata, config.elements]
+  );
+
   const usedFonts = useMemo(() => {
     const set = new Set<string>();
     for (const el of config.elements) {
@@ -1409,8 +1417,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         set.add((el as OverlayTextElement).fontFamily!);
       }
     }
+    if (panelStyleProfile.fontFamily) {
+      set.add(panelStyleProfile.fontFamily);
+    }
     return Array.from(set);
-  }, [config.elements]);
+  }, [config.elements, panelStyleProfile.fontFamily]);
+
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
@@ -4838,6 +4850,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span>Components</span>
           </button>
+          <button
+            onClick={() => setLeftTab("panels")}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "panels" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+          >
+            <svg {...TOOL_ICON_PROPS}><path d="M4 4h16v6H4zM4 14h10v6H4zM16 14h4v6h-4z" /></svg>
+            <span>Panels</span>
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -4905,6 +4924,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   setConfig(prev => ({ ...prev, elements: [...prev.elements, instanceEl] }));
                   setSelectedIds([instId]);
                 }}
+              />
+            </div>
+          )}
+          {leftTab === "panels" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1">
+              <PanelGeneratorPanel
+                profile={panelStyleProfile}
+                seedBase={initialOverlay.id != null ? String(initialOverlay.id) : "panel"}
               />
             </div>
           )}
