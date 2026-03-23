@@ -124,6 +124,34 @@
     </div>
   </div>
 
+
+      <!-- AI TOGGLE PANEL -->
+      <div class="pc-panel pc-panel--premium-studio" style="margin-top: 14px;">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Scrapbot AI</div>
+            <div class="pc-panel-sub">Allow admins and authorised roles to chat with Scrapbot AI in Discord.</div>
+          </div>
+          <span id="aiBadge" class="pc-int-badge pc-int-badge--muted">LOADING</span>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="pc-row" style="justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Enable Scrapbot AI</div>
+              <div class="pc-muted" style="font-size:12px;">When enabled, @Scrapbot in Discord will respond using the AI model.</div>
+            </div>
+            <label class="pc-toggle" style="cursor:pointer;">
+              <input type="checkbox" id="aiToggle" style="display:none;" />
+              <span class="pc-toggle-track" id="aiToggleTrack"></span>
+            </label>
+          </div>
+          <div class="pc-divider"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div id="aiSaveStatus" class="pc-muted" style="font-size:12px;">Loading?</div>
+            <button id="btnSaveAi" class="pc-btn pc-btn-primary" type="button">Save</button>
+          </div>
+        </div>
+      </div>
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
@@ -563,3 +591,72 @@
       boot();
     })();
   </script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      async function loadAiConfig() {
+        try {
+          const r = await fetch("/dashboard/api/discord/ai-config", { credentials: "same-origin" });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j?.ok) { setAiBadge("ERROR", "warn"); return; }
+          $("aiToggle").checked = Boolean(j.ai_enabled);
+          updateAiTrack();
+          setAiBadge(j.ai_enabled ? "ENABLED" : "DISABLED", j.ai_enabled ? "good" : "muted");
+          $("aiSaveStatus").textContent = "Loaded.";
+        } catch (e) {
+          setAiBadge("ERROR", "warn");
+          $("aiSaveStatus").textContent = "Failed to load AI config.";
+        }
+      }
+
+      function setAiBadge(text, tone) {
+        const el = $("aiBadge");
+        el.textContent = text;
+        el.className = "pc-int-badge";
+        if (tone === "good") el.classList.add("pc-int-badge--good");
+        else if (tone === "warn") el.classList.add("pc-int-badge--warn");
+        else el.classList.add("pc-int-badge--muted");
+      }
+
+      function updateAiTrack() {
+        const track = $("aiToggleTrack");
+        if (!track) return;
+        track.style.background = $("aiToggle").checked ? "rgba(52,211,153,0.85)" : "rgba(100,116,139,0.4)";
+        track.style.display = "inline-block";
+        track.style.width = "40px";
+        track.style.height = "22px";
+        track.style.borderRadius = "11px";
+        track.style.transition = "background 0.2s";
+        track.style.position = "relative";
+        track.innerHTML = `<span style="position:absolute; top:3px; left:${$("aiToggle").checked ? "21px" : "3px"}; width:16px; height:16px; border-radius:50%; background:#fff; transition:left 0.2s;"></span>`;
+      }
+
+      $("aiToggle").addEventListener("change", () => {
+        updateAiTrack();
+        $("aiSaveStatus").textContent = "Unsaved changes.";
+      });
+
+      $("btnSaveAi").addEventListener("click", async () => {
+        $("aiSaveStatus").textContent = "Saving?";
+        try {
+          const r = await fetch("/dashboard/api/discord/ai-config", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ ai_enabled: $("aiToggle").checked }),
+          });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j?.ok) { $("aiSaveStatus").textContent = "Save failed."; return; }
+          setAiBadge(j.ai_enabled ? "ENABLED" : "DISABLED", j.ai_enabled ? "good" : "muted");
+          $("aiSaveStatus").textContent = "\u2713 Saved.";
+        } catch {
+          $("aiSaveStatus").textContent = "Save failed.";
+        }
+      });
+
+      loadAiConfig();
+    })();
+  </script>
+

@@ -287,6 +287,144 @@ client.on("messageReactionAdd", async (reaction, user) => {
   }
 });
 
+
+
+// ?? Scrapbot AI ??????????????????????????????????????????????????????????????
+
+import { chat as llmChat } from '../../services/llmClient.js';
+
+const SCRAPBOT_SYSTEM_PROMPT = `You are Scrapbot, the AI assistant for Scraplet Broadcast Studio. You serve the stream's production team ? the owner and moderators. You help with content ideas, stream planning, on-screen text, audience engagement strategies, and general queries. You are direct, sharp, and have a dry wit. Keep responses concise and useful. You do not respond to general viewers ? only to the production team.`;
+
+const AI_CONTEXT_LIMIT = 20; // max messages to load as context
+
+async function isAiEnabled(guildId) {
+  const { rows } = await db.query(
+    `SELECT ai_enabled FROM public.discord_guild_integrations
+     WHERE guild_id = $1 AND status = 'active' LIMIT 1`,
+    [String(guildId)]
+  );
+  return Boolean(rows[0]?.ai_enabled);
+}
+
+async function canUserUseAi(guildId, member) {
+  if (!member) return false;
+  if (hasAdministrator(member)) return true;
+  const roleIds = Array.from(member.roles.cache.keys()).map(String);
+  if (!roleIds.length) return false;
+  const { rows } = await db.query(
+    `SELECT 1 FROM public.discord_role_rules
+     WHERE guild_id = $1 AND can_use_ai = true AND role_id = ANY($2::text[]) LIMIT 1`,
+    [String(guildId), roleIds]
+  );
+  return rows.length > 0;
+}
+
+async function getOrCreateConversation(guildId, channelId) {
+  const { rows } = await db.query(
+    `INSERT INTO public.discord_ai_conversations (guild_id, channel_id)
+     VALUES ($1, $2)
+     ON CONFLICT (guild_id, channel_id) DO UPDATE SET updated_at = now()
+     RETURNING id`,
+    [String(guildId), String(channelId)]
+  );
+  return rows[0].id;
+}
+
+async function loadContext(conversationId) {
+  const { rows } = await db.query(
+    `SELECT role, content FROM public.discord_ai_messages
+     WHERE conversation_id = $1
+     ORDER BY created_at DESC LIMIT $2`,
+    [conversationId, AI_CONTEXT_LIMIT]
+  );
+  return rows.reverse(); // oldest first for the LLM
+}
+
+async function saveMessage(conversationId, role, content, authorDiscordId, authorName) {
+  await db.query(
+    `INSERT INTO public.discord_ai_messages
+       (conversation_id, role, content, author_discord_id, author_name)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [conversationId, role, content, authorDiscordId || null, authorName || null]
+  );
+}
+
+client.on("messageCreate", async (msg) => {
+  try {
+    if (!msg || msg.author?.bot) return;
+    if (!client.user) return;
+
+    // Only respond when @mentioned
+    if (!msg.mentions.has(client.user.id)) return;
+
+    const guildId   = msg.guildId;
+    const channelId = msg.channelId;
+    if (!guildId || !channelId) return;
+
+    // Tenancy + AI enabled check
+    const claim = await getGuildClaim(guildId);
+    if (!claim) return;
+    if (!(await isAiEnabled(guildId))) return;
+
+    // Auth check
+    const member = await msg.guild.members.fetch(msg.author.id).catch(() => null);
+    if (!(await canUserUseAi(guildId, member))) {
+      await msg.reply("Sorry, you don't have permission to use Scrapbot AI.");
+      return;
+    }
+
+    // Strip the @mention from the message text
+    const userText = msg.content.replace(/<@!?\d+>/g, '').trim();
+    if (!userText) {
+      await msg.reply("What can I help you with?");
+      return;
+    }
+
+    // Load conversation context
+    const conversationId = await getOrCreateConversation(guildId, channelId);
+    const history = await loadContext(conversationId);
+
+    const messages = [
+      { role: 'system', content: SCRAPBOT_SYSTEM_PROMPT },
+      ...history,
+      { role: 'user', content: userText },
+    ];
+
+    // Show typing indicator
+    await msg.channel.sendTyping().catch(() => null);
+
+    // Call vLLM
+    const reply = await llmChat(messages);
+
+    // Save both sides to DB
+    await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
+    await saveMessage(conversationId, 'assistant', reply,    null,          'Scrapbot');
+
+    // Discord has a 2000 char limit per message
+    if (reply.length <= 2000) {
+      await msg.reply(reply);
+    } else {
+      // Split on newlines to avoid cutting mid-sentence
+      const chunks = [];
+      let chunk = '';
+      for (const line of reply.split('\n')) {
+        if ((chunk + '\n' + line).length > 1900) {
+          chunks.push(chunk);
+          chunk = line;
+        } else {
+          chunk = chunk ? chunk + '\n' + line : line;
+        }
+      }
+      if (chunk) chunks.push(chunk);
+      for (const c of chunks) await msg.reply(c);
+    }
+
+  } catch (err) {
+    console.error("[discord-bot] AI handler error:", err?.message || err);
+    await msg.reply("Something went wrong. Try again in a moment.").catch(() => null);
+  }
+});
+
 import express from "express";
 
 const internalApp = express();

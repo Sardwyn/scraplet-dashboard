@@ -3311,4 +3311,41 @@ router.get("/widgets/:id/configure", requireAuth, async (req, res) => {
   });
 });
 
+
+// GET /dashboard/api/discord/ai-config
+router.get("/api/discord/ai-config", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user?.id;
+    const { rows } = await db.query(
+      `SELECT ai_enabled FROM public.discord_guild_integrations
+       WHERE owner_user_id = $1 AND status = 'active' LIMIT 1`,
+      [userId]
+    );
+    if (!rows.length) return res.json({ ok: true, ai_enabled: false });
+    res.json({ ok: true, ai_enabled: Boolean(rows[0].ai_enabled) });
+  } catch (err) {
+    console.error("[discord/ai-config GET] failed:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+// POST /dashboard/api/discord/ai-config
+router.post("/api/discord/ai-config", requireAuth, express.json(), async (req, res) => {
+  try {
+    const userId = req.session.user?.id;
+    const ai_enabled = Boolean(req.body?.ai_enabled);
+    const { rowCount } = await db.query(
+      `UPDATE public.discord_guild_integrations
+       SET ai_enabled = $1, updated_at = now()
+       WHERE owner_user_id = $2 AND status = 'active'`,
+      [ai_enabled, userId]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: "no_guild" });
+    res.json({ ok: true, ai_enabled });
+  } catch (err) {
+    console.error("[discord/ai-config POST] failed:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
 export default router;
