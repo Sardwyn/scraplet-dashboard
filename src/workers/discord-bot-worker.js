@@ -461,6 +461,27 @@ internalApp.get("/internal/guild/:guildId/structure", (req, res) => {
   }
 });
 
+
+internalApp.post("/internal/alert", express.json(), async (req, res) => {
+  try {
+    const { guild_id, message, channel_id } = req.body || {};
+    if (!guild_id || !message) return res.status(400).json({ ok: false, error: "guild_id and message required" });
+    if (!client.isReady()) return res.status(503).json({ ok: false, error: "bot_offline" });
+    const guild = client.guilds.cache.get(String(guild_id));
+    if (!guild) return res.status(404).json({ ok: false, error: "guild_not_found" });
+    let target = null;
+    if (channel_id) { target = guild.channels.cache.get(String(channel_id)); }
+    if (!target) { target = guild.channels.cache.find(c => c.isTextBased() && c.permissionsFor(guild.members.me)?.has("SendMessages")); }
+    if (!target) return res.status(404).json({ ok: false, error: "no_sendable_channel" });
+    await target.send(message);
+    res.json({ ok: true, channel_id: target.id, channel_name: target.name });
+  } catch (err) {
+    console.error("[discord-bot] alert error:", err?.message || err);
+    res.status(500).json({ ok: false, error: err?.message || "unknown" });
+  }
+});
+internalApp.get("/internal/guild/ping", (_req, res) => res.json({ ok: true }));
+
 internalApp.listen(3025, "localhost", () => {
   console.log("[discord-bot] internal structure API on localhost:3025");
   if (typeof process.send === "function") {

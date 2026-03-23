@@ -310,7 +310,7 @@ router.get("/dashboard/metrics/bot-health", requireAuth, async (req, res) => {
 
   const [kickBot, discordBot] = await Promise.all([
     fetchJson(`${base}/admin/bot/kick/status`, { headers: scrapbotHeaders(), timeoutMs: 3000 }),
-    fetchJson("http://127.0.0.1:3025/internal/guild/health", { timeoutMs: 2000 })
+    fetchJson("http://127.0.0.1:3025/internal/guild/ping", { timeoutMs: 2000 })
       .catch(() => ({ ok: false, error: "discord_bot_unreachable" })),
   ]);
 
