@@ -1694,7 +1694,7 @@
             const cls = kind === "flood" ? "bg-red-900/50 border-red-800" :
               kind === "swarm" ? "bg-purple-900/50 border-purple-800" : kind === "moderation" ? "bg-orange-900/50 border-orange-800" : kind === "error" ? "bg-red-900/50 border-red-800" : "bg-gray-800 border-gray-700";
 
-            return `<span class="px-2 py-1 rounded border ${cls} text-xs">$ {
+            return `<span class="px-2 py-1 rounded border ${cls} text-xs">${
             escapeHtml(label)
           }
 
@@ -1707,21 +1707,21 @@
             if (it.flood) {
               const a = it.flood.action || "action";
 
-              const d = it.flood.duration_seconds != null ? `$ {
+              const d = it.flood.duration_seconds != null ? `${
               it.flood.duration_seconds
             }
 
             s` : "";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("flood", "flood")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(a)
               }
 
-              $ {
+              ${
                 escapeHtml(d)
               }
 
@@ -1731,11 +1731,11 @@
             if (it.swarm) {
               const acts = Array.isArray(it.swarm.actions) ? it.swarm.actions.join(", ") : "";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("swarm", "swarm")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(acts || "actions")
               }
 
@@ -1745,11 +1745,11 @@
             if (it.moderation) {
               const a = it.moderation.action || "action";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("moderation", "moderation")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(a)
               }
 
@@ -1757,11 +1757,11 @@
             }
 
             if (it.error) {
-              parts.push(`$ {
+              parts.push(`${
                 pill("error", "error")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(String(it.error).slice(0, 200))
               }
 
@@ -1770,7 +1770,7 @@
 
             if (!parts.length) return `<span class="text-gray-500">—</span>`;
 
-            return `<div class="flex flex-wrap gap-2">$ {
+            return `<div class="flex flex-wrap gap-2">${
             parts.join("")
           }
 
@@ -1802,7 +1802,7 @@
           function itemKey(it) {
             const mid = String(it?.message_id || "").trim();
 
-            if (mid) return `m:$ {
+            if (mid) return `m:${
             mid
           }
 
@@ -1814,23 +1814,23 @@
             const uid = String(it?.senderUserId || it?.senderUsername || "");
             const ev = String(it?.eventType || "");
 
-            return `x:$ {
+            return `x:${
             ts
           }
 
-          |$ {
+          |${
             tenant
           }
 
-          |$ {
+          |${
             ch
           }
 
-          |$ {
+          |${
             uid
           }
 
-          |$ {
+          |${
             ev
           }
 
@@ -1866,7 +1866,7 @@
 
             const current = sel.value;
 
-            const opts = ['<option value="">All channels</option>'].concat(channels.map(ch => `<option value="${escapeHtml(ch)}" >$ {
+            const opts = ['<option value="">All channels</option>'].concat(channels.map(ch => `<option value="${escapeHtml(ch)}" >${
                 escapeHtml(ch)
               }
 
@@ -1888,39 +1888,39 @@
               return;
             }
 
-            host.innerHTML = channels.slice(0, 20).map((ch) => ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 font-semibold text-gray-200" >$ {
+            host.innerHTML = channels.slice(0, 20).map((ch) => ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 font-semibold text-gray-200" >${
               escapeHtml(ch.channelSlug || "?")
             }
 
-            </td> <td class="py-2 pr-4 text-gray-300" >$ {
+            </td> <td class="py-2 pr-4 text-gray-300" >${
               escapeHtml(String(ch.scraplet_user_id ?? 0))
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.messages)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.commands)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.flood)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.swarm)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.moderation)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.errors)
             }
 
-            </td> <td class="py-2 pl-2 text-right text-gray-400 tabular-nums" >$ {
+            </td> <td class="py-2 pl-2 text-right text-gray-400 tabular-nums" >${
               fmtTs(ch.last_ts)
             }
 
@@ -1938,11 +1938,11 @@
               return;
             }
 
-            host.innerHTML = arr.slice(0, 10).map((x) => ` <div class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2" > <div class="text-xs text-gray-300 ${hostId === " secTopUas" ? " " : " font-mono"} truncate pr-3" >$ {
+            host.innerHTML = arr.slice(0, 10).map((x) => ` <div class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2" > <div class="text-xs text-gray-300 ${hostId === " secTopUas" ? " " : " font-mono"} truncate pr-3" >${
               escapeHtml(x.key || "")
             }
 
-            </div> <div class="text-xs text-gray-400 tabular-nums" >$ {
+            </div> <div class="text-xs text-gray-400 tabular-nums" >${
               fmt(x.count)
             }
 
@@ -1976,15 +1976,15 @@
             const m = Math.floor((upSec % 3600) / 60);
             const s = upSec % 60;
 
-            if ($("uptime")) $("uptime").textContent = `$ {
+            if ($("uptime")) $("uptime").textContent = `${
             h
           }
 
-          h $ {
+          h ${
             m
           }
 
-          m $ {
+          m ${
             s
           }
 
@@ -2059,7 +2059,7 @@
               const tenant = it.scraplet_user_id ?? 0;
               const user = it.senderUsername || "—";
 
-              const userId = it.senderUserId ? ` ($ {
+              const userId = it.senderUserId ? ` (${
                   it.senderUserId
                 })` : "";
               const role = it.userRole || "—";
@@ -2074,45 +2074,45 @@
               if (it.pulse_active) has.push(pill("pulse", "other"));
               if (it.tripwire) has.push(pill("tripwire", "other"));
 
-              const summary = has.length ? `<div class="flex flex-wrap gap-2" >$ {
+              const summary = has.length ? `<div class="flex flex-wrap gap-2" >${
                 has.join("")
               }
 
               </div>` : `<span class="text-gray-500" >—</span>`;
               const raw = escapeHtml(JSON.stringify(it, null, 2));
 
-              const detailId = `detail_$ {
+              const detailId = `detail_${
                 key.replaceAll(":", "_").replaceAll("|", "_")
               }
 
               `;
               const open = isExpanded(key);
 
-              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 ts
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >${
                 escapeHtml(channel)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(String(tenant))
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(user)
               }
 
-              <span class="text-gray-500" >$ {
+              <span class="text-gray-500" >${
                 escapeHtml(userId)
               }
 
-              </span></td> <td class="py-2 pr-4 text-gray-300" >$ {
+              </span></td> <td class="py-2 pr-4 text-gray-300" >${
                 escapeHtml(role)
               }
 
-              </td> <td class="py-2 pr-4" >$ {
+              </td> <td class="py-2 pr-4" >${
                 summary
               }
 
@@ -2120,11 +2120,11 @@
               data-key="${escapeHtml(key)}"
               class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700"
 
-              >details</button> </td> </tr> <tr id="${escapeHtml(detailId)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <div class="text-xs text-gray-500 mb-2" >Summary</div> $ {
+              >details</button> </td> </tr> <tr id="${escapeHtml(detailId)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <div class="text-xs text-gray-500 mb-2" >Summary</div> ${
                 rowDetails(it)
               }
 
-              <div class="mt-3 text-xs text-gray-500 mb-2" >Raw</div> <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+              <div class="mt-3 text-xs text-gray-500 mb-2" >Raw</div> <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >${
                 raw
               }
 
@@ -2286,7 +2286,7 @@
           async function ptRun() {
             const out = $("pt_out");
 
-            if (out) out.textContent = `[$ {
+            if (out) out.textContent = `[${
             new Date().toISOString()
           }
 
@@ -2330,7 +2330,7 @@
             }
 
             catch (e) {
-              if (out) out.textContent = `ERROR: $ {
+              if (out) out.textContent = `ERROR: ${
             String(e?.message || e)
           }
 
@@ -2369,33 +2369,33 @@
 
               const raw = escapeHtml(JSON.stringify(x, null, 2));
 
-              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(ts)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >${
                 escapeHtml(type)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(ch)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(String(tenant))
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(user)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300" >${
                 escapeHtml(String(summary).slice(0, 120))
               }
 
               </td> <td class="py-2 pr-4" > <button data-inc-toggle="${escapeHtml(id)}" data-inc-key="${escapeHtml(key)}"
 
-              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700" >details</button> </td> </tr> <tr id="${escapeHtml(id)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700" >details</button> </td> </tr> <tr id="${escapeHtml(id)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >${
                 raw
               }
 
@@ -2493,11 +2493,11 @@
                 const bar = $("tc_progressBar");
                 const txt = $("tc_progressText");
 
-                if (txt) txt.textContent = `$ {
+                if (txt) txt.textContent = `${
                 done
               }
 
-              / $ {
+              / ${
                 total
               }
 
@@ -2508,7 +2508,7 @@
                   bar.style.width = "0%"; return;
                 }
 
-                bar.style.width = `$ {
+                bar.style.width = `${
                 Math.max(0, Math.min(100, Math.round((done / total) * 100)))
               }
 
@@ -2531,11 +2531,11 @@
               function log(msg) {
                 if (!logEl) return;
 
-                const line = `[$ {
+                const line = `[${
                 new Date().toISOString()
               }
 
-              ] $ {
+              ] ${
                 msg
               }
 
@@ -2590,11 +2590,11 @@
 
                 const text = await r.text();
 
-                if (!r.ok) throw new Error(`HTTP $ {
+                if (!r.ok) throw new Error(`HTTP ${
                 r.status
               }
 
-              : $ {
+              : ${
                 text
               }
 
@@ -2651,19 +2651,19 @@
                 ];
                 const tail = pick(["", "!!!", " 🔥", " ✅", " (real)", " (working)", " rn"]);
 
-                return `$ {
+                return `${
             pick(leadIns)
           }
 
-          $ {
+          ${
             obfuscateUrl(url)
           }
 
-          $ {
+          ${
             baseText
           }
 
-          $ {
+          ${
             tail
           }
 
@@ -2676,15 +2676,15 @@
                 let blob = "";
                 for (let i = 0; i < count; i++) blob += pick(emojis);
 
-                if (maybe(35)) return `$ {
+                if (maybe(35)) return `${
             blob
           }
 
-          $ {
+          ${
             baseText
           }
 
-          $ {
+          ${
             blob
           }
 
@@ -2698,32 +2698,32 @@
                   baseText.toUpperCase(),
                   baseText.replace(/\bfree\b/i, "FREE"),
                   baseText.replace(/\bfollowers\b/i, "followers rn"),
-                  `yo $ {
+                  `yo ${
             baseText
           }
 
           `,
-                  `$ {
+                  `${
             baseText
           }
 
           (no cap)`,
-                  `$ {
+                  `${
             baseText
           }
 
           ✅`,
-                  `$ {
+                  `${
             baseText
           }
 
           right now`,
-                  `$ {
+                  `${
             baseText
           }
 
           legit`,
-                  `$ {
+                  `${
             baseText
           }
 
@@ -2778,27 +2778,27 @@
                 let done = 0;
                 setProgress(0, total);
 
-                log(`$ {
+                log(`${
               label
             }
 
-            starting: users=$ {
+            starting: users=${
               users
             }
 
-            repeats=$ {
+            repeats=${
               repeats
             }
 
-            interval=$ {
+            interval=${
               intervalMs
             }
 
-            ms concurrency=$ {
+            ms concurrency=${
               concurrency
             }
 
-            stagger=$ {
+            stagger=${
               staggerMs
             }
 
@@ -2811,11 +2811,11 @@
                     const jobs = [];
 
                     for (let i = 0; i < users; i++) {
-                      const senderUsername = `$ {
+                      const senderUsername = `${
                   senderPrefix
                 }
 
-                $ {
+                ${
                   String(i + 1).padStart(3, "0")
                 }
 
@@ -2860,15 +2860,15 @@
 
                       , () => worker()));
 
-                    log(`$ {
+                    log(`${
               label
             }
 
-            rep $ {
+            rep ${
               rep + 1
             }
 
-            /$ {
+            /${
               repeats
             }
 
@@ -2878,7 +2878,7 @@
                   }
 
                   if (stopRequested) {
-                    log(`$ {
+                    log(`${
               label
             }
 
@@ -2887,7 +2887,7 @@
                   }
 
                   else {
-                    log(`$ {
+                    log(`${
               label
             }
 
@@ -2897,11 +2897,11 @@
                 }
 
                 catch (e) {
-                  log(`$ {
+                  log(`${
               label
             }
 
-            FAILED: $ {
+            FAILED: ${
               e.message || e
             }
 
@@ -2920,7 +2920,7 @@
                 const concurrency = concurrencyOverride ?? (parseInt($("tc_concurrency")?.value, 10) || 6);
 
                 return runScenario({
-                  label: `Swarm $ {
+                  label: `Swarm ${
               users
             }
 
