@@ -344,7 +344,7 @@ router.get("/dashboard/metrics/bot-health", requireAuth, async (req, res) => {
 
 // POST /dashboard/metrics/bot-health/alert
 // Sends a test/manual alert to Discord via webhook
-router.post("/dashboard/metrics/bot-health/alert", requireAuth, async (req, res) => {
+router.post("/dashboard/metrics/bot-health/alert", requireAuth, express.json(), async (req, res) => {
   const webhookUrl = process.env.DISCORD_ALERT_WEBHOOK_URL;
   if (!webhookUrl) {
     return res.json({ ok: false, error: "DISCORD_ALERT_WEBHOOK_URL not configured" });
