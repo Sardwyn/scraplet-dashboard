@@ -5,8 +5,16 @@ import db from "../db.js";
 
 const router = express.Router();
 
+const ADMIN_USER_ID = 4;
+
 function requireAuth(req, res, next) {
   if (!req.session || !req.session.user) return res.redirect("/auth/login");
+  next();
+}
+
+function requireAdmin(req, res, next) {
+  if (!req.session || !req.session.user) return res.redirect("/auth/login");
+  if (Number(req.session.user.id) !== ADMIN_USER_ID) return res.status(403).send("Forbidden");
   next();
 }
 
@@ -91,7 +99,7 @@ function buildDashboardMetrics() {
   };
 }
 
-router.get("/dashboard/metrics", requireAuth, async (req, res, next) => {
+router.get("/dashboard/metrics", requireAdmin, async (req, res, next) => {
   try {
     const [scrapbotStatus, scrapbotMetrics, scrapbotRecent] = await Promise.all([
       fetchScrapbotStatus(),
@@ -116,7 +124,7 @@ router.get("/dashboard/metrics", requireAuth, async (req, res, next) => {
 });
 
 // JSON tap for client polling (kept behind dashboard auth)
-router.get("/dashboard/metrics/data", requireAuth, async (req, res) => {
+router.get("/dashboard/metrics/data", requireAdmin, async (req, res) => {
   const [scrapbotStatus, scrapbotMetrics, scrapbotRecent] = await Promise.all([
     fetchScrapbotStatus(),
     fetchScrapbotMetricsSnapshot(),
@@ -292,5 +300,73 @@ router.get(
     }
   }
 );
+
+// ?? Bot Health Routes ?????????????????????????????????????????????????????????
+
+// GET /dashboard/metrics/bot-health
+// Returns Kick bot token status + Discord bot status
+router.get("/dashboard/metrics/bot-health", requireAuth, async (req, res) => {
+  const base = process.env.SCRAPBOT_INTERNAL_URL || "http://127.0.0.1:3030";
+
+  const [kickBot, discordBot] = await Promise.all([
+    fetchJson(`${base}/admin/bot/kick/status`, { headers: scrapbotHeaders(), timeoutMs: 3000 }),
+    fetchJson("http://127.0.0.1:3025/internal/guild/health", { timeoutMs: 2000 })
+      .catch(() => ({ ok: false, error: "discord_bot_unreachable" })),
+  ]);
+
+  // Determine kick token health
+  let kickHealth = "unknown";
+  if (kickBot?.hasTokens) {
+    const exp = kickBot.expires_at ? new Date(kickBot.expires_at) : null;
+    const msLeft = exp ? exp.getTime() - Date.now() : null;
+    if (msLeft !== null && msLeft < 0) kickHealth = "expired";
+    else if (msLeft !== null && msLeft < 10 * 60 * 1000) kickHealth = "expiring_soon";
+    else kickHealth = "ok";
+  } else if (kickBot?.hasTokens === false) {
+    kickHealth = "no_tokens";
+  }
+
+  res.json({
+    ok: true,
+    kick: {
+      health: kickHealth,
+      hasTokens: kickBot?.hasTokens ?? false,
+      expires_at: kickBot?.expires_at ?? null,
+      updated_at: kickBot?.updated_at ?? null,
+      scope: kickBot?.scope ?? null,
+      reAuthUrl: "https://scrapbot.scraplet.store/admin/bot/kick/start",
+    },
+    discord: {
+      online: discordBot?.ok !== false && !discordBot?.error,
+    },
+  });
+});
+
+// POST /dashboard/metrics/bot-health/alert
+// Sends a test/manual alert to Discord via webhook
+router.post("/dashboard/metrics/bot-health/alert", requireAuth, async (req, res) => {
+  const webhookUrl = process.env.DISCORD_ALERT_WEBHOOK_URL;
+  if (!webhookUrl) {
+    return res.json({ ok: false, error: "DISCORD_ALERT_WEBHOOK_URL not configured" });
+  }
+
+  const message = String(req.body?.message || "").slice(0, 1000) ||
+    "?? Manual alert from Scraplet Dashboard";
+
+  try {
+    const r = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: message }),
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      return res.json({ ok: false, error: `Discord webhook ${r.status}: ${t.slice(0, 200)}` });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.json({ ok: false, error: String(err?.message || err) });
+  }
+});
 
 export default router;

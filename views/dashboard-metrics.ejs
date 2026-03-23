@@ -3027,6 +3027,180 @@
               wire();
             })();
           </script>
+
+      <!-- =========================================================
+         6) BOT HEALTH
+      ========================================================== -->
+      <section class="mt-10" id="section-bot-health">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">6) Bot Health</h2>
+          <button id="btnRefreshBotHealth"
+            class="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">
+            Refresh
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Kick Bot Token -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-200">Kick Bot Token</div>
+                <div class="text-xs text-gray-500 mt-0.5">Used by Scrapbot for moderation + chat</div>
+              </div>
+              <span id="kickHealthBadge"
+                class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-700 text-gray-300">
+                LOADING
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs mt-3">
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3">
+                <div class="text-gray-500">Expires</div>
+                <div id="kickExpiry" class="text-gray-200 font-mono mt-0.5">?</div>
+              </div>
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3">
+                <div class="text-gray-500">Last Refreshed</div>
+                <div id="kickUpdated" class="text-gray-200 font-mono mt-0.5">?</div>
+              </div>
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3 col-span-2">
+                <div class="text-gray-500">Scope</div>
+                <div id="kickScope" class="text-gray-200 font-mono mt-0.5 break-all">?</div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <a id="kickReAuthBtn" href="https://scrapbot.scraplet.store/admin/bot/kick/start"
+                target="_blank"
+                class="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                Re-authorize Kick Bot
+              </a>
+            </div>
+          </div>
+
+          <!-- Discord Bot + Alert -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-200">Discord Bot</div>
+                <div class="text-xs text-gray-500 mt-0.5">Disco Scrapbot worker status</div>
+              </div>
+              <span id="discordHealthBadge"
+                class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-700 text-gray-300">
+                LOADING
+              </span>
+            </div>
+
+            <div class="mt-4 border-t border-gray-800 pt-4">
+              <div class="text-xs font-semibold text-gray-400 mb-2">Send Discord Alert</div>
+              <div class="text-xs text-gray-500 mb-3">
+                Fires a message to your configured alert webhook. Useful for testing notifications or manual ops alerts.
+              </div>
+              <textarea id="alertMessage" rows="2"
+                class="w-full bg-gray-950/60 border border-gray-700 rounded-lg text-xs text-gray-200 p-2 resize-none focus:outline-none focus:border-blue-600"
+                placeholder="Alert message?">?? Manual ops alert from Scraplet Dashboard</textarea>
+              <div class="flex items-center gap-3 mt-2">
+                <button id="btnSendAlert"
+                  class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                  Send Alert
+                </button>
+                <span id="alertStatus" class="text-xs text-gray-500"></span>
+              </div>
+              <div class="mt-3 text-xs text-gray-600">
+                Requires <code class="text-gray-400">DISCORD_ALERT_WEBHOOK_URL</code> in .env
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <script>
+        (() => {
+          const $ = (id) => document.getElementById(id);
+
+          function fmtTs(ts) {
+            try {
+              if (!ts) return "?";
+              const d = new Date(ts);
+              if (isNaN(d.getTime())) return "?";
+              const diff = d.getTime() - Date.now();
+              const abs = Math.abs(diff);
+              const h = Math.floor(abs / 3600000);
+              const m = Math.floor((abs % 3600000) / 60000);
+              const suffix = diff < 0 ? " ago" : " left";
+              const rel = h > 0 ? `${h}h ${m}m${suffix}` : `${m}m${suffix}`;
+              return `${d.toISOString().slice(0,16).replace("T"," ")} (${rel})`;
+            } catch { return "?"; }
+          }
+
+          function setBadge(id, text, tone) {
+            const el = $(id);
+            if (!el) return;
+            el.textContent = text;
+            el.className = "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold";
+            if (tone === "ok")   el.classList.add("bg-green-700/70", "border", "border-green-600", "text-green-200");
+            else if (tone === "warn") el.classList.add("bg-yellow-700/70", "border", "border-yellow-600", "text-yellow-200");
+            else if (tone === "bad")  el.classList.add("bg-red-700/70", "border", "border-red-600", "text-red-200");
+            else el.classList.add("bg-gray-700", "text-gray-300");
+          }
+
+          async function loadBotHealth() {
+            try {
+              const r = await fetch("/dashboard/metrics/bot-health", { credentials: "same-origin" });
+              const j = await r.json().catch(() => null);
+              if (!r.ok || !j?.ok) { setBadge("kickHealthBadge", "ERROR", "bad"); return; }
+
+              // Kick
+              const h = j.kick.health;
+              const toneMap = { ok: "ok", expiring_soon: "warn", expired: "bad", no_tokens: "bad", unknown: "muted" };
+              const labelMap = { ok: "HEALTHY", expiring_soon: "EXPIRING", expired: "EXPIRED", no_tokens: "NO TOKENS", unknown: "UNKNOWN" };
+              setBadge("kickHealthBadge", labelMap[h] || h.toUpperCase(), toneMap[h] || "muted");
+              $("kickExpiry").textContent  = fmtTs(j.kick.expires_at);
+              $("kickUpdated").textContent = fmtTs(j.kick.updated_at);
+              $("kickScope").textContent   = j.kick.scope || "?";
+
+              // Discord
+              setBadge("discordHealthBadge", j.discord.online ? "ONLINE" : "OFFLINE", j.discord.online ? "ok" : "bad");
+
+            } catch (e) {
+              setBadge("kickHealthBadge", "ERROR", "bad");
+              setBadge("discordHealthBadge", "ERROR", "bad");
+            }
+          }
+
+          $("btnRefreshBotHealth")?.addEventListener("click", loadBotHealth);
+
+          $("btnSendAlert")?.addEventListener("click", async () => {
+            const msg = $("alertMessage")?.value?.trim() || "";
+            if (!msg) { $("alertStatus").textContent = "Enter a message first."; return; }
+            $("alertStatus").textContent = "Sending?";
+            try {
+              const r = await fetch("/dashboard/metrics/bot-health/alert", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({ message: msg }),
+              });
+              const j = await r.json().catch(() => null);
+              if (!r.ok || !j?.ok) {
+                $("alertStatus").textContent = j?.error || "Failed.";
+                $("alertStatus").style.color = "rgb(248,113,113)";
+              } else {
+                $("alertStatus").textContent = "? Sent.";
+                $("alertStatus").style.color = "rgb(52,211,153)";
+              }
+            } catch {
+              $("alertStatus").textContent = "Request failed.";
+              $("alertStatus").style.color = "rgb(248,113,113)";
+            }
+          });
+
+          loadBotHealth();
+        })();
+      </script>
+
 </body>
 
 </html>
