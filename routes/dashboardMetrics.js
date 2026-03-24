@@ -110,13 +110,16 @@ router.get("/dashboard/metrics", requireAdmin, async (req, res, next) => {
     const metrics = buildDashboardMetrics();
     const tokenConfigured = !!process.env.ADMIN_METRICS_TOKEN;
 
-    res.render("dashboard-metrics", {
+    res.render("layout", {
+      tabView: "dashboard-metrics",
+      pageTitle: "Scrapbot Metrics",
       metrics,
       scrapbotStatus,
       scrapbotMetrics,
       scrapbotRecent,
       tokenConfigured,
       user: req.session.user,
+      isPro: false,
     });
   } catch (err) {
     next(err);
