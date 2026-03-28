@@ -1222,4 +1222,66 @@ router.get("/dashboard/scrapbot/disco-ui", requireAuth, async (req, res) => {
   }
 });
 
+
+// ── GET /dashboard/api/scrapbot/status ───────────────────────────────────────
+// Used by the showrunner controller to get live Scrapbot + streamer metrics
+router.get('/dashboard/api/scrapbot/status', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+
+    // Fetch streamer context (session stats, platform stats)
+    const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
+    const ctxResp = await fetch(
+      `${base}/dashboard/api/streamer/context?days=7&_internal_user_id=${userId}`,
+      { signal: AbortSignal.timeout(3000) }
+    ).catch(() => null);
+    const ctx = ctxResp?.ok ? await ctxResp.json() : null;
+
+    // Fetch scrapbot service health
+    const scrapbotBase = process.env.SCRAPBOT_INTERNAL_URL || 'http://127.0.0.1:3030';
+    const healthResp = await fetch(`${scrapbotBase}/health`, {
+      signal: AbortSignal.timeout(2000)
+    }).catch(() => null);
+    const health = healthResp?.ok ? await healthResp.json() : null;
+
+    // Recent room intel snapshot (last known MPM, engagement)
+    const { rows: intelRows } = await db.query(
+      `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
+       FROM public.roomintel_snapshots
+       WHERE user_id = $1
+       ORDER BY updated_at DESC LIMIT 5`,
+      [userId]
+    ).catch(() => ({ rows: [] }));
+
+    // Recent generation jobs
+    const { rows: genRows } = await db.query(
+      `SELECT job_type, status, created_at
+       FROM public.generation_jobs
+       WHERE owner_user_id = $1
+       ORDER BY created_at DESC LIMIT 5`,
+      [userId]
+    ).catch(() => ({ rows: [] }));
+
+    return res.json({
+      ok: true,
+      scrapbot: {
+        online: !!health?.ok,
+        raffle: health?.orchestration?.raffle || 'unknown',
+        mod_probe: health?.orchestration?.mod_probe || 'unknown',
+      },
+      streamer: ctx?.ok ? {
+        platform_stats: ctx.platform_stats || [],
+        session_averages: ctx.session_averages || null,
+        recent_sessions: (ctx.recent_sessions || []).slice(0, 3),
+        top_chatters: (ctx.top_chatters || []).slice(0, 5),
+      } : null,
+      room_intel: intelRows,
+      recent_generations: genRows,
+    });
+  } catch (err) {
+    console.error('[scrapbot/status]', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 export default router;
