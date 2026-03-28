@@ -221,7 +221,7 @@ router.post('/api/generation/enqueue', express.json(), async (req, res) => {
       requested_by, job_type, params, discord_message_id
     } = req.body || {};
 
-    const validTypes = ['image_fast','image_premium','image_stylized','video_from_image','video_from_prompt'];
+    const validTypes = ['image_fast','image_premium','image_stylized','image_edit','video_from_image','video_from_prompt'];
     if (!guild_id || !channel_id || !owner_user_id || !validTypes.includes(job_type)) {
       return res.status(400).json({ ok: false, error: 'invalid payload' });
     }
