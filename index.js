@@ -58,6 +58,7 @@ import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
+import highlightsApiRouter from './routes/highlightsApi.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
@@ -310,6 +311,7 @@ app.use('/dashboard/api/email', emailApiRoutes);
 
 // Status Proxy Routes
 app.use('/api/status', statusProxyRoutes);
+app.use(highlightsApiRouter);
 
 // 🎛 Studio Controller — auth-gated React build
 const studioDistPath = process.env.STUDIO_DIST_PATH || '/var/www/studio-controller/dist';

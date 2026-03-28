@@ -706,6 +706,26 @@ const GEN_PATTERNS = {
   image_edit:     /generate_image_edit\s*\(([^)]*)\)/i,
 };
 
+
+// ── Guild settings (verbosity, proactive mode) ───────────────────────────────
+const guildSettingsCache = new Map();
+
+async function getGuildSettings(guildId) {
+  const cached = guildSettingsCache.get(guildId);
+  if (cached && Date.now() - cached._ts < 60_000) return cached;
+  try {
+    const { rows } = await db.query(
+      `SELECT verbosity, proactive_enabled, debrief_channel_id, debrief_enabled
+       FROM public.scrapbot_guild_settings WHERE guild_id = $1`,
+      [guildId]
+    );
+    const settings = rows[0] || { verbosity: 1, proactive_enabled: false, debrief_enabled: true };
+    settings._ts = Date.now();
+    guildSettingsCache.set(guildId, settings);
+    return settings;
+  } catch { return { verbosity: 1, proactive_enabled: false, debrief_enabled: true }; }
+}
+
 async function getActiveSession(guildId, channelId, userId) {
   try {
     const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
@@ -940,6 +960,101 @@ internalApp.post("/internal/generation/deliver", express.json(), async (req, res
   } catch (err) {
     console.error('[discord-bot] generation delivery error:', err?.message || err);
     return res.status(500).json({ ok: false, error: err?.message || 'unknown' });
+  }
+});
+
+
+// ── POST /internal/debrief ───────────────────────────────────────────────────
+internalApp.post('/internal/debrief', express.json(), async (req, res) => {
+  try {
+    const { channel_id, guild_id, debrief_text, stats, highlights, top_chatters } = req.body || {};
+    if (!channel_id || !debrief_text) return res.status(400).json({ ok: false });
+
+    const channel = await client.channels.fetch(channel_id).catch(() => null);
+    if (!channel) return res.status(404).json({ ok: false, error: 'channel not found' });
+
+    // Build the debrief embed as a plain message
+    const lines = [
+      `**Stream Debrief** — <#${channel_id}>`,
+      '',
+      debrief_text,
+      '',
+    ];
+
+    if (highlights?.length) {
+      lines.push(`**${highlights.length} highlight moment${highlights.length !== 1 ? 's' : ''}:**`);
+      for (const h of highlights.slice(0, 5)) {
+        const time = new Date(h.triggered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        lines.push(`• ${time} — ${h.trigger_signal.replace('_', ' ')} ${h.magnitude}x${h.clip_tagged ? ' 📎' : ''}`);
+      }
+      lines.push('');
+    }
+
+    if (top_chatters?.length) {
+      lines.push('**Top chatters:** ' + top_chatters.map(c => `${c.sender_username || c.username} (${c.msg_count || c.message_count})`).join(' · '));
+    }
+
+    const msg = lines.join('\n').slice(0, 2000);
+    await channel.send(msg);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[debrief] delivery error:', e.message);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+
+// ── Proactive highlight response (verbosity-gated) ───────────────────────────
+// Listens for highlight.detected SSE events forwarded via internal API
+internalApp.post('/internal/highlight', express.json(), async (req, res) => {
+  try {
+    const { guild_id, channel_slug, trigger_signal, magnitude } = req.body || {};
+    if (!guild_id) return res.status(400).json({ ok: false });
+
+    const settings = await getGuildSettings(guild_id);
+    if (!settings.proactive_enabled || settings.verbosity < 1) return res.json({ ok: true, skipped: true });
+
+    // Find the AI-enabled channel for this guild
+    const { rows } = await db.query(
+      `SELECT channel_id FROM public.discord_channel_rules
+       WHERE guild_id = $1 AND enabled = true LIMIT 1`,
+      [guild_id]
+    );
+    if (!rows.length) return res.json({ ok: true, skipped: true });
+
+    const channel = await client.channels.fetch(rows[0].channel_id).catch(() => null);
+    if (!channel) return res.json({ ok: true, skipped: true });
+
+    // Verbosity-gated responses
+    const responses = {
+      mpm_spike: [
+        `Chat just went ${magnitude}x — something happened. What did I miss?`,
+        `${magnitude}x spike in chat. The room woke up. 👀`,
+        `Alright chat just exploded. ${magnitude}x baseline. Clip that.`,
+      ],
+      engagement_surge: [
+        `Chat's locked in right now. High engagement. Ride this wave.`,
+        `Room's focused. Good energy. Keep it going.`,
+      ],
+      hype_burst: [
+        `Pure hype in chat. The emotes are flying. 🔥`,
+        `Chat went full emoji mode. They're feeling it.`,
+      ],
+    };
+
+    const pool = responses[trigger_signal] || [`Chat spike detected — ${magnitude}x normal.`];
+    const line = pool[Math.floor(Math.random() * pool.length)];
+
+    // Higher verbosity = more likely to respond (verbosity 1 = 40%, 2 = 70%, 3+ = 100%)
+    const chance = settings.verbosity >= 3 ? 1.0 : settings.verbosity === 2 ? 0.7 : 0.4;
+    if (Math.random() > chance) return res.json({ ok: true, skipped: 'chance' });
+
+    await channel.send(line);
+    console.log('[proactive] sent highlight response to', guild_id, ':', line);
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[proactive] error:', e.message);
+    return res.status(500).json({ ok: false });
   }
 });
 

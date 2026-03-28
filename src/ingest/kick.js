@@ -665,6 +665,22 @@ export async function kickWebhookHandler(req, res) {
             ["kick", actualChannelSlug]
           );
           console.log("[kickWebhook] stream session marked ENDED", { channelSlug: actualChannelSlug });
+
+          // Fire stream debrief (non-blocking)
+          try {
+            const { rows: endedSession } = await db.query(
+              `SELECT session_id FROM stream_sessions WHERE channel_slug = $1 AND status = 'ended' ORDER BY ended_at DESC LIMIT 1`,
+              [actualChannelSlug]
+            );
+            if (endedSession[0]?.session_id) {
+              const { computeSessionStats } = await import('../../services/sessionStats.js');
+              await computeSessionStats(endedSession[0].session_id).catch(e => console.error('[kick] session stats error:', e.message));
+              const { sendStreamDebrief } = await import('../../services/streamDebrief.js');
+              sendStreamDebrief(endedSession[0].session_id, actualChannelSlug).catch(e => console.error('[kick] debrief error:', e.message));
+            }
+          } catch (e) {
+            console.error('[kick] post-session hooks error:', e.message);
+          }
         } catch (err) {
           console.error("[kickWebhook] DB stream session go-offline failed", err);
         }
