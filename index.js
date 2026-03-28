@@ -316,6 +316,7 @@ const studioDistPath = process.env.STUDIO_DIST_PATH || '/var/www/studio-controll
 
 app.use('/studio', requireAuth, express.static(studioDistPath));
 app.get(/^\/studio(\/.*)?$/, requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(studioDistPath, 'index.html'));
 });
 
