@@ -360,7 +360,7 @@ generate_image_edit("edit instruction") - edit previous image
 Example: "Spinning that up. generate_image_fast("neon city at night")" - call is stripped before user sees it.`;
 
 const IMAGE_KEYWORDS = /\b(generat|creat|make|draw|render|paint|show me|give me).{0,30}(image|picture|photo|art|illustration|visual)/i;
-const EDIT_KEYWORDS = /\b(edit|change|modify|adjust|tweak|darker|lighter|different|add|remove).{0,20}(it|that|image|picture)/i;
+const EDIT_KEYWORDS = /\b(edit|change|modify|adjust|tweak|darker|lighter|brighter|different|add|remove|where is|where are|missing|needs?|should have|more|less|instead|replace|without|include|put in|wheres|whats missing)\b/i;
 
 async function isAiEnabled(guildId) {
   const { rows } = await db.query(
@@ -452,7 +452,9 @@ client.on("messageCreate", async (msg) => {
     // Fetch streamer telemetry for context injection (best-effort)
     const streamerCtx = await fetchStreamerContext(claim.owner_user_id);
     const contextBlock = buildContextBlock(streamerCtx);
-    const wantsImage = IMAGE_KEYWORDS.test(userText) || EDIT_KEYWORDS.test(userText);
+    // If replying directly to one of Scrapbot's image messages, always treat as edit
+    const isReplyToImage = !!(msg.reference?.messageId);
+    const wantsImage = IMAGE_KEYWORDS.test(userText) || EDIT_KEYWORDS.test(userText) || isReplyToImage;
     const toolsBlock = wantsImage ? GENERATION_TOOLS_PROMPT : '';
     const systemContent = [SCRAPBOT_SYSTEM_PROMPT, contextBlock, toolsBlock].filter(Boolean).join('\n\n');
 
@@ -498,7 +500,7 @@ client.on("messageCreate", async (msg) => {
     // If user asked for an image but LLM didn't include a function call,
     // detect intent directly and queue the appropriate job
     if (wantsImage && !genJob) {
-      const isEdit = EDIT_KEYWORDS.test(userText);
+      const isEdit = EDIT_KEYWORDS.test(userText) || isReplyToImage;
       const syntheticJob = {
         type: isEdit ? 'image_edit' : 'image_fast',
         params: { prompt: userText },
