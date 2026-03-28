@@ -58,6 +58,8 @@ import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
+import streamerContextRouter from './routes/streamerContext.js';
+import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
 import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
 
@@ -340,6 +342,8 @@ app.use('/', publicRoutes);
 app.use('/profile', profileRoutes);
 app.use('/admin', adminRoutes);
 app.use(dashboardScrapbotRoutes);
+app.use('/dashboard', streamerContextRouter);
+app.use(generationApiRouter);
 
 // 🧱 404
 app.use((req, res) => {

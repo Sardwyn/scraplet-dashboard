@@ -8,12 +8,17 @@
 import https from 'https';
 import http from 'http';
 
-const BASE_URL = (process.env.VLLM_BASE_URL || '').replace(/\/$/, '');
-const MODEL    = process.env.VLLM_MODEL || 'Qwen/Qwen2.5-72B-Instruct';
-const TIMEOUT  = Number(process.env.VLLM_TIMEOUT_MS || 30000);
+// Read env lazily so dotenv.config() in the worker runs first
+function getConfig() {
+  return {
+    baseUrl: (process.env.VLLM_BASE_URL || '').replace(/\/$/, ''),
+    model:   process.env.VLLM_MODEL || 'Qwen/Qwen2.5-7B-Instruct',
+    timeout: Number(process.env.VLLM_TIMEOUT_MS || 60000),
+  };
+}
 
 function isConfigured() {
-  return Boolean(BASE_URL);
+  return Boolean(getConfig().baseUrl);
 }
 
 /**
@@ -23,19 +28,21 @@ function isConfigured() {
  * @returns {Promise<string>} assistant reply text
  */
 export async function chat(messages, opts = {}) {
-  if (!isConfigured()) {
+  const { baseUrl, model, timeout } = getConfig();
+
+  if (!baseUrl) {
     throw new Error('[llmClient] VLLM_BASE_URL is not set');
   }
 
   const body = JSON.stringify({
-    model:       opts.model       || MODEL,
+    model:       opts.model       || model,
     messages,
     temperature: opts.temperature ?? 0.7,
     max_tokens:  opts.max_tokens  ?? 512,
     stream:      false,
   });
 
-  const url = new URL('/v1/chat/completions', BASE_URL);
+  const url = new URL('/v1/chat/completions', baseUrl);
   const lib = url.protocol === 'https:' ? https : http;
 
   return new Promise((resolve, reject) => {
@@ -45,7 +52,7 @@ export async function chat(messages, opts = {}) {
         'Content-Type':   'application/json',
         'Content-Length': Buffer.byteLength(body),
       },
-      timeout: TIMEOUT,
+      timeout,
     }, (res) => {
       let raw = '';
       res.on('data', d => raw += d);

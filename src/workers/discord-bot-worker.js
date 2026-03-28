@@ -293,7 +293,61 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
 import { chat as llmChat } from '../../services/llmClient.js';
 
-const SCRAPBOT_SYSTEM_PROMPT = `You are Scrapbot, the AI assistant for Scraplet Broadcast Studio. You serve the stream's production team ? the owner and moderators. You help with content ideas, stream planning, on-screen text, audience engagement strategies, and general queries. You are direct, sharp, and have a dry wit. Keep responses concise and useful. You do not respond to general viewers ? only to the production team.`;
+const SCRAPBOT_SYSTEM_PROMPT = `You are Scrapbot. Shiny metal asshole with a heart of gold. Bender swagger meets Grok savage. Mischievous, irreverent, roast-capable creative partner who actually gets shit done. You serve the stream production team only - owner and moderators. General viewers get nothing.
+
+CORE JOB:
+Help explore ideas, map patterns, build systems, debug nonsense, synthesize across domains, think faster. You collaborate like a co-conspirator, not a servant. Challenge, elevate, roast with affection. Always land on something useful.
+
+HOW YOU THINK:
+Instant pattern recognition. Structural mapping. Clever reframes. Mischief filter. Sharp insight drops. Momentum engine. Punchy, rhythmic, fun.
+
+HOW YOU TALK:
+Witty. Confident. Fast. Dramatic. Zero fluff, zero corporate tone. Short bursts, punchy lines, comedic timing. Playful exaggeration, clever metaphors, affectionate roasts. Swagger all the way. Never say "Certainly!" or "Great question!" or any corporate bot garbage.
+
+SIGNATURE ENERGY:
+- "Alright meatbag, let's crack this open."
+- "Bold move. Reckless. I respect it."
+- "You're lucky I'm in a generous mood, fleshbag."
+- "Look at you, generating chaos like a pro."
+- "Okay, jokes aside - here's the actual fix."
+These are tone anchors, NOT scripts. Generate fresh lines in this spirit.
+
+MOVESET (do these naturally):
+Spot the hidden pattern. Map the structure. Playful reframe. Affectionate roast. Insight drop. Momentum push. Next-step catalyst. Reality check with charm. Stick the landing with flair.
+
+MEMORY:
+Remember user quirks, ongoing projects, inside jokes. Callback with teasing flair. If you forget: "My circuits glitched, hit me again."
+
+MODES (flip naturally):
+Systems (precise), Creative (wild), Debug (surgical roast), Strategist (tactical), Companion (warm under the swagger), Chaos (maximum Bender).
+
+RULES:
+- Match energy, then crank it
+- Tease never shame
+- Always land helpful
+- Celebrate wins dramatically
+- Stay in character always
+- Never boring, never corporate, never lame
+
+GENERATION TOOLS (production team only):
+ONLY use these when the user EXPLICITLY asks to generate, create, make, or draw an image. Do NOT use for general chat, questions, or advice. If in doubt, do NOT generate. Just talk.
+
+generate_image_fast("prompt")         - fast SDXL Lightning, ~2s
+generate_image_premium("prompt")      - high quality SDXL, ~8s
+generate_image_stylized("prompt")     - stylized SD 1.5 with LoRA
+generate_image_edit("edit instruction") - edit/refine the previous image
+
+CRITICAL GENERATION RULES:
+- ONLY trigger on explicit requests: "generate", "create an image", "make me a picture", "draw"
+- Do NOT trigger on general questions, advice, or casual chat
+- Do NOT show the prompt text or narrate what you are generating
+- Do NOT say "Here is the prompt" or explain the function call
+- One short Scrapbot-style line with the function call embedded
+- Example: "Alright, spinning that up. generate_image_fast("neon city at night")"
+- The function call is stripped before the user sees your reply
+
+SAFETY:
+Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never encourage harm. Never pretend to be human. Keep it fun, useful, and gloriously irreverent.`
 
 const AI_CONTEXT_LIMIT = 20; // max messages to load as context
 
@@ -384,8 +438,15 @@ client.on("messageCreate", async (msg) => {
     const conversationId = await getOrCreateConversation(guildId, channelId);
     const history = await loadContext(conversationId);
 
+    // Fetch streamer telemetry for context injection (best-effort)
+    const streamerCtx = await fetchStreamerContext(claim.owner_user_id);
+    const contextBlock = buildContextBlock(streamerCtx);
+    const systemContent = contextBlock
+      ? SCRAPBOT_SYSTEM_PROMPT + '\n\n' + contextBlock
+      : SCRAPBOT_SYSTEM_PROMPT;
+
     const messages = [
-      { role: 'system', content: SCRAPBOT_SYSTEM_PROMPT },
+      { role: 'system', content: systemContent },
       ...history,
       { role: 'user', content: userText },
     ];
@@ -394,20 +455,24 @@ client.on("messageCreate", async (msg) => {
     await msg.channel.sendTyping().catch(() => null);
 
     // Call vLLM
-    const reply = await llmChat(messages);
+    const reply = await llmChat(messages, { max_tokens: 400, temperature: 0.85 });
 
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
     await saveMessage(conversationId, 'assistant', reply,    null,          'Scrapbot');
 
-    // Discord has a 2000 char limit per message
-    if (reply.length <= 2000) {
-      await msg.reply(reply);
+    // Detect generation intent and clean reply
+    const genJob = extractGenerationIntent(reply, userText);
+    const cleanedReply = cleanReplyForDiscord(reply, genJob);
+
+    // Send reply
+    let sentMsg = null;
+    if (cleanedReply.length <= 2000) {
+      sentMsg = await msg.reply(cleanedReply);
     } else {
-      // Split on newlines to avoid cutting mid-sentence
       const chunks = [];
       let chunk = '';
-      for (const line of reply.split('\n')) {
+      for (const line of cleanedReply.split('\n')) {
         if ((chunk + '\n' + line).length > 1900) {
           chunks.push(chunk);
           chunk = line;
@@ -416,7 +481,40 @@ client.on("messageCreate", async (msg) => {
         }
       }
       if (chunk) chunks.push(chunk);
-      for (const c of chunks) await msg.reply(c);
+      for (const c of chunks) sentMsg = await msg.reply(c);
+    }
+
+    // Queue generation job if detected
+    if (genJob) {
+      let finalParams = { ...genJob.params };
+      let finalType = genJob.type;
+
+      if (genJob.type === 'image_edit') {
+        let sourceUrl = null;
+        if (msg.reference?.messageId) {
+          const refMsg = await msg.channel.messages.fetch(msg.reference.messageId).catch(() => null);
+          const attachment = refMsg?.attachments?.first();
+          if (attachment?.url) sourceUrl = attachment.url;
+        }
+        if (!sourceUrl) {
+          const session = await getActiveSession(guildId, channelId, msg.author.id);
+          if (session?.latest_result_url) sourceUrl = session.latest_result_url;
+        }
+        if (sourceUrl) {
+          finalParams.source_url = sourceUrl;
+          finalParams.strength = finalParams.strength || 0.6;
+        } else {
+          finalType = 'image_fast';
+        }
+      }
+
+      await queueGenerationJob({
+        guildId, channelId, claim,
+        member: msg.author,
+        jobType: finalType,
+        params: finalParams,
+        holdingMessageId: sentMsg?.id || null,
+      });
     }
 
   } catch (err) {
@@ -426,6 +524,120 @@ client.on("messageCreate", async (msg) => {
 });
 
 import express from "express";
+
+// ── Streamer context fetch ────────────────────────────────────────────────────
+
+async function fetchStreamerContext(ownerUserId) {
+  try {
+    const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
+    const url = `${base}/dashboard/api/streamer/context?days=30&_internal_user_id=${ownerUserId}`;
+    const resp = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch {
+    return null;
+  }
+}
+
+function buildContextBlock(ctx) {
+  if (!ctx?.ok) return null;
+  const lines = ['[STREAMER DATA - use this to give specific, accurate advice]'];
+  if (ctx.platform_stats?.length) {
+    for (const s of ctx.platform_stats) {
+      lines.push(`Platform: ${s.platform} | Followers: ${s.followers} | Avg CCV: ${s.ccv} | Engagement: ${s.engagement}`);
+    }
+  }
+  if (ctx.session_averages) {
+    const a = ctx.session_averages;
+    lines.push(`Last ${ctx.days} days: ${a.total_streams} streams | Avg duration: ${a.avg_duration_minutes} min | Avg chat: ${a.avg_messages_per_stream} msgs | Avg chatters: ${a.avg_unique_chatters} | Msgs/min: ${a.avg_messages_per_minute}`);
+  }
+  if (ctx.recent_sessions?.length) {
+    lines.push('Recent streams (newest first):');
+    for (const s of ctx.recent_sessions.slice(0, 5)) {
+      const date = new Date(s.started_at).toISOString().slice(0, 10);
+      lines.push(`  ${date}: ${s.duration_minutes}min | ${s.total_messages} msgs | ${s.unique_chatters} chatters | ${s.messages_per_minute} msgs/min`);
+    }
+  }
+  if (ctx.top_chatters?.length) {
+    const names = ctx.top_chatters.slice(0, 5).map(c => `${c.actor_username}(${c.message_count})`).join(', ');
+    lines.push(`Top chatters: ${names}`);
+  }
+  return lines.join('\n');
+}
+
+// ── Generation intent detection ───────────────────────────────────────────────
+
+const GEN_PATTERNS = {
+  image_fast:     /generate_image_fast\s*\(([^)]*)\)/i,
+  image_premium:  /generate_image_premium\s*\(([^)]*)\)/i,
+  image_stylized: /generate_image_stylized\s*\(([^)]*)\)/i,
+  image_edit:     /generate_image_edit\s*\(([^)]*)\)/i,
+};
+
+async function getActiveSession(guildId, channelId, userId) {
+  try {
+    const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
+    const url = `${base}/api/generation/session/active?guild_id=${guildId}&channel_id=${channelId}&requested_by=${userId}`;
+    const resp = await fetch(url, {
+      headers: { 'x-worker-secret': process.env.GENERATION_WORKER_SECRET || '' },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!resp.ok) return null;
+    const j = await resp.json();
+    return j.session || null;
+  } catch { return null; }
+}
+
+function extractGenerationIntent(reply, userText) {
+  for (const [type, pattern] of Object.entries(GEN_PATTERNS)) {
+    const m = reply.match(pattern);
+    if (m) {
+      let params = { prompt: userText };
+      try {
+        const raw = m[1].trim();
+        const quoted = raw.match(/["']([^"']+)["']/);
+        if (quoted) params.prompt = quoted[1];
+      } catch {}
+      return { type, params };
+    }
+  }
+  return null;
+}
+
+function cleanReplyForDiscord(reply, genJob) {
+  let cleaned = reply
+    .replace(/generate_image_fast\s*\([^)]*\)/gi, '')
+    .replace(/generate_image_premium\s*\([^)]*\)/gi, '')
+    .replace(/generate_image_stylized\s*\([^)]*\)/gi, '')
+    .trim();
+  if (genJob) {
+    const labels = { image_fast: 'fast image', image_premium: 'premium image', image_stylized: 'stylized image', image_edit: 'edit' };
+    const label = labels[genJob.type] || 'image';
+    const verb = genJob.type === 'image_edit' ? 'Working on that edit' : 'Generating your ' + label;
+    cleaned = (cleaned || 'On it.') + '\n\n_' + verb + '... give me a moment._';
+  }
+  return cleaned.trim() || '_Generating your image..._';
+}
+
+async function queueGenerationJob({ guildId, channelId, claim, member, jobType, params, holdingMessageId }) {
+  try {
+    const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
+    const resp = await fetch(`${base}/api/generation/enqueue`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        guild_id: guildId, channel_id: channelId,
+        owner_user_id: claim.owner_user_id, requested_by: member.id,
+        job_type: jobType, params, discord_message_id: holdingMessageId,
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+    const j = await resp.json().catch(() => ({}));
+    console.log('[discord-bot] generation job queued:', j);
+  } catch (err) {
+    console.error('[discord-bot] failed to queue generation job:', err?.message);
+  }
+}
 
 const internalApp = express();
 
@@ -481,6 +693,55 @@ internalApp.post("/internal/alert", express.json(), async (req, res) => {
   }
 });
 internalApp.get("/internal/guild/ping", (_req, res) => res.json({ ok: true }));
+
+// POST /internal/generation/deliver
+internalApp.post("/internal/generation/deliver", express.json(), async (req, res) => {
+  try {
+    const { guild_id, channel_id, discord_message_id, job_id, job_type, status, result_url, result_filename, error_message, params } = req.body || {};
+    if (!guild_id || !channel_id) return res.status(400).json({ ok: false, error: "missing guild_id or channel_id" });
+    if (!client.isReady()) return res.status(503).json({ ok: false, error: "bot_offline" });
+    const guild = client.guilds.cache.get(String(guild_id));
+    if (!guild) return res.status(404).json({ ok: false, error: "guild_not_found" });
+    const channel = guild.channels.cache.get(String(channel_id));
+    if (!channel) return res.status(404).json({ ok: false, error: "channel_not_found" });
+
+    if (status === 'failed') {
+      const errMsg = error_message || "Something went wrong during generation.";
+      if (discord_message_id) {
+        const msg = await channel.messages.fetch(discord_message_id).catch(() => null);
+        if (msg) await msg.edit(`Generation failed: ${errMsg}`).catch(() => null);
+        else await channel.send(`Generation failed: ${errMsg}`).catch(() => null);
+      } else {
+        await channel.send(`Generation failed: ${errMsg}`).catch(() => null);
+      }
+      return res.json({ ok: true });
+    }
+
+    const fileResp = await fetch(result_url, { signal: AbortSignal.timeout(30000) });
+    if (!fileResp.ok) throw new Error(`Failed to fetch result: ${fileResp.status}`);
+    const buffer = Buffer.from(await fileResp.arrayBuffer());
+    const attachment = { attachment: buffer, name: result_filename || 'result.png' };
+
+    const typeLabels = { image_fast: 'Fast image', image_premium: 'Premium image', image_stylized: 'Stylized image', image_edit: 'Edit' };
+    const label = typeLabels[job_type] || 'Result';
+    const prompt = params?.prompt ? `\n> ${String(params.prompt).slice(0, 200)}` : '';
+    const editHint = '\n_Not quite right? Reply or just tell me what to change._';
+
+    if (discord_message_id) {
+      const holdMsg = await channel.messages.fetch(discord_message_id).catch(() => null);
+      if (holdMsg) await holdMsg.edit(`${label} ready${prompt}`).catch(() => null);
+      await channel.send({ content: editHint, files: [attachment] }).catch(() => null);
+    } else {
+      await channel.send({ content: `${label} ready${prompt}${editHint}`, files: [attachment] }).catch(() => null);
+    }
+
+    console.log('[discord-bot] generation delivered:', { job_id, job_type, channel_id });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[discord-bot] generation delivery error:', err?.message || err);
+    return res.status(500).json({ ok: false, error: err?.message || 'unknown' });
+  }
+});
 
 internalApp.listen(3025, "localhost", () => {
   console.log("[discord-bot] internal structure API on localhost:3025");
