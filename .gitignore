@@ -150,4 +150,5 @@ vps-backup_payload/
 .env
 .env.*
 *.zip
-public/uploadspublic/generated/
+public/uploads/
+public/generated/
