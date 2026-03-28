@@ -21,15 +21,23 @@ async function tick() {
 
     try {
         // Single authority: external_account_tokens joined to external_accounts for platform='kick'
+        // Refresh if: expiring soon OR hasn't been refreshed in 12 hours (keeps refresh tokens alive)
         const { rows } = await db.query(`
       SELECT ea.user_id   AS dashboard_user_id,
              ea.id         AS external_account_id,
-             eat.expires_at
+             eat.expires_at,
+             eat.refresh_ok_at
         FROM external_accounts ea
         JOIN external_account_tokens eat ON eat.external_account_id = ea.id
        WHERE ea.platform = 'kick'
          AND eat.refresh_token IS NOT NULL
-         AND (eat.expires_at IS NULL OR eat.expires_at < now() + interval '${LOOKAHEAD_MIN} minutes')
+         AND eat.refresh_failed_at IS NULL
+         AND (
+           eat.expires_at IS NULL
+           OR eat.expires_at < now() + interval '${LOOKAHEAD_MIN} minutes'
+           OR eat.refresh_ok_at IS NULL
+           OR eat.refresh_ok_at < now() - interval '12 hours'
+         )
        ORDER BY eat.expires_at ASC NULLS FIRST
     `);
 
