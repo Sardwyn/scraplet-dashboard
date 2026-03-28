@@ -709,4 +709,167 @@
   });
   </script>
 
+  <!-- ── Stream Performance + Highlights ─────────────────────────────────── -->
+  <section id="stream-performance" class="mt-8">
+    <div class="pc-panel">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">🎮 Stream Performance</div>
+          <div class="pc-panel-sub">Recent sessions with highlight moments marked.</div>
+        </div>
+        <div class="flex gap-2 text-xs">
+          <select id="sp-days" class="pc-btn pc-btn-ghost text-gray-300 bg-transparent border border-white/10 rounded px-2 py-1">
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="pc-panel-bd">
+
+        <!-- Summary cards -->
+        <div id="sp-summary" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-center">
+          <div class="bg-white/5 rounded-lg p-3">
+            <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Streams</div>
+            <div id="sp-total-streams" class="text-xl font-bold text-white">—</div>
+          </div>
+          <div class="bg-white/5 rounded-lg p-3">
+            <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Avg Duration</div>
+            <div id="sp-avg-duration" class="text-xl font-bold text-white">—</div>
+          </div>
+          <div class="bg-white/5 rounded-lg p-3">
+            <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Avg Msg/min</div>
+            <div id="sp-avg-mpm" class="text-xl font-bold text-emerald-400">—</div>
+          </div>
+          <div class="bg-white/5 rounded-lg p-3">
+            <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Highlights</div>
+            <div id="sp-highlight-count" class="text-xl font-bold text-amber-400">—</div>
+          </div>
+        </div>
+
+        <!-- Sessions table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-white/40 uppercase tracking-wider border-b border-white/10">
+                <th class="text-left pb-2 pr-4">Date</th>
+                <th class="text-right pb-2 pr-4">Duration</th>
+                <th class="text-right pb-2 pr-4">Messages</th>
+                <th class="text-right pb-2 pr-4">Chatters</th>
+                <th class="text-right pb-2 pr-4">Msg/min</th>
+                <th class="text-right pb-2">Highlights</th>
+              </tr>
+            </thead>
+            <tbody id="sp-sessions" class="divide-y divide-white/5">
+              <tr><td colspan="6" class="py-4 text-center text-white/30 text-xs">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Highlights list -->
+        <div id="sp-highlights-panel" class="mt-6 hidden">
+          <div class="text-xs text-white/40 uppercase tracking-wider mb-3">🔥 Highlight Moments</div>
+          <div id="sp-highlights-list" class="space-y-2"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script>
+  (function() {
+    const SIGNAL_LABELS = {
+      mpm_spike: '💬 Chat spike',
+      engagement_surge: '🎯 Engagement surge',
+      hype_burst: '🔥 Hype burst',
+      raid: '⚔️ Raid',
+    };
+
+    async function loadStreamPerformance(days) {
+      try {
+        const [ctxResp, hlResp] = await Promise.all([
+          fetch(`/dashboard/api/streamer/context?days=${days}`),
+          fetch(`/dashboard/api/highlights?limit=50`),
+        ]);
+        const ctx = await ctxResp.json();
+        const hl = await hlResp.json();
+
+        const highlights = hl.highlights || [];
+        const sessions = ctx.recent_sessions || [];
+        const avgs = ctx.session_averages || {};
+
+        // Summary cards
+        document.getElementById('sp-total-streams').textContent = avgs.total_streams ?? '—';
+        document.getElementById('sp-avg-duration').textContent = avgs.avg_duration_minutes ? avgs.avg_duration_minutes + ' min' : '—';
+        document.getElementById('sp-avg-mpm').textContent = avgs.avg_messages_per_minute ?? '—';
+        document.getElementById('sp-highlight-count').textContent = highlights.length;
+
+        // Build highlight lookup by session
+        const hlBySession = {};
+        for (const h of highlights) {
+          if (!h.session_id) continue;
+          if (!hlBySession[h.session_id]) hlBySession[h.session_id] = [];
+          hlBySession[h.session_id].push(h);
+        }
+
+        // Sessions table
+        const tbody = document.getElementById('sp-sessions');
+        if (!sessions.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-white/30 text-xs">No sessions in this period.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = sessions.map(s => {
+          const date = new Date(s.started_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          const dur = s.duration_minutes ? Math.round(s.duration_minutes) + ' min' : '—';
+          const sessionHl = hlBySession[s.session_id] || [];
+          const hlBadge = sessionHl.length
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/20 cursor-pointer hover:bg-amber-500/25" data-session="${s.session_id}">🔥 ${sessionHl.length}</span>`
+            : '<span class="text-white/20">—</span>';
+          return `<tr class="hover:bg-white/3 transition-colors">
+            <td class="py-2 pr-4 text-white/80">${date}</td>
+            <td class="py-2 pr-4 text-right font-mono text-white/60">${dur}</td>
+            <td class="py-2 pr-4 text-right font-mono text-white/60">${s.total_messages ?? '—'}</td>
+            <td class="py-2 pr-4 text-right font-mono text-white/60">${s.unique_chatters ?? '—'}</td>
+            <td class="py-2 pr-4 text-right font-mono text-emerald-400">${s.messages_per_minute ?? '—'}</td>
+            <td class="py-2 text-right">${hlBadge}</td>
+          </tr>`;
+        }).join('');
+
+        // Click highlight badge to expand
+        tbody.querySelectorAll('[data-session]').forEach(badge => {
+          badge.addEventListener('click', () => {
+            const sid = badge.dataset.session;
+            const sessionHl = hlBySession[sid] || [];
+            const panel = document.getElementById('sp-highlights-panel');
+            const list = document.getElementById('sp-highlights-list');
+            panel.classList.remove('hidden');
+            list.innerHTML = sessionHl.map(h => {
+              const time = new Date(h.triggered_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const label = SIGNAL_LABELS[h.trigger_signal] || h.trigger_signal;
+              const clip = h.clip_tagged ? '<span class="ml-2 text-xs text-sky-400">📎 clipped</span>' : '';
+              return `<div class="flex items-center gap-3 bg-white/5 rounded-lg px-3 py-2 text-sm">
+                <span class="text-white/40 font-mono text-xs">${time}</span>
+                <span class="text-amber-300">${label}</span>
+                <span class="text-white/50">${h.magnitude}x baseline</span>
+                <span class="text-white/30 text-xs">${h.peak_mpm} msg/min</span>
+                ${clip}
+              </div>`;
+            }).join('');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          });
+        });
+
+      } catch (e) {
+        console.error('Stream performance load failed:', e);
+      }
+    }
+
+    const sel = document.getElementById('sp-days');
+    sel.addEventListener('change', () => loadStreamPerformance(Number(sel.value)));
+    loadStreamPerformance(7);
+  })();
+  </script>
+
+
 </div>
