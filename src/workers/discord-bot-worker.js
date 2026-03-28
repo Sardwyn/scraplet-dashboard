@@ -449,6 +449,12 @@ client.on("messageCreate", async (msg) => {
     const conversationId = await getOrCreateConversation(guildId, channelId);
     const history = await loadContext(conversationId);
 
+    // Load per-user persistent memory
+    const userMemories = await loadUserMemory(guildId, msg.author.id);
+    const memoryBlock = userMemories.length > 0
+      ? '[MEMORY - things you remember about this user]\n' + userMemories.map(m => `- ${m}`).join('\n')
+      : null;
+
     // Fetch streamer telemetry for context injection (best-effort)
     const streamerCtx = await fetchStreamerContext(claim.owner_user_id);
     const contextBlock = buildContextBlock(streamerCtx);
@@ -456,7 +462,7 @@ client.on("messageCreate", async (msg) => {
     const isReplyToImage = !!(msg.reference?.messageId);
     const wantsImage = IMAGE_KEYWORDS.test(userText) || EDIT_KEYWORDS.test(userText) || isReplyToImage;
     const toolsBlock = wantsImage ? GENERATION_TOOLS_PROMPT : '';
-    const systemContent = [SCRAPBOT_SYSTEM_PROMPT, contextBlock, toolsBlock].filter(Boolean).join('\n\n');
+    const systemContent = [SCRAPBOT_SYSTEM_PROMPT, memoryBlock, contextBlock, toolsBlock].filter(Boolean).join('\n\n');
 
     const messages = [
       { role: 'system', content: systemContent },
@@ -473,6 +479,10 @@ client.on("messageCreate", async (msg) => {
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
     await saveMessage(conversationId, 'assistant', reply,    null,          'Scrapbot');
+
+    // Async memory extraction (non-blocking)
+    const allMessages = [...history, { role: 'user', content: userText }, { role: 'assistant', content: reply }];
+    extractAndStoreMemory(guildId, msg.author.id, conversationId, allMessages).catch(() => {});
 
     // Detect generation intent and clean reply
     const genJob = extractGenerationIntent(reply, userText);
@@ -630,6 +640,74 @@ async function getActiveSession(guildId, channelId, userId) {
     const j = await resp.json();
     return j.session || null;
   } catch { return null; }
+}
+
+
+// ── Per-user persistent memory ───────────────────────────────────────────────
+
+async function loadUserMemory(guildId, userId) {
+  try {
+    const { rows } = await db.query(
+      `SELECT memory_text FROM public.scrapbot_user_memory
+       WHERE guild_id = $1 AND discord_user_id = $2
+       ORDER BY updated_at DESC LIMIT 12`,
+      [guildId, userId]
+    );
+    return rows.map(r => r.memory_text);
+  } catch { return []; }
+}
+
+async function extractAndStoreMemory(guildId, userId, conversationId, recentMessages) {
+  if (!recentMessages || recentMessages.length < 4) return;
+  try {
+    // Only extract every 6 user turns to avoid hammering vLLM
+    const { rows } = await db.query(
+      `SELECT last_memory_extraction_at FROM public.discord_ai_conversations
+       WHERE id = $1`, [conversationId]
+    );
+    const lastExtract = rows[0]?.last_memory_extraction_at;
+    const userTurns = recentMessages.filter(m => m.role === 'user').length;
+    if (lastExtract && userTurns < 6) return;
+
+    const transcript = recentMessages
+      .filter(m => m.role !== 'system')
+      .slice(-12)
+      .map(m => `${m.role === 'user' ? 'User' : 'Scrapbot'}: ${m.content}`)
+      .join('\n');
+
+    const extractPrompt = [
+      { role: 'system', content: 'You are a memory extraction assistant. Extract 1-4 concise facts about the user from this conversation that would be useful to remember long-term: their projects, preferences, goals, stream topics, or recurring themes. Return ONLY a JSON array of short strings, e.g. ["Works on horror stream series", "Prefers neon aesthetic"]. If nothing memorable, return [].' },
+      { role: 'user', content: transcript }
+    ];
+
+    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.3 });
+    const match = raw.match(/\[.*?\]/s);
+    if (!match) return;
+
+    const facts = JSON.parse(match[0]);
+    if (!Array.isArray(facts) || facts.length === 0) return;
+
+    for (const fact of facts) {
+      if (typeof fact !== 'string' || fact.length < 5 || fact.length > 200) continue;
+      await db.query(
+        `INSERT INTO public.scrapbot_user_memory (guild_id, discord_user_id, memory_text)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (guild_id, discord_user_id, memory_text)
+         DO UPDATE SET updated_at = now()`,
+        [guildId, userId, fact.trim()]
+      ).catch(() => {});
+    }
+
+    // Mark extraction timestamp
+    await db.query(
+      `UPDATE public.discord_ai_conversations
+       SET last_memory_extraction_at = now()
+       WHERE id = $1`, [conversationId]
+    ).catch(() => {});
+
+  } catch (e) {
+    console.error('[memory] extraction error:', e.message);
+  }
 }
 
 function extractGenerationIntent(reply, userText) {
