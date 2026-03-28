@@ -148,17 +148,14 @@ router.post('/api/generation/callback', requireWorkerAuth, express.json(), async
         `INSERT INTO public.generation_sessions
            (guild_id, channel_id, owner_user_id, requested_by, latest_job_id, latest_result_url, expires_at)
          VALUES ($1, $2, $3, $4, $5, $6, now() + interval '15 minutes')
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (guild_id, channel_id, requested_by)
+         DO UPDATE SET
+           latest_job_id = EXCLUDED.latest_job_id,
+           latest_result_url = EXCLUDED.latest_result_url,
+           expires_at = now() + interval '15 minutes',
+           updated_at = now()`,
         [j.guild_id, j.channel_id, j.owner_user_id, j.requested_by, j.id, j.result_url]
-      ).catch(() => {});
-      // Also upsert by channel+user for session lookup
-      await db.query(
-        `INSERT INTO public.generation_sessions
-           (guild_id, channel_id, owner_user_id, requested_by, latest_job_id, latest_result_url, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6, now() + interval '15 minutes')
-         ON CONFLICT DO NOTHING`,
-        [j.guild_id, j.channel_id, j.owner_user_id, j.requested_by, j.id, j.result_url]
-      ).catch(() => {});
+      ).catch(e => console.error('[generationApi] session upsert error:', e.message));
     }
 
     if (!rows.length) return res.status(404).json({ ok: false, error: 'job not found' });
