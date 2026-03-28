@@ -351,6 +351,17 @@ Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never 
 
 const AI_CONTEXT_LIMIT = 20; // max messages to load as context
 
+const GENERATION_TOOLS_PROMPT = `GENERATION TOOLS (only because user asked about images):
+Include EXACTLY ONE function call. Do NOT show the prompt text. One short Scrapbot line with the call embedded.
+generate_image_fast("prompt") - fast ~2s
+generate_image_premium("prompt") - quality ~8s
+generate_image_stylized("prompt") - stylized
+generate_image_edit("edit instruction") - edit previous image
+Example: "Spinning that up. generate_image_fast("neon city at night")" - call is stripped before user sees it.`;
+
+const IMAGE_KEYWORDS = /\b(generat|creat|make|draw|render|paint|show me|give me).{0,30}(image|picture|photo|art|illustration|visual)/i;
+const EDIT_KEYWORDS = /\b(edit|change|modify|adjust|tweak|darker|lighter|different|add|remove).{0,20}(it|that|image|picture)/i;
+
 async function isAiEnabled(guildId) {
   const { rows } = await db.query(
     `SELECT ai_enabled FROM public.discord_guild_integrations
@@ -441,9 +452,9 @@ client.on("messageCreate", async (msg) => {
     // Fetch streamer telemetry for context injection (best-effort)
     const streamerCtx = await fetchStreamerContext(claim.owner_user_id);
     const contextBlock = buildContextBlock(streamerCtx);
-    const systemContent = contextBlock
-      ? SCRAPBOT_SYSTEM_PROMPT + '\n\n' + contextBlock
-      : SCRAPBOT_SYSTEM_PROMPT;
+    const wantsImage = IMAGE_KEYWORDS.test(userText) || EDIT_KEYWORDS.test(userText);
+    const toolsBlock = wantsImage ? GENERATION_TOOLS_PROMPT : '';
+    const systemContent = [SCRAPBOT_SYSTEM_PROMPT, contextBlock, toolsBlock].filter(Boolean).join('\n\n');
 
     const messages = [
       { role: 'system', content: systemContent },
@@ -463,7 +474,7 @@ client.on("messageCreate", async (msg) => {
 
     // Detect generation intent and clean reply
     const genJob = extractGenerationIntent(reply, userText);
-    const cleanedReply = cleanReplyForDiscord(reply, genJob);
+    const cleanedReply = cleanReplyForDiscord(reply, genJob, wantsImage);
 
     // Send reply
     let sentMsg = null;
@@ -484,8 +495,39 @@ client.on("messageCreate", async (msg) => {
       for (const c of chunks) sentMsg = await msg.reply(c);
     }
 
-    // Queue generation job if detected
-    if (genJob) {
+    // If user asked for an image but LLM didn't include a function call,
+    // detect intent directly and queue the appropriate job
+    if (wantsImage && !genJob) {
+      const isEdit = EDIT_KEYWORDS.test(userText);
+      const syntheticJob = {
+        type: isEdit ? 'image_edit' : 'image_fast',
+        params: { prompt: userText },
+      };
+      let finalParams = { ...syntheticJob.params };
+      let finalType = syntheticJob.type;
+      if (finalType === 'image_edit') {
+        let sourceUrl = null;
+        if (msg.reference?.messageId) {
+          const refMsg = await msg.channel.messages.fetch(msg.reference.messageId).catch(() => null);
+          const attachment = refMsg?.attachments?.first();
+          if (attachment?.url) sourceUrl = attachment.url;
+        }
+        if (!sourceUrl) {
+          const session = await getActiveSession(guildId, channelId, msg.author.id);
+          if (session?.latest_result_url) sourceUrl = session.latest_result_url;
+        }
+        if (sourceUrl) {
+          finalParams.source_url = sourceUrl;
+          finalParams.strength = 0.6;
+        } else {
+          finalType = 'image_fast';
+        }
+      }
+      await queueGenerationJob({ guildId, channelId, claim, member: msg.author, jobType: finalType, params: finalParams, holdingMessageId: sentMsg?.id || null });
+    }
+
+    // Queue generation job only if user actually asked for an image
+    if (genJob && wantsImage) {
       let finalParams = { ...genJob.params };
       let finalType = genJob.type;
 
@@ -604,13 +646,13 @@ function extractGenerationIntent(reply, userText) {
   return null;
 }
 
-function cleanReplyForDiscord(reply, genJob) {
+function cleanReplyForDiscord(reply, genJob, wantsImage) {
   let cleaned = reply
     .replace(/generate_image_fast\s*\([^)]*\)/gi, '')
     .replace(/generate_image_premium\s*\([^)]*\)/gi, '')
     .replace(/generate_image_stylized\s*\([^)]*\)/gi, '')
     .trim();
-  if (genJob) {
+  if (genJob && wantsImage) {
     const labels = { image_fast: 'fast image', image_premium: 'premium image', image_stylized: 'stylized image', image_edit: 'edit' };
     const label = labels[genJob.type] || 'image';
     const verb = genJob.type === 'image_edit' ? 'Working on that edit' : 'Generating your ' + label;
