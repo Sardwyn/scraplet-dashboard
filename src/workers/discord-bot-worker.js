@@ -447,6 +447,84 @@ client.on("messageCreate", async (msg) => {
 
     // Load conversation context
     const conversationId = await getOrCreateConversation(guildId, channelId);
+
+    // ── /status or !status command ───────────────────────────────────────────
+    if (/^[!/]status\b/i.test(userText.trim())) {
+      try {
+        const ctx = await fetchStreamerContext(claim.owner_user_id);
+        if (!ctx?.ok) {
+          await msg.reply("My circuits can't reach your stats right now. Try again in a moment.");
+          return;
+        }
+
+        const lines = [];
+
+        // Platform stats
+        if (ctx.platform_stats?.length) {
+          for (const s of ctx.platform_stats) {
+            lines.push(`**${s.platform}** — ${s.followers?.toLocaleString() ?? '?'} followers | Avg CCV: ${s.ccv ?? '?'} | Engagement: ${s.engagement ?? '?'}`);
+          }
+        }
+
+        // Session averages
+        if (ctx.session_averages) {
+          const a = ctx.session_averages;
+          lines.push('');
+          lines.push(`**Last ${ctx.days} days** — ${a.total_streams ?? 0} streams | Avg duration: ${a.avg_duration_minutes ?? '?'} min | Avg chat: ${a.avg_messages_per_stream ?? '?'} msgs | Avg chatters: ${a.avg_unique_chatters ?? '?'} | ${a.avg_messages_per_minute ?? '?'} msgs/min`);
+        }
+
+        // Recent sessions
+        if (ctx.recent_sessions?.length) {
+          lines.push('');
+          lines.push('**Recent streams:**');
+          for (const s of ctx.recent_sessions.slice(0, 3)) {
+            const date = new Date(s.started_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            lines.push(`• ${date} — ${s.duration_minutes ?? '?'} min | ${s.total_messages ?? 0} msgs | ${s.unique_chatters ?? 0} chatters | ${s.messages_per_minute ?? '?'} msgs/min`);
+          }
+        }
+
+        // Top chatters
+        if (ctx.top_chatters?.length) {
+          lines.push('');
+          lines.push('**Top chatters:** ' + ctx.top_chatters.slice(0, 5).map(c => `${c.username} (${c.message_count})`).join(' · '));
+        }
+
+        // User memories
+        const memories = await loadUserMemory(guildId, msg.author.id);
+        if (memories.length) {
+          lines.push('');
+          lines.push('**What I remember about you:**');
+          for (const m of memories.slice(0, 5)) lines.push(`• ${m}`);
+        }
+
+        const header = "Alright meatbag, here's your readout:";
+        const body = lines.join('\n');
+        const full = `${header}\n\n${body}`;
+
+        // Split if over Discord limit
+        if (full.length <= 2000) {
+          await msg.reply(full);
+        } else {
+          await msg.reply(header);
+          // Send in chunks
+          let chunk = '';
+          for (const line of lines) {
+            if ((chunk + '\n' + line).length > 1900) {
+              await msg.channel.send(chunk);
+              chunk = line;
+            } else {
+              chunk = chunk ? chunk + '\n' + line : line;
+            }
+          }
+          if (chunk) await msg.channel.send(chunk);
+        }
+      } catch (e) {
+        console.error('[discord-bot] status command error:', e.message);
+        await msg.reply("Something blew up in my stats module. Classic.");
+      }
+      return;
+    }
+
     const history = await loadContext(conversationId);
 
     // Load per-user persistent memory
