@@ -1230,12 +1230,25 @@ router.get('/dashboard/api/scrapbot/status', requireAuth, async (req, res) => {
     const userId = req.session.user.id;
 
     // Fetch streamer context (session stats, platform stats)
+    // channel_slug and platform can be passed to scope results to a specific channel
+    const channelSlug = req.query.channel_slug || null;
+    const platform    = req.query.platform || null;
     const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
     const ctxResp = await fetch(
       `${base}/dashboard/api/streamer/context?days=7&_internal_user_id=${userId}`,
       { signal: AbortSignal.timeout(3000) }
     ).catch(() => null);
-    const ctx = ctxResp?.ok ? await ctxResp.json() : null;
+    let ctx = ctxResp?.ok ? await ctxResp.json() : null;
+
+    // Scope platform_stats to the requested platform/channel if specified
+    if (ctx?.ok && platform) {
+      ctx = {
+        ...ctx,
+        platform_stats: (ctx.platform_stats || []).filter(
+          s => s.platform?.toLowerCase() === platform.toLowerCase()
+        ),
+      };
+    }
 
     // Fetch scrapbot service health
     const scrapbotBase = process.env.SCRAPBOT_INTERNAL_URL || 'http://127.0.0.1:3030';
@@ -1245,13 +1258,19 @@ router.get('/dashboard/api/scrapbot/status', requireAuth, async (req, res) => {
     const health = healthResp?.ok ? await healthResp.json() : null;
 
     // Recent room intel snapshot (last known MPM, engagement)
-    const { rows: intelRows } = await db.query(
-      `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
-       FROM public.roomintel_snapshots
-       WHERE user_id = $1
-       ORDER BY updated_at DESC LIMIT 5`,
-      [userId]
-    ).catch(() => ({ rows: [] }));
+    // Scope to specific channel if provided
+    const intelQuery = channelSlug
+      ? `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
+         FROM public.roomintel_snapshots
+         WHERE user_id = $1 AND channel_slug = $2
+         ORDER BY updated_at DESC LIMIT 3`
+      : `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
+         FROM public.roomintel_snapshots
+         WHERE user_id = $1
+         ORDER BY updated_at DESC LIMIT 5`;
+    const intelParams = channelSlug ? [userId, channelSlug] : [userId];
+    const { rows: intelRows } = await db.query(intelQuery, intelParams)
+      .catch(() => ({ rows: [] }));
 
     // Recent generation jobs
     const { rows: genRows } = await db.query(
