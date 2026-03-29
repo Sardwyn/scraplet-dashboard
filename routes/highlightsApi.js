@@ -22,10 +22,10 @@ router.post('/api/highlights/ingest', requireWorkerAuth, async (req, res) => {
   try {
     const {
       channel_slug, scraplet_user_id, platform,
-      signal, trigger, magnitude, baseline_mpm, peak_mpm, triggered_at,
+      trigger_signal, trigger, magnitude, baseline_mpm, peak_mpm, triggered_at,
     } = req.body || {};
 
-    const signal = signal || trigger;
+    const signal = trigger_signal || trigger;
 
     if (!channel_slug || !signal) {
       return res.status(400).json({ ok: false, error: 'missing fields' });
@@ -202,6 +202,58 @@ seedGameCache().catch(() => {});
 router.get('/api/game-context/:channelSlug', async (req, res) => {
   const context = getGameContextBlock(req.params.channelSlug);
   return res.json({ ok: true, context });
+});
+
+
+// ── GET /api/internal/channel-stats/:channelSlug ─────────────────────────────
+// Internal endpoint for Scrapbot to fetch live session stats (no auth required,
+// only accessible from localhost via the outbox worker chain)
+router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
+  try {
+    const { channelSlug } = req.params;
+
+    // Get active session
+    const { rows: sessionRows } = await db.query(
+      `SELECT session_id, started_at, peak_ccv, total_messages, unique_chatters,
+              messages_per_minute,
+              EXTRACT(EPOCH FROM (now() - started_at))/60 AS duration_minutes
+       FROM public.stream_sessions
+       WHERE channel_slug = $1 AND status = 'live'
+       ORDER BY started_at DESC LIMIT 1`,
+      [channelSlug]
+    );
+
+    if (!sessionRows[0]) {
+      return res.json({ ok: true, live: false, context: null });
+    }
+
+    const s = sessionRows[0];
+
+    // Get top chatters for this session
+    const { rows: chatters } = await db.query(
+      `SELECT actor_username, COUNT(*) as msg_count
+       FROM public.chat_messages
+       WHERE channel_slug = $1 AND created_at > $2
+         AND actor_username != $1
+       GROUP BY actor_username
+       ORDER BY msg_count DESC LIMIT 3`,
+      [channelSlug, s.started_at]
+    );
+
+    const stats = {
+      peak_viewers: s.peak_ccv,
+      session_duration_minutes: Math.round(s.duration_minutes || 0),
+      total_messages: s.total_messages,
+      unique_chatters: s.unique_chatters,
+      messages_per_minute: parseFloat((s.messages_per_minute || 0).toFixed(1)),
+      top_chatters: chatters.map(c => c.actor_username),
+    };
+
+    return res.json({ ok: true, live: true, stats });
+  } catch (err) {
+    console.error('[internal/channel-stats] error:', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
 export default router;
