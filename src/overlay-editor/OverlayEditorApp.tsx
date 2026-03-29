@@ -1034,7 +1034,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Template Picker State
   // (templates state removed)
-  const [leftTab, setLeftTab] = useState<"layers" | "components" | "panels">("layers");
+  const [leftTab, setLeftTab] = useState<"layers" | "components" | "panels" | "widgets">("layers");
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
@@ -4857,6 +4857,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             <svg {...TOOL_ICON_PROPS}><path d="M4 4h16v6H4zM4 14h10v6H4zM16 14h4v6h-4z" /></svg>
             <span>Panels</span>
           </button>
+          <button
+            onClick={() => setLeftTab("widgets")}
+            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "widgets" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+          >
+            <svg {...TOOL_ICON_PROPS}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="17" cy="8" r="2"/></svg>
+            <span>Widgets</span>
+          </button>
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -4933,6 +4940,67 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 profile={panelStyleProfile}
                 seedBase={initialOverlay.id != null ? String(initialOverlay.id) : "panel"}
               />
+            </div>
+          )}
+          {leftTab === "widgets" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1 px-2 gap-2 overflow-y-auto">
+              <p className="text-[11px] text-slate-500 px-1 pt-2">
+                Drag or click a widget to add it to the canvas. Widgets connect live data sources to your overlay.
+              </p>
+              {getAllWidgets().map((widgetDef) => {
+                const m = widgetDef.widgetManifest;
+                return (
+                  <button
+                    key={m.widgetId}
+                    onClick={() => {
+                      const wId = genId("widget");
+                      const widgetEl: AnyEl = {
+                        id: wId,
+                        type: "widget" as any,
+                        name: m.displayName,
+                        x: 50,
+                        y: 50,
+                        width: m.invisible ? 0 : 200,
+                        height: m.invisible ? 0 : 100,
+                        visible: !m.invisible,
+                        locked: false,
+                        opacity: 1,
+                        widgetId: m.widgetId,
+                        propOverrides: { ...m.defaultProps },
+                        liveDataSource: {
+                          sseEventType: m.dataContract?.sseEventType ?? null,
+                          beaconEndpoint: m.beaconEndpoint ?? undefined,
+                        },
+                      } as any;
+                      setConfig(prev => ({ ...prev, elements: [...prev.elements, widgetEl] }));
+                      setSelectedIds([wId]);
+                    }}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-[#1a1a1f] border border-[rgba(255,255,255,0.07)] hover:border-indigo-500/50 hover:bg-[#1e1e2a] transition-all text-left"
+                  >
+                    <div className="mt-0.5 w-8 h-8 rounded-md bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-400">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-slate-200 flex items-center gap-2">
+                        {m.displayName}
+                        {m.invisible && (
+                          <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">invisible</span>
+                        )}
+                        <span className="text-[10px] text-indigo-400 bg-indigo-900/30 px-1.5 py-0.5 rounded ml-auto">{m.category}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{m.description}</div>
+                      {m.dataContract?.sseEventType && (
+                        <div className="text-[10px] text-emerald-500/70 mt-1">● {m.dataContract.sseEventType}</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+              {getAllWidgets().length === 0 && (
+                <p className="text-[11px] text-slate-600 px-1 text-center mt-4">No widgets registered yet.</p>
+              )}
             </div>
           )}
         </div>

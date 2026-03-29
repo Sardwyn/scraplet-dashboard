@@ -42,7 +42,7 @@ export const SourceCatalog: SourceDef[] = [
             { id: "message", label: "Test Message", type: "text", path: "event.message" },
             { id: "random", label: "Random Num", type: "number", path: "event.random" },
         ]
-    }
+    },
 
   {
     id: 'stake_monitor',
