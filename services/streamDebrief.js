@@ -24,6 +24,34 @@ async function notifyBot(payload) {
   }
 }
 
+
+// ── Stake session stats ───────────────────────────────────────────────────────
+async function getStakeStats(sessionId) {
+  if (!sessionId) return null;
+  try {
+    const { rows } = await db.query(
+      `SELECT
+         MAX(last_win)   AS biggest_win,
+         MIN(session_pnl) AS biggest_loss,
+         (SELECT session_pnl FROM public.stake_session_events
+          WHERE session_id = $1 ORDER BY received_at DESC LIMIT 1) AS net_pnl,
+         COUNT(*)        AS event_count
+       FROM public.stake_session_events
+       WHERE session_id = $1`,
+      [sessionId]
+    );
+    if (!rows[0] || rows[0].event_count === '0') return null;
+    return {
+      biggestWin:  rows[0].biggest_win  ? parseFloat(rows[0].biggest_win)  : null,
+      biggestLoss: rows[0].biggest_loss ? parseFloat(rows[0].biggest_loss) : null,
+      netPnl:      rows[0].net_pnl      ? parseFloat(rows[0].net_pnl)      : null,
+    };
+  } catch (e) {
+    console.warn('[streamDebrief] stake stats error:', e.message);
+    return null;
+  }
+}
+
 export async function sendStreamDebrief(sessionId, channelSlug) {
   try {
     // Get session stats
@@ -90,7 +118,10 @@ export async function sendStreamDebrief(sessionId, channelSlug) {
       ? chatters.map(c => `${c.sender_username} (${c.msg_count})`).join(', ')
       : 'No data';
 
-    const dataBlock = `Stream: ${channelSlug} | Duration: ${dur} | Messages: ${msgs} | Unique chatters: ${chatters_count} | Avg msg/min: ${mpm} | Peak CCV: ${peak}\n\nHighlights:\n${highlightSummary}\n\nTop chatters: ${topChatterStr}`;
+    const stakeStats = await getStakeStats(sessionId).catch(() => null);
+    const stakeBlock = stakeStats ? `\nStake session: biggest win $${(stakeStats.biggestWin||0).toFixed(2)}, biggest loss $${Math.abs(stakeStats.biggestLoss||0).toFixed(2)}, net P&L ${stakeStats.netPnl >= 0 ? '+' : ''}$${(stakeStats.netPnl||0).toFixed(2)}` : '';
+
+    const dataBlock = `Stream: ${channelSlug} | Duration: ${dur} | Messages: ${msgs} | Unique chatters: ${chatters_count} | Avg msg/min: ${mpm} | Peak CCV: ${peak}\n\nHighlights:\n${highlightSummary}\n\nTop chatters: ${topChatterStr}${stakeBlock}`;
 
     // Generate Scrapbot debrief via vLLM
     let debriefText = null;

@@ -43,6 +43,20 @@ export const SourceCatalog: SourceDef[] = [
             { id: "random", label: "Random Num", type: "number", path: "event.random" },
         ]
     }
+
+  {
+    id: 'stake_monitor',
+    label: 'Stake Monitor',
+    description: 'Live Stake.com session data from the Stake Monitor widget',
+    fields: [
+      { key: 'gameName',       label: 'Game Name',    type: 'string',  fallback: '—' },
+      { key: 'currentBalance', label: 'Balance',      type: 'number',  fallback: 0 },
+      { key: 'lastWin',        label: 'Last Win',     type: 'number',  fallback: 0 },
+      { key: 'betSize',        label: 'Bet Size',     type: 'number',  fallback: 0 },
+      { key: 'multiplier',     label: 'Multiplier',   type: 'number',  fallback: 0 },
+      { key: 'sessionPnl',     label: 'Session P&L',  type: 'number',  fallback: 0 },
+    ],
+  },
 ];
 
 /**
