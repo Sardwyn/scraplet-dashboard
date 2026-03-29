@@ -12,11 +12,31 @@ const STAKE_MONITOR_SECRET = process.env.STAKE_MONITOR_SECRET || '';
 // ── Auth middleware ───────────────────────────────────────────────────────────
 function requireWidgetSecret(req, res, next) {
   if (!STAKE_MONITOR_SECRET) return next(); // no secret configured → open (dev mode)
-  const header = req.headers['x-widget-secret'];
-  if (header !== STAKE_MONITOR_SECRET) {
-    return res.status(401).json({ ok: false, error: 'unauthorized' });
-  }
-  next();
+
+  // Accept token from Authorization: Bearer header OR x-widget-secret header
+  const provided = (req.headers['authorization'] || '').replace('Bearer ', '').trim()
+    || req.headers['x-widget-secret'] || '';
+
+  if (!provided) return res.status(401).json({ ok: false, error: 'unauthorized' });
+
+  // Accept raw secret (legacy)
+  if (provided === STAKE_MONITOR_SECRET) return next();
+
+  // Validate HMAC token: overlayId:expires:sig
+  try {
+    const parts = provided.split(':');
+    if (parts.length === 3) {
+      const [overlayId, expiresStr, sig] = parts;
+      const expires = parseInt(expiresStr, 10);
+      if (Date.now() / 1000 > expires) return res.status(401).json({ ok: false, error: 'token expired' });
+      const crypto = require('crypto');
+      const payload = `${overlayId}:${expires}`;
+      const expected = crypto.createHmac('sha256', STAKE_MONITOR_SECRET).update(payload).digest('hex').slice(0, 16);
+      if (sig === expected) return next();
+    }
+  } catch (_) {}
+
+  return res.status(401).json({ ok: false, error: 'unauthorized' });
 }
 
 // ── Simple in-memory rate limiter: 60 req/min per IP ─────────────────────────
@@ -68,6 +88,29 @@ router.post('/api/stake-monitor/beacon', requireWidgetSecret, rateLimit, async (
   } catch (err) {
     console.error('[stake-monitor] beacon error:', err.message);
     return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+
+// ── GET /api/widget-token ─────────────────────────────────────────────────────
+// Called by the OBS browser source beacon loop on startup.
+// Returns a short-lived HMAC token tied to the overlay public ID.
+// No auth required - the overlay public ID is the credential.
+router.get('/api/widget-token', async (req, res) => {
+  try {
+    const { overlayId } = req.query;
+    if (!overlayId) return res.status(400).json({ ok: false, error: 'overlayId required' });
+
+    const secret = process.env.STAKE_MONITOR_SECRET || process.env.GENERATION_WORKER_SECRET || 'dev-secret';
+    const crypto = await import('crypto');
+    const expires = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+    const payload = `${overlayId}:${expires}`;
+    const sig = crypto.default.createHmac('sha256', secret).update(payload).digest('hex').slice(0, 16);
+    const token = `${payload}:${sig}`;
+
+    return res.json({ ok: true, token, expiresAt: expires * 1000 });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message });
   }
 });
 

@@ -6,11 +6,24 @@
 (function () {
   'use strict';
 
+  // Auto-detect beacon URL from current page origin or use default
   const BEACON_URL = window.STAKE_BEACON_URL || 'https://scraplet.store/api/stake-monitor/beacon';
-  let token = window.WIDGET_BEACON_TOKEN || '';
+  const TOKEN_URL = window.STAKE_TOKEN_URL || 'https://scraplet.store/api/widget-token';
+  // Use overlay public ID injected by the runtime (window.__OVERLAY_PUBLIC_ID__)
+  const OVERLAY_ID = window.__OVERLAY_PUBLIC_ID__ || window.STAKE_OVERLAY_ID || 'unknown';
+  let token = '';
   let sessionId = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   let running = true;
   let lastGameName = null;
+
+  // Fetch token on startup - no manual setup needed
+  async function initToken() {
+    try {
+      const r = await fetch(`${TOKEN_URL}?overlayId=${encodeURIComponent(OVERLAY_ID)}`);
+      if (r.ok) { const j = await r.json(); token = j.token || ''; }
+    } catch (_) {}
+  }
+  initToken();
 
   function parseAmount(el) {
     if (!el) return null;

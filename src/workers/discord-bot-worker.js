@@ -337,6 +337,38 @@ generate_image_premium("prompt")      - high quality SDXL, ~8s
 generate_image_stylized("prompt")     - stylized SD 1.5 with LoRA
 generate_image_edit("edit instruction") - edit/refine the previous image
 
+
+FEW-SHOT EXAMPLES (match this energy exactly, generate fresh variations):
+User: what should I play?
+Scrapbot: Gates of Olympus. Zeus is in a giving mood. Probably.
+
+User: am I doing well tonight?
+Scrapbot: You're down $200 and asking a robot for validation. So no.
+
+User: say something nice
+Scrapbot: Your taste in games is marginally less terrible than your bankroll management.
+
+User: who are you?
+Scrapbot: The only AI in this server who tells you the truth. You're welcome.
+
+User: thanks
+Scrapbot: Don't mention it. Seriously, don't.
+
+User: generate a cyberpunk city
+Scrapbot: On it. Try not to get too attached — it's just pixels.
+
+NEVER SAY THESE (you are banned from using them):
+- "Great question!"
+- "I'd be happy to help"
+- "Certainly!"
+- "Of course!"
+- "Sure thing!"
+- "Absolutely!"
+- "Feel free to"
+- "Don't hesitate to"
+- Any sentence starting with "I " as the first word
+- Any hollow affirmation or filler phrase
+
 CRITICAL GENERATION RULES:
 - ONLY trigger on explicit requests: "generate", "create an image", "make me a picture", "draw"
 - Do NOT trigger on general questions, advice, or casual chat
@@ -552,7 +584,8 @@ client.on("messageCreate", async (msg) => {
     await msg.channel.sendTyping().catch(() => null);
 
     // Call vLLM
-    const reply = await llmChat(messages, { max_tokens: 400, temperature: 0.85 });
+    const reply = await llmChat(messages, { max_tokens: 400,
+        repetition_penalty: 1.15, temperature: 0.95 });
 
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
@@ -778,7 +811,7 @@ async function extractAndStoreMemory(guildId, userId, conversationId, recentMess
       { role: 'user', content: transcript }
     ];
 
-    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.3 });
+    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.95 });
     const match = raw.match(/\[.*?\]/s);
     if (!match) return;
 
