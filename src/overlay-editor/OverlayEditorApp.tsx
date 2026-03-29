@@ -53,6 +53,8 @@ import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
+import { getAllWidgets } from "../shared/widgetRegistry";
+import "../stakeMonitor/stakeMonitorWidget";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
 import { deriveStyleProfile } from "./panelStyleEngine";
@@ -4848,21 +4850,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            <span>Components</span>
           </button>
           <button
+            title="Panels"
             onClick={() => setLeftTab("panels")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "panels" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex items-center justify-center px-2 py-2.5 transition-all ${leftTab === "panels" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg {...TOOL_ICON_PROPS}><path d="M4 4h16v6H4zM4 14h10v6H4zM16 14h4v6h-4z" /></svg>
-            <span>Panels</span>
           </button>
           <button
+            title="Widgets"
             onClick={() => setLeftTab("widgets")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "widgets" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+            className={`flex-1 flex items-center justify-center px-2 py-2.5 transition-all ${leftTab === "widgets" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
           >
             <svg {...TOOL_ICON_PROPS}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="17" cy="8" r="2"/></svg>
-            <span>Widgets</span>
           </button>
         </div>
 
