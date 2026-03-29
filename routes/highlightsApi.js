@@ -213,12 +213,13 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
     const { channelSlug } = req.params;
 
     // Get active session
+    // Try live session first, fall back to most recent session started in last 24h
     const { rows: sessionRows } = await db.query(
-      `SELECT session_id, started_at, peak_ccv, total_messages, unique_chatters,
-              messages_per_minute,
+      `SELECT session_id, started_at, peak_ccv, total_messages, unique_chatters, status,
               EXTRACT(EPOCH FROM (now() - started_at))/60 AS duration_minutes
        FROM public.stream_sessions
-       WHERE channel_slug = $1 AND status = 'live'
+       WHERE channel_slug = $1
+         AND (status = 'live' OR started_at > now() - interval '24 hours')
        ORDER BY started_at DESC LIMIT 1`,
       [channelSlug]
     );
@@ -228,6 +229,16 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
     }
 
     const s = sessionRows[0];
+
+    // Count MPM live from chat_messages (last 5 min) - more accurate than stale session column
+    const { rows: mpmRows } = await db.query(
+      `SELECT COUNT(*)::float / 5 AS mpm
+       FROM public.chat_messages
+       WHERE channel_slug = $1
+         AND created_at > now() - interval '5 minutes'
+         AND actor_username != $1`,
+      [channelSlug]
+    );
 
     // Get top chatters for this session
     const { rows: chatters } = await db.query(
@@ -240,12 +251,14 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
       [channelSlug, s.started_at]
     );
 
+    const liveMpm = parseFloat((mpmRows[0]?.mpm || 0).toFixed(1));
+
     const stats = {
       peak_viewers: s.peak_ccv,
       session_duration_minutes: Math.round(s.duration_minutes || 0),
       total_messages: s.total_messages,
       unique_chatters: s.unique_chatters,
-      messages_per_minute: parseFloat((s.messages_per_minute || 0).toFixed(1)),
+      messages_per_minute: liveMpm,
       top_chatters: chatters.map(c => c.actor_username),
     };
 
