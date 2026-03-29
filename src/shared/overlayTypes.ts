@@ -14,7 +14,8 @@ export type OverlayElementType =
   | "progressRing"
   | "lower_third"
   | "mask"
-  | "componentInstance";
+  | "componentInstance"
+  | "widget";
 
 /**
  * V1 uses normalized coords (0..1) relative to the browser source viewport.
@@ -668,6 +669,61 @@ export interface OverlayComponentDef {
   metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
   variantGroupId?: string;
   variantName?: string;
+  widgetManifest?: WidgetManifest;
+}
+
+// ── Widget System ─────────────────────────────────────────────────────────────
+
+export type WidgetCategory = "data" | "display" | "hybrid" | "utility";
+
+export interface WidgetDataContract {
+  /** SSE event type this widget subscribes to at runtime, e.g. "stake.update" */
+  sseEventType: string | null;
+  /** Fields this widget exposes to the binding engine */
+  fields: Array<{
+    key: string;
+    label: string;
+    type: "string" | "number" | "boolean";
+    fallback: string | number | boolean | null;
+  }>;
+}
+
+export interface WidgetLiveDataSource {
+  /** Matches WidgetDataContract.sseEventType */
+  sseEventType: string | null;
+  /** Optional: override beacon endpoint per-instance */
+  beaconEndpoint?: string;
+}
+
+export interface WidgetManifest {
+  widgetId: string;
+  category: WidgetCategory;
+  version: string;
+  displayName: string;
+  description: string;
+  icon: string;
+  dataContract: WidgetDataContract;
+  beaconEndpoint: string | null;
+  /** If true, renders as zero-footprint placeholder in editor and is invisible at runtime */
+  invisible?: boolean;
+  /** Path to the runtime script injected into OBS browser source */
+  runtimeScript?: string;
+  configSchema: Array<{
+    key: string;
+    type: "text" | "number" | "boolean" | "select" | "color";
+    label: string;
+    default: any;
+    options?: string[];
+  }>;
+  defaultProps: Record<string, unknown>;
+  previewImageUrl: string | null;
+}
+
+export interface OverlayWidgetElement extends OverlayElementBase {
+  type: "widget";
+  widgetId: string;
+  propOverrides: Record<string, any>;
+  liveDataSource: WidgetLiveDataSource;
 }
 
 /* =========================
@@ -688,7 +744,8 @@ export type OverlayElement =
   | OverlayProgressRingElement
   | OverlayLowerThirdElement
   | OverlayMaskElement
-  | OverlayComponentInstanceElement;
+  | OverlayComponentInstanceElement
+  | OverlayWidgetElement;
 
 /* =========================
    CONFIGS
@@ -735,6 +792,7 @@ export interface OverlayConfigV0 {
     | OverlayLowerThirdElement
     | OverlayMaskElement
     | OverlayComponentInstanceElement
+    | OverlayWidgetElement
   >;
 }
 
