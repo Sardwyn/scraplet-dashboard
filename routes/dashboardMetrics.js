@@ -285,11 +285,11 @@ router.get(
     try {
       const { rows } = await db.query(
         `
-        select id, created_at, event_type, channel_slug, payload
-        from kick_events
-        where scraplet_user_id = $1
-        order by created_at desc
-        limit 200
+        SELECT id, last_seen_at AS created_at, event_type, channel_slug, payload
+        FROM public.kick_event_discovery
+        WHERE scraplet_user_id = $1
+        ORDER BY last_seen_at DESC
+        LIMIT 300
       `,
         [req.session.user.id]
       );

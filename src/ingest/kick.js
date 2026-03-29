@@ -6,6 +6,7 @@
 //
 
 import db from "../../db.js";
+import { updateChannelGame } from "../../services/gameContext.js";
 import fetch from "node-fetch";
 import crypto from "crypto";
 
@@ -1287,6 +1288,14 @@ export async function kickWebhookHandler(req, res) {
           if (data.livestream.viewer_count !== undefined) {
             telemetryPayload.viewers = data.livestream.viewer_count;
           }
+        }
+
+        // Capture game/category from metadata.updated
+        if (eventType === "livestream.metadata.updated") {
+          updateChannelGame(
+            ownerRow.channel_slug || channelSlug,
+            data
+          ).catch(e => console.warn("[kick] gameContext update failed:", e.message));
         }
 
         // Forward to Scrapbot's inboundKick endpoint

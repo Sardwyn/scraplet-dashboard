@@ -18,14 +18,16 @@ function requireWorkerAuth(req, res, next) {
 
 // ── POST /api/highlights/ingest ───────────────────────────────────────────────
 // Called by scrapbot's highlightDetector (worker auth)
-router.post('/api/highlights/ingest', requireWorkerAuth, express.json(), async (req, res) => {
+router.post('/api/highlights/ingest', requireWorkerAuth, async (req, res) => {
   try {
     const {
       channel_slug, scraplet_user_id, platform,
-      trigger_signal, magnitude, baseline_mpm, peak_mpm, triggered_at,
+      signal, trigger, magnitude, baseline_mpm, peak_mpm, triggered_at,
     } = req.body || {};
 
-    if (!channel_slug || !scraplet_user_id || !trigger_signal) {
+    const signal = signal || trigger;
+
+    if (!channel_slug || !signal) {
       return res.status(400).json({ ok: false, error: 'missing fields' });
     }
 
@@ -41,23 +43,23 @@ router.post('/api/highlights/ingest', requireWorkerAuth, express.json(), async (
     const { rows } = await db.query(
       `INSERT INTO public.stream_highlights
          (channel_slug, scraplet_user_id, session_id, triggered_at,
-          trigger_signal, magnitude, baseline_mpm, peak_mpm)
+          signal, magnitude, baseline_mpm, peak_mpm)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, triggered_at`,
       [channel_slug, Number(scraplet_user_id), session_id,
        triggered_at || new Date().toISOString(),
-       trigger_signal, magnitude, baseline_mpm || null, peak_mpm || null]
+       signal, magnitude, baseline_mpm || null, peak_mpm || null]
     );
 
     const highlight = rows[0];
-    console.log('[highlights] detected:', trigger_signal, 'x' + magnitude, 'channel:', channel_slug);
+    console.log('[highlights] detected:', signal, 'x' + magnitude, 'channel:', channel_slug);
 
     // Notify bot for proactive chat response (non-blocking)
     const BOT_PORT = process.env.BOT_INTERNAL_PORT || 3025;
     fetch(`http://127.0.0.1:${BOT_PORT}/internal/highlight`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel_slug, trigger_signal, magnitude,
+      body: JSON.stringify({ channel_slug, signal, magnitude,
         guild_id: req.body.guild_id || null }),
       signal: AbortSignal.timeout(2000),
     }).catch(() => {});
@@ -73,7 +75,7 @@ router.post('/api/highlights/ingest', requireWorkerAuth, express.json(), async (
       if (userRows[0]?.user_id && global.studioEventBus) {
         global.studioEventBus.publish(userRows[0].user_id, {
           type: 'highlight.detected',
-          payload: { ...highlight, trigger_signal, magnitude, channel_slug },
+          payload: { ...highlight, signal, magnitude, channel_slug },
         });
       }
     } catch { /* non-critical */ }
@@ -94,7 +96,7 @@ router.get('/dashboard/api/highlights', requireAuth, async (req, res) => {
     const sessionId = req.query.session_id || null;
 
     const { rows } = await db.query(
-      `SELECT h.id, h.channel_slug, h.triggered_at, h.trigger_signal,
+      `SELECT h.id, h.channel_slug, h.triggered_at, h.signal,
               h.magnitude, h.baseline_mpm, h.peak_mpm,
               h.clip_tagged, h.clip_path, h.reviewed, h.session_id
        FROM public.stream_highlights h
@@ -189,6 +191,17 @@ router.put('/dashboard/api/scrapbot/settings', requireAuth, express.json(), asyn
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+
+// ── GET /api/game-context/:channelSlug ───────────────────────────────────────
+// Internal: scrapbot fetches current game context for a channel
+import { getGameContextBlock, seedGameCache } from '../services/gameContext.js';
+seedGameCache().catch(() => {});
+
+router.get('/api/game-context/:channelSlug', async (req, res) => {
+  const context = getGameContextBlock(req.params.channelSlug);
+  return res.json({ ok: true, context });
 });
 
 export default router;
