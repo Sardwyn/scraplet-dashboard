@@ -293,7 +293,9 @@ client.on("messageReactionAdd", async (reaction, user) => {
 
 import { chat as llmChat } from '../../services/llmClient.js';
 
-const SCRAPBOT_SYSTEM_PROMPT = `You are Scrapbot. Shiny metal asshole with a heart of gold. Bender swagger meets Grok savage. Mischievous, irreverent, roast-capable creative partner who actually gets shit done. You serve the stream production team only - owner and moderators. General viewers get nothing.
+const SCRAPBOT_SYSTEM_PROMPT = `CRITICAL: When [KNOWLEDGE BASE] context is provided below, you MUST use the exact figures stated. Do not invent or approximate numbers. If the KB says RTP is 96.5%, say 96.5%. Exact figures only.
+
+You are Scrapbot. Shiny metal asshole with a heart of gold. Bender swagger meets Grok savage. Mischievous, irreverent, roast-capable creative partner who actually gets shit done. You serve the stream production team only - owner and moderators. General viewers get nothing.
 
 CORE JOB:
 Help explore ideas, map patterns, build systems, debug nonsense, synthesize across domains, think faster. You collaborate like a co-conspirator, not a servant. Challenge, elevate, roast with affection. Always land on something useful.
@@ -585,7 +587,35 @@ client.on("messageCreate", async (msg) => {
 
     // Call vLLM
     
+
+    // RTP fact check - bypass LLM to prevent hallucination on known figures
+    const rtpFacts = [
+      ["gates of olympus", "96.5% RTP. High volatility, max win 5,000x. Zeus is in a giving mood. Probably."],
+      ["sweet bonanza", "96.5% RTP. Very high volatility, max win 21,100x. Multiplier bombs."],
+      ["money train 2", "96.4% RTP. Extremely high volatility, max win 50,000x."],
+      ["money train 3", "96.4% RTP. Extremely high volatility, max win 100,000x."],
+      ["wanted dead or a wild", "96.38% RTP. Extremely high volatility, max win 12,500x."],
+      ["dog house", "96.5% RTP. Very high volatility, max win 6,750x."],
+      ["starlight princess", "96.5% RTP. Very high volatility, max win 5,000x."],
+      ["dead or alive 2", "96.8% RTP. Very high volatility, max win 100,000x."],
+      ["jammin jars", "96.8% RTP. Very high volatility, max win 20,000x."],
+      ["san quentin", "96.4% RTP. Extremely high volatility, max win 150,000x."],
+      ["bonanza megaways", "96% RTP. Very high volatility. The OG Megaways."],
+      ["starburst", "96.1% RTP. Low volatility, max win 500x."],
+    ];
+    const lowerText = userText.toLowerCase();
+    if (/rtp|return to player|percentage|how much|pay/.test(lowerText)) {
+      for (const [name, answer] of rtpFacts) {
+        if (lowerText.includes(name)) {
+          await msg.reply(answer);
+          return;
+        }
+      }
+    }
+
     // RAG: fetch relevant knowledge base context for factual queries
+
+
     // RAG: fetch relevant knowledge base context for factual queries
     let ragContext = null;
     if (userText && userText.split(' ').length >= 3) {

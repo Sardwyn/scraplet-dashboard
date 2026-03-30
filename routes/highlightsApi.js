@@ -294,7 +294,7 @@ router.get('/api/internal/rag-context', async (req, res) => {
       '[' + r.domain.toUpperCase() + ' KNOWLEDGE: ' + r.title + ']\n' + r.content.slice(0, 500)
     ).join('\n\n---\n\n');
 
-    return res.json({ ok: true, context: '[KNOWLEDGE BASE]\n' + context });
+    return res.json({ ok: true, context: '[VERIFIED FACTS - USE THESE EXACT FIGURES]\n' + context });
   } catch (e) {
     console.error('[rag] error:', e.message);
     return res.json({ ok: true, context: null });
