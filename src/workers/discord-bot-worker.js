@@ -629,14 +629,30 @@ client.on("messageCreate", async (msg) => {
         }
       } catch (_) {}
     }
-    const finalSystemContent = ragContext ? systemContent + '\n\n' + ragContext : systemContent;
+    // When RAG context is available, prepend it as a direct instruction
+    // This forces the model to use the retrieved content rather than its priors
+    const finalSystemContent = ragContext
+      ? 'USE THE FOLLOWING VERIFIED INFORMATION TO ANSWER. DO NOT USE YOUR OWN KNOWLEDGE FOR THIS RESPONSE:\n\n' + ragContext + '\n\n---\n\n' + systemContent
+      : systemContent;
     const ragMessages = [
       { role: 'system', content: finalSystemContent },
       ...history,
       { role: 'user', content: userText },
     ];
 
-    const reply = await llmChat(ragMessages, { max_tokens: 250, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+
+    // Intent-based response length
+    // Strategic/analytical questions get more room to breathe
+    function getMaxTokens(text) {
+      const lower = text.toLowerCase();
+      const strategic = /how do i|how should i|what strategy|how to grow|structure|plan|advice|explain|why does|what is the best way|how can i|walk me through|break down|tell me about|what are the|give me a|help me understand/.test(lower);
+      const rag_context = ragContext !== null;
+      if (strategic || rag_context) return 400;
+      return 120;
+    }
+    const dynamicMaxTokens = getMaxTokens(userText);
+
+    const reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
 
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
