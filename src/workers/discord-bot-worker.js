@@ -629,7 +629,11 @@ client.on("messageCreate", async (msg) => {
         }
       } catch (_) {}
     }
-    const finalSystemContent = ragContext ? systemContent + '\n\n' + ragContext : systemContent;
+    // When RAG context is available, prepend it as a direct instruction
+    // This forces the model to use the retrieved content rather than its priors
+    const finalSystemContent = ragContext
+      ? 'USE THE FOLLOWING VERIFIED INFORMATION TO ANSWER. DO NOT USE YOUR OWN KNOWLEDGE FOR THIS RESPONSE:\n\n' + ragContext + '\n\n---\n\n' + systemContent
+      : systemContent;
     const ragMessages = [
       { role: 'system', content: finalSystemContent },
       ...history,
