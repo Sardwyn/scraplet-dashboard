@@ -588,6 +588,42 @@ client.on("messageCreate", async (msg) => {
     // Call vLLM
     
 
+
+    // Strategic question shortcuts - bypass LLM for questions where it ignores RAG
+    const STRATEGIC_ANSWERS = [
+      // Growth strategy
+      [/how (do i|to|can i) grow (my )?(audience|channel|stream|viewers?)/i,
+       "Three things that actually work: 1) Consistency — same days, same time, every week without fail. 2) Clip everything worth clipping and post it within 24 hours. TikTok, Twitter, YouTube Shorts. That's how new viewers find you. 3) Network — raid other streamers in your category, be genuine in their chats, build relationships. The algorithm rewards engagement signals, not just viewer count. Devin Nash's framework: build community, not just audience. Communities stay. Audiences leave."],
+
+      // Cold open / stream opening
+      [/how (do i|to|should i) (write|create|make|start|open|begin) (a |my )?(cold open|stream opening|stream intro|hook)/i,
+       "State your intention, name the obstacle, raise the stakes. Three sentences. Thirty seconds. Example: 'Tonight I'm turning $300 into $3000. I've been down $800 this week. This is the comeback session — if I don't hit it tonight, I'm taking a break.' That's a cold open. Intention. Obstacle. Stakes. The audience now has a reason to stay."],
+
+      // Stream structure / 3 hours
+      [/how (do i|to|should i) (structure|plan|design|organize) (my )?(stream|show|broadcast|content)/i,
+       "Use the A-B-C story structure. A-Story: what's happening right now. B-Story: the session goal building in the background. C-Story: the long arc — overall P&L, the streak, the challenge. When the A-Story goes quiet, the B-Story carries the audience. Open with a hook that states your intention and stakes. Close with a button line that resolves the arc. Win or lose, the story needs an ending."],
+
+      // Networking
+      [/how (do i|to|should i) network (as a|in the|with other)? ?(small |new |streaming )?streamer/i,
+       "Raid other streamers in your category at the end of every stream. Watch their streams genuinely — not to be seen, but because you actually care about their content. When you raid, their community notices. Most streamers raid back. Over time you build a network of mutual support. Devin Nash's rule: value exchange networking. You give value first. The return comes later."],
+
+      // Kick vs Twitch
+      [/(should i|kick or twitch|twitch or kick|which platform|what platform)/i,
+       "Kick if you're starting out. Less competition, algorithm favours new streamers, 95/5 revenue split, casino content explicitly allowed. Twitch has the bigger audience but it's extremely hard to break through as a new streamer. Build your audience on Kick first, then expand. Devin Nash's take: platforms are tools, not identities. Build your community on Discord so it survives any platform change."],
+
+      // Consistency
+      [/how (important|much does) (is |does )?consistency (matter|help|work)/i,
+       "It's the single most important variable. Harris Heller's 90-day rule: commit to 90 days of consistent streaming before evaluating results. Most people quit before 90 days. The ones who don't are the ones who grow. Devin Nash's compounding effect: growth is slow for the first 6-12 months, then compounds. You're building infrastructure, not seeing immediate returns."],
+    ];
+
+    // Check for strategic question shortcuts
+    for (const [pattern, answer] of STRATEGIC_ANSWERS) {
+      if (pattern.test(userText)) {
+        await msg.reply(answer);
+        return;
+      }
+    }
+
     // RTP fact check - bypass LLM to prevent hallucination on known figures
     const rtpFacts = [
       ["gates of olympus", "96.5% RTP. High volatility, max win 5,000x. Zeus is in a giving mood. Probably."],
