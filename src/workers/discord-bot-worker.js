@@ -584,6 +584,25 @@ client.on("messageCreate", async (msg) => {
     await msg.channel.sendTyping().catch(() => null);
 
     // Call vLLM
+    
+    // RAG: fetch relevant knowledge base context for factual queries
+    const ragQuery = userMessage || '';
+    let ragContext = null;
+    if (ragQuery.split(' ').length >= 3) {
+      try {
+        const ragResp = await fetch(`http://127.0.0.1:3000/api/internal/rag-context?q=${encodeURIComponent(ragQuery.slice(0, 200))}`, {
+          signal: AbortSignal.timeout(1500)
+        });
+        if (ragResp.ok) {
+          const ragJson = await ragResp.json();
+          ragContext = ragJson.context || null;
+        }
+      } catch (_) {}
+    }
+    if (ragContext) {
+      systemContent = systemContent + '\n\n' + ragContext;
+    }
+
     const reply = await llmChat(messages, { max_tokens: 250, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
 
     // Save both sides to DB

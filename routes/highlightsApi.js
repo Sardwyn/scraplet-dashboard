@@ -269,4 +269,36 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
   }
 });
 
+
+// ── GET /api/internal/rag-context ────────────────────────────────────────────
+// Internal endpoint for Scrapbot to retrieve knowledge base context.
+// Called by both Discord bot and Kick AI service before LLM calls.
+router.get('/api/internal/rag-context', async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    if (!query || query.length < 5) return res.json({ ok: true, context: null });
+
+    const { rows } = await db.query(`
+      SELECT title, content, domain,
+             ts_rank(search_vec, plainto_tsquery('english', $1)) AS rank
+      FROM public.knowledge_base
+      WHERE search_vec @@ plainto_tsquery('english', $1)
+         OR content ILIKE $2
+      ORDER BY rank DESC
+      LIMIT 3
+    `, [query, '%' + query.split(' ').slice(0, 3).join('%') + '%']);
+
+    if (!rows.length) return res.json({ ok: true, context: null });
+
+    const context = rows.map(r =>
+      '[' + r.domain.toUpperCase() + ' KNOWLEDGE: ' + r.title + ']\n' + r.content.slice(0, 500)
+    ).join('\n\n---\n\n');
+
+    return res.json({ ok: true, context: '[KNOWLEDGE BASE]\n' + context });
+  } catch (e) {
+    console.error('[rag] error:', e.message);
+    return res.json({ ok: true, context: null });
+  }
+});
+
 export default router;
