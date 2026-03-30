@@ -35,6 +35,7 @@ export async function collectKickExchanges(hoursBack) {
        WHERE u.created_at > $1
          AND u.payload::text ILIKE '%scrapbot%'
          AND u.payload->'chat_v1'->'author'->>'username' != 'scrapbot'
+         AND (u.payload->'chat_v1'->>'scraplet_user_id')::int = 4
        ORDER BY u.created_at DESC
        LIMIT 200`,
       [cutoff]
@@ -49,8 +50,8 @@ export async function collectKickExchanges(hoursBack) {
       try {
         await db.query(
           `INSERT INTO public.scrapbot_training_candidates
-             (platform, channel_id, user_message, bot_response, quality_score)
-           VALUES ('kick', $1, $2, $3, $4)`,
+             (platform, channel_id, user_message, bot_response, quality_score, scraplet_user_id)
+           VALUES ('kick', $1, $2, $3, $4, 4)`,
           [row.channel_slug, row.user_message, row.bot_response, score]
         );
         inserted++;

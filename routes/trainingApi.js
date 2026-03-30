@@ -18,6 +18,7 @@ router.get('/dashboard/api/training/stats', requireAuth, async (req, res) => {
         COUNT(*) FILTER (WHERE collected_at > now() - interval '7 days') AS last_7_days,
         COUNT(*) AS total
       FROM public.scrapbot_training_candidates
+      WHERE scraplet_user_id = 4 OR scraplet_user_id IS NULL
     `);
     const { rows: goldRows } = await db.query(`
       SELECT
@@ -41,7 +42,7 @@ router.get('/dashboard/api/training/candidates', requireAuth, async (req, res) =
     const { rows } = await db.query(
       `SELECT id, platform, user_message, bot_response, quality_score, status, collected_at
        FROM public.scrapbot_training_candidates
-       WHERE status = $1
+       WHERE status = $1 AND (scraplet_user_id = 4 OR scraplet_user_id IS NULL)
        ORDER BY quality_score DESC, collected_at DESC
        LIMIT $2`,
       [status, limit]
