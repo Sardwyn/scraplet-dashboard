@@ -584,8 +584,7 @@ client.on("messageCreate", async (msg) => {
     await msg.channel.sendTyping().catch(() => null);
 
     // Call vLLM
-    const reply = await llmChat(messages, { max_tokens: 400,
-        repetition_penalty: 1.15, temperature: 0.95 });
+    const reply = await llmChat(messages, { max_tokens: 250, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
 
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
@@ -811,7 +810,7 @@ async function extractAndStoreMemory(guildId, userId, conversationId, recentMess
       { role: 'user', content: transcript }
     ];
 
-    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.95 });
+    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.3 });
     const match = raw.match(/\[.*?\]/s);
     if (!match) return;
 
