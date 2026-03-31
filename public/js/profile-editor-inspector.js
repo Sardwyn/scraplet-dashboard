@@ -163,12 +163,95 @@ function renderStatsInspector(layout) {
 }
 
 function renderButtonsInspector() {
+  const buttons = editorState.customButtons || [];
+  const buttonRows = buttons.map((btn, idx) => `
+    <div class="pe-btn-row ${btn.visible === false ? 'pe-btn-row--hidden' : ''}"
+         data-btn-idx="${idx}" data-btn-id="${btn.id}">
+      <div class="pe-btn-row-header">
+        <span class="pe-btn-row-label">${escHtml(btn.label || 'Button')}</span>
+        <div class="pe-btn-row-actions">
+          <button class="pe-btn-row-toggle" data-btn-toggle="${btn.id}"
+                  title="${btn.visible === false ? 'Show' : 'Hide'}">
+            ${btn.visible === false ? '👁️' : '🙈'}
+          </button>
+          <button class="pe-btn-row-edit" data-btn-edit="${btn.id}">✏️</button>
+          <button class="pe-btn-row-delete" data-btn-delete="${btn.id}">🗑️</button>
+        </div>
+      </div>
+      <div class="pe-btn-editor" id="pe-btn-editor-${btn.id}" style="display:none;">
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">Label</label>
+          <input type="text" class="pe-inspector-input" data-btn-field="label" value="${escHtml(btn.label || '')}" />
+        </div>
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">URL</label>
+          <input type="text" class="pe-inspector-input" data-btn-field="url" value="${escHtml(btn.url || '')}" />
+        </div>
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">Shape</label>
+          <div class="pe-btn-shape-row">
+            ${['pill','soft','square'].map(s => `
+              <button class="pe-shape-btn ${(btn.shape || 'pill') === s ? 'active' : ''}"
+                      data-btn-shape="${s}" data-btn-id="${btn.id}">${s}</button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">Size</label>
+          <div class="pe-btn-shape-row">
+            <button class="pe-shape-btn ${(btn.size || 'md') === 'sm' ? 'active' : ''}"
+                    data-btn-size="sm" data-btn-id="${btn.id}">Small</button>
+            <button class="pe-shape-btn ${(btn.size || 'md') === 'md' ? 'active' : ''}"
+                    data-btn-size="md" data-btn-id="${btn.id}">Medium</button>
+            <button class="pe-shape-btn ${(btn.size || 'md') === 'lg' ? 'active' : ''}"
+                    data-btn-size="lg" data-btn-id="${btn.id}">Large Tile</button>
+          </div>
+        </div>
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">Accent Colour</label>
+          <div class="pe-colour-picker-row">
+            <input type="color" class="pe-colour-input" data-btn-accent-colour="${btn.id}"
+                   value="${btn.accent_color || '#6366f1'}" />
+            <input type="text" class="pe-inspector-input pe-colour-hex" data-btn-accent-hex="${btn.id}"
+                   value="${escHtml(btn.accent_color || '')}" placeholder="none" />
+          </div>
+          <div class="pe-btn-shape-row" style="margin-top:6px;">
+            <button class="pe-shape-btn ${(btn.accent_target || 'button') === 'button' ? 'active' : ''}"
+                    data-btn-accent-target="button" data-btn-id="${btn.id}">Fill button</button>
+            <button class="pe-shape-btn ${(btn.accent_target || 'button') === 'label' ? 'active' : ''}"
+                    data-btn-accent-target="label" data-btn-id="${btn.id}">Colour label</button>
+          </div>
+        </div>
+        <div class="pe-inspector-section">
+          <label class="pe-inspector-label">Featured Image ${btn.size === 'lg' ? '' : '(Large Tile only)'}</label>
+          ${btn.featured_image_url ? `
+            <div class="pe-btn-img-preview">
+              <img src="${escHtml(btn.featured_image_url)}" alt="" />
+            </div>
+          ` : ''}
+          <form method="POST" action="/dashboard/api/profile/buttons/${btn.id}/image"
+                enctype="multipart/form-data" class="pe-inspector-upload-form">
+            <div class="pe-inspector-upload-row">
+              <input type="file" name="image" accept="image/*" class="pe-inspector-file"
+                     onchange="this.closest('form').submit()" />
+            </div>
+          </form>
+        </div>
+        <div class="pe-inspector-section">
+          <button class="pe-btn pe-btn-sm pe-btn-save" data-btn-save="${btn.id}">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
   return `
     <div class="pe-inspector-section">
-      <div class="pe-inspector-hint">Manage your buttons below. Drag to reorder on the preview.</div>
-      <div id="pi-buttons-list"></div>
-      <button class="pe-btn pe-btn-sm" id="pi-add-button">+ Add Button</button>
+      <div class="pe-inspector-hint">Click ✏️ to edit a button. Drag buttons on the preview to reorder.</div>
     </div>
+    <div id="pi-buttons-list">
+      ${buttonRows || '<p class="pe-inspector-empty">No buttons yet.</p>'}
+    </div>
+    <button class="pe-btn pe-btn-sm" id="pi-add-button" style="margin-top:8px;">+ Add Button</button>
   `;
 }
 
@@ -342,6 +425,174 @@ function renderCanvasInspector() {
       </label>
     </div>
   `;
+}
+
+function wireButtonsInspector(container) {
+  if (!container) return;
+
+  // Toggle edit panel
+  container.querySelectorAll('[data-btn-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.btnEdit;
+      const editor = container.querySelector(`#pe-btn-editor-${id}`);
+      if (editor) editor.style.display = editor.style.display === 'none' ? '' : 'none';
+    });
+  });
+
+  // Delete button
+  container.querySelectorAll('[data-btn-delete]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.btnDelete;
+      if (!confirm('Delete this button?')) return;
+      await fetch(`/dashboard/api/profile/buttons/${id}`, {
+        method: 'DELETE', credentials: 'same-origin'
+      });
+      editorState.customButtons = (editorState.customButtons || []).filter(b => String(b.id) !== String(id));
+      renderButtonListInInspector();
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Toggle visibility
+  container.querySelectorAll('[data-btn-toggle]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.btnToggle;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (!button) return;
+      button.visible = button.visible === false ? true : false;
+      await fetch(`/dashboard/api/profile/buttons/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ ...button, visible: button.visible }),
+      });
+      renderButtonListInInspector();
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Shape buttons
+  container.querySelectorAll('[data-btn-shape]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.btnId;
+      const shape = btn.dataset.btnShape;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (button) button.shape = shape;
+      container.querySelectorAll(`[data-btn-shape][data-btn-id="${id}"]`).forEach(b => b.classList.toggle('active', b === btn));
+      debounceSaveButton(id);
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Size buttons
+  container.querySelectorAll('[data-btn-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.btnId;
+      const size = btn.dataset.btnSize;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (button) button.size = size;
+      container.querySelectorAll(`[data-btn-size][data-btn-id="${id}"]`).forEach(b => b.classList.toggle('active', b === btn));
+      debounceSaveButton(id);
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Accent colour
+  container.querySelectorAll('[data-btn-accent-colour]').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.btnAccentColour;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (button) button.accent_color = input.value;
+      const hexInput = container.querySelector(`[data-btn-accent-hex="${id}"]`);
+      if (hexInput) hexInput.value = input.value;
+      debounceSaveButton(id);
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  container.querySelectorAll('[data-btn-accent-hex]').forEach(input => {
+    input.addEventListener('blur', () => {
+      const id = input.dataset.btnAccentHex;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (button) button.accent_color = input.value;
+      const colourInput = container.querySelector(`[data-btn-accent-colour="${id}"]`);
+      if (colourInput && input.value.startsWith('#')) colourInput.value = input.value;
+      debounceSaveButton(id);
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Accent target
+  container.querySelectorAll('[data-btn-accent-target]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.btnId;
+      const target = btn.dataset.btnAccentTarget;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (button) button.accent_target = target;
+      container.querySelectorAll(`[data-btn-accent-target][data-btn-id="${id}"]`).forEach(b => b.classList.toggle('active', b === btn));
+      debounceSaveButton(id);
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Save button
+  container.querySelectorAll('[data-btn-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.btnSave;
+      const editor = container.querySelector(`#pe-btn-editor-${id}`);
+      if (!editor) return;
+      const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+      if (!button) return;
+      // Read label and url from inputs
+      const labelInput = editor.querySelector('[data-btn-field="label"]');
+      const urlInput = editor.querySelector('[data-btn-field="url"]');
+      if (labelInput) button.label = labelInput.value;
+      if (urlInput) button.url = urlInput.value;
+      await saveButton(id, button);
+      renderButtonListInInspector();
+      if (window.updatePreview) window.updatePreview();
+      btn.textContent = 'Saved ✓';
+      setTimeout(() => { btn.textContent = 'Save Changes'; }, 1500);
+    });
+  });
+
+  // Add button
+  const addBtn = container.querySelector('#pi-add-button');
+  if (addBtn) {
+    addBtn.addEventListener('click', () => {
+      const sidebarBtn = document.getElementById('pe-add-button');
+      if (sidebarBtn) sidebarBtn.click();
+    });
+  }
+}
+
+const _btnSaveTimers = {};
+function debounceSaveButton(id) {
+  clearTimeout(_btnSaveTimers[id]);
+  _btnSaveTimers[id] = setTimeout(() => {
+    const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
+    if (button) saveButton(id, button);
+  }, 800);
+}
+
+async function saveButton(id, button) {
+  try {
+    await fetch(`/dashboard/api/profile/buttons/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        label: button.label,
+        url: button.url,
+        visible: button.visible !== false,
+        shape: button.shape || 'pill',
+        size: button.size || 'md',
+        accent_color: button.accent_color || '',
+        accent_target: button.accent_target || 'button',
+        icon: button.icon || '',
+      }),
+    });
+  } catch { /* silent */ }
 }
 
 // ── Wiring ────────────────────────────────────────────────────────────────────
@@ -530,28 +781,23 @@ function wireInspector(sectionType) {
     });
   });
 
-  // Buttons inspector — delegate to existing buttons module
-  const addBtnBtn = container.querySelector('#pi-add-button');
-  if (addBtnBtn) {
-    addBtnBtn.addEventListener('click', () => {
-      const sidebarBtn = document.getElementById('pe-add-button');
-      if (sidebarBtn) sidebarBtn.click();
-    });
-    // Render button list in inspector
-    renderButtonListInInspector();
+  // Buttons inspector — wire the full button editor
+  if (sectionType === 'buttons') {
+    wireButtonsInspector(container);
   }
 }
 
 function renderButtonListInInspector() {
-  const list = document.getElementById('pi-buttons-list');
-  if (!list) return;
-  const buttons = editorState.customButtons || [];
-  list.innerHTML = buttons.map(btn => `
-    <div class="pe-inspector-button-row" data-button-id="${btn.id}">
-      <span class="pe-inspector-button-label">${escHtml(btn.label || 'Button')}</span>
-      <span class="pe-inspector-button-url">${escHtml(btn.url || '')}</span>
-    </div>
-  `).join('') || '<p class="pe-inspector-hint">No buttons yet.</p>';
+  // Buttons inspector is now self-contained in renderButtonsInspector
+  // Re-render the full inspector when buttons change
+  const selected = editorState.selectedSection;
+  if (selected === 'buttons') {
+    const container = document.getElementById('pe-inspector-content');
+    if (container) {
+      container.innerHTML = renderSectionInspector('buttons', getSectionSchema('buttons'));
+      wireButtonsInspector(container);
+    }
+  }
 }
 
 // ── Persistence helpers ───────────────────────────────────────────────────────
