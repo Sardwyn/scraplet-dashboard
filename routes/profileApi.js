@@ -1449,7 +1449,17 @@ router.post('/appearance', requireAuth, async (req, res) => {
 
   try {
     const incoming = req.body || {};
-    const appearance = normaliseAppearance(incoming);
+
+    // Read current appearance from DB first, then merge incoming on top
+    const { rows: currentRows } = await db.query(
+      'SELECT appearance FROM users WHERE id = $1',
+      [userId]
+    );
+    const currentAppearance = currentRows[0]?.appearance || {};
+
+    // Merge: start from current DB values, apply incoming changes
+    const merged = { ...DEFAULT_APPEARANCE, ...currentAppearance, ...incoming };
+    const appearance = normaliseAppearance(merged);
 
     await db.query(
       `
