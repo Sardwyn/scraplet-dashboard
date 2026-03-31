@@ -237,6 +237,35 @@
 .pe-gradient-arrow { color: #64748b; font-size: 16px; }
 .pe-grad-dir.active { border-color: #6366f1; color: #a5b4fc; }
 
+
+/* Visual colour picker */
+.cp-root { user-select: none; }
+.cp-sl-wrap {
+  position: relative; width: 220px; height: 140px;
+  border-radius: 6px; overflow: hidden; cursor: crosshair; margin-bottom: 8px;
+}
+.cp-sl-canvas { display: block; width: 100%; height: 100%; }
+.cp-sl-cursor {
+  position: absolute; width: 12px; height: 12px;
+  border: 2px solid #fff; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.cp-hue-wrap {
+  position: relative; width: 220px; height: 14px;
+  border-radius: 7px; overflow: hidden; cursor: pointer; margin-bottom: 8px;
+}
+.cp-hue-canvas { display: block; width: 100%; height: 100%; }
+.cp-hue-cursor {
+  position: absolute; top: 50%; width: 14px; height: 14px;
+  border: 2px solid #fff; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.cp-bottom { display: flex; align-items: center; gap: 8px; }
+.cp-preview { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #334155; flex-shrink: 0; }
+.cp-hex-display { font-size: 12px; color: #94a3b8; font-family: monospace; }
+
 </style>
 
 <!-- =============================================== -->

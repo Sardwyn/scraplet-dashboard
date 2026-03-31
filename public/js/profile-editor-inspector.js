@@ -1,3 +1,4 @@
+import { ColourPicker } from './colour-picker.js';
 // public/js/profile-editor-inspector.js
 // Properties inspector for the 3-panel profile editor.
 // Renders contextual property forms based on the selected section.
@@ -300,30 +301,16 @@ function renderCanvasInspector() {
     <!-- Solid colour picker -->
     <div class="pe-inspector-section pe-bg-panel" id="pe-bg-solid" style="${isGradient ? 'display:none' : ''}">
       <div class="pe-inspector-label">Colour</div>
-      <div class="pe-colour-picker-row">
-        <input type="color" id="pi-canvas-colour" value="${solidColour.startsWith('#') ? solidColour : '#0f172a'}"
-               class="pe-colour-input" />
-        <input type="text" id="pi-canvas-colour-hex" class="pe-inspector-input pe-colour-hex"
-               value="${escHtml(solidColour)}" placeholder="#0f172a" />
-      </div>
-      <div class="pe-canvas-presets">
-        <button class="pe-canvas-preset" data-preset="#0f172a" style="background:#0f172a;">Dark</button>
-        <button class="pe-canvas-preset" data-preset="#1a1a2e" style="background:#1a1a2e;">Navy</button>
-        <button class="pe-canvas-preset" data-preset="#0d1117" style="background:#0d1117;">Black</button>
-        <button class="pe-canvas-preset" data-preset="#1a0a2e" style="background:#1a0a2e;">Purple</button>
-        <button class="pe-canvas-preset" data-preset="#0a1a0a" style="background:#0a1a0a;">Green</button>
-        <button class="pe-canvas-preset" data-preset="#1a0a0a" style="background:#1a0a0a;">Red</button>
-      </div>
+      <div id="pe-colour-picker-mount"></div>
     </div>
 
     <!-- Gradient builder -->
     <div class="pe-inspector-section pe-bg-panel" id="pe-bg-gradient" style="${!isGradient ? 'display:none' : ''}">
       <div class="pe-inspector-label">Gradient</div>
-      <div class="pe-gradient-row">
-        <input type="color" id="pi-grad-from" value="#0f172a" class="pe-colour-input" />
-        <span class="pe-gradient-arrow">→</span>
-        <input type="color" id="pi-grad-to" value="#1e1b4b" class="pe-colour-input" />
-      </div>
+      <div class="pe-inspector-label" style="margin-bottom:4px;">From colour</div>
+      <div id="pe-grad-from-mount"></div>
+      <div class="pe-inspector-label" style="margin-top:10px;margin-bottom:4px;">To colour</div>
+      <div id="pe-grad-to-mount"></div>
       <div class="pe-inspector-label" style="margin-top:8px;">Direction</div>
       <div class="pe-canvas-presets">
         <button class="pe-canvas-preset pe-grad-dir active" data-dir="135deg">↘ Diagonal</button>
@@ -444,29 +431,43 @@ function wireInspector(sectionType) {
     });
   });
 
-  // Solid colour picker
-  const colourInput = container.querySelector('#pi-canvas-colour');
-  const colourHex = container.querySelector('#pi-canvas-colour-hex');
+  // Visual colour pickers
   function applyColour(val) {
     editorState.appearance = editorState.appearance || {};
     editorState.appearance.canvasBg = val;
     saveAppearance({ canvasBg: val });
   }
-  if (colourInput) {
-    colourInput.addEventListener('input', () => {
-      if (colourHex) colourHex.value = colourInput.value;
-      applyColour(colourInput.value);
-    });
-  }
-  if (colourHex) {
-    colourHex.addEventListener('blur', () => {
-      if (colourInput) colourInput.value = colourHex.value;
-      applyColour(colourHex.value);
+
+  // Solid colour picker
+  const solidMount = container.querySelector('#pe-colour-picker-mount');
+  let solidPicker = null;
+  if (solidMount) {
+    const appearance = editorState.appearance || {};
+    const currentBg = appearance.canvasBg || '#0f172a';
+    const initColour = (!currentBg.includes('gradient') && currentBg.startsWith('#')) ? currentBg : '#0f172a';
+    solidPicker = new ColourPicker(solidMount, initColour, (hex) => {
+      applyColour(hex);
     });
   }
 
-  // Gradient builder
+  // Gradient builder with visual pickers
   let gradDir = '135deg';
+  let gradFrom = '#0f172a';
+  let gradTo = '#1e1b4b';
+
+  function buildGradient() {
+    applyColour(`linear-gradient(${gradDir},${gradFrom},${gradTo})`);
+  }
+
+  const gradFromMount = container.querySelector('#pe-grad-from-mount');
+  const gradToMount = container.querySelector('#pe-grad-to-mount');
+  if (gradFromMount) {
+    new ColourPicker(gradFromMount, gradFrom, (hex) => { gradFrom = hex; buildGradient(); });
+  }
+  if (gradToMount) {
+    new ColourPicker(gradToMount, gradTo, (hex) => { gradTo = hex; buildGradient(); });
+  }
+
   container.querySelectorAll('[data-dir]').forEach(btn => {
     btn.addEventListener('click', () => {
       gradDir = btn.dataset.dir;
@@ -474,14 +475,6 @@ function wireInspector(sectionType) {
       buildGradient();
     });
   });
-  function buildGradient() {
-    const from = container.querySelector('#pi-grad-from')?.value || '#0f172a';
-    const to = container.querySelector('#pi-grad-to')?.value || '#1e1b4b';
-    const val = `linear-gradient(${gradDir},${from},${to})`;
-    applyColour(val);
-  }
-  container.querySelector('#pi-grad-from')?.addEventListener('input', buildGradient);
-  container.querySelector('#pi-grad-to')?.addEventListener('input', buildGradient);
 
   // Gradient presets
   container.querySelectorAll('[data-gradient]').forEach(btn => {
@@ -494,8 +487,7 @@ function wireInspector(sectionType) {
   container.querySelectorAll('[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.dataset.preset;
-      if (colourInput && !val.includes('gradient')) colourInput.value = val;
-      if (colourHex && !val.includes('gradient')) colourHex.value = val;
+      if (solidPicker && !val.includes('gradient')) solidPicker.setValue(val);
       applyColour(val);
     });
   });
