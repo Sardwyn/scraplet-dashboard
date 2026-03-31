@@ -9,7 +9,13 @@ import Stripe from 'stripe';
 import db from '../../db.js';
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' });
+
+// Lazy Stripe init — only instantiate when a key is available
+function getStripe() {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY not configured');
+  return new Stripe(key, { apiVersion: '2023-10-16' });
+}
 
 // GET /api/tts/voices/:channelSlug
 // Returns the voices enabled for this streamer's profile
@@ -101,6 +107,7 @@ router.post('/api/tts/paid/intent', express.json(), async (req, res) => {
     const scrapletUserId = userRows[0].user_id;
 
     // Create Stripe PaymentIntent
+    const stripe = getStripe();
     const intent = await stripe.paymentIntents.create({
       amount: voice.price_cents,
       currency: 'usd',
@@ -137,6 +144,7 @@ router.post('/api/tts/paid/confirm', express.json(), async (req, res) => {
     }
 
     // Verify payment succeeded
+    const stripe = getStripe();
     const intent = await stripe.paymentIntents.retrieve(intentId);
     if (intent.status !== 'succeeded') {
       return res.status(402).json({ ok: false, error: 'payment_not_confirmed' });
