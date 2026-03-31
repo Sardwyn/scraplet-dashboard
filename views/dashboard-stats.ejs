@@ -877,3 +877,39 @@
 
 
 </div>
+
+<style>
+.insight-chip { margin-top: 6px; padding: 8px 10px; background: rgba(99,102,241,0.08); border-left: 3px solid #6366f1; border-radius: 4px; font-size: 12px; color: #c7d2fe; position: relative; }
+.insight-chip__inner { display: flex; align-items: flex-start; gap: 6px; }
+.insight-chip__text { flex: 1; line-height: 1.4; }
+.insight-chip__dismiss { background: none; border: none; color: #6366f1; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; opacity: 0.6; }
+.insight-chip__dismiss:hover { opacity: 1; }
+.insight-chip__action { margin-top: 4px; padding-left: 20px; font-size: 11px; color: #818cf8; font-style: italic; }
+</style>
+
+<script>
+(function() {
+  if (!window._insightsPromise) {
+    window._insightsPromise = fetch('/dashboard/api/insights')
+      .then(function(r) { return r.json(); })
+      .catch(function() { return { insights: [] }; });
+  }
+  window._insightsPromise.then(function(data) {
+    var insights = data.insights || [];
+    document.querySelectorAll('.insight-chip').forEach(function(chip) {
+      var metric = chip.dataset.metric;
+      var insight = insights.find(function(i) { return i.metric_key === metric; });
+      if (!insight) return;
+      chip.querySelector('.insight-chip__text').textContent = insight.insight_text;
+      if (insight.action_suggestion) {
+        chip.querySelector('.insight-chip__action').textContent = '\u2192 ' + insight.action_suggestion;
+      }
+      chip.style.display = 'block';
+      chip.querySelector('.insight-chip__dismiss').addEventListener('click', function() {
+        fetch('/dashboard/api/insights/' + insight.insight_id + '/dismiss', { method: 'POST' })
+          .then(function() { chip.style.display = 'none'; });
+      });
+    });
+  });
+})();
+</script>
