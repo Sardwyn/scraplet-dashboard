@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { spawn } from "child_process";
+import { routeJob } from "./voiceRouter.js";
+import { synthesise as elSynthesize } from "./elevenlabs.js";
 import { getPool, query } from "../../db.js";
 
 const WORKER_ID =
@@ -188,6 +190,24 @@ function runPiper({ modelPath, text, outPath }) {
   });
 }
 
+function runKokoro({ text, outPath }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(KOKORO_BIN, [KOKORO_SCRIPT, outPath], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, KOKORO_VOICE: "af_sarah" },
+    });
+    let stderr = "";
+    child.stderr.on("data", (d) => (stderr += d.toString()));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code !== 0) return reject(new Error(`kokoro exited ${code}: ${stderr.slice(-200)}`));
+      resolve();
+    });
+    child.stdin.write(text);
+    child.stdin.end();
+  });
+}
+
 async function processJob(job) {
   ensureDir(TTS_DIR);
 
@@ -210,13 +230,21 @@ async function processJob(job) {
   const audioPath = path.join(TTS_DIR, filename);
   const audioUrl = `${PUBLIC_UPLOADS_PREFIX}/tts/${filename}`;
 
-  // Generate WAV via Piper
-  await runPiper({ modelPath, text, outPath: audioPath });
+  // Route to correct synthesis backend based on job priority
+  const backend = routeJob(job.priority ?? 0, voiceId);
+  if (backend === 'elevenlabs') {
+    // Map our voice_id to ElevenLabs voice name (strip 'el_' prefix)
+    const elVoiceId = voiceId.startsWith('el_') ? voiceId.slice(3) : voiceId;
+    await elSynthesize(elVoiceId, text, audioPath);
+  } else {
+    // Kokoro (free tier)
+    await runKokoro({ text, outPath: audioPath });
+  }
 
   // Verify file exists and is non-trivial
   const st = fs.statSync(audioPath);
   if (!st.isFile() || st.size < 256) {
-    throw new Error(`Piper wrote invalid audio file: ${audioPath} size=${st.size}`);
+    throw new Error(`TTS wrote invalid audio file: ${audioPath} size=${st.size}`);
   }
 
   // Mark done (DB trigger will emit tts_ready event)
