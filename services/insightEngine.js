@@ -67,7 +67,8 @@ Respond with JSON: {"insight_text": "...", "action_suggestion": "..."}`;
 
 async function processUser(userId) {
   const { rows: sessions } = await db.query(
-    `SELECT ss.*, c.game_name,
+    `SELECT ss.*,
+       (SELECT game_name FROM game_context WHERE channel_slug = ss.channel_slug ORDER BY updated_at DESC LIMIT 1) AS game_name,
        (SELECT COUNT(DISTINCT actor_user_id) FROM chat_messages cm WHERE cm.channel_slug = ss.channel_slug AND cm.ts BETWEEN ss.started_at AND COALESCE(ss.ended_at, NOW())) AS chatter_count
      FROM stream_sessions ss
      LEFT JOIN channels c ON c.channel_slug = ss.channel_slug
