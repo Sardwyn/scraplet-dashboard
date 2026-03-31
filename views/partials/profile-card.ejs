@@ -181,7 +181,7 @@
     <% sections.forEach(function (sectionType) { %>
 
       <% if (sectionType === 'avatar' && visible('avatar')) { %>
-        <div class="pc-identity">
+        <div class="pc-identity" data-section-type="avatar">
           <div class="pc-avatar-shell">
             <% if (profile && profile.avatar_url) { %>
               <img src="<%= profile.avatar_url %>" class="pc-avatar" alt="" />
@@ -202,7 +202,7 @@
       <% } %>
 
       <% if (sectionType === 'socialLinks' && visible('socialLinks')) { %>
-        <div class="pc-social-row">
+        <div class="pc-social-row" data-section-type="socialLinks">
           <% if (xHandle) { %>
             <a class="pc-social-pill" href="https://x.com/<%= xHandle %>" target="_blank" rel="noopener noreferrer">X</a>
           <% } %>
@@ -253,7 +253,7 @@
         %>
 
         <% if (hasBreakdown && breakdownRows.length) { %>
-          <div class="pc-stats-row pc-stats-row--has-breakdown">
+          <div class="pc-stats-row pc-stats-row--has-breakdown" data-section-type="stats">
             <button type="button" class="pc-stats-pill pc-stats-pill-toggle">
               <span class="pc-stats-dot"></span>
               <span class="pc-stats-label"><%= statsLabel %></span>
@@ -274,7 +274,7 @@
             </div>
           </div>
         <% } else { %>
-          <div class="pc-stats-row">
+          <div class="pc-stats-row" data-section-type="stats">
             <div class="pc-stats-pill">
               <span class="pc-stats-dot"></span>
               <span class="pc-stats-label"><%= statsLabel %></span>
@@ -285,12 +285,12 @@
 
       <% if (sectionType === 'bio' && visible('bio')) { %>
         <% if (profile && profile.bio) { %>
-          <div class="pc-bio"><%= profile.bio %></div>
+          <div class="pc-bio" data-section-type="bio"><%= profile.bio %></div>
         <% } %>
       <% } %>
 
       <% if (sectionType === 'buttons' && visible('buttons')) { %>
-        <div class="pc-buttons">
+        <div class="pc-buttons" data-section-type="buttons">
           <%
             function accentMeta(btn) {
               var color = (btn && btn.accent_color) ? btn.accent_color : '';
@@ -421,7 +421,7 @@
         %>
 
         <% if (activeSponsors.length) { %>
-          <section class="pc-sponsors">
+          <section class="pc-sponsors" data-section-type="sponsors">
             <div class="pc-sponsors-title"><%= sHeadline %></div>
 
             <div class="pc-sponsors-strip">
@@ -481,7 +481,7 @@
         %>
 
         <% if (hasP || hasS || renderTtsHere) { %>
-          <section class="pc-tipjar">
+          <section class="pc-tipjar" data-section-type="tipJar">
             <div class="pc-tipjar-title"><%= ts.headline || 'Tip Jar' %></div>
 
             <% if (hasP || hasS) { %>
@@ -536,7 +536,7 @@
           var cButtonLabel = cs.buttonLabel || 'Notify me';
         %>
 
-        <section class="pc-contact">
+        <section class="pc-contact" data-section-type="contact">
           <div class="pc-contact-title"><%= cHeadline %></div>
 
           <% if (cDescription) { %>

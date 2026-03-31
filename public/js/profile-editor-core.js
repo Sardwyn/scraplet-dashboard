@@ -13,6 +13,9 @@ export function editorInitState(initial) {
   editorState.layout = editorState.layout || {};
   editorState.sectionVisibility = editorState.sectionVisibility || {};
 
+  // Selection state for the 3-panel editor
+  editorState.selectedSection = null;
+
   // Normalise blocks array
   if (!Array.isArray(editorState.blocks)) {
     editorState.blocks = Array.isArray(initial?.blocks) ? initial.blocks : [];
@@ -187,4 +190,18 @@ function saveSocials() {
     }
     window.updatePreview && window.updatePreview();
   }, 500);
+}
+
+// ── Selection state ───────────────────────────────────────────────────────────
+
+export function setSelectedSection(sectionType) {
+  editorState.selectedSection = sectionType || null;
+  // Fire custom event so inspector and library can react
+  window.dispatchEvent(new CustomEvent('pe:sectionSelected', {
+    detail: { sectionType: editorState.selectedSection }
+  }));
+}
+
+export function getSelectedSection() {
+  return editorState.selectedSection || null;
 }
