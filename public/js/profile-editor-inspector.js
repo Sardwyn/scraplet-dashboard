@@ -808,7 +808,7 @@ async function saveBasic() {
     await fetch('/dashboard/api/profile/basic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: JSON.stringify({ display_name: p.display_name, bio: p.bio, tags: p.tags }),
     });
   } catch { /* silent */ }
@@ -820,7 +820,7 @@ async function saveSocials() {
     await fetch('/dashboard/api/profile/socials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: JSON.stringify({ x: p.x, youtube: p.youtube, twitch: p.twitch, kick: p.kick }),
     });
   } catch { /* silent */ }
@@ -831,7 +831,7 @@ async function saveAppearance(updates) {
     await fetch('/dashboard/api/profile/appearance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: JSON.stringify(updates),
     });
   } catch { /* silent */ }
@@ -842,7 +842,7 @@ async function saveLayout() {
     await fetch('/dashboard/api/profile/layout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: JSON.stringify({ layout: editorState.layout }),
     });
   } catch { /* silent */ }
