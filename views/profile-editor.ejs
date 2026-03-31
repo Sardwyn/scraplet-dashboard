@@ -58,9 +58,18 @@
 .pe-preview-panel {
   background: #020617;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  overflow-y: auto;
+}
+.pe-preview-scroll {
+  flex: 1;
+  display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 32px 20px;
+  width: 100%;
   overflow-y: auto;
 }
 .pe-preview-root { width: 100%; max-width: 380px; }
@@ -187,10 +196,6 @@
 
 
 /* Theme hot-swap bar */
-.pe-preview-panel {
-  flex-direction: column;
-  gap: 0;
-}
 .pe-theme-bar {
   display: flex; align-items: center; gap: 6px; padding: 10px 16px;
   background: #0f172a; border-top: 1px solid #1e293b; flex-shrink: 0;
@@ -226,7 +231,9 @@
   <!-- MIDDLE: Preview -->
   <!-- ═══════════════════════════════════════════ -->
   <div class="pe-preview-panel">
-    <div id="preview-root" class="pe-preview-root"></div>
+    <div class="pe-preview-scroll">
+      <div id="preview-root" class="pe-preview-root"></div>
+    </div>
     <!-- Theme hot-swap bar -->
     <div class="pe-theme-bar" id="pe-theme-bar">
       <span class="pe-theme-bar-label">Theme:</span>
@@ -350,11 +357,11 @@
         editorState.appearance.background = theme;
         // Update active state
         document.querySelectorAll('[data-theme-bar]').forEach(b => b.classList.toggle('active', b === btn));
-        // Save layout
-        fetch('/dashboard/api/profile/layout', {
+        // Save appearance (correct endpoint for theme)
+        fetch('/dashboard/api/profile/appearance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ layout: editorState.layout }),
+          body: JSON.stringify({ theme: theme, background: theme }),
         }).catch(() => {});
         if (window.updatePreview) window.updatePreview();
       });
