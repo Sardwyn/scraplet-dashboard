@@ -512,7 +512,11 @@ function wireButtonsInspector(container) {
       const id = btn.dataset.btnId;
       const shape = btn.dataset.btnShape;
       const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
-      if (button) button.shape = shape;
+      console.log('[btn] shape click id:', id, 'shape:', shape, 'found:', !!button);
+      if (button) {
+        button.shape = shape;
+        console.log('[btn] updated button:', JSON.stringify({id: button.id, shape: button.shape, size: button.size}));
+      }
       container.querySelectorAll(`[data-btn-shape][data-btn-id="${id}"]`).forEach(b => b.classList.toggle('active', b === btn));
       debounceSaveButton(id);
       if (window.updatePreview) window.updatePreview();
@@ -525,7 +529,11 @@ function wireButtonsInspector(container) {
       const id = btn.dataset.btnId;
       const size = btn.dataset.btnSize;
       const button = (editorState.customButtons || []).find(b => String(b.id) === String(id));
-      if (button) button.size = size;
+      console.log('[btn] size click id:', id, 'size:', size, 'found:', !!button);
+      if (button) {
+        button.size = size;
+        console.log('[btn] updated button:', JSON.stringify({id: button.id, shape: button.shape, size: button.size}));
+      }
       container.querySelectorAll(`[data-btn-size][data-btn-id="${id}"]`).forEach(b => b.classList.toggle('active', b === btn));
       debounceSaveButton(id);
       if (window.updatePreview) window.updatePreview();
