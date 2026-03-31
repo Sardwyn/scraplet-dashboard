@@ -109,11 +109,28 @@
     const _bodyStyle = _canvasBg ? 'style="background:' + _canvasBg + '"' : '';
   %>
   <body class="min-h-screen text-white" <%- _bodyStyle %>>
-    <% if (_canvasVideo) { %>
-    <video autoplay muted loop playsinline
-           style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
-      <source src="<%= _canvasVideo %>" />
-    </video>
+    <% if (_canvasVideo) {
+      // Detect YouTube URLs and convert to embed format
+      const _ytMatch = _canvasVideo.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      const _ytId = _ytMatch ? _ytMatch[1] : null;
+    %>
+    <% if (_ytId) { %>
+      <!-- YouTube background via iframe -->
+      <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+        <iframe
+          src="https://www.youtube.com/embed/<%= _ytId %>?autoplay=1&mute=1&loop=1&playlist=<%= _ytId %>&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+          style="position:absolute;top:50%;left:50%;width:177.78vh;height:100vh;min-width:100%;min-height:56.25vw;transform:translate(-50%,-50%);border:none;"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+      </div>
+    <% } else { %>
+      <!-- Direct video file background -->
+      <video autoplay muted loop playsinline
+             style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+        <source src="<%= _canvasVideo %>" />
+      </video>
+    <% } %>
     <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1;pointer-events:none;"></div>
     <% } %>
 

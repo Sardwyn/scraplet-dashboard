@@ -304,7 +304,7 @@ function renderCanvasInspector() {
     </div>
     <div class="pe-inspector-section">
       <div class="pe-inspector-label">Background Video URL</div>
-      <div class="pe-inspector-hint">Direct link to an MP4 or WebM video. Plays muted and looped behind the card.<br/><strong>Note:</strong> YouTube links won't work — needs a direct .mp4 or .webm URL.</div>
+      <div class="pe-inspector-hint">Paste a YouTube URL or a direct .mp4/.webm link. Plays muted and looped behind the card.</div>
       <input type="text" class="pe-inspector-input" id="pi-canvas-video"
              value="${escHtml(canvasVideo)}"
              placeholder="https://example.com/background.mp4" />
