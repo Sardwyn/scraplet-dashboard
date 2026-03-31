@@ -540,6 +540,24 @@
                 </button>
               </div>
 
+              <!-- Inline TTS panel (hidden by default) -->
+              <div data-tts-panel="true" hidden style="margin-top:12px;">
+                <div class="pc-contact-title">Send a TTS Message</div>
+                <p class="pc-contact-text" data-tts-note="true">Loading voices...</p>
+                <textarea
+                  class="pc-contact-input"
+                  data-tts-input="true"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Type your message (max 500 chars)..."
+                ></textarea>
+                <div class="pc-contact-form">
+                  <div class="pc-contact-text" data-tts-counter="true">0 / 500</div>
+                  <button type="button" class="pc-contact-button" data-tts-submit="true" disabled>Send</button>
+                  <button type="button" class="pc-contact-button" data-tts-close="true">Close</button>
+                </div>
+              </div>
+
               <% if (ttsSubtext) { %>
                 <div class="pc-contact-text"><%= ttsSubtext %></div>
               <% } %>
