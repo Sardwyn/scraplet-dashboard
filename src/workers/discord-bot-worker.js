@@ -143,6 +143,26 @@ client.on("messageReactionAdd", async (reaction, user) => {
     if (!msg) return;
     if (msg.partial) await msg.fetch().catch(() => null);
 
+    // Content pack approval flow
+    const packEntry = contentPackMessages.get(msg.id);
+    if (packEntry) {
+      contentPackMessages.delete(msg.id);
+      const emoji = reaction.emoji?.name;
+      const { packId } = packEntry;
+      if (emoji === '✅') {
+        await db.query("UPDATE content_packs SET status = 'approved', approved_at = NOW() WHERE pack_id = $1", [packId]);
+        await msg.reply('Content pack approved.').catch(() => {});
+        console.log('[contentPack] approved', packId);
+      } else if (emoji === '❌') {
+        await db.query("UPDATE content_packs SET status = 'discarded' WHERE pack_id = $1", [packId]);
+        await msg.reply('Content pack discarded.').catch(() => {});
+      } else if (emoji === '✏️') {
+        const discordUser = await client.users.fetch(user.id).catch(() => null);
+        if (discordUser) await discordUser.send("Edit content pack " + packId + " in the Scraplet dashboard.").catch(() => {});
+      }
+      return;
+    }
+
     const guildId = msg.guildId;
     const channelId = msg.channelId;
     if (!guildId || !channelId) return;
@@ -1190,6 +1210,35 @@ internalApp.post('/internal/highlight', express.json(), async (req, res) => {
     return res.json({ ok: true });
   } catch (e) {
     console.error('[proactive] error:', e.message);
+    return res.status(500).json({ ok: false });
+  }
+});
+
+
+// ── POST /internal/content-pack ──────────────────────────────────────────────
+// Delivers a content pack to a Discord channel and attaches approval reactions.
+internalApp.post('/internal/content-pack', express.json(), async (req, res) => {
+  try {
+    const { channelId, message, packId, userId } = req.body || {};
+    if (!channelId || !message || !packId) return res.status(400).json({ ok: false });
+
+    const channel = await client.channels.fetch(channelId).catch(() => null);
+    if (!channel) return res.status(404).json({ ok: false, error: 'channel_not_found' });
+
+    const msg = await channel.send(message);
+
+    // Add approval reactions
+    await msg.react('✅').catch(() => {});
+    await msg.react('✏️').catch(() => {});
+    await msg.react('❌').catch(() => {});
+
+    // Store message ID for reaction tracking
+    contentPackMessages.set(msg.id, { packId, userId, channelId });
+
+    console.log('[contentPack] delivered pack', packId, 'to channel', channelId, 'msg', msg.id);
+    return res.json({ ok: true, messageId: msg.id });
+  } catch (e) {
+    console.error('[contentPack] delivery error:', e.message);
     return res.status(500).json({ ok: false });
   }
 });

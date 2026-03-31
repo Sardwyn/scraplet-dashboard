@@ -60,6 +60,7 @@ import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.j
 import statusProxyRoutes from './routes/statusProxy.js';
 import highlightsApiRouter from './routes/highlightsApi.js';
 import insightsApiRouter from './routes/insightsApi.js';
+import contentPacksApiRouter from './routes/contentPacksApi.js';
 import trainingApiRouter from './routes/trainingApi.js';
 import stakeMonitorRouter from './routes/api/stakeMonitor.js';
 import streamerContextRouter from './routes/streamerContext.js';
@@ -317,6 +318,7 @@ app.use('/dashboard/api/email', emailApiRoutes);
 app.use('/api/status', statusProxyRoutes);
 app.use(highlightsApiRouter);
 app.use(insightsApiRouter);
+app.use(contentPacksApiRouter);
 // Schedule nightly insight engine
 scheduleInsightEngine();
 app.use(trainingApiRouter);

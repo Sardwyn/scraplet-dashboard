@@ -678,6 +678,14 @@ export async function kickWebhookHandler(req, res) {
               await computeSessionStats(endedSession[0].session_id).catch(e => console.error('[kick] session stats error:', e.message));
               const { sendStreamDebrief } = await import('../../services/streamDebrief.js');
               sendStreamDebrief(endedSession[0].session_id, actualChannelSlug).catch(e => console.error('[kick] debrief error:', e.message));
+              // Generate content pack (non-blocking)
+              import('../../src/contentRepurposing/index.js').then(({ generateContentPack, deliverContentPack: _ }) =>
+                import('../../src/contentRepurposing/delivery.js').then(({ deliverContentPack }) =>
+                  generateContentPack(endedSession[0].session_id).then(pack => {
+                    if (pack) deliverContentPack(pack.packId, pack.input.userId).catch(e => console.error('[kick] content pack delivery error:', e.message));
+                  })
+                )
+              ).catch(e => console.error('[kick] content pack error:', e.message));
             }
           } catch (e) {
             console.error('[kick] post-session hooks error:', e.message);
