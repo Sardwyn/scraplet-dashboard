@@ -119,6 +119,8 @@
   // -------- Appearance from users.appearance --------
   const themeName = ((appearance && appearance.theme) || 'midnight').toLowerCase();
   const bioFont      = (appearance && appearance.bioFont) ? String(appearance.bioFont) : '';
+  const cardOpacity  = (appearance && appearance.cardOpacity !== undefined) ? parseFloat(appearance.cardOpacity) : 1.0;
+  const cardBlur     = (appearance && appearance.cardBlur !== undefined) ? parseInt(appearance.cardBlur) : 12;
   const bioFontSize  = (appearance && appearance.bioFontSize) || 'md';
   const nameFontSize = (appearance && appearance.nameFontSize) || 'md';
   const bioSizeMap  = { sm: '12px', md: '14px', lg: '17px' };
@@ -174,7 +176,7 @@
   const sections = orderedSections();
 %>
 
-<article class="pc-card-root <%= classNames %>">
+<article class="pc-card-root <%= classNames %>" style="--card-opacity:<%- cardOpacity %>;--card-blur:<%- cardBlur %>px;">
   <!-- HERO -->
   <header class="pc-hero" data-section-type="background">
     <% if (profile && profile.cover_image_url) { %>
@@ -209,18 +211,25 @@
         </div>
       <% } %>
 
-      <% if (sectionType === 'socialLinks' && visible('socialLinks')) { %>
+      <% if (sectionType === 'socialLinks' && visible('socialLinks')) {
+          var socialSection2 = sectionEntry('socialLinks') || {};
+          var socialCfg = socialSection2.settings || {};
+          var showX = socialCfg.show_x !== false;
+          var showYoutube = socialCfg.show_youtube !== false;
+          var showTwitch = socialCfg.show_twitch !== false;
+          var showKick = socialCfg.show_kick !== false;
+      %>
         <div class="pc-social-row" data-section-type="socialLinks">
-          <% if (xHandle) { %>
+          <% if (xHandle && showX) { %>
             <a class="pc-social-pill" href="https://x.com/<%= xHandle %>" target="_blank" rel="noopener noreferrer">X</a>
           <% } %>
-          <% if (youtubeUrl) { %>
+          <% if (youtubeUrl && showYoutube) { %>
             <a class="pc-social-pill" href="<%= youtubeUrl %>" target="_blank" rel="noopener noreferrer">YT</a>
           <% } %>
-          <% if (twitchUrl) { %>
+          <% if (twitchUrl && showTwitch) { %>
             <a class="pc-social-pill" href="<%= twitchUrl %>" target="_blank" rel="noopener noreferrer">Tw</a>
           <% } %>
-          <% if (kickUrl) { %>
+          <% if (kickUrl && showKick) { %>
             <a class="pc-social-pill" href="<%= kickUrl %>" target="_blank" rel="noopener noreferrer">K</a>
           <% } %>
         </div>

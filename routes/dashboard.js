@@ -2340,21 +2340,88 @@ router.get("/stats", requireAuth, async (req, res) => {
     const weeklyTrends = historyRows.length ? [] : [];
 
     // -----------------------------
-    // SAFE DEFAULTS (critical)
+    // PROFILE ANALYTICS (real data)
     // -----------------------------
-    const profileAnalytics = {
-      views: 0,
-    };
+    let profileAnalytics = { views: 0 };
+    let referrerStats = [];
+    let clickBuckets = [];
+    let clickDetails = [];
+    let heatmapPoints = [];
+    let profileEngagementTrend = { percentChange: 0, dailyViews: [] };
 
-    const referrerStats = [];
-    const clickBuckets = [];
-    const clickDetails = [];
-    const heatmapPoints = [];
+    try {
+      // Total views in selected window
+      const { rows: viewRows } = await db.query(
+        `SELECT COUNT(*) AS total,
+                COUNT(DISTINCT ip_hash) AS unique_visitors
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval`,
+        [userId, selectedWindow]
+      );
+      profileAnalytics = {
+        views: parseInt(viewRows[0]?.total || 0),
+        uniqueVisitors: parseInt(viewRows[0]?.unique_visitors || 0),
+      };
 
-    const profileEngagementTrend = {
-      percentChange: 0,
-      dailyViews: [],
-    };
+      // Daily views for trend
+      const { rows: dailyRows } = await db.query(
+        `SELECT DATE(visited_at) AS day, COUNT(*) AS views
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY day ORDER BY day ASC`,
+        [userId, selectedWindow]
+      );
+      const dailyViews = dailyRows.map(r => ({ date: r.day, views: parseInt(r.views) }));
+
+      // Trend: compare last half vs first half of window
+      const half = Math.floor(dailyViews.length / 2);
+      const firstHalf = dailyViews.slice(0, half).reduce((s, r) => s + r.views, 0);
+      const secondHalf = dailyViews.slice(half).reduce((s, r) => s + r.views, 0);
+      const pctChange = firstHalf > 0 ? Math.round(((secondHalf - firstHalf) / firstHalf) * 100) : 0;
+      profileEngagementTrend = { percentChange: pctChange, dailyViews };
+
+      // Top referrers
+      const { rows: refRows } = await db.query(
+        `SELECT referrer, COUNT(*) AS count
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval
+           AND referrer IS NOT NULL AND referrer != ''
+         GROUP BY referrer ORDER BY count DESC LIMIT 10`,
+        [userId, selectedWindow]
+      );
+      referrerStats = refRows.map(r => ({ referrer: r.referrer, count: parseInt(r.count) }));
+
+      // Click buckets by element type
+      const { rows: bucketRows } = await db.query(
+        `SELECT element_type, COUNT(*) AS count
+         FROM public.profile_clicks
+         WHERE user_id = $1
+           AND clicked_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY element_type ORDER BY count DESC`,
+        [userId, selectedWindow]
+      );
+      clickBuckets = bucketRows.map(r => ({ type: r.element_type, count: parseInt(r.count) }));
+
+      // Click details (top clicked elements)
+      const { rows: detailRows } = await db.query(
+        `SELECT element_type, element_label, COUNT(*) AS count
+         FROM public.profile_clicks
+         WHERE user_id = $1
+           AND clicked_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY element_type, element_label ORDER BY count DESC LIMIT 20`,
+        [userId, selectedWindow]
+      );
+      clickDetails = detailRows.map(r => ({
+        type: r.element_type,
+        label: r.element_label,
+        count: parseInt(r.count)
+      }));
+    } catch (analyticsErr) {
+      console.warn('[dashboard/stats] profile analytics query failed:', analyticsErr.message);
+    }
 
     // -----------------------------
     // Render

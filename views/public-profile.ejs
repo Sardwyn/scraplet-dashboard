@@ -191,6 +191,65 @@
           })();
         </script>
     <script src="/static/js/tts-panel.js"></script>
+
+    <script>
+    (function() {
+      var username = '<%= _profile.username || "" %>';
+      if (!username) return;
+
+      // Track page view
+      fetch('/api/profile/track/view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username,
+          referrer: document.referrer || null
+        }),
+        keepalive: true
+      }).catch(function() {});
+
+      // Track clicks on buttons, social links, tipjar, sponsors
+      document.addEventListener('click', function(e) {
+        var el = e.target.closest('a[href], button[type="button"]');
+        if (!el) return;
+
+        var type = null, id = null, label = null;
+
+        if (el.closest('.pc-buttons')) {
+          type = 'button';
+          id = el.dataset.buttonId || null;
+          label = el.querySelector('.pc-button-label')?.textContent?.trim() || null;
+        } else if (el.closest('.pc-social-row')) {
+          type = 'social';
+          var href = el.getAttribute('href') || '';
+          if (href.includes('x.com') || href.includes('twitter')) id = 'x';
+          else if (href.includes('youtube')) id = 'youtube';
+          else if (href.includes('twitch')) id = 'twitch';
+          else if (href.includes('kick')) id = 'kick';
+          else id = 'other';
+          label = id;
+        } else if (el.closest('.pc-tipjar')) {
+          type = 'tipjar';
+          label = el.querySelector('.pc-button-label')?.textContent?.trim() || 'tip';
+        } else if (el.closest('.pc-sponsors')) {
+          type = 'sponsor';
+          label = el.querySelector('.pc-sponsors-name')?.textContent?.trim() || null;
+        } else if (el.closest('.pc-contact')) {
+          type = 'contact';
+          label = 'contact_form';
+        }
+
+        if (!type) return;
+
+        fetch('/api/profile/track/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, elementType: type, elementId: id, elementLabel: label }),
+          keepalive: true
+        }).catch(function() {});
+      });
+    })();
+    </script>
   </body>
 
   </html>

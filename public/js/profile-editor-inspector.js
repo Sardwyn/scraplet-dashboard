@@ -166,15 +166,25 @@ function renderBioInspector(profile) {
 }
 
 function renderSocialLinksInspector(profile) {
+  const layout = editorState.layout || {};
+  const socialSection = (layout.sections || []).find(s => s.type === 'socialLinks') || {};
+  const cfg = socialSection.settings || {};
   const fields = [
-    { key: 'x', label: 'X (handle or URL)', placeholder: '@handle' },
-    { key: 'youtube', label: 'YouTube URL', placeholder: 'https://youtube.com/...' },
-    { key: 'twitch', label: 'Twitch URL', placeholder: 'https://twitch.tv/...' },
-    { key: 'kick', label: 'Kick URL', placeholder: 'https://kick.com/...' },
+    { key: 'x', label: 'X', placeholder: '@handle' },
+    { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/...' },
+    { key: 'twitch', label: 'Twitch', placeholder: 'https://twitch.tv/...' },
+    { key: 'kick', label: 'Kick', placeholder: 'https://kick.com/...' },
   ];
   return fields.map(f => `
     <div class="pe-inspector-section">
-      <label class="pe-inspector-label">${f.label}</label>
+      <div class="pe-inspector-label" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>${f.label}</span>
+        <label class="pe-inspector-toggle-row" style="margin:0;">
+          <input type="checkbox" ${cfg['show_' + f.key] !== false ? 'checked' : ''}
+                 data-save-section-setting="socialLinks:show_${f.key}" />
+          <span style="font-size:11px;color:#64748b;">Show</span>
+        </label>
+      </div>
       <input type="text" class="pe-inspector-input" id="pi-${f.key}"
              value="${escHtml(profile[f.key] || '')}"
              placeholder="${f.placeholder}"
@@ -186,15 +196,22 @@ function renderSocialLinksInspector(profile) {
 function renderStatsInspector(layout) {
   const statsSection = (layout.sections || []).find(s => s.type === 'stats') || {};
   const settings = statsSection.settings || {};
-  return `
+  const toggles = [
+    { key: 'showFollowers', label: 'Show followers' },
+    { key: 'showCCV', label: 'Show CCV' },
+    { key: 'showEngagement', label: 'Show engagement' },
+    { key: 'showMarketability', label: 'Show marketability grade' },
+    { key: 'enableBreakdown', label: 'Show breakdown panel' },
+  ];
+  return toggles.map(t => `
     <div class="pe-inspector-section">
       <label class="pe-inspector-toggle-row">
-        <input type="checkbox" id="pi-stats-breakdown" ${settings.enableBreakdown ? 'checked' : ''}
-               data-save-section-setting="stats:enableBreakdown" />
-        <span>Show stats breakdown</span>
+        <input type="checkbox" ${settings[t.key] !== false ? 'checked' : ''}
+               data-save-section-setting="stats:${t.key}" />
+        <span>${t.label}</span>
       </label>
     </div>
-  `;
+  `).join('');
 }
 
 function renderButtonsInspector() {
@@ -291,11 +308,22 @@ function renderButtonsInspector() {
 }
 
 function renderSponsorsInspector() {
+  const sponsors = editorState.sponsors || [];
+  const rows = sponsors.filter(s => s && s.is_active !== false).map(sp => `
+    <div class="pe-btn-row">
+      <div class="pe-btn-row-header">
+        <span class="pe-btn-row-label">${escHtml(sp.name || 'Sponsor')}</span>
+        <div class="pe-btn-row-actions">
+          <button class="pe-btn-row-delete" data-sponsor-delete="${sp.id}">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
   return `
     <div class="pe-inspector-section">
-      <div class="pe-inspector-hint">Manage your sponsors below.</div>
-      <div id="pi-sponsors-list"></div>
-      <button class="pe-btn pe-btn-sm" id="pi-add-sponsor">+ Add Sponsor</button>
+      <div class="pe-inspector-hint">Sponsors appear as a strip on your profile. Manage them below.</div>
+      ${rows || '<p class="pe-inspector-empty">No sponsors yet.</p>'}
+      <button class="pe-btn pe-btn-sm" id="pi-add-sponsor" style="margin-top:8px;">+ Add Sponsor</button>
     </div>
   `;
 }
@@ -458,6 +486,18 @@ function renderCanvasInspector() {
         <input type="checkbox" id="pi-qr-enabled" ${qrEnabled ? 'checked' : ''} />
         <span>Show QR code on public profile</span>
       </label>
+    </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-label">Card Opacity <span id="pi-opacity-val">${Math.round((appearance.cardOpacity ?? 1) * 100)}%</span></label>
+      <input type="range" id="pi-card-opacity" min="0" max="100" step="5"
+             value="${Math.round((appearance.cardOpacity ?? 1) * 100)}"
+             class="pe-range-input" />
+    </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-label">Card Blur <span id="pi-blur-val">${appearance.cardBlur ?? 12}px</span></label>
+      <input type="range" id="pi-card-blur" min="0" max="40" step="2"
+             value="${appearance.cardBlur ?? 12}"
+             class="pe-range-input" />
     </div>
   `;
 }
@@ -893,6 +933,34 @@ function wireInspector(sectionType) {
     });
   }
 
+  // Card opacity slider
+  const opacitySlider = container.querySelector('#pi-card-opacity');
+  const opacityVal = container.querySelector('#pi-opacity-val');
+  if (opacitySlider) {
+    opacitySlider.addEventListener('input', () => {
+      const v = parseInt(opacitySlider.value) / 100;
+      if (opacityVal) opacityVal.textContent = opacitySlider.value + '%';
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.cardOpacity = v;
+      saveAppearance({ cardOpacity: v });
+      if (window.updatePreview) window.updatePreview();
+    });
+  }
+
+  // Card blur slider
+  const blurSlider = container.querySelector('#pi-card-blur');
+  const blurVal = container.querySelector('#pi-blur-val');
+  if (blurSlider) {
+    blurSlider.addEventListener('input', () => {
+      const v = parseInt(blurSlider.value);
+      if (blurVal) blurVal.textContent = v + 'px';
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.cardBlur = v;
+      saveAppearance({ cardBlur: v });
+      if (window.updatePreview) window.updatePreview();
+    });
+  }
+
   // Cover zone click → open file picker
   const coverZone = container.querySelector('#pe-cover-drop-zone');
   if (coverZone) {
@@ -918,6 +986,31 @@ function wireInspector(sectionType) {
   // Buttons inspector — wire the full button editor
   if (sectionType === 'buttons') {
     wireButtonsInspector(container);
+  }
+
+  // Sponsors inspector
+  if (sectionType === 'sponsors') {
+    const addSponsorBtn = container.querySelector('#pi-add-sponsor');
+    if (addSponsorBtn) {
+      addSponsorBtn.addEventListener('click', () => {
+        const sidebarBtn = document.getElementById('pe-add-sponsor');
+        if (sidebarBtn) sidebarBtn.click();
+      });
+    }
+    container.querySelectorAll('[data-sponsor-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.sponsorDelete;
+        if (!confirm('Remove this sponsor?')) return;
+        await fetch(`/dashboard/api/profile/sponsors/${id}`, {
+          method: 'DELETE',
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+        editorState.sponsors = (editorState.sponsors || []).filter(s => String(s.id) !== String(id));
+        renderInspector('sponsors');
+        if (window.updatePreview) window.updatePreview();
+      });
+    });
   }
 }
 

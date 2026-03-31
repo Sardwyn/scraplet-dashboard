@@ -1,3 +1,7 @@
+.pc-card-root {
+  --card-opacity: 1;
+  --card-blur: 12px;
+}
 /* ===========================
  * Canonical Profile Card (pc-)
  * Used by BOTH public + editor

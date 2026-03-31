@@ -38,6 +38,8 @@ const DEFAULT_APPEARANCE = {
   bioFont: '',                // Google Font name for bio and name text
   bioFontSize: 'md',          // bio text size: sm/md/lg
   nameFontSize: 'md',         // display name size: sm/md/lg/xl
+  cardOpacity: 1.0,           // card background opacity 0-1
+  cardBlur: 12,               // card backdrop blur in px
 };
 
 function normaliseAppearance(raw) {
@@ -77,6 +79,14 @@ function normaliseAppearance(raw) {
   if (raw.nameFontSize !== undefined) {
     const allowed = ['sm', 'md', 'lg', 'xl'];
     out.nameFontSize = allowed.includes(raw.nameFontSize) ? raw.nameFontSize : 'md';
+  }
+  if (raw.cardOpacity !== undefined) {
+    const v = parseFloat(raw.cardOpacity);
+    out.cardOpacity = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1.0;
+  }
+  if (raw.cardBlur !== undefined) {
+    const v = parseInt(raw.cardBlur);
+    out.cardBlur = isFinite(v) ? Math.max(0, Math.min(40, v)) : 12;
   }
 
   if (raw.buttonStyle && typeof raw.buttonStyle === 'string') {
