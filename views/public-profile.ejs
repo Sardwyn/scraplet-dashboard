@@ -17,6 +17,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>window.STRIPE_PUBLISHABLE_KEY = "<%= process.env.STRIPE_PUBLISHABLE_KEY || '' %>";</script>
     <link rel="stylesheet" href="/dashboard/css/profile-card.css?v=1" />
 
     <style>
@@ -152,6 +154,7 @@
             });
           })();
         </script>
+    <script src="/static/js/tts-panel.js"></script>
   </body>
 
   </html>

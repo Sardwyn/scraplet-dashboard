@@ -49,6 +49,7 @@
         <div>
           <div class="pc-panel-title">📈 Audience Growth</div>
           <div class="pc-panel-sub">Combined followers across all connected platforms (daily snapshots).</div>
+          <%- include('partials/_insight_chip', { metricKey: 'growth' }) %>
         </div>
 
         <div class="flex gap-2 text-xs">
@@ -92,6 +93,7 @@
         <div>
           <div class="pc-panel-title">📊 Platform Performance</div>
           <div class="pc-panel-sub">Followers, engagement, CCV, trends + sparklines</div>
+          <%- include('partials/_insight_chip', { metricKey: 'ccv' }) %>
         </div>
       </div>
 
@@ -736,10 +738,12 @@
           <div class="bg-white/5 rounded-lg p-3">
             <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Avg Duration</div>
             <div id="sp-avg-duration" class="text-xl font-bold text-white">—</div>
+            <%- include('partials/_insight_chip', { metricKey: 'session_length' }) %>
           </div>
           <div class="bg-white/5 rounded-lg p-3">
             <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Avg Msg/min</div>
             <div id="sp-avg-mpm" class="text-xl font-bold text-emerald-400">—</div>
+            <%- include('partials/_insight_chip', { metricKey: 'mpm' }) %>
           </div>
           <div class="bg-white/5 rounded-lg p-3">
             <div class="text-xs text-white/40 uppercase tracking-wider mb-1">Highlights</div>

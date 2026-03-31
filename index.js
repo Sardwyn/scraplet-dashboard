@@ -63,6 +63,7 @@ import insightsApiRouter from './routes/insightsApi.js';
 import contentPacksApiRouter from './routes/contentPacksApi.js';
 import trainingApiRouter from './routes/trainingApi.js';
 import stakeMonitorRouter from './routes/api/stakeMonitor.js';
+import ttsPanelRouter from './routes/api/ttsPanel.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
@@ -323,6 +324,7 @@ app.use(contentPacksApiRouter);
 scheduleInsightEngine();
 app.use(trainingApiRouter);
 app.use(stakeMonitorRouter);
+app.use(ttsPanelRouter);
 
 // 🎛 Studio Controller — auth-gated React build
 const studioDistPath = process.env.STUDIO_DIST_PATH || '/var/www/studio-controller/dist';
