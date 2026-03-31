@@ -1,3 +1,4 @@
+import { computeRetentionRate } from '../src/insights/computeRetentionRate.js';
 // services/sessionStats.js
 // Computes per-session stats from chat_messages and writes to stream_sessions.
 // Additive only — never modifies existing columns.
@@ -56,7 +57,10 @@ export async function computeSessionStats(sessionId) {
     [totalMessages, uniqueChatters, durationMinutes, messagesPerMinute, sessionId]
   );
 
-  return { sessionId, totalMessages, uniqueChatters, durationMinutes, messagesPerMinute };
+    // Compute returning viewer rate (non-blocking)
+  const returningViewerRate = await computeRetentionRate(sessionId).catch(() => null);
+
+  return { sessionId, totalMessages, uniqueChatters, durationMinutes, messagesPerMinute, returningViewerRate };
 }
 
 /**

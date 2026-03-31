@@ -59,12 +59,14 @@ import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js'
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
 import highlightsApiRouter from './routes/highlightsApi.js';
+import insightsApiRouter from './routes/insightsApi.js';
 import trainingApiRouter from './routes/trainingApi.js';
 import stakeMonitorRouter from './routes/api/stakeMonitor.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
 import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
+import { scheduleInsightEngine } from './services/insightEngine.js';
 
 
 global.studioEventBus = new EventBus();
@@ -314,6 +316,9 @@ app.use('/dashboard/api/email', emailApiRoutes);
 // Status Proxy Routes
 app.use('/api/status', statusProxyRoutes);
 app.use(highlightsApiRouter);
+app.use(insightsApiRouter);
+// Schedule nightly insight engine
+scheduleInsightEngine();
 app.use(trainingApiRouter);
 app.use(stakeMonitorRouter);
 
