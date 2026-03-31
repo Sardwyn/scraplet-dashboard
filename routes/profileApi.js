@@ -35,6 +35,7 @@ const DEFAULT_APPEARANCE = {
   canvasBg: '',               // CSS background value for the page canvas
   canvasVideo: '',            // URL for background video
   qrEnabled: true,            // show QR code toggle on public profile
+  bioFont: '',                // Google Font name for bio text
 };
 
 function normaliseAppearance(raw) {
@@ -63,6 +64,9 @@ function normaliseAppearance(raw) {
   }
   if (raw.qrEnabled !== undefined) {
     out.qrEnabled = raw.qrEnabled !== false;
+  }
+  if (raw.bioFont !== undefined) {
+    out.bioFont = typeof raw.bioFont === 'string' ? raw.bioFont.slice(0, 100) : '';
   }
 
   if (raw.buttonStyle && typeof raw.buttonStyle === 'string') {

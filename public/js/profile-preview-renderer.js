@@ -793,6 +793,19 @@ async function _doServerRender(root) {
     });
   }
 
+  // Load bio font if set
+  const bioFont = rendererState?.appearance?.bioFont;
+  if (bioFont) {
+    const linkId = 'gf-preview-' + bioFont.replace(/\s+/g, '-');
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(bioFont).replace(/%20/g, '+') + ':wght@400;500&display=swap';
+      document.head.appendChild(link);
+    }
+  }
+
   // Let card DnD module hook into .pc-buttons / [data-button-id]
   if (typeof window.onProfilePreviewRendered === "function") {
     try {

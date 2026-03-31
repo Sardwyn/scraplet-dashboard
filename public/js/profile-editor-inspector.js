@@ -119,6 +119,7 @@ function renderAvatarInspector(profile) {
 
 function renderBioInspector(profile) {
   const bio = profile.bio || '';
+  const appearance = editorState.appearance || {};
   return `
     <div class="pe-inspector-section">
       <label class="pe-inspector-label">Bio <span class="pe-inspector-counter" id="pi-bio-counter">${bio.length}/280</span></label>
@@ -126,6 +127,36 @@ function renderBioInspector(profile) {
                 data-save-basic="bio"
                 oninput="document.getElementById('pi-bio-counter').textContent=this.value.length+'/280'"
       >${escHtml(bio)}</textarea>
+    </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-label">Font</label>
+      <select class="pe-inspector-input" id="pi-bio-font">
+        <option value="" ${!appearance.bioFont ? 'selected' : ''}>Default (system)</option>
+        <option value="Inter" ${(appearance.bioFont || '') === 'Inter' ? 'selected' : ''}>Inter</option>
+        <option value="Roboto" ${(appearance.bioFont || '') === 'Roboto' ? 'selected' : ''}>Roboto</option>
+        <option value="Open Sans" ${(appearance.bioFont || '') === 'Open Sans' ? 'selected' : ''}>Open Sans</option>
+        <option value="Lato" ${(appearance.bioFont || '') === 'Lato' ? 'selected' : ''}>Lato</option>
+        <option value="Montserrat" ${(appearance.bioFont || '') === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
+        <option value="Poppins" ${(appearance.bioFont || '') === 'Poppins' ? 'selected' : ''}>Poppins</option>
+        <option value="Raleway" ${(appearance.bioFont || '') === 'Raleway' ? 'selected' : ''}>Raleway</option>
+        <option value="Nunito" ${(appearance.bioFont || '') === 'Nunito' ? 'selected' : ''}>Nunito</option>
+        <option value="Source Sans 3" ${(appearance.bioFont || '') === 'Source Sans 3' ? 'selected' : ''}>Source Sans 3</option>
+        <option value="Oswald" ${(appearance.bioFont || '') === 'Oswald' ? 'selected' : ''}>Oswald</option>
+        <option value="Playfair Display" ${(appearance.bioFont || '') === 'Playfair Display' ? 'selected' : ''}>Playfair Display</option>
+        <option value="Merriweather" ${(appearance.bioFont || '') === 'Merriweather' ? 'selected' : ''}>Merriweather</option>
+        <option value="Ubuntu" ${(appearance.bioFont || '') === 'Ubuntu' ? 'selected' : ''}>Ubuntu</option>
+        <option value="Exo 2" ${(appearance.bioFont || '') === 'Exo 2' ? 'selected' : ''}>Exo 2</option>
+        <option value="Orbitron" ${(appearance.bioFont || '') === 'Orbitron' ? 'selected' : ''}>Orbitron</option>
+        <option value="Rajdhani" ${(appearance.bioFont || '') === 'Rajdhani' ? 'selected' : ''}>Rajdhani</option>
+        <option value="Bebas Neue" ${(appearance.bioFont || '') === 'Bebas Neue' ? 'selected' : ''}>Bebas Neue</option>
+        <option value="Righteous" ${(appearance.bioFont || '') === 'Righteous' ? 'selected' : ''}>Righteous</option>
+        <option value="Permanent Marker" ${(appearance.bioFont || '') === 'Permanent Marker' ? 'selected' : ''}>Permanent Marker</option>
+        <option value="Pacifico" ${(appearance.bioFont || '') === 'Pacifico' ? 'selected' : ''}>Pacifico</option>
+      </select>
+      <div class="pe-inspector-hint" id="pi-bio-font-preview"
+           style="margin-top:6px;font-size:14px;padding:6px;background:#0f172a;border-radius:4px;">
+        The quick brown fox jumps over the lazy dog
+      </div>
     </div>
   `;
 }
@@ -604,6 +635,41 @@ let layoutSaveTimer = null;
 function wireInspector(sectionType) {
   const container = document.getElementById(INSPECTOR_ID);
   if (!container) return;
+
+  // Bio font picker
+  const bioFontSelect = container.querySelector('#pi-bio-font');
+  const bioFontPreview = container.querySelector('#pi-bio-font-preview');
+  if (bioFontSelect) {
+    // Load font for preview
+    function loadAndPreviewFont(fontName) {
+      if (!fontName) {
+        if (bioFontPreview) bioFontPreview.style.fontFamily = '';
+        return;
+      }
+      // Load Google Font dynamically
+      const linkId = 'gf-' + fontName.replace(/\s+/g, '-');
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fontName).replace(/%20/g, '+') + ':wght@400;500&display=swap';
+        document.head.appendChild(link);
+      }
+      if (bioFontPreview) bioFontPreview.style.fontFamily = "'" + fontName + "', sans-serif";
+    }
+
+    // Preview current font on load
+    loadAndPreviewFont(bioFontSelect.value);
+
+    bioFontSelect.addEventListener('change', () => {
+      const fontName = bioFontSelect.value;
+      loadAndPreviewFont(fontName);
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.bioFont = fontName;
+      saveAppearance({ bioFont: fontName });
+      if (window.updatePreview) window.updatePreview();
+    });
+  }
 
   // Basic field saves (display_name, bio)
   container.querySelectorAll('[data-save-basic]').forEach(el => {

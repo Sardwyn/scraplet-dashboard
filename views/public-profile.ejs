@@ -106,8 +106,14 @@
     const _canvasBg = _appearance.canvasBg || '';
     const _canvasVideo = _appearance.canvasVideo || '';
     const _qrEnabled = _appearance.qrEnabled !== false;
+    const _bioFont = _appearance.bioFont || '';
     const _bodyStyle = _canvasBg ? 'style="background:' + _canvasBg + '"' : '';
   %>
+  <% if (_bioFont) { %>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=<%= encodeURIComponent(_bioFont).replace(/%20/g, '+') %>:wght@400;500;600&display=swap" rel="stylesheet" />
+  <% } %>
   <body class="min-h-screen text-white" <%- _bodyStyle %>>
     <% if (_canvasVideo) {
       // Detect YouTube URLs and convert to embed format

@@ -118,6 +118,7 @@
 
   // -------- Appearance from users.appearance --------
   const themeName = ((appearance && appearance.theme) || 'midnight').toLowerCase();
+  const bioFont   = (appearance && appearance.bioFont) ? String(appearance.bioFont) : '';
   const bgName    = ((appearance && appearance.background) || 'hero-dark').toLowerCase();
   const btnStyle  = ((appearance && appearance.buttonStyle) || 'solid').toLowerCase();
   const cardStyle = ((appearance && appearance.cardStyle) || 'glass').toLowerCase();
@@ -285,7 +286,7 @@
 
       <% if (sectionType === 'bio' && visible('bio')) { %>
         <% if (profile && profile.bio) { %>
-          <div class="pc-bio" data-section-type="bio"><%= profile.bio %></div>
+          <div class="pc-bio" data-section-type="bio"<% if (bioFont) { %> style="font-family:'<%= bioFont %>',sans-serif;"<% } %>><%= profile.bio %></div>
         <% } %>
       <% } %>
 
