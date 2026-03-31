@@ -284,30 +284,69 @@ function renderCanvasInspector() {
   const canvasVideo = appearance.canvasVideo || '';
   const qrEnabled = appearance.qrEnabled !== false;
 
+  // Detect if current bg is a gradient or solid colour
+  const isGradient = canvasBg.includes('gradient');
+  const solidColour = (!isGradient && canvasBg) ? canvasBg : '#0f172a';
+
   return `
     <div class="pe-inspector-section">
-      <div class="pe-inspector-label">Background Colour / Gradient</div>
-      <div class="pe-inspector-hint">Any valid CSS background value. Examples:<br/>
-        <code>#1a1a2e</code> · <code>linear-gradient(135deg, #667eea, #764ba2)</code>
-      </div>
-      <input type="text" class="pe-inspector-input" id="pi-canvas-bg"
-             value="${escHtml(canvasBg)}"
-             placeholder="e.g. #0f172a or linear-gradient(...)" />
-      <div class="pe-canvas-presets">
-        <button class="pe-canvas-preset" data-preset="#0f172a">Dark</button>
-        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0f172a,#1e1b4b)">Indigo</button>
-        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0f172a,#1a0a2e)">Purple</button>
-        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0c1a0c,#0f2a1a)">Green</button>
-        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#1a0a0a,#2a0f0f)">Red</button>
-        <button class="pe-canvas-preset" data-preset="">None</button>
+      <div class="pe-inspector-label">Background Type</div>
+      <div class="pe-bg-type-tabs">
+        <button class="pe-bg-tab ${!isGradient ? 'active' : ''}" data-bg-tab="solid">Solid</button>
+        <button class="pe-bg-tab ${isGradient ? 'active' : ''}" data-bg-tab="gradient">Gradient</button>
       </div>
     </div>
+
+    <!-- Solid colour picker -->
+    <div class="pe-inspector-section pe-bg-panel" id="pe-bg-solid" style="${isGradient ? 'display:none' : ''}">
+      <div class="pe-inspector-label">Colour</div>
+      <div class="pe-colour-picker-row">
+        <input type="color" id="pi-canvas-colour" value="${solidColour.startsWith('#') ? solidColour : '#0f172a'}"
+               class="pe-colour-input" />
+        <input type="text" id="pi-canvas-colour-hex" class="pe-inspector-input pe-colour-hex"
+               value="${escHtml(solidColour)}" placeholder="#0f172a" />
+      </div>
+      <div class="pe-canvas-presets">
+        <button class="pe-canvas-preset" data-preset="#0f172a" style="background:#0f172a;">Dark</button>
+        <button class="pe-canvas-preset" data-preset="#1a1a2e" style="background:#1a1a2e;">Navy</button>
+        <button class="pe-canvas-preset" data-preset="#0d1117" style="background:#0d1117;">Black</button>
+        <button class="pe-canvas-preset" data-preset="#1a0a2e" style="background:#1a0a2e;">Purple</button>
+        <button class="pe-canvas-preset" data-preset="#0a1a0a" style="background:#0a1a0a;">Green</button>
+        <button class="pe-canvas-preset" data-preset="#1a0a0a" style="background:#1a0a0a;">Red</button>
+      </div>
+    </div>
+
+    <!-- Gradient builder -->
+    <div class="pe-inspector-section pe-bg-panel" id="pe-bg-gradient" style="${!isGradient ? 'display:none' : ''}">
+      <div class="pe-inspector-label">Gradient</div>
+      <div class="pe-gradient-row">
+        <input type="color" id="pi-grad-from" value="#0f172a" class="pe-colour-input" />
+        <span class="pe-gradient-arrow">→</span>
+        <input type="color" id="pi-grad-to" value="#1e1b4b" class="pe-colour-input" />
+      </div>
+      <div class="pe-inspector-label" style="margin-top:8px;">Direction</div>
+      <div class="pe-canvas-presets">
+        <button class="pe-canvas-preset pe-grad-dir active" data-dir="135deg">↘ Diagonal</button>
+        <button class="pe-canvas-preset pe-grad-dir" data-dir="180deg">↓ Down</button>
+        <button class="pe-canvas-preset pe-grad-dir" data-dir="90deg">→ Right</button>
+        <button class="pe-canvas-preset pe-grad-dir" data-dir="45deg">↗ Up-right</button>
+      </div>
+      <div class="pe-canvas-presets" style="margin-top:8px;">
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#0f172a,#1e1b4b)">Indigo</button>
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#0f172a,#1a0a2e)">Purple</button>
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#0c1a0c,#0f2a1a)">Forest</button>
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#1a0a0a,#2a0f0f)">Crimson</button>
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#0a0a1a,#1a1a0a)">Olive</button>
+        <button class="pe-canvas-preset" data-gradient="linear-gradient(135deg,#0f172a,#0a2a2a)">Teal</button>
+      </div>
+    </div>
+
     <div class="pe-inspector-section">
       <div class="pe-inspector-label">Background Video URL</div>
-      <div class="pe-inspector-hint">Paste a YouTube URL or a direct .mp4/.webm link. Plays muted and looped behind the card.</div>
+      <div class="pe-inspector-hint">YouTube URL or direct .mp4/.webm link. Plays muted and looped.</div>
       <input type="text" class="pe-inspector-input" id="pi-canvas-video"
              value="${escHtml(canvasVideo)}"
-             placeholder="https://example.com/background.mp4" />
+             placeholder="https://youtube.com/watch?v=... or video.mp4" />
     </div>
     <div class="pe-inspector-section">
       <label class="pe-inspector-toggle-row">
@@ -393,22 +432,71 @@ function wireInspector(sectionType) {
     });
   });
 
-  // Canvas background wiring
-  const canvasBgInput = container.querySelector('#pi-canvas-bg');
-  if (canvasBgInput) {
-    canvasBgInput.addEventListener('input', () => {
-      editorState.appearance = editorState.appearance || {};
-      editorState.appearance.canvasBg = canvasBgInput.value;
-      saveAppearance({ canvasBg: canvasBgInput.value });
+  // Canvas background type tabs
+  container.querySelectorAll('[data-bg-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const type = tab.dataset.bgTab;
+      container.querySelectorAll('[data-bg-tab]').forEach(t => t.classList.toggle('active', t === tab));
+      const solidPanel = container.querySelector('#pe-bg-solid');
+      const gradPanel = container.querySelector('#pe-bg-gradient');
+      if (solidPanel) solidPanel.style.display = type === 'solid' ? '' : 'none';
+      if (gradPanel) gradPanel.style.display = type === 'gradient' ? '' : 'none';
+    });
+  });
+
+  // Solid colour picker
+  const colourInput = container.querySelector('#pi-canvas-colour');
+  const colourHex = container.querySelector('#pi-canvas-colour-hex');
+  function applyColour(val) {
+    editorState.appearance = editorState.appearance || {};
+    editorState.appearance.canvasBg = val;
+    saveAppearance({ canvasBg: val });
+  }
+  if (colourInput) {
+    colourInput.addEventListener('input', () => {
+      if (colourHex) colourHex.value = colourInput.value;
+      applyColour(colourInput.value);
     });
   }
+  if (colourHex) {
+    colourHex.addEventListener('blur', () => {
+      if (colourInput) colourInput.value = colourHex.value;
+      applyColour(colourHex.value);
+    });
+  }
+
+  // Gradient builder
+  let gradDir = '135deg';
+  container.querySelectorAll('[data-dir]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      gradDir = btn.dataset.dir;
+      container.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('active', b === btn));
+      buildGradient();
+    });
+  });
+  function buildGradient() {
+    const from = container.querySelector('#pi-grad-from')?.value || '#0f172a';
+    const to = container.querySelector('#pi-grad-to')?.value || '#1e1b4b';
+    const val = `linear-gradient(${gradDir},${from},${to})`;
+    applyColour(val);
+  }
+  container.querySelector('#pi-grad-from')?.addEventListener('input', buildGradient);
+  container.querySelector('#pi-grad-to')?.addEventListener('input', buildGradient);
+
+  // Gradient presets
+  container.querySelectorAll('[data-gradient]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyColour(btn.dataset.gradient);
+    });
+  });
+
+  // Solid colour presets
   container.querySelectorAll('[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const val = btn.dataset.preset;
-      if (canvasBgInput) canvasBgInput.value = val;
-      editorState.appearance = editorState.appearance || {};
-      editorState.appearance.canvasBg = val;
-      saveAppearance({ canvasBg: val });
+      if (colourInput && !val.includes('gradient')) colourInput.value = val;
+      if (colourHex && !val.includes('gradient')) colourHex.value = val;
+      applyColour(val);
     });
   });
   const canvasVideoInput = container.querySelector('#pi-canvas-video');

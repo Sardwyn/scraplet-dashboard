@@ -219,6 +219,24 @@
 }
 .pe-canvas-preset:hover { border-color: #6366f1; color: #a5b4fc; }
 
+
+/* Colour picker */
+.pe-bg-type-tabs { display: flex; gap: 4px; margin-bottom: 4px; }
+.pe-bg-tab {
+  flex: 1; padding: 5px; border-radius: 6px; border: 1px solid #334155;
+  background: #0f172a; color: #94a3b8; font-size: 12px; cursor: pointer;
+}
+.pe-bg-tab.active { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.pe-colour-picker-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pe-colour-input {
+  width: 40px; height: 32px; border: 1px solid #334155; border-radius: 6px;
+  padding: 2px; background: #0f172a; cursor: pointer; flex-shrink: 0;
+}
+.pe-colour-hex { flex: 1; }
+.pe-gradient-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pe-gradient-arrow { color: #64748b; font-size: 16px; }
+.pe-grad-dir.active { border-color: #6366f1; color: #a5b4fc; }
+
 </style>
 
 <!-- =============================================== -->
@@ -373,9 +391,13 @@
         fetch('/dashboard/api/profile/appearance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          credentials: 'same-origin',
           body: JSON.stringify({ theme: theme }),
-        }).catch(() => {});
+        }).then(r => {
+          console.log('[theme] save status:', r.status, r.url);
+          return r.json();
+        }).then(d => console.log('[theme] response:', JSON.stringify(d)))
+          .catch(e => console.warn('[theme] error:', e.message));
         // Re-render preview with new theme
         if (window.updatePreview) window.updatePreview();
       });
