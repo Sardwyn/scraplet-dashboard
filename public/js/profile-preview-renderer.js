@@ -741,11 +741,42 @@ sections.forEach((section) => {
 /**
  * Mount into #preview-root
  */
+// Debounce timer for server-render calls
+let _renderDebounceTimer = null;
+
 export function renderPreview() {
   const root = document.getElementById("preview-root");
   if (!root) return;
 
-  root.innerHTML = buildPublicCardHTML(rendererState);
+  // Debounce rapid calls (e.g. while typing)
+  clearTimeout(_renderDebounceTimer);
+  _renderDebounceTimer = setTimeout(() => _doServerRender(root), 120);
+}
+
+async function _doServerRender(root) {
+  try {
+    const resp = await fetch("/dashboard/api/profile/preview-render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rendererState),
+    });
+
+    if (!resp.ok) {
+      console.warn("[profile-preview-renderer] server render failed:", resp.status);
+      // Fallback to client-side render
+      root.innerHTML = buildPublicCardHTML(rendererState);
+    } else {
+      const data = await resp.json();
+      if (data.ok && data.html) {
+        root.innerHTML = data.html;
+      } else {
+        root.innerHTML = buildPublicCardHTML(rendererState);
+      }
+    }
+  } catch (err) {
+    console.warn("[profile-preview-renderer] fetch error, falling back:", err.message);
+    root.innerHTML = buildPublicCardHTML(rendererState);
+  }
 
   // Wire the "+" tile on the card to the sidebar "Add button" control
   const addTile = root.querySelector("#pc-add-button-card");
@@ -766,10 +797,7 @@ export function renderPreview() {
     try {
       window.onProfilePreviewRendered();
     } catch (err) {
-      console.error(
-        "[profile-preview-renderer] onProfilePreviewRendered error",
-        err
-      );
+      console.error("[profile-preview-renderer] onProfilePreviewRendered error", err);
     }
   }
 }

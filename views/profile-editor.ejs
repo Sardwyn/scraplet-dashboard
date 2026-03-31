@@ -108,15 +108,33 @@
       </label>
 
 
-      <label class="block">
-        <span class="text-sm text-slate-300">Cover Image URL</span>
-        <input
-          id="pe-cover-image"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= profile.cover_image_url || '' %>"
+      <!-- Cover image upload -->
+      <div class="block">
+        <span class="text-sm text-slate-300">Cover Image</span>
+        <% if (profile && profile.cover_image_url) { %>
+          <div class="mt-2 mb-2 rounded overflow-hidden" style="max-height:120px;">
+            <img src="<%= profile.cover_image_url %>" alt="Cover" class="w-full object-cover" style="max-height:120px;" />
+          </div>
+        <% } %>
+        <form
+          method="POST"
+          action="/dashboard/api/profile/cover"
+          enctype="multipart/form-data"
+          class="mt-1"
         >
-      </label>
+          <div class="text-xs text-slate-400 mb-2">Upload a wide banner image. Max 8MB. JPG, PNG, WebP.</div>
+          <input
+            type="file"
+            name="cover"
+            accept="image/*"
+            class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4
+                   file:rounded file:border-0 file:text-sm file:font-semibold
+                   file:bg-slate-700 file:text-white hover:file:bg-slate-600
+                   cursor-pointer"
+            onchange="this.closest('form').submit()"
+          />
+        </form>
+      </div>
     </div>
 
       <div class="pt-2 flex items-center justify-end">
