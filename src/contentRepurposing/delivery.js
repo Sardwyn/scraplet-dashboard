@@ -39,7 +39,7 @@ export async function deliverContentPack(packId, userId) {
     const message = [
       `📦 **Content Pack — Session ${pack.session_id.slice(0, 8)}**`,
       ``,
-      `**🐦 Twitter/X Thread:**`,
+      `**🐦 Twitter/X Thread** *(copy & paste to post):*`,
       `\`\`\``,
       tweetLines,
       `\`\`\``,

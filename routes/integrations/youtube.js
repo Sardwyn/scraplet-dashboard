@@ -16,6 +16,7 @@ const YT_CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels";
 const YT_SCOPES = [
   "https://www.googleapis.com/auth/youtube.readonly",
   "https://www.googleapis.com/auth/youtube.force-ssl",
+  "https://www.googleapis.com/auth/youtube.upload",
   "openid",
   "email",
   "profile",

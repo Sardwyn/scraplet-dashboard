@@ -151,7 +151,24 @@ client.on("messageReactionAdd", async (reaction, user) => {
       const { packId } = packEntry;
       if (emoji === '✅') {
         await db.query("UPDATE content_packs SET status = 'approved', approved_at = NOW() WHERE pack_id = $1", [packId]);
-        await msg.reply('Content pack approved.').catch(() => {});
+        // Attempt YouTube draft creation
+        try {
+          const { createYoutubeDraft } = await import('../contentRepurposing/youtubePublisher.js');
+          const { userId } = packEntry;
+          const { rows: [pack] } = await db.query('SELECT * FROM content_packs WHERE pack_id = $1', [packId]);
+          if (pack && userId) {
+            const draftId = await createYoutubeDraft(userId, JSON.parse(pack.shorts_script || '{}'));
+            if (draftId) {
+              await db.query('UPDATE content_packs SET youtube_draft_id = $1 WHERE pack_id = $2', [draftId, packId]);
+              await msg.reply(`Content pack approved. YouTube draft created: https://studio.youtube.com/video/${draftId}/edit`).catch(() => {});
+            } else {
+              await msg.reply('Content pack approved. (YouTube draft skipped — no YouTube connection found.)').catch(() => {});
+            }
+          }
+        } catch (e) {
+          await msg.reply('Content pack approved.').catch(() => {});
+          console.error('[contentPack] YouTube draft error:', e.message);
+        }
         console.log('[contentPack] approved', packId);
       } else if (emoji === '❌') {
         await db.query("UPDATE content_packs SET status = 'discarded' WHERE pack_id = $1", [packId]);
