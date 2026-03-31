@@ -425,7 +425,8 @@
 /* Shape variants */
 .pc-button--shape-pill { border-radius: 999px; }
 .pc-button--shape-rounded { border-radius: 1rem; }
-.pc-button--shape-square { border-radius: 0.75rem; }
+.pc-button--shape-soft { border-radius: 0.5rem; }
+.pc-button--shape-square { border-radius: 0.25rem; }
 
 /* Size variants */
 .pc-button--size-sm { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
@@ -473,6 +474,7 @@
 
 /* Shape variants */
 .pc-button--shape-pill    { border-radius: 999px; }
+.pc-button--shape-soft    { border-radius: 0.5rem; }
 .pc-button--shape-rounded { border-radius: 1rem; }
 .pc-button--shape-square  { border-radius: 0.75rem; }
 

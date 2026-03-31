@@ -316,7 +316,13 @@
               var btn = visibleButtons[i];
               if (!btn) { i++; continue; }
 
-              var size = String(btn.size || 'sm').toLowerCase();
+              function buttonClasses(btn, fallbackSize) {
+              var shape = String((btn && btn.shape) || 'pill').toLowerCase();
+              var sz = String((btn && btn.size) || fallbackSize || 'sm').toLowerCase();
+              return 'pc-button pc-button--shape-' + shape + ' pc-button--size-' + sz;
+            }
+
+            var size = String(btn.size || 'sm').toLowerCase();
               var featuredUrl = btn.featured_image_url || '';
               var hasImage = !!featuredUrl;
               var accent = accentMeta(btn);
@@ -394,7 +400,7 @@
                         var a3 = accentMeta(b3);
                     %>
                       <a href="<%- b3.url || '#' %>" target="_blank"
-                         class="pc-button pc-button--shape-pill pc-button--size-md"
+                         class="<%- buttonClasses(b3, 'md') %>"
                          <% if (a3.style) { %>style="<%- a3.style %>"<% } %>
                          data-accent-target="<%- a3.target %>">
                         <span class="pc-button-label"><%- b3.label || 'Link' %></span>
@@ -407,7 +413,7 @@
               }
           %>
               <a href="<%- btn.url || '#' %>" target="_blank"
-                 class="pc-button pc-button--shape-pill pc-button--size-sm"
+                 class="<%- buttonClasses(btn, 'sm') %>"
                  <% if (accent.style) { %>style="<%- accent.style %>"<% } %>
                  data-accent-target="<%- accent.target %>">
                 <span class="pc-button-label"><%- btn.label || 'Link' %></span>
