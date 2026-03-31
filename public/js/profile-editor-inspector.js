@@ -86,6 +86,9 @@ function renderSectionInspector(sectionType, schema) {
     case 'background':
       html += renderBackgroundInspector();
       break;
+    case 'canvas':
+      html += renderCanvasInspector();
+      break;
     default:
       html += `<p class="pe-inspector-empty">Select a section to edit its properties.</p>`;
   }
@@ -275,6 +278,46 @@ function renderBackgroundInspector() {
   `;
 }
 
+function renderCanvasInspector() {
+  const appearance = editorState.appearance || {};
+  const canvasBg = appearance.canvasBg || '';
+  const canvasVideo = appearance.canvasVideo || '';
+  const qrEnabled = appearance.qrEnabled !== false;
+
+  return `
+    <div class="pe-inspector-section">
+      <div class="pe-inspector-label">Background Colour / Gradient</div>
+      <div class="pe-inspector-hint">Any valid CSS background value. Examples:<br/>
+        <code>#1a1a2e</code> · <code>linear-gradient(135deg, #667eea, #764ba2)</code>
+      </div>
+      <input type="text" class="pe-inspector-input" id="pi-canvas-bg"
+             value="${escHtml(canvasBg)}"
+             placeholder="e.g. #0f172a or linear-gradient(...)" />
+      <div class="pe-canvas-presets">
+        <button class="pe-canvas-preset" data-preset="#0f172a">Dark</button>
+        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0f172a,#1e1b4b)">Indigo</button>
+        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0f172a,#1a0a2e)">Purple</button>
+        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#0c1a0c,#0f2a1a)">Green</button>
+        <button class="pe-canvas-preset" data-preset="linear-gradient(135deg,#1a0a0a,#2a0f0f)">Red</button>
+        <button class="pe-canvas-preset" data-preset="">None</button>
+      </div>
+    </div>
+    <div class="pe-inspector-section">
+      <div class="pe-inspector-label">Background Video URL</div>
+      <div class="pe-inspector-hint">Direct link to an MP4 or WebM video. Plays muted and looped behind the card.</div>
+      <input type="text" class="pe-inspector-input" id="pi-canvas-video"
+             value="${escHtml(canvasVideo)}"
+             placeholder="https://example.com/background.mp4" />
+    </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-toggle-row">
+        <input type="checkbox" id="pi-qr-enabled" ${qrEnabled ? 'checked' : ''} />
+        <span>Show QR code on public profile</span>
+      </label>
+    </div>
+  `;
+}
+
 // ── Wiring ────────────────────────────────────────────────────────────────────
 
 let basicSaveTimer = null;
@@ -350,6 +393,41 @@ function wireInspector(sectionType) {
     });
   });
 
+  // Canvas background wiring
+  const canvasBgInput = container.querySelector('#pi-canvas-bg');
+  if (canvasBgInput) {
+    canvasBgInput.addEventListener('input', () => {
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.canvasBg = canvasBgInput.value;
+      saveAppearance({ canvasBg: canvasBgInput.value });
+    });
+  }
+  container.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.dataset.preset;
+      if (canvasBgInput) canvasBgInput.value = val;
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.canvasBg = val;
+      saveAppearance({ canvasBg: val });
+    });
+  });
+  const canvasVideoInput = container.querySelector('#pi-canvas-video');
+  if (canvasVideoInput) {
+    canvasVideoInput.addEventListener('change', () => {
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.canvasVideo = canvasVideoInput.value;
+      saveAppearance({ canvasVideo: canvasVideoInput.value });
+    });
+  }
+  const qrToggle = container.querySelector('#pi-qr-enabled');
+  if (qrToggle) {
+    qrToggle.addEventListener('change', () => {
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.qrEnabled = qrToggle.checked;
+      saveAppearance({ qrEnabled: qrToggle.checked });
+    });
+  }
+
   // Cover zone click → open file picker
   const coverZone = container.querySelector('#pe-cover-drop-zone');
   if (coverZone) {
@@ -416,6 +494,16 @@ async function saveSocials() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ x: p.x, youtube: p.youtube, twitch: p.twitch, kick: p.kick }),
+    });
+  } catch { /* silent */ }
+}
+
+async function saveAppearance(updates) {
+  try {
+    await fetch('/dashboard/api/profile/appearance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
     });
   } catch { /* silent */ }
 }

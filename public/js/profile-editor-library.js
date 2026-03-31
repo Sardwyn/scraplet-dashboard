@@ -48,7 +48,9 @@ export function renderLibrary() {
       const section = sections.find(s => s.type === type);
       const isActive = section ? section.visible !== false : false;
 
-      if (!isActive) {
+      // Canvas and background are special — they don't have layout visibility
+      const noLayoutSections = ['canvas', 'background'];
+      if (!isActive && !noLayoutSections.includes(type)) {
         // Add section
         editorState.layout = toggleSectionVisibility(editorState.layout, type, true);
         saveLayout();

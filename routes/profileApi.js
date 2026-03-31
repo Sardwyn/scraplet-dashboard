@@ -32,6 +32,9 @@ const DEFAULT_APPEARANCE = {
   background: 'hero-dark',
   buttonStyle: 'solid',
   cardStyle: 'glass',
+  canvasBg: '',               // CSS background value for the page canvas
+  canvasVideo: '',            // URL for background video
+  qrEnabled: true,            // show QR code toggle on public profile
 };
 
 function normaliseAppearance(raw) {
@@ -50,6 +53,16 @@ function normaliseAppearance(raw) {
   // Simple passthrough for the rest for now
   if (raw.background && typeof raw.background === 'string') {
     out.background = raw.background.trim();
+  }
+
+  if (raw.canvasBg !== undefined) {
+    out.canvasBg = typeof raw.canvasBg === 'string' ? raw.canvasBg.slice(0, 500) : '';
+  }
+  if (raw.canvasVideo !== undefined) {
+    out.canvasVideo = typeof raw.canvasVideo === 'string' ? raw.canvasVideo.slice(0, 500) : '';
+  }
+  if (raw.qrEnabled !== undefined) {
+    out.qrEnabled = raw.qrEnabled !== false;
   }
 
   if (raw.buttonStyle && typeof raw.buttonStyle === 'string') {

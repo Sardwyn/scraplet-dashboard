@@ -102,9 +102,22 @@
     </style>
   </head>
 
-  <body class="min-h-screen bg-slate-950 text-white">
+  <%
+    const _canvasBg = _appearance.canvasBg || '';
+    const _canvasVideo = _appearance.canvasVideo || '';
+    const _qrEnabled = _appearance.qrEnabled !== false;
+    const _bodyStyle = _canvasBg ? 'style="background:' + _canvasBg + '"' : '';
+  %>
+  <body class="min-h-screen text-white" <%- _bodyStyle %>>
+    <% if (_canvasVideo) { %>
+    <video autoplay muted loop playsinline
+           style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+      <source src="<%= _canvasVideo %>" />
+    </video>
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1;pointer-events:none;"></div>
+    <% } %>
 
-    <main class="min-h-screen flex items-center justify-center p-6">
+    <main class="min-h-screen flex items-center justify-center p-6" style="position:relative;z-index:2;">
       <div class="w-full max-w-2xl">
         <%- include("partials/profile-card", { profile: _profile, layout: _layout, sectionVisibility:
           _sectionVisibility, customButtons: _customButtons, appearance: _appearance, stats: _stats, marketability:
@@ -112,7 +125,7 @@
       </div>
     </main>
 
-    <% if (_profile && _profile.username) { %>
+    <% if (_profile && _profile.username && _qrEnabled) { %>
       <div class="profile-qr" data-profile-qr>
         <button class="profile-qr-toggle" type="button" aria-label="Show QR">
           QR

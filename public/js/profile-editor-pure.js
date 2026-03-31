@@ -77,6 +77,15 @@ const SECTION_SCHEMAS = {
       { key: 'cover_image_url', type: 'image-upload', label: 'Cover / Background Image' },
     ],
   },
+  canvas: {
+    label: 'Canvas',
+    icon: '🎨',
+    fields: [
+      { key: 'canvasBg', type: 'text', label: 'Background (CSS colour or gradient)' },
+      { key: 'canvasVideo', type: 'text', label: 'Background Video URL' },
+      { key: 'qrEnabled', type: 'toggle', label: 'Show QR code on profile' },
+    ],
+  },
   contact: {
     label: 'Contact',
     icon: '✉️',
