@@ -497,7 +497,8 @@ function wireButtonsInspector(container) {
       button.visible = button.visible === false ? true : false;
       await fetch(`/dashboard/api/profile/buttons/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({ ...button, visible: button.visible }),
       });
@@ -622,7 +623,8 @@ async function saveButton(id, button) {
   try {
     await fetch(`/dashboard/api/profile/buttons/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({
         label: button.label,
@@ -939,7 +941,8 @@ async function saveBasic() {
   try {
     await fetch('/dashboard/api/profile/basic', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ display_name: p.display_name, bio: p.bio, tags: p.tags }),
     });
@@ -951,7 +954,8 @@ async function saveSocials() {
   try {
     await fetch('/dashboard/api/profile/socials', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ x: p.x, youtube: p.youtube, twitch: p.twitch, kick: p.kick }),
     });
@@ -962,7 +966,8 @@ async function saveAppearance(updates) {
   try {
     await fetch('/dashboard/api/profile/appearance', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify(updates),
     });
@@ -973,7 +978,8 @@ async function saveLayout() {
   try {
     await fetch('/dashboard/api/profile/layout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json',
+      'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ layout: editorState.layout }),
     });

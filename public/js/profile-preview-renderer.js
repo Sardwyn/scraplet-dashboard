@@ -757,7 +757,7 @@ async function _doServerRender(root) {
   try {
     const resp = await fetch("/dashboard/api/profile/preview-render", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       credentials: "same-origin",
       body: JSON.stringify(rendererState),
     });

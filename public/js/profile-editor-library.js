@@ -68,7 +68,7 @@ async function saveLayout() {
   try {
     await fetch('/dashboard/api/profile/layout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ layout: editorState.layout }),
     });
