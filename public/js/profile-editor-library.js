@@ -69,6 +69,7 @@ async function saveLayout() {
     await fetch('/dashboard/api/profile/layout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ layout: editorState.layout }),
     });
   } catch { /* silent */ }

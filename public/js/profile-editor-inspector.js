@@ -304,7 +304,7 @@ function renderCanvasInspector() {
     </div>
     <div class="pe-inspector-section">
       <div class="pe-inspector-label">Background Video URL</div>
-      <div class="pe-inspector-hint">Direct link to an MP4 or WebM video. Plays muted and looped behind the card.</div>
+      <div class="pe-inspector-hint">Direct link to an MP4 or WebM video. Plays muted and looped behind the card.<br/><strong>Note:</strong> YouTube links won't work — needs a direct .mp4 or .webm URL.</div>
       <input type="text" class="pe-inspector-input" id="pi-canvas-video"
              value="${escHtml(canvasVideo)}"
              placeholder="https://example.com/background.mp4" />
@@ -413,7 +413,7 @@ function wireInspector(sectionType) {
   });
   const canvasVideoInput = container.querySelector('#pi-canvas-video');
   if (canvasVideoInput) {
-    canvasVideoInput.addEventListener('change', () => {
+    canvasVideoInput.addEventListener('blur', () => {
       editorState.appearance = editorState.appearance || {};
       editorState.appearance.canvasVideo = canvasVideoInput.value;
       saveAppearance({ canvasVideo: canvasVideoInput.value });
@@ -482,6 +482,7 @@ async function saveBasic() {
     await fetch('/dashboard/api/profile/basic', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ display_name: p.display_name, bio: p.bio, tags: p.tags }),
     });
   } catch { /* silent */ }
@@ -493,6 +494,7 @@ async function saveSocials() {
     await fetch('/dashboard/api/profile/socials', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ x: p.x, youtube: p.youtube, twitch: p.twitch, kick: p.kick }),
     });
   } catch { /* silent */ }
@@ -503,6 +505,7 @@ async function saveAppearance(updates) {
     await fetch('/dashboard/api/profile/appearance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(updates),
     });
   } catch { /* silent */ }
@@ -513,6 +516,7 @@ async function saveLayout() {
     await fetch('/dashboard/api/profile/layout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ layout: editorState.layout }),
     });
   } catch { /* silent */ }

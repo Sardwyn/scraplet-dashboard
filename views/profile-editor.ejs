@@ -373,6 +373,7 @@
         fetch('/dashboard/api/profile/appearance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ theme: theme }),
         }).catch(() => {});
         // Re-render preview with new theme
