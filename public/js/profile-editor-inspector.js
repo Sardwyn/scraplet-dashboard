@@ -30,47 +30,11 @@ export function renderInspector(sectionType) {
 // ── Global settings (no selection) ───────────────────────────────────────────
 
 function renderGlobalSettings() {
-  const appearance = editorState.appearance || {};
-  const layout = editorState.layout || {};
-  const theme = layout.theme || {};
-  const coverUrl = editorState.profile?.cover_image_url;
-
   return `
     <div class="pe-inspector-global-hint">
-      Click a section in the preview to edit it, or configure global settings below.
-    </div>
-
-    <div class="pe-inspector-section">
-      <div class="pe-inspector-label">Background / Cover Image</div>
-      <div class="pe-inspector-cover-zone" id="pe-cover-drop-zone">
-        ${coverUrl ? `
-          <img src="${coverUrl}" alt="Cover" class="pe-inspector-cover-img" />
-          <div class="pe-inspector-cover-overlay">
-            <span>Change cover</span>
-          </div>
-        ` : `
-          <div class="pe-inspector-cover-placeholder">
-            <span class="pe-inspector-cover-icon">🖼️</span>
-            <span>Upload cover image</span>
-            <span class="pe-inspector-hint">Wide banner · Max 8MB · JPG, PNG, WebP</span>
-          </div>
-        `}
-        <form method="POST" action="/dashboard/api/profile/cover" enctype="multipart/form-data"
-              id="pe-cover-form" style="display:none;">
-          <input type="file" name="cover" accept="image/*" id="pe-cover-file-input"
-                 onchange="this.closest('form').submit()" />
-        </form>
-      </div>
-    </div>
-
-    <div class="pe-inspector-section">
-      <div class="pe-inspector-label">Theme</div>
-      <div class="pe-theme-tiles">
-        ${['midnight','kick','neon','soft','ocean','forest'].map(t => `
-          <button class="pe-theme-tile ${(appearance.background || theme.color || 'midnight') === t ? 'active' : ''}"
-                  data-theme="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</button>
-        `).join('')}
-      </div>
+      Click any section in the preview to edit its properties.<br/>
+      Click the background area at the top to change the cover image.<br/>
+      Use the theme buttons below the preview to hot-swap themes.
     </div>
   `;
 }
@@ -118,6 +82,9 @@ function renderSectionInspector(sectionType, schema) {
       break;
     case 'contact':
       html += renderContactInspector(layout);
+      break;
+    case 'background':
+      html += renderBackgroundInspector();
       break;
     default:
       html += `<p class="pe-inspector-empty">Select a section to edit its properties.</p>`;
@@ -278,6 +245,36 @@ function renderContactInspector(layout) {
   `;
 }
 
+function renderBackgroundInspector() {
+  const coverUrl = editorState.profile?.cover_image_url;
+  return `
+    <div class="pe-inspector-section">
+      <div class="pe-inspector-label">Cover / Background Image</div>
+      <div class="pe-inspector-cover-zone" id="pe-cover-drop-zone">
+        ${coverUrl ? `
+          <img src="${coverUrl}" alt="Cover" class="pe-inspector-cover-img" />
+          <div class="pe-inspector-cover-overlay"><span>Change image</span></div>
+        ` : `
+          <div class="pe-inspector-cover-placeholder">
+            <span class="pe-inspector-cover-icon">🖼️</span>
+            <span>Upload cover image</span>
+            <span class="pe-inspector-hint">Wide banner · Max 8MB · JPG, PNG, WebP</span>
+          </div>
+        `}
+        <form method="POST" action="/dashboard/api/profile/cover" enctype="multipart/form-data"
+              id="pe-cover-form" style="display:none;">
+          <input type="file" name="cover" accept="image/*" id="pe-cover-file-input"
+                 onchange="this.closest('form').submit()" />
+        </form>
+      </div>
+      <div class="pe-inspector-hint" style="margin-top:8px;">
+        This image appears as the hero banner at the top of your profile card.
+        Future: gradients, solid colours, and video backgrounds.
+      </div>
+    </div>
+  `;
+}
+
 // ── Wiring ────────────────────────────────────────────────────────────────────
 
 let basicSaveTimer = null;
@@ -287,20 +284,6 @@ let layoutSaveTimer = null;
 function wireInspector(sectionType) {
   const container = document.getElementById(INSPECTOR_ID);
   if (!container) return;
-
-  // Theme tiles
-  container.querySelectorAll('[data-theme]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      editorState.layout = editorState.layout || {};
-      editorState.layout.theme = editorState.layout.theme || {};
-      editorState.layout.theme.color = btn.dataset.theme;
-      editorState.appearance = editorState.appearance || {};
-      editorState.appearance.background = btn.dataset.theme;
-      container.querySelectorAll('[data-theme]').forEach(b => b.classList.toggle('active', b === btn));
-      saveLayout();
-      if (window.updatePreview) window.updatePreview();
-    });
-  });
 
   // Basic field saves (display_name, bio)
   container.querySelectorAll('[data-save-basic]').forEach(el => {
@@ -366,6 +349,15 @@ function wireInspector(sectionType) {
       if (window.updatePreview) window.updatePreview();
     });
   });
+
+  // Cover zone click → open file picker
+  const coverZone = container.querySelector('#pe-cover-drop-zone');
+  if (coverZone) {
+    coverZone.addEventListener('click', () => {
+      const fi = document.getElementById('pe-cover-file-input');
+      if (fi) fi.click();
+    });
+  }
 
   // Remove section button
   container.querySelectorAll('[data-remove-section]').forEach(btn => {

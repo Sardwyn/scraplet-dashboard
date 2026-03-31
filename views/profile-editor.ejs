@@ -185,6 +185,26 @@
 }
 .pe-inspector-cover-icon { font-size: 24px; margin-bottom: 4px; }
 
+
+/* Theme hot-swap bar */
+.pe-preview-panel {
+  flex-direction: column;
+  gap: 0;
+}
+.pe-theme-bar {
+  display: flex; align-items: center; gap: 6px; padding: 10px 16px;
+  background: #0f172a; border-top: 1px solid #1e293b; flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.pe-theme-bar-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.pe-theme-bar-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;
+  background: #1e293b; color: #94a3b8; font-size: 12px; cursor: pointer;
+  transition: all 0.12s;
+}
+.pe-theme-bar-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+.pe-theme-bar-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; font-weight: 600; }
+
 </style>
 
 <!-- =============================================== -->
@@ -207,6 +227,15 @@
   <!-- ═══════════════════════════════════════════ -->
   <div class="pe-preview-panel">
     <div id="preview-root" class="pe-preview-root"></div>
+    <!-- Theme hot-swap bar -->
+    <div class="pe-theme-bar" id="pe-theme-bar">
+      <span class="pe-theme-bar-label">Theme:</span>
+      <% const currentTheme = (typeof appearance !== 'undefined' && appearance && appearance.background) || (typeof layout !== 'undefined' && layout && layout.theme && layout.theme.color) || 'midnight'; %>
+      <% ['midnight','kick','neon','soft','ocean','forest'].forEach(function(t) { %>
+        <button class="pe-theme-bar-btn <%= currentTheme === t ? 'active' : '' %>"
+                data-theme-bar="<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></button>
+      <% }); %>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════ -->
@@ -307,6 +336,28 @@
         const fileInput = document.getElementById('pe-cover-file-input');
         if (fileInput) fileInput.click();
       }
+    });
+
+
+    // Wire theme hot-swap bar
+    document.querySelectorAll('[data-theme-bar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.themeBar;
+        editorState.layout = editorState.layout || {};
+        editorState.layout.theme = editorState.layout.theme || {};
+        editorState.layout.theme.color = theme;
+        editorState.appearance = editorState.appearance || {};
+        editorState.appearance.background = theme;
+        // Update active state
+        document.querySelectorAll('[data-theme-bar]').forEach(b => b.classList.toggle('active', b === btn));
+        // Save layout
+        fetch('/dashboard/api/profile/layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ layout: editorState.layout }),
+        }).catch(() => {});
+        if (window.updatePreview) window.updatePreview();
+      });
     });
 
     window.updatePreview = () => {

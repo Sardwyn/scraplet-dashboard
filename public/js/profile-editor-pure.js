@@ -70,6 +70,13 @@ const SECTION_SCHEMAS = {
       { key: 'tts_enabled', type: 'toggle', label: 'Enable TTS on profile', settingsKey: true, endpoint: '/dashboard/api/profile/layout' },
     ],
   },
+  background: {
+    label: 'Background',
+    icon: '🖼️',
+    fields: [
+      { key: 'cover_image_url', type: 'image-upload', label: 'Cover / Background Image' },
+    ],
+  },
   contact: {
     label: 'Contact',
     icon: '✉️',
