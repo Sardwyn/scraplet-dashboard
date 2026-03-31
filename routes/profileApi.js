@@ -119,12 +119,16 @@ router.post(
         [relativePath, userId]
       );
 
-      return res.json({
-        ok: true,
-        cover_image_url: relativePath,
-      });
+      // Redirect back to editor (same pattern as avatar upload)
+      if (String(req.headers.accept || '').includes('text/html')) {
+        return res.redirect('/profile/editor?cover=ok');
+      }
+      return res.json({ ok: true, cover_image_url: relativePath });
     } catch (err) {
       console.error('[profileApi] POST /cover failed:', err);
+      if (String(req.headers.accept || '').includes('text/html')) {
+        return res.redirect('/profile/editor?cover=error');
+      }
       return res.status(500).json({ ok: false, error: 'Failed to upload cover' });
     }
   }
