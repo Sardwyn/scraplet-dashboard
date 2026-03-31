@@ -237,8 +237,8 @@
     <!-- Theme hot-swap bar -->
     <div class="pe-theme-bar" id="pe-theme-bar">
       <span class="pe-theme-bar-label">Theme:</span>
-      <% const currentTheme = (typeof appearance !== 'undefined' && appearance && appearance.background) || (typeof layout !== 'undefined' && layout && layout.theme && layout.theme.color) || 'midnight'; %>
-      <% ['midnight','kick','neon','soft','ocean','forest'].forEach(function(t) { %>
+      <% const currentTheme = (typeof appearance !== 'undefined' && appearance && (appearance.theme || appearance.background)) || 'midnight'; %>
+      <% ['midnight','kick','neon','soft','pixel'].forEach(function(t) { %>
         <button class="pe-theme-bar-btn <%= currentTheme === t ? 'active' : '' %>"
                 data-theme-bar="<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></button>
       <% }); %>
@@ -357,12 +357,16 @@
         editorState.appearance.background = theme;
         // Update active state
         document.querySelectorAll('[data-theme-bar]').forEach(b => b.classList.toggle('active', b === btn));
-        // Save appearance (correct endpoint for theme)
+        // Update editorState.appearance so preview-render gets the new theme
+        editorState.appearance = editorState.appearance || {};
+        editorState.appearance.theme = theme;
+        // Save to server
         fetch('/dashboard/api/profile/appearance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ theme: theme, background: theme }),
+          body: JSON.stringify({ theme: theme }),
         }).catch(() => {});
+        // Re-render preview with new theme
         if (window.updatePreview) window.updatePreview();
       });
     });
