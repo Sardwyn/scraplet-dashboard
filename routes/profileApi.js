@@ -35,7 +35,9 @@ const DEFAULT_APPEARANCE = {
   canvasBg: '',               // CSS background value for the page canvas
   canvasVideo: '',            // URL for background video
   qrEnabled: true,            // show QR code toggle on public profile
-  bioFont: '',                // Google Font name for bio text
+  bioFont: '',                // Google Font name for bio and name text
+  bioFontSize: 'md',          // bio text size: sm/md/lg
+  nameFontSize: 'md',         // display name size: sm/md/lg/xl
 };
 
 function normaliseAppearance(raw) {
@@ -67,6 +69,14 @@ function normaliseAppearance(raw) {
   }
   if (raw.bioFont !== undefined) {
     out.bioFont = typeof raw.bioFont === 'string' ? raw.bioFont.slice(0, 100) : '';
+  }
+  if (raw.bioFontSize !== undefined) {
+    const allowed = ['sm', 'md', 'lg'];
+    out.bioFontSize = allowed.includes(raw.bioFontSize) ? raw.bioFontSize : 'md';
+  }
+  if (raw.nameFontSize !== undefined) {
+    const allowed = ['sm', 'md', 'lg', 'xl'];
+    out.nameFontSize = allowed.includes(raw.nameFontSize) ? raw.nameFontSize : 'md';
   }
 
   if (raw.buttonStyle && typeof raw.buttonStyle === 'string') {

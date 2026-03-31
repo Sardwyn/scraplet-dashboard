@@ -118,7 +118,14 @@
 
   // -------- Appearance from users.appearance --------
   const themeName = ((appearance && appearance.theme) || 'midnight').toLowerCase();
-  const bioFont   = (appearance && appearance.bioFont) ? String(appearance.bioFont) : '';
+  const bioFont      = (appearance && appearance.bioFont) ? String(appearance.bioFont) : '';
+  const bioFontSize  = (appearance && appearance.bioFontSize) || 'md';
+  const nameFontSize = (appearance && appearance.nameFontSize) || 'md';
+  const bioSizeMap  = { sm: '12px', md: '14px', lg: '17px' };
+  const nameSizeMap = { sm: '16px', md: '20px', lg: '26px', xl: '32px' };
+  const bioSizePx   = bioSizeMap[bioFontSize]  || '14px';
+  const nameSizePx  = nameSizeMap[nameFontSize] || '20px';
+  const fontStyle   = bioFont ? ("font-family:'" + bioFont + "',sans-serif;") : '';
   const bgName    = ((appearance && appearance.background) || 'hero-dark').toLowerCase();
   const btnStyle  = ((appearance && appearance.buttonStyle) || 'solid').toLowerCase();
   const cardStyle = ((appearance && appearance.cardStyle) || 'glass').toLowerCase();
@@ -192,11 +199,11 @@
           </div>
 
           <div>
-            <div class="pc-display-name">
+            <div class="pc-display-name" style="<%- fontStyle %>font-size:<%- nameSizePx %>;">
               <%= (profile && (profile.display_name || profile.username)) || 'Your name' %>
             </div>
             <% if (profile && profile.username) { %>
-              <div class="pc-username">@<%= profile.username %></div>
+              <div class="pc-username" style="<%- fontStyle %>">@<%= profile.username %></div>
             <% } %>
           </div>
         </div>
@@ -286,7 +293,7 @@
 
       <% if (sectionType === 'bio' && visible('bio')) { %>
         <% if (profile && profile.bio) { %>
-          <div class="pc-bio" data-section-type="bio"<% if (bioFont) { %> style="font-family:'<%= bioFont %>',sans-serif;"<% } %>><%= profile.bio %></div>
+          <div class="pc-bio" data-section-type="bio" style="<%- fontStyle %>font-size:<%- bioSizePx %>;"><%= profile.bio %></div>
         <% } %>
       <% } %>
 

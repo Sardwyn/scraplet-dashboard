@@ -98,9 +98,18 @@ function renderSectionInspector(sectionType, schema) {
 }
 
 function renderAvatarInspector(profile) {
+  const appearance = editorState.appearance || {};
+  const FONTS = ['Inter','Roboto','Open Sans','Lato','Montserrat','Poppins','Raleway','Nunito','Source Sans 3','Oswald','Playfair Display','Merriweather','Ubuntu','Exo 2','Orbitron','Rajdhani','Bebas Neue','Righteous','Permanent Marker','Pacifico'];
+  const fontOptions = FONTS.map(f => `<option value="${f}" ${(appearance.bioFont||'')=== f ? 'selected':''}>${f}</option>`).join('');
+  const nameSizes = [
+    {v:'sm',l:'Small'},
+    {v:'md',l:'Medium'},
+    {v:'lg',l:'Large'},
+    {v:'xl',l:'XL'},
+  ];
   return `
     <div class="pe-inspector-section">
-      <div class="pe-inspector-label">Avatar</div>
+      <div class="pe-inspector-label">Avatar Image</div>
       ${profile.avatar_url ? `<div class="pe-inspector-avatar-preview"><img src="${profile.avatar_url}" alt="Avatar" /></div>` : ''}
       <form method="POST" action="/dashboard/api/profile/avatar" enctype="multipart/form-data" class="pe-inspector-upload-form">
         <div class="pe-inspector-upload-row">
@@ -114,12 +123,30 @@ function renderAvatarInspector(profile) {
              value="${escHtml(profile.display_name || '')}" maxlength="80"
              data-save-basic="display_name" />
     </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-label">Name Size</label>
+      <div class="pe-btn-shape-row">
+        ${nameSizes.map(s => `<button class="pe-shape-btn ${(appearance.nameFontSize||'md')===s.v?'active':''}" data-name-size="${s.v}">${s.l}</button>`).join('')}
+      </div>
+    </div>
+    <div class="pe-inspector-section">
+      <label class="pe-inspector-label">Font (applies to name &amp; bio)</label>
+      <select class="pe-inspector-input" id="pi-bio-font-avatar">
+        <option value="" ${!appearance.bioFont?'selected':''}>Default</option>
+        ${fontOptions}
+      </select>
+      <div class="pe-inspector-hint" id="pi-font-preview-avatar"
+           style="margin-top:6px;font-size:14px;padding:6px;background:#0f172a;border-radius:4px;">
+        The quick brown fox
+      </div>
+    </div>
   `;
 }
 
 function renderBioInspector(profile) {
   const bio = profile.bio || '';
   const appearance = editorState.appearance || {};
+  const bioSizes = [{v:'sm',l:'Small'},{v:'md',l:'Medium'},{v:'lg',l:'Large'}];
   return `
     <div class="pe-inspector-section">
       <label class="pe-inspector-label">Bio <span class="pe-inspector-counter" id="pi-bio-counter">${bio.length}/280</span></label>
@@ -129,35 +156,12 @@ function renderBioInspector(profile) {
       >${escHtml(bio)}</textarea>
     </div>
     <div class="pe-inspector-section">
-      <label class="pe-inspector-label">Font</label>
-      <select class="pe-inspector-input" id="pi-bio-font">
-        <option value="" ${!appearance.bioFont ? 'selected' : ''}>Default (system)</option>
-        <option value="Inter" ${(appearance.bioFont || '') === 'Inter' ? 'selected' : ''}>Inter</option>
-        <option value="Roboto" ${(appearance.bioFont || '') === 'Roboto' ? 'selected' : ''}>Roboto</option>
-        <option value="Open Sans" ${(appearance.bioFont || '') === 'Open Sans' ? 'selected' : ''}>Open Sans</option>
-        <option value="Lato" ${(appearance.bioFont || '') === 'Lato' ? 'selected' : ''}>Lato</option>
-        <option value="Montserrat" ${(appearance.bioFont || '') === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
-        <option value="Poppins" ${(appearance.bioFont || '') === 'Poppins' ? 'selected' : ''}>Poppins</option>
-        <option value="Raleway" ${(appearance.bioFont || '') === 'Raleway' ? 'selected' : ''}>Raleway</option>
-        <option value="Nunito" ${(appearance.bioFont || '') === 'Nunito' ? 'selected' : ''}>Nunito</option>
-        <option value="Source Sans 3" ${(appearance.bioFont || '') === 'Source Sans 3' ? 'selected' : ''}>Source Sans 3</option>
-        <option value="Oswald" ${(appearance.bioFont || '') === 'Oswald' ? 'selected' : ''}>Oswald</option>
-        <option value="Playfair Display" ${(appearance.bioFont || '') === 'Playfair Display' ? 'selected' : ''}>Playfair Display</option>
-        <option value="Merriweather" ${(appearance.bioFont || '') === 'Merriweather' ? 'selected' : ''}>Merriweather</option>
-        <option value="Ubuntu" ${(appearance.bioFont || '') === 'Ubuntu' ? 'selected' : ''}>Ubuntu</option>
-        <option value="Exo 2" ${(appearance.bioFont || '') === 'Exo 2' ? 'selected' : ''}>Exo 2</option>
-        <option value="Orbitron" ${(appearance.bioFont || '') === 'Orbitron' ? 'selected' : ''}>Orbitron</option>
-        <option value="Rajdhani" ${(appearance.bioFont || '') === 'Rajdhani' ? 'selected' : ''}>Rajdhani</option>
-        <option value="Bebas Neue" ${(appearance.bioFont || '') === 'Bebas Neue' ? 'selected' : ''}>Bebas Neue</option>
-        <option value="Righteous" ${(appearance.bioFont || '') === 'Righteous' ? 'selected' : ''}>Righteous</option>
-        <option value="Permanent Marker" ${(appearance.bioFont || '') === 'Permanent Marker' ? 'selected' : ''}>Permanent Marker</option>
-        <option value="Pacifico" ${(appearance.bioFont || '') === 'Pacifico' ? 'selected' : ''}>Pacifico</option>
-      </select>
-      <div class="pe-inspector-hint" id="pi-bio-font-preview"
-           style="margin-top:6px;font-size:14px;padding:6px;background:#0f172a;border-radius:4px;">
-        The quick brown fox jumps over the lazy dog
+      <label class="pe-inspector-label">Bio Text Size</label>
+      <div class="pe-btn-shape-row">
+        ${bioSizes.map(s => `<button class="pe-shape-btn ${(appearance.bioFontSize||'md')===s.v?'active':''}" data-bio-size="${s.v}">${s.l}</button>`).join('')}
       </div>
     </div>
+    <div class="pe-inspector-hint" style="margin-top:4px;">Font is set in the Avatar section.</div>
   `;
 }
 
@@ -635,6 +639,60 @@ let layoutSaveTimer = null;
 function wireInspector(sectionType) {
   const container = document.getElementById(INSPECTOR_ID);
   if (!container) return;
+
+  // Name size buttons
+  container.querySelectorAll('[data-name-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const size = btn.dataset.nameSize;
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.nameFontSize = size;
+      container.querySelectorAll('[data-name-size]').forEach(b => b.classList.toggle('active', b === btn));
+      saveAppearance({ nameFontSize: size });
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Bio size buttons
+  container.querySelectorAll('[data-bio-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const size = btn.dataset.bioSize;
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.bioFontSize = size;
+      container.querySelectorAll('[data-bio-size]').forEach(b => b.classList.toggle('active', b === btn));
+      saveAppearance({ bioFontSize: size });
+      if (window.updatePreview) window.updatePreview();
+    });
+  });
+
+  // Avatar font picker (shared font for name + bio)
+  const avatarFontSelect = container.querySelector('#pi-bio-font-avatar');
+  const avatarFontPreview = container.querySelector('#pi-font-preview-avatar');
+  if (avatarFontSelect) {
+    function loadAndPreviewFontAvatar(fontName) {
+      if (!fontName) {
+        if (avatarFontPreview) avatarFontPreview.style.fontFamily = '';
+        return;
+      }
+      const linkId = 'gf-' + fontName.replace(/\s+/g, '-');
+      if (!document.getElementById(linkId)) {
+        const link = document.createElement('link');
+        link.id = linkId;
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fontName).replace(/%20/g, '+') + ':wght@400;500;600&display=swap';
+        document.head.appendChild(link);
+      }
+      if (avatarFontPreview) avatarFontPreview.style.fontFamily = "'" + fontName + "', sans-serif";
+    }
+    loadAndPreviewFontAvatar(avatarFontSelect.value);
+    avatarFontSelect.addEventListener('change', () => {
+      const fontName = avatarFontSelect.value;
+      loadAndPreviewFontAvatar(fontName);
+      editorState.appearance = editorState.appearance || {};
+      editorState.appearance.bioFont = fontName;
+      saveAppearance({ bioFont: fontName });
+      if (window.updatePreview) window.updatePreview();
+    });
+  }
 
   // Bio font picker
   const bioFontSelect = container.querySelector('#pi-bio-font');
