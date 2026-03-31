@@ -33,31 +33,44 @@ function renderGlobalSettings() {
   const appearance = editorState.appearance || {};
   const layout = editorState.layout || {};
   const theme = layout.theme || {};
+  const coverUrl = editorState.profile?.cover_image_url;
 
   return `
+    <div class="pe-inspector-global-hint">
+      Click a section in the preview to edit it, or configure global settings below.
+    </div>
+
+    <div class="pe-inspector-section">
+      <div class="pe-inspector-label">Background / Cover Image</div>
+      <div class="pe-inspector-cover-zone" id="pe-cover-drop-zone">
+        ${coverUrl ? `
+          <img src="${coverUrl}" alt="Cover" class="pe-inspector-cover-img" />
+          <div class="pe-inspector-cover-overlay">
+            <span>Change cover</span>
+          </div>
+        ` : `
+          <div class="pe-inspector-cover-placeholder">
+            <span class="pe-inspector-cover-icon">🖼️</span>
+            <span>Upload cover image</span>
+            <span class="pe-inspector-hint">Wide banner · Max 8MB · JPG, PNG, WebP</span>
+          </div>
+        `}
+        <form method="POST" action="/dashboard/api/profile/cover" enctype="multipart/form-data"
+              id="pe-cover-form" style="display:none;">
+          <input type="file" name="cover" accept="image/*" id="pe-cover-file-input"
+                 onchange="this.closest('form').submit()" />
+        </form>
+      </div>
+    </div>
+
     <div class="pe-inspector-section">
       <div class="pe-inspector-label">Theme</div>
       <div class="pe-theme-tiles">
         ${['midnight','kick','neon','soft','ocean','forest'].map(t => `
           <button class="pe-theme-tile ${(appearance.background || theme.color || 'midnight') === t ? 'active' : ''}"
-                  data-theme="${t}">${t}</button>
+                  data-theme="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</button>
         `).join('')}
       </div>
-    </div>
-    <div class="pe-inspector-section">
-      <div class="pe-inspector-label">Cover Image</div>
-      ${editorState.profile?.cover_image_url ? `
-        <div class="pe-inspector-cover-preview">
-          <img src="${editorState.profile.cover_image_url}" alt="Cover" />
-        </div>
-      ` : ''}
-      <form method="POST" action="/dashboard/api/profile/cover" enctype="multipart/form-data" class="pe-inspector-upload-form">
-        <div class="pe-inspector-hint">Upload a wide banner image. Max 8MB.</div>
-        <div class="pe-inspector-upload-row">
-          <input type="file" name="cover" accept="image/*" class="pe-inspector-file" />
-          <button type="submit" class="pe-btn pe-btn-sm">Upload</button>
-        </div>
-      </form>
     </div>
   `;
 }
