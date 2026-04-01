@@ -218,16 +218,24 @@
     function handleEvent(data) {
       try {
         const d = typeof data === 'string' ? JSON.parse(data) : data;
-        const type = d.type || d.event_type || '';
+        const type = d.type || d.event_type || d.kind || '';
 
-        if (type === 'chat' || type === 'chat_message' || type === 'message' || !type) {
-          addMessage({
-            username: d.username || d.user?.name || d.sender || 'User',
-            text:     d.text || d.message || d.content || '',
-            platform: d.platform || 'kick',
-            avatar:   d.avatar || d.user?.avatar || '',
-            color:    d.color || d.nameColor || '',
-          });
+        // Handle both new-style (chat.message.sent) and legacy (chat_message/chat) events
+        const isChatEvent = type === 'chat' || type === 'chat_message' || type === 'message' ||
+                            type === 'chat.message.sent' || !type;
+
+        if (isChatEvent) {
+          // Support both flat payload (legacy) and nested payload (Kick webhook style)
+          const payload = d.payload || d;
+          const username = payload.actor?.username || payload.actor?.display ||
+                           d.actor_username || d.username || d.user?.name || d.sender || 'User';
+          const text = payload.message?.text || payload.message?.content ||
+                       d.text || d.message || d.content || '';
+          const platform = payload.platform || d.platform || d.source || 'kick';
+          const avatar = payload.actor?.avatar_url || d.avatar || d.user?.avatar || '';
+          const color = d.color || d.nameColor || '';
+
+          if (text) addMessage({ username, text, platform, avatar, color });
         }
       } catch { /* ignore */ }
     }
@@ -235,6 +243,7 @@
     es.addEventListener('chat_message', e => handleEvent(e.data));
     es.addEventListener('chat', e => handleEvent(e.data));
     es.addEventListener('message', e => handleEvent(e.data));
+    es.addEventListener('chat.message.sent', e => handleEvent(e.data));
     es.onmessage = e => handleEvent(e.data);
     es.onerror = () => { es.close(); setTimeout(connect, 5000); };
 
