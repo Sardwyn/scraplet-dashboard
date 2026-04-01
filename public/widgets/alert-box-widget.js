@@ -217,12 +217,17 @@
 
   // ── Editor preview ─────────────────────────────────────────────────────────
   function showDummyAlerts() {
-    var dummies = [
-      { kind: 'channel.followed',         payload: { actor_username: 'StreamerFan99' } },
-      { kind: 'channel.subscription.new', payload: { actor_username: 'NewSubber' } },
-      { kind: 'raid',                     payload: { actor_username: 'RaidLeader', count: 42 } },
+    if (window.__alertBoxDummyShown) return;
+    window.__alertBoxDummyShown = true;
+    var allDummies = [
+      { kind: 'channel.followed',         type: 'follow',       payload: { actor_username: 'StreamerFan99' } },
+      { kind: 'channel.subscription.new', type: 'subscription', payload: { actor_username: 'NewSubber' } },
+      { kind: 'raid',                     type: 'raid',         payload: { actor_username: 'RaidLeader', count: 42 } },
+      { kind: 'kicks.gifted',             type: 'tip',          payload: { actor_username: 'BigTipper', amount: 10 } },
     ];
-    dummies.forEach(function(d, i) {
+    // Only show dummies for enabled event types
+    var enabled = allDummies.filter(function(d) { return getEventCfg(d.type).enabled; });
+    enabled.forEach(function(d, i) {
       setTimeout(function() { handleEvent(d.kind, d.payload); }, i * 3000);
     });
   }
