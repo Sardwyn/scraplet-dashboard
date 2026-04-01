@@ -12,10 +12,13 @@
   // Config with defaults
   const fontName        = cfg.fontFamily || 'Inter';
   const fontFamily      = `${fontName}, system-ui, sans-serif`;
-  // Load font from Google Fonts
+  // Load font from Google Fonts (dedupe by removing old link first)
   if (fontName && fontName !== 'system-ui') {
+    const existingLink = document.querySelector('link[data-gfont]');
+    if (existingLink) existingLink.remove();
     const link = document.createElement('link');
     link.rel = 'stylesheet';
+    link.setAttribute('data-gfont', fontName);
     link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700&display=swap`;
     document.head.appendChild(link);
   }

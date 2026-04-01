@@ -7626,7 +7626,7 @@ function InspectorPanel({
                   s.id = scriptId;
                   s.src = scriptSrc + '?v=' + Date.now();
                   document.head.appendChild(s);
-                }, 80);
+                }, 150);
               }
             };
 
