@@ -158,6 +158,7 @@
       ${depthEnabled ? `text-shadow: ${depthOffset}px ${depthOffset}px 0 ${depthColor};` : ''}
     }
     .cm-fade { animation: cm-fade 0.5s ease forwards; }
+    .cm-emote { height: 1.4em; width: auto; vertical-align: middle; display: inline-block; margin: 0 1px; }
     @keyframes cm-in { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
     @keyframes cm-fade { to { opacity:0; } }
   `;
@@ -201,7 +202,11 @@
       nameCol = nameColor;
     }
     html += `<span class="cm-name" style="color:${escHtml(nameCol)}">${escHtml(username || 'User')}</span>`;
-    html += `<span class="cm-text">${escHtml(text || '')}</span>`;
+    // Render text with emote images - escape text parts but preserve img tags
+    const renderedText = text.includes('<img') 
+      ? text.replace(/(<img[^>]+>)|([^<]+)/g, (m, img, txt) => img || escHtml(txt))
+      : escHtml(text || '');
+    html += `<span class="cm-text">${renderedText}</span>`;
 
     el.innerHTML = html;
     container.insertBefore(el, container.firstChild);
@@ -253,7 +258,11 @@
           const rawText = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
           // Strip Kick emote codes like [emote:123:emojiName]
-          const text = stripEmotes ? rawText.replace(/\[emote:[^\]]+\]/g, '').replace(/\s+/g, ' ').trim() : rawText;
+          // Replace [emote:ID:name] with actual emote images from Kick CDN
+          const text = rawText.replace(/\[emote:(\d+):([^\]]+)\]/g, (_, id, name) => {
+            if (stripEmotes) return '';
+            return `<img src="https://files.kick.com/emotes/${id}/fullsize" alt="${name}" class="cm-emote" />`;
+          }).replace(/\s+/g, ' ').trim();
           const platform = payload.platform || d.platform || d.source || 'kick';
           const avatar = sender.profile_picture || payload.actor?.avatar_url || d.avatar || '';
           // Use platform colour from identity if available, else fall back
