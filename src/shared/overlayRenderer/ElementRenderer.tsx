@@ -1846,7 +1846,7 @@ export function ElementRenderer({
         Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
         return (
             <div
-                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}
+                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none', position: 'absolute' }}
                 data-widget-id={widgetId}
                 data-widget-params={rp.toString()}
             />

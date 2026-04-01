@@ -77,27 +77,30 @@
 
   let container;
 
-  if (editorPreview) {
-    // Wait for React to render the scoped container div, then initialise
-    function findAndInit() {
-      const root = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
-      if (root) {
-        container = root;
-        applyContainerStyles(container, 'relative');
-        init();
-      } else {
-        requestAnimationFrame(findAndInit);
-      }
+  // Find the bounding box div rendered by ElementRenderer (works in both editor and runtime)
+  function findAndInit() {
+    const editorRoot = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
+    const runtimeRoot = document.querySelector('[data-widget-id="chat-overlay"]');
+    const root = editorRoot || runtimeRoot;
+    if (root) {
+      container = root;
+      applyContainerStyles(container, 'absolute');
+      init();
+    } else if (editorPreview) {
+      requestAnimationFrame(findAndInit);
+    } else {
+      // Fallback: full-screen fixed div
+      container = document.createElement('div');
+      container.id = 'chat-overlay-root';
+      applyContainerStyles(container, 'fixed');
+      document.body.style.background = 'transparent';
+      document.body.appendChild(container);
+      init();
     }
-    findAndInit();
-    return; // init() called async once container is found
-  } else {
-    container = document.createElement('div');
-    container.id = 'chat-overlay-root';
-    applyContainerStyles(container, 'fixed');
-    document.body.style.background = 'transparent';
-    document.body.appendChild(container);
   }
+  findAndInit();
+  if (!editorPreview) return; // runtime: findAndInit calls init() synchronously or via fallback
+  return; // editor: findAndInit calls init() async
 
 
   function init() {
@@ -233,8 +236,10 @@
           // Extract from Kick webhook nested structure first, then fall back to flat
           const username = sender.username || payload.message?.sender_username ||
                            d.actor_username || payload.actor?.username || d.username || 'User';
-          const text = payload.message?.text || raw.content ||
+          const rawText = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
+          // Strip Kick emote codes like [emote:123:emojiName]
+          const text = rawText.replace(/\[emote:\d+:[^\]]+\]/g, '').trim();
           const platform = payload.platform || d.platform || d.source || 'kick';
           const avatar = sender.profile_picture || payload.actor?.avatar_url || d.avatar || '';
           // Use platform colour from identity if available, else fall back
