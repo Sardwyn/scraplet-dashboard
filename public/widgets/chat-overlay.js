@@ -225,15 +225,19 @@
                             type === 'chat.message.sent' || !type;
 
         if (isChatEvent) {
-          // Support both flat payload (legacy) and nested payload (Kick webhook style)
           const payload = d.payload || d;
-          const username = payload.actor?.username || payload.actor?.display ||
-                           d.actor_username || d.username || d.user?.name || d.sender || 'User';
-          const text = payload.message?.text || payload.message?.content ||
+          const raw = payload.message?.raw || {};
+          const sender = raw.sender || {};
+
+          // Extract from Kick webhook nested structure first, then fall back to flat
+          const username = sender.username || payload.message?.sender_username ||
+                           d.actor_username || payload.actor?.username || d.username || 'User';
+          const text = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
           const platform = payload.platform || d.platform || d.source || 'kick';
-          const avatar = payload.actor?.avatar_url || d.avatar || d.user?.avatar || '';
-          const color = d.color || d.nameColor || '';
+          const avatar = sender.profile_picture || payload.actor?.avatar_url || d.avatar || '';
+          // Use platform colour from identity if available, else fall back
+          const color = sender.identity?.username_color || d.color || d.nameColor || '';
 
           if (text) addMessage({ username, text, platform, avatar, color });
         }
