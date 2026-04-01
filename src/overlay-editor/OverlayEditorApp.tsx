@@ -7577,8 +7577,8 @@ function InspectorPanel({
                   {slug ? (
                     <>
                       <iframe
-                        key={`widget-preview-${widgetId}`}
-                        src={`/o/${encodeURIComponent(slug)}?t=${Date.now()}`}
+                        key={`widget-preview-${widgetId}-${slug}`}
+                        src={`/o/${encodeURIComponent(slug)}`}
                         style={{width: '100%', height: '100%', border: 'none', background: 'transparent'}}
                         title="Widget Preview"
                         data-overlay-preview="true"
@@ -7588,7 +7588,7 @@ function InspectorPanel({
                         <button
                           onClick={() => {
                             const frame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
-                            if (frame) frame.src = `/o/${encodeURIComponent(slug)}?t=${Date.now()}`;
+                            if (frame) { const s = frame.src; frame.src = ''; frame.src = s; }
                           }}
                           className="text-[9px] text-slate-400 bg-black/70 px-1.5 py-0.5 rounded hover:text-white"
                           title="Reload preview"
