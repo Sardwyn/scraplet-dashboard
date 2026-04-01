@@ -198,6 +198,38 @@
 
   connect();
 
+  // ── Test fire SSE listener ────────────────────────────────────────────────
+  // Connects to the dashboard test fire endpoint to receive test events
+  // from the overlay editor inspector
+  function connectTestFire() {
+    try {
+      const testEs = new EventSource('/dashboard/api/widget-test-events', { withCredentials: true });
+      testEs.onmessage = function (e) {
+        try {
+          const d = JSON.parse(e.data);
+          if (d._test && (d.type === 'chat_message' || d.type === 'chat')) {
+            addMessage({
+              username: d.username || 'TestUser',
+              text:     d.text || 'Test message!',
+              platform: d.platform || 'kick',
+              avatar:   d.avatar || '',
+              color:    d.color || '',
+            });
+          }
+        } catch { /* ignore */ }
+      };
+      testEs.onerror = function () {
+        testEs.close();
+        // Don't reconnect test fire — it's optional
+      };
+    } catch { /* test fire is optional */ }
+  }
+
+  // Only connect test fire if we're in an editor context (has parent frame)
+  if (window.parent !== window) {
+    connectTestFire();
+  }
+
   // ── Test fire support ─────────────────────────────────────────────────────
   // Listen for test messages from the overlay editor
   window.addEventListener('message', function (e) {

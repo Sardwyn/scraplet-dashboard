@@ -7572,15 +7572,36 @@ function InspectorPanel({
                 </div>
                 <div className="text-[11px] text-slate-500 px-1 leading-snug">{manifest.description}</div>
 
-                {/* Live widget preview */}
-                {!manifest.invisible && (
-                  <div className="mx-1 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-black" style={{height: '160px', position: 'relative'}}>
+                {/* Live widget preview — loads the actual overlay runtime */}
+                <div className="mx-1 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-black" style={{height: '200px', position: 'relative'}}>
+                  {slug ? (
+                    <>
+                      <iframe
+                        key={`widget-preview-${widgetId}`}
+                        src={`/o/${encodeURIComponent(slug)}?t=${Date.now()}`}
+                        style={{width: '100%', height: '100%', border: 'none', background: 'transparent'}}
+                        title="Widget Preview"
+                        data-overlay-preview="true"
+                        allow="autoplay"
+                      />
+                      <div className="absolute top-1 right-1 flex gap-1">
+                        <button
+                          onClick={() => {
+                            const frame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
+                            if (frame) frame.src = `/o/${encodeURIComponent(slug)}?t=${Date.now()}`;
+                          }}
+                          className="text-[9px] text-slate-400 bg-black/70 px-1.5 py-0.5 rounded hover:text-white"
+                          title="Reload preview"
+                        >↺</button>
+                        <span className="text-[9px] text-emerald-500/70 bg-black/60 px-1 rounded">LIVE</span>
+                      </div>
+                    </>
+                  ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-600">
-                      Widget preview loads in OBS browser source
+                      Save overlay to enable live preview
                     </div>
-                    <div className="absolute top-1 right-1 text-[9px] text-slate-600 bg-black/60 px-1 rounded">PREVIEW</div>
-                  </div>
-                )}
+                  )}
+                </div>
                 {schema.length > 0 && (
                   <div className="space-y-2 pt-1">
                     <label className={uiClasses.label}>Widget Settings</label>
@@ -7652,7 +7673,7 @@ function InspectorPanel({
                                 const text = textEl?.value || 'Test message!';
                                 // Fire test event via dashboard API (injects into SSE stream)
                                 try {
-                                  await fetch('/dashboard/api/widget-test-fire', {
+                                  const resp = await fetch('/dashboard/api/widget-test-fire', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
                                     credentials: 'same-origin',
@@ -7662,6 +7683,10 @@ function InspectorPanel({
                                       payload: { username: 'TestUser', text, platform, color: '#a5b4fc' }
                                     }),
                                   });
+                                  if (resp.ok) {
+                                    // The overlay iframe will receive the event via SSE
+                                    console.log('[test-fire] event queued for', platform);
+                                  }
                                 } catch (e) {
                                   console.warn('[test-fire] failed:', e);
                                 }
