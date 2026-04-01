@@ -25,7 +25,14 @@ router.get('/dashboard/api/widget-token', requireAuth, async (req, res) => {
 });
 
 // Public endpoint for overlay runtime (uses overlay public ID to resolve user)
+// Also mounted under /dashboard/api/ since nginx routes /api/ to scrapbot
+router.get('/dashboard/api/widget-token/public', async (req, res) => {
+  return widgetTokenPublicHandler(req, res);
+});
 router.get('/api/widget-token/public', async (req, res) => {
+  return widgetTokenPublicHandler(req, res);
+});
+async function widgetTokenPublicHandler(req, res) {
   try {
     const { widgetId, overlayPublicId } = req.query;
     if (!widgetId || !overlayPublicId) return res.status(400).json({ ok: false });
@@ -43,6 +50,6 @@ router.get('/api/widget-token/public', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }
-});
+}
 
 export default router;

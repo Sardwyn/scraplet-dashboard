@@ -404,7 +404,7 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
         const overlayPublicId = (window as any).__OVERLAY_PUBLIC_ID__ ||
           new URLSearchParams(window.location.search).get('id') ||
           window.location.pathname.split('/').pop() || '';
-        const resp = await fetch(`/api/widget-token/public?widgetId=${encodeURIComponent(widgetId)}&overlayPublicId=${encodeURIComponent(overlayPublicId)}`);
+        const resp = await fetch(`/dashboard/api/widget-token/public?widgetId=${encodeURIComponent(widgetId)}&overlayPublicId=${encodeURIComponent(overlayPublicId)}`);
         if (resp.ok) {
           const data = await resp.json();
           token = data.token || '';
