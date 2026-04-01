@@ -924,7 +924,12 @@ export function ElementRenderer({
     if (scaleX !== 1 || scaleY !== 1) {
         transformParts.push(`scale(${scaleX}, ${scaleY})`);
     }
-    // 3D transforms (tiltX/Y, skewX/Y, perspective)
+    if (transformParts.length > 0) {
+        transformStyle.transform = transformParts.join(" ");
+        transformStyle.transformOrigin = "center center";
+    }
+
+    // 3D transforms applied directly to baseStyle so they affect the outermost div
     const _tiltX = (el as any).tiltX ?? 0;
     const _tiltY = (el as any).tiltY ?? 0;
     const _skewX = (el as any).skewX ?? 0;
@@ -932,16 +937,14 @@ export function ElementRenderer({
     const _persp = (el as any).perspective ?? 800;
     const has3D = _tiltX !== 0 || _tiltY !== 0 || _skewX !== 0 || _skewY !== 0;
     if (has3D) {
-        transformParts.unshift(`perspective(${_persp}px)`);
-        if (_tiltX !== 0) transformParts.push(`rotateX(${_tiltX}deg)`);
-        if (_tiltY !== 0) transformParts.push(`rotateY(${_tiltY}deg)`);
-        if (_skewX !== 0) transformParts.push(`skewX(${_skewX}deg)`);
-        if (_skewY !== 0) transformParts.push(`skewY(${_skewY}deg)`);
-    }
-
-    if (transformParts.length > 0) {
-        transformStyle.transform = transformParts.join(" ");
-        transformStyle.transformOrigin = "center center";
+        const parts3D = [`perspective(${_persp}px)`];
+        if (_tiltX !== 0) parts3D.push(`rotateX(${_tiltX}deg)`);
+        if (_tiltY !== 0) parts3D.push(`rotateY(${_tiltY}deg)`);
+        if (_skewX !== 0) parts3D.push(`skewX(${_skewX}deg)`);
+        if (_skewY !== 0) parts3D.push(`skewY(${_skewY}deg)`);
+        const existing = (baseStyle as any).transform;
+        (baseStyle as any).transform = existing ? `${existing} ${parts3D.join(' ')}` : parts3D.join(' ');
+        (baseStyle as any).transformOrigin = 'center center';
     }
 
     const effects = getElementEffects(el);
