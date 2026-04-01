@@ -7615,8 +7615,6 @@ function InspectorPanel({
                         </div>
                       );
                     })}
-                  </div>
-                )}
                 {manifest.dataContract?.sseEventType && (
                   <div className="text-[10px] text-emerald-500/70 px-1 pt-1">● Live: {manifest.dataContract.sseEventType}</div>
                 )}
