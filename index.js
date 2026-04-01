@@ -65,6 +65,7 @@ import profileAnalyticsApiRouter from './routes/profileAnalyticsApi.js';
 import trainingApiRouter from './routes/trainingApi.js';
 import stakeMonitorRouter from './routes/api/stakeMonitor.js';
 import ttsPanelRouter from './routes/api/ttsPanel.js';
+import widgetTokenRouter from './routes/api/widgetToken.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
@@ -327,6 +328,7 @@ scheduleInsightEngine();
 app.use(trainingApiRouter);
 app.use(stakeMonitorRouter);
 app.use(ttsPanelRouter);
+app.use(widgetTokenRouter);
 
 // 🎛 Studio Controller — auth-gated React build
 const studioDistPath = process.env.STUDIO_DIST_PATH || '/var/www/studio-controller/dist';

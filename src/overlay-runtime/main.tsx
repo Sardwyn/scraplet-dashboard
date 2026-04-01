@@ -371,42 +371,68 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 ------------------------------*/
 
 // ── Widget Runtime Loader ─────────────────────────────────────────────────────
-// Scans the overlay for widget elements and loads their runtime scripts
-function loadWidgetRuntimes(elements: any[], channelSlug: string) {
-  elements.forEach(el => {
-    if (el.type !== 'widget') return;
+// Scans the overlay for widget elements, fetches tokens, and loads runtime scripts
+async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
+  const WIDGET_SCRIPTS: Record<string, string> = {
+    'stake-monitor':        '/widgets/stake-monitor.js',
+    'tts-player':           '/widgets/tts-player.js',
+    'chat-overlay':         '/widgets/chat-overlay.js',
+    'alert-box-widget':     '/widgets/alert-box-widget.js',
+    'sub-counter':          '/widgets/sub-counter.js',
+    'event-console-widget': '/widgets/event-console-widget.js',
+    'raffle':               '/widgets/raffle.js',
+  };
+
+  // Widgets that need a token (connect to /w/:token/stream)
+  const TOKEN_WIDGETS = new Set(['chat-overlay', 'alert-box-widget', 'sub-counter', 'event-console-widget', 'raffle']);
+
+  for (const el of elements) {
+    if (el.type !== 'widget') continue;
     const widgetId = el.widgetId;
     const propOverrides = el.propOverrides || {};
-
-    // Map widget IDs to their runtime scripts
-    const WIDGET_SCRIPTS: Record<string, string> = {
-      'stake-monitor': '/widgets/stake-monitor.js',
-      'tts-player': '/widgets/tts-player.js',
-    };
-
     const scriptSrc = WIDGET_SCRIPTS[widgetId];
-    if (!scriptSrc) return;
+    if (!scriptSrc) continue;
 
     // Don't load twice
-    if (document.querySelector(`script[data-widget="${widgetId}"]`)) return;
+    if (document.querySelector(`script[data-widget="${widgetId}"]`)) continue;
 
-    // Build params from propOverrides + channel
-    const params = new URLSearchParams({ channel: channelSlug, ...propOverrides });
+    let token = propOverrides.token || '';
+
+    // Fetch a widget token if needed and not already set
+    if (TOKEN_WIDGETS.has(widgetId) && !token) {
+      try {
+        const overlayPublicId = new URLSearchParams(window.location.search).get('id') ||
+          window.location.pathname.split('/').pop() || '';
+        const resp = await fetch(`/api/widget-token/public?widgetId=${encodeURIComponent(widgetId)}&overlayPublicId=${encodeURIComponent(overlayPublicId)}`);
+        if (resp.ok) {
+          const data = await resp.json();
+          token = data.token || '';
+        }
+      } catch (e) {
+        console.warn('[overlay-runtime] Failed to fetch widget token for', widgetId);
+      }
+    }
 
     // Set global config for the widget script
-    (window as any)[`WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`] = {
+    const configKey = `WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`;
+    (window as any)[configKey] = {
+      token,
       channel: channelSlug,
       ...propOverrides,
     };
 
+    // Also set legacy token global
+    if (token) (window as any).__WIDGET_TOKEN__ = token;
+
     // Load the widget script
+    const params = new URLSearchParams({ channel: channelSlug });
     const script = document.createElement('script');
     script.src = scriptSrc + '?' + params.toString();
     script.setAttribute('data-widget', widgetId);
     script.onerror = () => console.warn('[overlay-runtime] Failed to load widget:', widgetId);
     document.head.appendChild(script);
-    console.log('[overlay-runtime] Loaded widget:', widgetId);
-  });
+    console.log('[overlay-runtime] Loaded widget:', widgetId, 'token:', token ? 'yes' : 'no');
+  }
 }
 
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {

@@ -56,6 +56,7 @@ import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
 import { getAllWidgets, getWidgetDef } from "../shared/widgetRegistry";
 import "../stakeMonitor/stakeMonitorWidget";
 import "../ttsWidget/ttsWidget";
+import "../widgets/allWidgets";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
 import { deriveStyleProfile } from "./panelStyleEngine";
