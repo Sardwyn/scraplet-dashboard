@@ -7563,28 +7563,35 @@ function InspectorPanel({
           {/* 3D Transform */}
           <div className="border-t border-[rgba(255,255,255,0.06)] pt-2 space-y-2">
             <label className={`${fieldLabelClass} text-slate-500`}>3D Transform</label>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Tilt X</label>
-                <NumberField label="" value={(element as any).tiltX ?? 0} onChange={(v) => onChange({ tiltX: v } as any)} noLabel className="flex-1" />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Tilt Y</label>
-                <NumberField label="" value={(element as any).tiltY ?? 0} onChange={(v) => onChange({ tiltY: v } as any)} noLabel className="flex-1" />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Skew X</label>
-                <NumberField label="" value={(element as any).skewX ?? 0} onChange={(v) => onChange({ skewX: v } as any)} noLabel className="flex-1" />
-              </div>
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Skew Y</label>
-                <NumberField label="" value={(element as any).skewY ?? 0} onChange={(v) => onChange({ skewY: v } as any)} noLabel className="flex-1" />
-              </div>
-            </div>
+            {([
+              { label: 'Tilt X', key: 'tiltX', min: -45, max: 45 },
+              { label: 'Tilt Y', key: 'tiltY', min: -45, max: 45 },
+              { label: 'Skew X', key: 'skewX', min: -45, max: 45 },
+              { label: 'Skew Y', key: 'skewY', min: -45, max: 45 },
+            ] as const).map(({ label, key, min, max }) => {
+              const val = (element as any)[key] ?? 0;
+              return (
+                <div key={key} className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>{label}</label>
+                  <input
+                    type="range" min={min} max={max} step={1}
+                    className="flex-1 h-1 accent-indigo-500"
+                    value={val}
+                    onChange={(e) => onChange({ [key]: Number(e.target.value) } as any)}
+                  />
+                  <span className="w-8 text-right text-[11px] text-slate-400">{val}°</span>
+                </div>
+              );
+            })}
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-20 flex-none`}>Perspective</label>
-              <NumberField label="" value={(element as any).perspective ?? 800} onChange={(v) => onChange({ perspective: Math.max(100, v) } as any)} noLabel className="flex-1" />
-              <span className="text-[11px] text-slate-600">px</span>
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Persp</label>
+              <input
+                type="range" min={200} max={2000} step={50}
+                className="flex-1 h-1 accent-indigo-500"
+                value={(element as any).perspective ?? 800}
+                onChange={(e) => onChange({ perspective: Number(e.target.value) } as any)}
+              />
+              <span className="w-12 text-right text-[11px] text-slate-400">{(element as any).perspective ?? 800}px</span>
             </div>
           </div>
         </div>
