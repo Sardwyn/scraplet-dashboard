@@ -1802,13 +1802,15 @@ export function ElementRenderer({
             const scriptSrc = WIDGET_SCRIPTS[widgetId];
             const scriptId = `widget-script-editor-${widgetId}`;
             const containerId = `widget-preview-${el.id}`;
-            if (scriptSrc && typeof document !== 'undefined' && !document.getElementById(scriptId)) {
-                const configKey = `WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`;
+            if (scriptSrc && typeof document !== 'undefined') {
+                const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
                 (window as any)[configKey] = { ...propOverrides, editorPreview: true };
-                const s = document.createElement('script');
-                s.id = scriptId;
-                s.src = scriptSrc;
-                document.head.appendChild(s);
+                if (!document.getElementById(scriptId)) {
+                    const s = document.createElement('script');
+                    s.id = scriptId;
+                    s.src = scriptSrc;
+                    document.head.appendChild(s);
+                }
             }
             return (
                 <div
