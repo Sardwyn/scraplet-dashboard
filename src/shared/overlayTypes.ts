@@ -47,6 +47,11 @@ export interface OverlayElementBase extends OverlayEditorFields {
   rotationDeg?: number;
   scaleX?: number;
   scaleY?: number;
+  tiltX?: number;
+  tiltY?: number;
+  skewX?: number;
+  skewY?: number;
+  perspective?: number;
   constraints?: OverlayConstraints;
   shadow?: {
     enabled: boolean;

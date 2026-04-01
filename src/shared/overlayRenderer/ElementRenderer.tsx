@@ -924,6 +924,21 @@ export function ElementRenderer({
     if (scaleX !== 1 || scaleY !== 1) {
         transformParts.push(`scale(${scaleX}, ${scaleY})`);
     }
+    // 3D transforms (tiltX/Y, skewX/Y, perspective)
+    const _tiltX = (el as any).tiltX ?? 0;
+    const _tiltY = (el as any).tiltY ?? 0;
+    const _skewX = (el as any).skewX ?? 0;
+    const _skewY = (el as any).skewY ?? 0;
+    const _persp = (el as any).perspective ?? 800;
+    const has3D = _tiltX !== 0 || _tiltY !== 0 || _skewX !== 0 || _skewY !== 0;
+    if (has3D) {
+        transformParts.unshift(`perspective(${_persp}px)`);
+        if (_tiltX !== 0) transformParts.push(`rotateX(${_tiltX}deg)`);
+        if (_tiltY !== 0) transformParts.push(`rotateY(${_tiltY}deg)`);
+        if (_skewX !== 0) transformParts.push(`skewX(${_skewX}deg)`);
+        if (_skewY !== 0) transformParts.push(`skewY(${_skewY}deg)`);
+    }
+
     if (transformParts.length > 0) {
         transformStyle.transform = transformParts.join(" ");
         transformStyle.transformOrigin = "center center";
@@ -1788,17 +1803,6 @@ export function ElementRenderer({
         const w = widgetEl.visible === false ? 0 : (baseStyle.width || 0);
         const h = widgetEl.visible === false ? 0 : (baseStyle.height || 0);
 
-        // Build 3D transform from propOverrides if set
-        const tiltX = Number(propOverrides.tiltX) || 0;
-        const tiltY = Number(propOverrides.tiltY) || 0;
-        const skewX = Number(propOverrides.skewX) || 0;
-        const skewY = Number(propOverrides.skewY) || 0;
-        const perspective = Number(propOverrides.perspective) || 800;
-        const has3D = tiltX !== 0 || tiltY !== 0 || skewX !== 0 || skewY !== 0;
-        const transformStyle = has3D
-            ? `perspective(${perspective}px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) skewX(${skewX}deg) skewY(${skewY}deg)`
-            : undefined;
-
         // Editor preview: inject widget script directly, render into scoped div
         if (overlayPublicId) {
             const WIDGET_SCRIPTS: Record<string, string> = {
@@ -1824,7 +1828,7 @@ export function ElementRenderer({
                 }
             }
             return (
-                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden', isolation: 'isolate', ...(transformStyle ? { transform: transformStyle, transformOrigin: 'center center' } : {}) }}>
+                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden', isolation: 'isolate' }}>
                     <div
                         id={containerId}
                         style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}
@@ -1839,7 +1843,7 @@ export function ElementRenderer({
         Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
         return (
             <div
-                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none', ...(transformStyle ? { transform: transformStyle, transformOrigin: 'center center' } : {}) }}
+                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}
                 data-widget-id={widgetId}
                 data-widget-params={rp.toString()}
             />

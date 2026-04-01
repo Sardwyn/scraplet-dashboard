@@ -7559,6 +7559,34 @@ function InspectorPanel({
               </div>
             </div>
           </div>
+
+          {/* 3D Transform */}
+          <div className="border-t border-[rgba(255,255,255,0.06)] pt-2 space-y-2">
+            <label className={`${fieldLabelClass} text-slate-500`}>3D Transform</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Tilt X</label>
+                <NumberField label="" value={(element as any).tiltX ?? 0} onChange={(v) => onChange({ tiltX: v } as any)} noLabel className="flex-1" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Tilt Y</label>
+                <NumberField label="" value={(element as any).tiltY ?? 0} onChange={(v) => onChange({ tiltY: v } as any)} noLabel className="flex-1" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Skew X</label>
+                <NumberField label="" value={(element as any).skewX ?? 0} onChange={(v) => onChange({ skewX: v } as any)} noLabel className="flex-1" />
+              </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Skew Y</label>
+                <NumberField label="" value={(element as any).skewY ?? 0} onChange={(v) => onChange({ skewY: v } as any)} noLabel className="flex-1" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-20 flex-none`}>Perspective</label>
+              <NumberField label="" value={(element as any).perspective ?? 800} onChange={(v) => onChange({ perspective: Math.max(100, v) } as any)} noLabel className="flex-1" />
+              <span className="text-[11px] text-slate-600">px</span>
+            </div>
+          </div>
         </div>
       </AccordionSection>
 
