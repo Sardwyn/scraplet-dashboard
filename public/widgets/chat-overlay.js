@@ -70,7 +70,7 @@
       const root = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
       if (root) {
         container = root;
-        applyContainerStyles(container, 'absolute');
+        applyContainerStyles(container, 'relative');
         init();
       } else {
         requestAnimationFrame(findAndInit);
@@ -293,6 +293,19 @@
     dummies.forEach((d, i) => setTimeout(() => addMessage(d), i * 300));
   }
   }
+
+  function reinit() {
+    // Clear existing messages and re-run with updated config
+    const root = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
+    if (root) root.innerHTML = '';
+    // Re-read config
+    const newCfg = window.__WIDGET_CONFIG_CHAT_OVERLAY__ || {};
+    Object.assign(cfg, newCfg);
+    init();
+  }
+
+  // Expose reinit for the editor inspector to call on config change
+  window.__WIDGET_REINIT_CHAT_OVERLAY__ = reinit;
 
   init();
 

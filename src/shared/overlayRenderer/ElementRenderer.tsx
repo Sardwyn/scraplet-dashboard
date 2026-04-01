@@ -1813,11 +1813,13 @@ export function ElementRenderer({
                 }
             }
             return (
-                <div
-                    id={containerId}
-                    style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden' }}
-                    data-widget-editor-preview={widgetId}
-                />
+                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden', isolation: 'isolate' }}>
+                    <div
+                        id={containerId}
+                        style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}
+                        data-widget-editor-preview={widgetId}
+                    />
+                </div>
             );
         }
 

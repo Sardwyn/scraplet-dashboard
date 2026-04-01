@@ -7565,6 +7565,14 @@ function InspectorPanel({
             const schema = manifest?.configSchema || [];
             const overrides = (element as any).propOverrides || {};
 
+            // After any config change, update global config and call widget reinit
+            const triggerWidgetReinit = (newOverrides: any) => {
+              const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
+              (window as any)[configKey] = { ...newOverrides, editorPreview: true };
+              const reinitFn = (window as any)[`__WIDGET_REINIT_${widgetId.replace(/-/g, '_').toUpperCase()}__`];
+              if (typeof reinitFn === 'function') reinitFn();
+            };
+
             if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
             return (
               <div className="space-y-3">
@@ -7584,14 +7592,14 @@ function InspectorPanel({
                             <input
                               type="checkbox"
                               checked={!!val}
-                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.checked } } as any)}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.checked }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
                               className="w-4 h-4 accent-indigo-500"
                             />
                           ) : field.type === "select" ? (
                             <select
                               className={`flex-1 ${fieldClass} text-[11px]`}
                               value={val}
-                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.value } } as any)}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.value }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
                             >
                               {(field.options || []).map((opt: string) => (
                                 <option key={opt} value={opt}>{opt}</option>
@@ -7604,13 +7612,13 @@ function InspectorPanel({
                               value={val}
                               min={0}
                               max={field.key === "volume" ? 100 : undefined}
-                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: Number(e.target.value) } } as any)}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: Number(e.target.value) }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
                             />
                           ) : (
                             <input
                               className={`flex-1 ${fieldClass}`}
                               value={val}
-                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.value } } as any)}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.value }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
                             />
                           )}
                         </div>
