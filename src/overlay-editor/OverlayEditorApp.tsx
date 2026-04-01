@@ -7565,12 +7565,34 @@ function InspectorPanel({
             const schema = manifest?.configSchema || [];
             const overrides = (element as any).propOverrides || {};
 
-            // After any config change, update global config and call widget reinit
+            // After any config change, update global config and re-inject script so
+            // all const config vars are re-read from scratch
+            const EDITOR_WIDGET_SCRIPTS: Record<string, string> = {
+              'chat-overlay': '/widgets/chat-overlay.js',
+              'alert-box-widget': '/widgets/alert-box-widget.js',
+              'sub-counter': '/widgets/sub-counter.js',
+              'event-console-widget': '/widgets/event-console-widget.js',
+              'tts-player': '/widgets/tts-player.js',
+              'stake-monitor': '/widgets/stake-monitor.js',
+              'raffle': '/widgets/raffle.js',
+            };
             const triggerWidgetReinit = (newOverrides: any) => {
               const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
               (window as any)[configKey] = { ...newOverrides, editorPreview: true };
-              const reinitFn = (window as any)[`__WIDGET_REINIT_${widgetId.replace(/-/g, '_').toUpperCase()}__`];
-              if (typeof reinitFn === 'function') reinitFn();
+              // Clear the container
+              const container = document.querySelector(`[data-widget-editor-preview="${widgetId}"]`);
+              if (container) container.innerHTML = '';
+              // Remove old script tag and re-inject with cache buster so IIFE re-runs
+              const scriptId = `widget-script-editor-${widgetId}`;
+              const old = document.getElementById(scriptId);
+              if (old) old.remove();
+              const scriptSrc = EDITOR_WIDGET_SCRIPTS[widgetId];
+              if (scriptSrc) {
+                const s = document.createElement('script');
+                s.id = scriptId;
+                s.src = scriptSrc + '?v=' + Date.now();
+                document.head.appendChild(s);
+              }
             };
 
             if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
