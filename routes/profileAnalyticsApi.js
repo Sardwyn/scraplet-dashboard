@@ -21,7 +21,7 @@ async function resolveUserId(username) {
 }
 
 // POST /api/profile/track/view
-router.post('/api/profile/track/view', express.json({ limit: '2kb' }), async (req, res) => {
+router.post('/dashboard/api/profile/track/view', express.json({ limit: '2kb' }), async (req, res) => {
   try {
     const { username, referrer } = req.body || {};
     if (!username) return res.status(400).json({ ok: false });
@@ -46,7 +46,7 @@ router.post('/api/profile/track/view', express.json({ limit: '2kb' }), async (re
 });
 
 // POST /api/profile/track/click
-router.post('/api/profile/track/click', express.json({ limit: '2kb' }), async (req, res) => {
+router.post('/dashboard/api/profile/track/click', express.json({ limit: '2kb' }), async (req, res) => {
   try {
     const { username, elementType, elementId, elementLabel } = req.body || {};
     if (!username || !elementType) return res.status(400).json({ ok: false });

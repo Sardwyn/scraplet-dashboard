@@ -198,7 +198,7 @@
       if (!username) return;
 
       // Track page view
-      fetch('/api/profile/track/view', {
+      fetch('/dashboard/api/profile/track/view', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -241,7 +241,7 @@
 
         if (!type) return;
 
-        fetch('/api/profile/track/click', {
+        fetch('/dashboard/api/profile/track/click', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: username, elementType: type, elementId: id, elementLabel: label }),
