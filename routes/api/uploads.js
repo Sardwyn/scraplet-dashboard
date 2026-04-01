@@ -40,4 +40,20 @@ router.post(
   }
 );
 
+// POST /dashboard/api/uploads/overlay/audio
+router.post(
+  "/overlay/audio",
+  makeUploadMiddleware({
+    getUserId,
+    scope: "overlay",
+    kind: "audio",
+    maxBytes: 10 * 1024 * 1024,
+    allowedMimes: ["audio/mpeg", "audio/mp3", "audio/ogg", "audio/wav", "audio/webm", "audio/aac"],
+    fieldName: "file",
+  }),
+  (req, res) => {
+    return res.json({ ok: true, ...req.uploads });
+  }
+);
+
 export default router;

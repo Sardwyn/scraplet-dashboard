@@ -7695,7 +7695,7 @@ function InspectorPanel({
                           { key: 'redemption',   label: 'Redemption',    color: '#a78bfa' },
                         ];
                         const ANIM_OPTIONS = ['slide-down','bounce','scale-pop','shake','fade'];
-                        const SOUND_OPTIONS = ['none','pop','chime','horn','coins'];
+                        const SOUND_OPTIONS = ['none','pop','chime','horn','coins','custom'];
                         const alertTypes = (val && typeof val === 'object') ? val : {};
                         const EVENT_DEFAULTS: Record<string, any> = {
                           follow:       { enabled: true,  template: '🎉 {username} just followed!',               color: '#53fc18', bg: 'rgba(0,0,0,0.85)', duration: 5000, animation: 'bounce',    sound: 'pop',   soundVol: 0.8, image: '', minAmount: 0, tts: false },
@@ -7773,6 +7773,31 @@ function InspectorPanel({
                                         <input type="range" min="0" max="1" step="0.1" className="flex-1 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
                                       </div>
                                     </div>
+                                    {ec.sound === 'custom' && (
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Sound file</label>
+                                        <div className="flex-1 flex gap-1 items-center">
+                                          {ec.soundUrl && <span className="text-[10px] text-emerald-400 truncate max-w-[80px]">✓ uploaded</span>}
+                                          <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                            {ec.soundUrl ? 'Change' : 'Upload audio'}
+                                            <input type="file" accept="audio/*" className="hidden" onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (!file) return;
+                                              const fd = new FormData();
+                                              fd.append('file', file);
+                                              fd.append('scope', 'overlays');
+                                              fd.append('kind', 'images');
+                                              try {
+                                                const r = await fetch('/dashboard/api/uploads/overlay/image', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                                if (r.ok) { const d = await r.json(); updateEvent(evKey, { soundUrl: d.url }); }
+                                              } catch { /* ignore */ }
+                                              e.target.value = '';
+                                            }} />
+                                          </label>
+                                          {ec.soundUrl && <button type="button" onClick={() => updateEvent(evKey, { soundUrl: '' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                        </div>
+                                      </div>
+                                    )}
                                     {/* Image/GIF upload */}
                                     <div className="flex items-center gap-2">
                                       <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Image/GIF</label>
@@ -7795,6 +7820,28 @@ function InspectorPanel({
                                           }} />
                                         </label>
                                         {ec.image && <button type="button" onClick={() => updateEvent(evKey, { image: '' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                      </div>
+                                    </div>
+                                    {/* Custom sound upload */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Custom sound</label>
+                                      <div className="flex-1 flex gap-1 items-center">
+                                        {ec.soundUrl && <span className="text-[10px] text-emerald-400 truncate max-w-[80px]">✓ uploaded</span>}
+                                        <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                          {ec.soundUrl ? 'Replace' : 'Upload MP3/WAV'}
+                                          <input type="file" accept="audio/*" className="hidden" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const fd = new FormData();
+                                            fd.append('file', file);
+                                            try {
+                                              const r = await fetch('/dashboard/api/uploads/overlay/audio', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                              if (r.ok) { const d = await r.json(); updateEvent(evKey, { soundUrl: d.url, sound: 'custom' }); }
+                                            } catch { /* ignore */ }
+                                            e.target.value = '';
+                                          }} />
+                                        </label>
+                                        {ec.soundUrl && <button type="button" onClick={() => updateEvent(evKey, { soundUrl: '', sound: 'pop' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
                                       </div>
                                     </div>
                                     {/* Min amount (for tip/gift) */}
