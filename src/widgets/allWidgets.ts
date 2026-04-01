@@ -35,7 +35,7 @@ registerWidget({
       { key: 'messageColor', type: 'color', label: 'Message colour', default: '#ffffff' },
       { key: 'nameColor', type: 'color', label: 'Name colour', default: '#a5b4fc' },
       { key: 'backgroundColor', type: 'color', label: 'Background', default: 'transparent' },
-      { key: 'animateIn', type: 'boolean', label: 'Animate messages in', default: True }
+      { key: 'animateIn', type: 'boolean', label: 'Animate messages in', default: true }
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
@@ -101,7 +101,7 @@ registerWidget({
     configSchema: [
       { key: 'label', type: 'text', label: 'Label', default: 'Subscribers' },
       { key: 'goal', type: 'number', label: 'Goal (0 = no goal)', default: 0 },
-      { key: 'showNumbers', type: 'boolean', label: 'Show numbers', default: True }
+      { key: 'showNumbers', type: 'boolean', label: 'Show numbers', default: true }
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
