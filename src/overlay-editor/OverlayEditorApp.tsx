@@ -7573,38 +7573,6 @@ function InspectorPanel({
                 </div>
                 <div className="text-[11px] text-slate-500 px-1 leading-snug">{manifest.description}</div>
 
-                {/* Live widget preview — loads the actual overlay runtime */}
-                <div className="mx-1 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-black" style={{height: '200px', position: 'relative'}}>
-                  {overlaySlug ? (
-                    <>
-                      <iframe
-                        key={`widget-preview-${widgetId}-${slug}`}
-                        src={`/o/${encodeURIComponent(overlaySlug)}`}
-                        style={{width: '100%', height: '100%', border: 'none', background: 'transparent'}}
-                        title="Widget Preview"
-                        data-overlay-preview="true"
-                        allow="autoplay"
-                      />
-                      <div className="absolute top-1 right-1 flex gap-1">
-                        <button
-                          onClick={() => {
-                            const frame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
-                            if (frame) { const s = frame.src; frame.src = ''; frame.src = s; }
-                          }}
-                          className="text-[9px] text-slate-400 bg-black/70 px-1.5 py-0.5 rounded hover:text-white"
-                          title="Reload preview"
-                        >↺</button>
-                        <span className="text-[9px] text-emerald-500/70 bg-black/60 px-1 rounded">LIVE</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-600">
-                      Save overlay to enable live preview
-                    </div>
-                  )}
-                </div>
-                {schema.length > 0 && (
-                  <div className="space-y-2 pt-1">
                     <label className={uiClasses.label}>Widget Settings</label>
                     {schema.map((field: any) => {
                       const val = overrides[field.key] !== undefined ? overrides[field.key] : field.default;
