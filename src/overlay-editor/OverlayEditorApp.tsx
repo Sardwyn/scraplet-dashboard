@@ -7582,16 +7582,18 @@ function InspectorPanel({
               // Clear the container
               const container = document.querySelector(`[data-widget-editor-preview="${widgetId}"]`);
               if (container) container.innerHTML = '';
-              // Remove old script tag and re-inject with cache buster so IIFE re-runs
+              // Remove old script tag and re-inject after short delay so React settles
               const scriptId = `widget-script-editor-${widgetId}`;
-              const old = document.getElementById(scriptId);
-              if (old) old.remove();
+              const oldScript = document.getElementById(scriptId);
+              if (oldScript) oldScript.remove();
               const scriptSrc = EDITOR_WIDGET_SCRIPTS[widgetId];
               if (scriptSrc) {
-                const s = document.createElement('script');
-                s.id = scriptId;
-                s.src = scriptSrc + '?v=' + Date.now();
-                document.head.appendChild(s);
+                setTimeout(() => {
+                  const s = document.createElement('script');
+                  s.id = scriptId;
+                  s.src = scriptSrc + '?v=' + Date.now();
+                  document.head.appendChild(s);
+                }, 80);
               }
             };
 
@@ -7666,27 +7668,12 @@ function InspectorPanel({
                           {['kick','youtube','twitch'].map(platform => (
                             <button
                               key={platform}
-                              onClick={async () => {
+                              onClick={() => {
                                 const textEl = document.getElementById(`test-fire-text-${widgetId}`) as HTMLInputElement;
                                 const text = textEl?.value || 'Test message!';
-                                // Fire test event via dashboard API (injects into SSE stream)
-                                try {
-                                  const resp = await fetch('/dashboard/api/widget-test-fire', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                                    credentials: 'same-origin',
-                                    body: JSON.stringify({
-                                      widgetId,
-                                      eventType: 'chat_message',
-                                      payload: { username: 'TestUser', text, platform, color: '#a5b4fc' }
-                                    }),
-                                  });
-                                  if (resp.ok) {
-                                    // The overlay iframe will receive the event via SSE
-                                    console.log('[test-fire] event queued for', platform);
-                                  }
-                                } catch (e) {
-                                  console.warn('[test-fire] failed:', e);
+                                const fn = (window as any).__chatOverlayTest;
+                                if (typeof fn === 'function') {
+                                  fn('TestUser', text, platform);
                                 }
                               }}
                               className="flex-1 text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 capitalize"
