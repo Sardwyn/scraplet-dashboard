@@ -154,6 +154,10 @@
     wrap.appendChild(el);
     container.appendChild(wrap);
     if (data.sound && data.sound !== 'none') playSound(data.sound, data.soundVol, data.soundUrl);
+    if (data.ttsText) {
+      // Slight delay so sound plays first
+      setTimeout(function() { speakText(data.ttsText); }, 300);
+    }
     var hideDelay = Math.max(1000, data.duration - 400);
     setTimeout(function() {
       el.style.animation = anim.out + ' 0.4s ease forwards';
@@ -195,6 +199,7 @@
     if (ec.minAmount > 0 && parseFloat(amount) < ec.minAmount) return;
     var title = renderTemplate(ec.template, { username: username, amount: amount, count: count, months: months, reward: reward });
     enqueue({ type: alertType, title: title, message: ec.tts ? message : '',
+      ttsText: ec.tts ? message : '',
       color: ec.color, bg: ec.bg, image: ec.image, sound: ec.sound,
       soundVol: ec.soundVol, soundUrl: ec.soundUrl || '', animation: ec.animation, duration: ec.duration });
   }
@@ -237,6 +242,7 @@
     var ec = getEventCfg(type);
     var vars = Object.assign({ username: 'TestUser', amount: '5.00', count: '42', months: '3', reward: 'Test Reward' }, overrides || {});
     enqueue({ type: type, title: renderTemplate(ec.template, vars), message: '',
+      ttsText: ec.tts ? 'This is a test TTS message for ' + type : '',
       color: ec.color, bg: ec.bg, image: ec.image, sound: ec.sound,
       soundVol: ec.soundVol, soundUrl: ec.soundUrl || '', animation: ec.animation, duration: ec.duration });
   };
@@ -272,6 +278,23 @@
   }
 
   findAndInit();
+
+  // ── TTS ────────────────────────────────────────────────────────────────────
+  function speakText(text) {
+    if (!text || !window.speechSynthesis) return;
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+    var utt = new SpeechSynthesisUtterance(text);
+    utt.rate  = parseFloat(cfg.ttsRate)  || 1.0;
+    utt.pitch = parseFloat(cfg.ttsPitch) || 1.0;
+    utt.volume = parseFloat(cfg.ttsVolume) || 1.0;
+    // Use a natural voice if available
+    var voices = window.speechSynthesis.getVoices();
+    var preferred = voices.find(function(v) { return v.lang.startsWith('en') && !v.localService === false; }) ||
+                    voices.find(function(v) { return v.lang.startsWith('en'); });
+    if (preferred) utt.voice = preferred;
+    window.speechSynthesis.speak(utt);
+  }
 
   function escHtml(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
