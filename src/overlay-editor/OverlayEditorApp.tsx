@@ -55,6 +55,7 @@ import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
 import { getAllWidgets } from "../shared/widgetRegistry";
 import "../stakeMonitor/stakeMonitorWidget";
+import "../ttsWidget/ttsWidget";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
 import { deriveStyleProfile } from "./panelStyleEngine";
