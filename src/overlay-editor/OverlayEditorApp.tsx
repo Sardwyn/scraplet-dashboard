@@ -53,7 +53,7 @@ import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
-import { getAllWidgets } from "../shared/widgetRegistry";
+import { getAllWidgets, getWidgetDef } from "../shared/widgetRegistry";
 import "../stakeMonitor/stakeMonitorWidget";
 import "../ttsWidget/ttsWidget";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
@@ -7543,6 +7543,74 @@ function InspectorPanel({
           </div>
 
           <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+
+          {/* WIDGET INSTANCE */}
+          {(element as any).type === "widget" && (() => {
+            const widgetId = (element as any).widgetId;
+            const widgetDef = getWidgetDef(widgetId);
+            const manifest = widgetDef?.widgetManifest;
+            const schema = manifest?.configSchema || [];
+            const overrides = (element as any).propOverrides || {};
+            if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[11px] font-semibold text-indigo-400">{manifest.displayName}</span>
+                  {manifest.invisible && <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">invisible</span>}
+                </div>
+                <div className="text-[11px] text-slate-500 px-1 leading-snug">{manifest.description}</div>
+                {schema.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <label className={uiClasses.label}>Widget Settings</label>
+                    {schema.map((field: any) => {
+                      const val = overrides[field.key] !== undefined ? overrides[field.key] : field.default;
+                      return (
+                        <div key={field.key} className="flex items-center gap-2">
+                          <label className="w-24 truncate text-[11px] leading-[1.4] text-slate-500 flex-shrink-0" title={field.label}>{field.label}</label>
+                          {field.type === "boolean" ? (
+                            <input
+                              type="checkbox"
+                              checked={!!val}
+                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.checked } } as any)}
+                              className="w-4 h-4 accent-indigo-500"
+                            />
+                          ) : field.type === "select" ? (
+                            <select
+                              className={`flex-1 ${fieldClass} text-[11px]`}
+                              value={val}
+                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.value } } as any)}
+                            >
+                              {(field.options || []).map((opt: string) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : field.type === "number" ? (
+                            <input
+                              type="number"
+                              className={`flex-1 ${fieldClass}`}
+                              value={val}
+                              min={0}
+                              max={field.key === "volume" ? 100 : undefined}
+                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: Number(e.target.value) } } as any)}
+                            />
+                          ) : (
+                            <input
+                              className={`flex-1 ${fieldClass}`}
+                              value={val}
+                              onChange={(e) => onChange({ propOverrides: { ...overrides, [field.key]: e.target.value } } as any)}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {manifest.dataContract?.sseEventType && (
+                  <div className="text-[10px] text-emerald-500/70 px-1 pt-1">● Live: {manifest.dataContract.sseEventType}</div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
