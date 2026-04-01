@@ -124,6 +124,27 @@ router.get("/w/:token/stream", async (req, res) => {
       console.warn("[widget] replay failed:", e?.message || e);
     }
 
+    // Get the user's chat overlay public_id for ring buffer polling
+    let chatOverlayPublicId = null;
+    let lastRingSeq = 0;
+    try {
+      const overlayRow = await db.query(
+        `SELECT public_id FROM overlays WHERE user_id = $1 ORDER BY id ASC LIMIT 1`,
+        [userId]
+      );
+      if (overlayRow.rows.length) {
+        chatOverlayPublicId = overlayRow.rows[0].public_id;
+        // Get current seq so we only deliver new messages
+        const seqRow = await db.query(
+          `SELECT last_seq FROM widget_event_seq WHERE public_id = $1`,
+          [chatOverlayPublicId]
+        );
+        if (seqRow.rows.length) lastRingSeq = Number(seqRow.rows[0].last_seq);
+      }
+    } catch (e) {
+      console.warn("[widget] ring buffer init failed:", e?.message || e);
+    }
+
     /**
      * Poll loop (schema-correct, indexed, fast)
      */
@@ -131,6 +152,7 @@ router.get("/w/:token/stream", async (req, res) => {
       if (closed) return;
 
       try {
+        // Poll public.events for non-chat events (subs, follows, etc.)
         const r = await db.query(
           `SELECT id, v, source, kind, ts, channel_slug, actor_id, actor_username, payload
            FROM public.events
@@ -144,6 +166,41 @@ router.get("/w/:token/stream", async (req, res) => {
         for (const row of r.rows || []) {
           send(row.kind, row);
           if (row.ts && row.ts > lastTs) lastTs = row.ts;
+        }
+
+        // Poll widget_event_log (ring buffer) for chat messages
+        if (chatOverlayPublicId) {
+          const ring = await db.query(
+            `SELECT seq, payload FROM widget_event_log
+             WHERE public_id = $1 AND seq > $2
+             ORDER BY seq ASC LIMIT 100`,
+            [chatOverlayPublicId, lastRingSeq]
+          );
+          for (const row of ring.rows || []) {
+            const msg = row.payload?.msg || row.payload || {};
+            send('chat.message.sent', {
+              kind: 'chat.message.sent',
+              source: msg.platform || 'kick',
+              actor_username: msg.username || msg.display_name,
+              payload: {
+                platform: msg.platform || 'kick',
+                message: {
+                  text: msg.text || '',
+                  raw: {
+                    sender: {
+                      username: msg.username || msg.display_name,
+                      profile_picture: msg.avatar_url || '',
+                      identity: { username_color: '' },
+                    },
+                    content: msg.text || '',
+                    emotes: msg.emotes || [],
+                  },
+                  sender_username: msg.username || msg.display_name,
+                },
+              },
+            });
+            if (row.seq > lastRingSeq) lastRingSeq = row.seq;
+          }
         }
       } catch (e) {
         console.warn("[widget] poll error:", e?.message || e);
