@@ -40,27 +40,46 @@
   const PLATFORM_COLORS = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
   const PLATFORM_ICONS  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
 
-  if (!token) {
+  const editorPreview = cfg.editorPreview === true || cfg.editorPreview === 'true';
+
+  if (!token && !editorPreview) {
     console.warn('[chat-overlay] No token — add widget to overlay and configure');
     return;
   }
 
-  window.__WIDGET_TOKEN__ = token;
+  if (token) window.__WIDGET_TOKEN__ = token;
 
   // ── DOM setup ─────────────────────────────────────────────────────────────
-  const container = document.createElement('div');
-  container.id = 'chat-overlay-root';
-  container.style.cssText = `
-    position: fixed; inset: 0;
-    display: flex; flex-direction: column-reverse;
-    padding: 12px; gap: ${messageGapPx}px;
-    overflow: hidden; pointer-events: none;
-    font-family: ${fontFamily};
-    font-size: ${fontSizePx}px;
-    line-height: ${lineHeight};
-  `;
-  document.body.style.background = 'transparent';
-  document.body.appendChild(container);
+  // In editor preview mode, render into a scoped container div
+  // In runtime mode, render full-screen into document.body
+  let container;
+  const previewRoot = editorPreview && document.querySelector('[data-widget-editor-preview="chat-overlay"]');
+  if (previewRoot) {
+    container = previewRoot;
+    container.style.cssText = `
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column-reverse;
+      padding: 12px; gap: ${messageGapPx}px;
+      overflow: hidden; pointer-events: none;
+      font-family: ${fontFamily};
+      font-size: ${fontSizePx}px;
+      line-height: ${lineHeight};
+    `;
+  } else {
+    container = document.createElement('div');
+    container.id = 'chat-overlay-root';
+    container.style.cssText = `
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column-reverse;
+      padding: 12px; gap: ${messageGapPx}px;
+      overflow: hidden; pointer-events: none;
+      font-family: ${fontFamily};
+      font-size: ${fontSizePx}px;
+      line-height: ${lineHeight};
+    `;
+    document.body.style.background = 'transparent';
+    document.body.appendChild(container);
+  }
 
   // ── CSS ───────────────────────────────────────────────────────────────────
   const style = document.createElement('style');

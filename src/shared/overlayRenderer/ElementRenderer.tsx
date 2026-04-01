@@ -1787,21 +1787,39 @@ export function ElementRenderer({
         const propOverrides = widgetEl.propOverrides || {};
         const w = widgetEl.visible === false ? 0 : (baseStyle.width || 0);
         const h = widgetEl.visible === false ? 0 : (baseStyle.height || 0);
+
+        // Editor preview: inject widget script directly, render into scoped div
         if (overlayPublicId) {
-            const p = new URLSearchParams({ widgetPreview: widgetId });
-            Object.entries(propOverrides).forEach(([k, v]) => p.set(k, String(v)));
-            const iframeSrc = `/o/${encodeURIComponent(overlayPublicId)}?${p.toString()}`;
+            const WIDGET_SCRIPTS: Record<string, string> = {
+                'chat-overlay': '/widgets/chat-overlay.js',
+                'alert-box-widget': '/widgets/alert-box-widget.js',
+                'sub-counter': '/widgets/sub-counter.js',
+                'event-console-widget': '/widgets/event-console-widget.js',
+                'tts-player': '/widgets/tts-player.js',
+                'stake-monitor': '/widgets/stake-monitor.js',
+                'raffle': '/widgets/raffle.js',
+            };
+            const scriptSrc = WIDGET_SCRIPTS[widgetId];
+            const scriptId = `widget-script-editor-${widgetId}`;
+            const containerId = `widget-preview-${el.id}`;
+            if (scriptSrc && typeof document !== 'undefined' && !document.getElementById(scriptId)) {
+                const configKey = `WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`;
+                (window as any)[configKey] = { ...propOverrides, editorPreview: true };
+                const s = document.createElement('script');
+                s.id = scriptId;
+                s.src = scriptSrc;
+                document.head.appendChild(s);
+            }
             return (
-                <div style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}>
-                    <iframe
-                        src={iframeSrc}
-                        style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
-                        allowTransparency={true}
-                        data-overlay-widget-preview={widgetId}
-                    />
-                </div>
+                <div
+                    id={containerId}
+                    style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden' }}
+                    data-widget-editor-preview={widgetId}
+                />
             );
         }
+
+        // Runtime mode (OBS): empty div, widget script injected by loadWidgetRuntimes()
         const rp = new URLSearchParams();
         Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
         return (
