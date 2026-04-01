@@ -23,11 +23,9 @@ router.get('/api/tts/voices/:channelSlug', async (req, res) => {
   try {
     const { channelSlug } = req.params;
 
-    // Get user_id for this channel
+    // Get user_id by username (profile username, not channel slug)
     const { rows: userRows } = await db.query(
-      `SELECT ea.user_id FROM external_accounts ea
-       JOIN channels c ON c.account_id = ea.id
-       WHERE c.channel_slug = $1 AND c.platform = 'kick' LIMIT 1`,
+      `SELECT id AS user_id FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1`,
       [channelSlug]
     );
     if (!userRows.length) return res.json({ ok: true, voices: [] });
@@ -96,11 +94,9 @@ router.post('/api/tts/paid/intent', express.json(), async (req, res) => {
       return res.status(400).json({ ok: false, error: 'use_free_tts_command' });
     }
 
-    // Get streamer user_id
+    // Get streamer user_id by username
     const { rows: userRows } = await db.query(
-      `SELECT ea.user_id FROM external_accounts ea
-       JOIN channels c ON c.account_id = ea.id
-       WHERE c.channel_slug = $1 AND c.platform = 'kick' LIMIT 1`,
+      `SELECT id AS user_id FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1`,
       [channelSlug]
     );
     if (!userRows.length) return res.status(404).json({ ok: false, error: 'streamer_not_found' });
