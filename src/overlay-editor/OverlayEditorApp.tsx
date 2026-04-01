@@ -6121,16 +6121,49 @@ function TimelineFieldLabel({
   );
 }
 
-function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+function parseRgba(v: string): { hex: string; alpha: number } {
+  if (!v) return { hex: '#000000', alpha: 1 };
+  const rgba = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/);
+  if (rgba) {
+    const r = parseInt(rgba[1]).toString(16).padStart(2,'0');
+    const g = parseInt(rgba[2]).toString(16).padStart(2,'0');
+    const b = parseInt(rgba[3]).toString(16).padStart(2,'0');
+    return { hex: `#${r}${g}${b}`, alpha: rgba[4] !== undefined ? parseFloat(rgba[4]) : 1 };
+  }
+  if (v.startsWith('#')) return { hex: v.slice(0,7), alpha: 1 };
+  return { hex: '#000000', alpha: 1 };
+}
+
+function hexAlphaToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return alpha >= 1 ? hex : `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
+}
+
+function ColorSwatch({ value, onChange, className, showAlpha }: { value: string; onChange: (v: string) => void; className?: string; showAlpha?: boolean }) {
+  const { hex, alpha } = parseRgba(value || '#000000');
+  const hasAlpha = showAlpha || (value && value.startsWith('rgba'));
   return (
-    <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
-      <div className="absolute inset-0" style={{ background: value }} />
-      <input
-        type="color"
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        value={value && value.startsWith("#") ? value : "#000000"}
-        onChange={(e) => onChange(e.target.value)}
-      />
+    <div className="flex items-center gap-1 flex-1">
+      <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
+        <div className="absolute inset-0" style={{ background: value }} />
+        <input
+          type="color"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          value={hex}
+          onChange={(e) => onChange(hexAlphaToRgba(e.target.value, alpha))}
+        />
+      </div>
+      {hasAlpha && (
+        <input
+          type="range" min="0" max="1" step="0.05"
+          className="flex-1 h-1 accent-indigo-500"
+          value={alpha}
+          title={`Opacity: ${Math.round(alpha * 100)}%`}
+          onChange={(e) => onChange(hexAlphaToRgba(hex, parseFloat(e.target.value)))}
+        />
+      )}
     </div>
   );
 }
