@@ -369,6 +369,46 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 /* -----------------------------
    Overlay runtime root
 ------------------------------*/
+
+// ── Widget Runtime Loader ─────────────────────────────────────────────────────
+// Scans the overlay for widget elements and loads their runtime scripts
+function loadWidgetRuntimes(elements: any[], channelSlug: string) {
+  elements.forEach(el => {
+    if (el.type !== 'widget') return;
+    const widgetId = el.widgetId;
+    const propOverrides = el.propOverrides || {};
+
+    // Map widget IDs to their runtime scripts
+    const WIDGET_SCRIPTS: Record<string, string> = {
+      'stake-monitor': '/widgets/stake-monitor.js',
+      'tts-player': '/widgets/tts-player.js',
+    };
+
+    const scriptSrc = WIDGET_SCRIPTS[widgetId];
+    if (!scriptSrc) return;
+
+    // Don't load twice
+    if (document.querySelector(`script[data-widget="${widgetId}"]`)) return;
+
+    // Build params from propOverrides + channel
+    const params = new URLSearchParams({ channel: channelSlug, ...propOverrides });
+
+    // Set global config for the widget script
+    (window as any)[`WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`] = {
+      channel: channelSlug,
+      ...propOverrides,
+    };
+
+    // Load the widget script
+    const script = document.createElement('script');
+    script.src = scriptSrc + '?' + params.toString();
+    script.setAttribute('data-widget', widgetId);
+    script.onerror = () => console.warn('[overlay-runtime] Failed to load widget:', widgetId);
+    document.head.appendChild(script);
+    console.log('[overlay-runtime] Loaded widget:', widgetId);
+  });
+}
+
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
   const [state, setState] = useState<OverlayStateV0 | null>(null);
@@ -427,6 +467,11 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
       overlayConfigHashRef.current = nextHash;
       setOverlay(data);
+
+      // Load widget runtime scripts for any widget elements
+      const allElements = (data as any).elements || [];
+      const channelSlug = new URLSearchParams(window.location.search).get('channel') || '';
+      loadWidgetRuntimes(allElements, channelSlug);
     };
 
     loadConfig().catch((e) => console.error("Failed to load overlay config", e));

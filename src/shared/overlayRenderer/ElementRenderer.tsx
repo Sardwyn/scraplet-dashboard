@@ -1779,6 +1779,39 @@ export function ElementRenderer({
         );
     }
 
+    // WIDGET ELEMENT
+    if ((el as any).type === "widget") {
+        const widgetEl = el as any;
+        const widgetId = widgetEl.widgetId;
+        const propOverrides = widgetEl.propOverrides || {};
+
+        // Build query string from propOverrides for the runtime script
+        const params = new URLSearchParams();
+        Object.entries(propOverrides).forEach(([k, v]) => {
+            params.set(k, String(v));
+        });
+
+        // Get the runtime script URL from the widget registry
+        // We use a data attribute approach so the runtime can load the script
+        if (widgetEl.liveDataSource?.sseEventType || widgetEl.widgetId) {
+            return (
+                <div
+                    style={{
+                        ...baseStyle,
+                        // Invisible widgets render as 0x0 but still exist in DOM
+                        width: widgetEl.visible === false ? 0 : (baseStyle.width || 0),
+                        height: widgetEl.visible === false ? 0 : (baseStyle.height || 0),
+                        overflow: 'hidden',
+                        pointerEvents: 'none',
+                    }}
+                    data-widget-id={widgetId}
+                    data-widget-params={params.toString()}
+                />
+            );
+        }
+        return null;
+    }
+
     return null;
 }
 

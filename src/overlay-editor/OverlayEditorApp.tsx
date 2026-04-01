@@ -4949,6 +4949,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               <p className="text-[11px] text-slate-500 px-1 pt-2">
                 Drag or click a widget to add it to the canvas. Widgets connect live data sources to your overlay.
               </p>
+              {/* Category filter */}
+              {(() => {
+                const categories = [...new Set(getAllWidgets().map(w => w.widgetManifest.category))];
+                return categories.length > 1 ? (
+                  <div className="flex gap-1 px-1 flex-wrap">
+                    {categories.map(cat => (
+                      <span key={cat} className="text-[10px] text-indigo-400 bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-500/20 capitalize">{cat}</span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
               {getAllWidgets().map((widgetDef) => {
                 const m = widgetDef.widgetManifest;
                 return (

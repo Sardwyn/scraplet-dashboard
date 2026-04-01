@@ -45,6 +45,18 @@ export const SourceCatalog: SourceDef[] = [
     },
 
   {
+    id: 'tts_player',
+    label: 'TTS Player',
+    description: 'Live TTS message data — sender, message, voice',
+    fields: [
+      { key: 'senderUsername', label: 'Sender Username', type: 'string',  fallback: '' },
+      { key: 'messageText',    label: 'Message Text',    type: 'string',  fallback: '' },
+      { key: 'voiceName',      label: 'Voice Name',      type: 'string',  fallback: '' },
+      { key: 'isPlaying',      label: 'Is Playing',      type: 'boolean', fallback: false },
+    ],
+  },
+
+  {
     id: 'stake_monitor',
     label: 'Stake Monitor',
     description: 'Live Stake.com session data from the Stake Monitor widget',

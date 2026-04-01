@@ -2419,6 +2419,16 @@ router.get("/stats", requireAuth, async (req, res) => {
         label: r.element_label,
         count: parseInt(r.count)
       }));
+
+      // Heatmap points from click data
+      heatmapPoints = detailRows.map((r, i) => ({
+        type: r.element_type,
+        label: r.element_label,
+        clicks: parseInt(r.count),
+        x: r.element_type === 'button' ? 50 + (i % 3) * 20 : r.element_type === 'social' ? 20 + i * 15 : 50,
+        y: r.element_type === 'button' ? 60 + Math.floor(i / 3) * 15 : r.element_type === 'social' ? 40 : 70 + i * 10,
+        intensity: Math.min(1, parseInt(r.count) / 10),
+      }));
     } catch (analyticsErr) {
       console.warn('[dashboard/stats] profile analytics query failed:', analyticsErr.message);
     }
