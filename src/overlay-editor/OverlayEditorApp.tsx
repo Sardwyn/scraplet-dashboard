@@ -7563,7 +7563,7 @@ function InspectorPanel({
             const manifest = widgetDef?.widgetManifest;
             const schema = manifest?.configSchema || [];
             const overrides = (element as any).propOverrides || {};
-            const overlaySlug = slug; // capture from outer scope
+
             if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
             return (
               <div className="space-y-3">
