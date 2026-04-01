@@ -428,7 +428,7 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     // Load the widget script
     const params = new URLSearchParams({ channel: channelSlug });
     const script = document.createElement('script');
-    script.src = scriptSrc + '?' + params.toString();
+    params.set('v', Date.now().toString()); script.src = scriptSrc + '?' + params.toString();
     script.setAttribute('data-widget', widgetId);
     script.onerror = () => console.warn('[overlay-runtime] Failed to load widget:', widgetId);
     document.head.appendChild(script);
