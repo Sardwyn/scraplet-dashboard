@@ -26,6 +26,7 @@
   const lineHeight      = parseFloat(cfg.lineHeight) || 1.4;
   const messageGapPx    = parseInt(cfg.messageGapPx) || 6;
   const nameColor       = cfg.nameColor       || '#a5b4fc';
+  const nameColorMode   = cfg.nameColorMode   || 'custom'; // 'custom' | 'platform' | 'user'
   const messageColor    = cfg.messageColor    || '#ffffff';
   const showAvatars     = cfg.showAvatars !== false && cfg.showAvatars !== 'false';
   const showPlatformIcon= cfg.showPlatformIcon !== false && cfg.showPlatformIcon !== 'false';
@@ -173,7 +174,14 @@
     }
 
     // Name + message
-    const nameCol = color || PLATFORM_COLORS[platform] || nameColor;
+    let nameCol;
+    if (nameColorMode === 'user') {
+      nameCol = color || PLATFORM_COLORS[platform] || nameColor;
+    } else if (nameColorMode === 'platform') {
+      nameCol = PLATFORM_COLORS[platform] || nameColor;
+    } else {
+      nameCol = nameColor;
+    }
     html += `<span class="cm-name" style="color:${escHtml(nameCol)}">${escHtml(username || 'User')}</span>`;
     html += `<span class="cm-text">${escHtml(text || '')}</span>`;
 

@@ -37,7 +37,8 @@ registerWidget({
       { key: 'lineHeight',      type: 'number',  label: 'Line height',           default: 1.4 },
       { key: 'messageGapPx',    type: 'number',  label: 'Gap between messages (px)', default: 6 },
       // Colours
-      { key: 'nameColor',       type: 'color',   label: 'Name colour',           default: '#a5b4fc' },
+      { key: 'nameColorMode', type: 'select', label: 'Name colour mode', default: 'custom', options: ['custom', 'platform', 'user'] },
+      { key: 'nameColor',       type: 'color',   label: 'Name colour (custom)',  default: '#a5b4fc' },
       { key: 'messageColor',    type: 'color',   label: 'Message colour',        default: '#ffffff' },
       // Display options
       { key: 'showAvatars',     type: 'boolean', label: 'Show avatars',          default: false },
