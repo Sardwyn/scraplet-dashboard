@@ -32,7 +32,7 @@ registerWidget({
     runtimeScript:  '/widgets/chat-overlay.js',
     configSchema: [
       // Typography
-      { key: 'fontFamily',      type: 'text',    label: 'Font family',          default: 'Inter, system-ui, sans-serif' },
+      { key: 'fontFamily', type: 'select', label: 'Font', default: 'Inter', options: ['Inter','Roboto','Open Sans','Oswald','Bebas Neue','Montserrat','Rajdhani','Exo 2','Barlow','Nunito','Poppins','Lato','Source Code Pro','Space Grotesk','DM Sans'] },
       { key: 'fontSizePx',      type: 'number',  label: 'Font size (px)',        default: 16 },
       { key: 'lineHeight',      type: 'number',  label: 'Line height',           default: 1.4 },
       { key: 'messageGapPx',    type: 'number',  label: 'Gap between messages (px)', default: 6 },

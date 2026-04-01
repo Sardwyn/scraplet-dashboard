@@ -10,7 +10,15 @@
   const token = cfg.token || window.__WIDGET_TOKEN__ || '';
 
   // Config with defaults
-  const fontFamily      = cfg.fontFamily      || 'Inter, system-ui, sans-serif';
+  const fontName        = cfg.fontFamily || 'Inter';
+  const fontFamily      = `${fontName}, system-ui, sans-serif`;
+  // Load font from Google Fonts
+  if (fontName && fontName !== 'system-ui') {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@400;600;700&display=swap`;
+    document.head.appendChild(link);
+  }
   const fontSizePx      = parseInt(cfg.fontSizePx)  || 16;
   const lineHeight      = parseFloat(cfg.lineHeight) || 1.4;
   const messageGapPx    = parseInt(cfg.messageGapPx) || 6;
