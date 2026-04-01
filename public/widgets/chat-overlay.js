@@ -29,6 +29,13 @@
   const enableKick      = cfg.enableKick !== false && cfg.enableKick !== 'false';
   const enableYoutube   = cfg.enableYoutube !== false && cfg.enableYoutube !== 'false';
   const enableTwitch    = cfg.enableTwitch !== false && cfg.enableTwitch !== 'false';
+  const bufferMax       = parseInt(cfg.bufferMax) || 120;
+  const glowEnabled     = cfg.glowEnabled === true || cfg.glowEnabled === 'true';
+  const glowColor       = cfg.glowColor || '#a5b4fc';
+  const glowBlur        = parseInt(cfg.glowBlur) || 8;
+  const depthEnabled    = cfg.depthEnabled === true || cfg.depthEnabled === 'true';
+  const depthOffset     = parseInt(cfg.depthOffset) || 2;
+  const depthColor      = cfg.depthColor || 'rgba(0,0,0,0.5)';
 
   const PLATFORM_COLORS = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
   const PLATFORM_ICONS  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
@@ -86,10 +93,13 @@
     .cm-name {
       font-weight: 600; flex-shrink: 0;
       ${shadow ? 'text-shadow: 0 1px 3px rgba(0,0,0,0.8);' : ''}
+      ${glowEnabled ? `text-shadow: 0 0 ${glowBlur}px ${glowColor}, 0 1px 3px rgba(0,0,0,0.8);` : ''}
+      ${depthEnabled ? `text-shadow: ${depthOffset}px ${depthOffset}px 0 ${depthColor}, 0 1px 3px rgba(0,0,0,0.8);` : ''}
     }
     .cm-text {
       color: ${messageColor};
       ${shadow ? 'text-shadow: 0 1px 3px rgba(0,0,0,0.8);' : ''}
+      ${depthEnabled ? `text-shadow: ${depthOffset}px ${depthOffset}px 0 ${depthColor};` : ''}
     }
     .cm-fade { animation: cm-fade 0.5s ease forwards; }
     @keyframes cm-in { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
@@ -143,12 +153,16 @@
       }, fadeMs);
     }
 
-    // Trim to max
-    while (messages.length > maxMessages) {
+    // Trim to max (use bufferMax for memory, maxMessages for display)
+    while (messages.length > Math.max(maxMessages, bufferMax)) {
       const old = messages.shift();
       if (old.timer) clearTimeout(old.timer);
       old.el.remove();
     }
+    // Hide overflow messages (keep in buffer but not visible)
+    messages.forEach((m, i) => {
+      m.el.style.display = i < maxMessages ? '' : 'none';
+    });
   }
 
   // ── SSE connection ────────────────────────────────────────────────────────

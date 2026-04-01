@@ -7571,6 +7571,16 @@ function InspectorPanel({
                   {manifest.invisible && <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">invisible</span>}
                 </div>
                 <div className="text-[11px] text-slate-500 px-1 leading-snug">{manifest.description}</div>
+
+                {/* Live widget preview */}
+                {!manifest.invisible && (
+                  <div className="mx-1 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-black" style={{height: '160px', position: 'relative'}}>
+                    <div className="absolute inset-0 flex items-center justify-center text-[11px] text-slate-600">
+                      Widget preview loads in OBS browser source
+                    </div>
+                    <div className="absolute top-1 right-1 text-[9px] text-slate-600 bg-black/60 px-1 rounded">PREVIEW</div>
+                  </div>
+                )}
                 {schema.length > 0 && (
                   <div className="space-y-2 pt-1">
                     <label className={uiClasses.label}>Widget Settings</label>
@@ -7637,17 +7647,23 @@ function InspectorPanel({
                           {['kick','youtube','twitch'].map(platform => (
                             <button
                               key={platform}
-                              onClick={() => {
+                              onClick={async () => {
                                 const textEl = document.getElementById(`test-fire-text-${widgetId}`) as HTMLInputElement;
                                 const text = textEl?.value || 'Test message!';
-                                // Send to overlay preview iframe if present
-                                const previewFrame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
-                                if (previewFrame?.contentWindow) {
-                                  previewFrame.contentWindow.postMessage({ type: 'widget:test', widgetId, payload: { username: 'TestUser', text, platform } }, '*');
-                                }
-                                // Also try direct call if in same window
-                                if ((window as any).__chatOverlayTest) {
-                                  (window as any).__chatOverlayTest('TestUser', text, platform);
+                                // Fire test event via dashboard API (injects into SSE stream)
+                                try {
+                                  await fetch('/dashboard/api/widget-test-fire', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                    credentials: 'same-origin',
+                                    body: JSON.stringify({
+                                      widgetId,
+                                      eventType: 'chat_message',
+                                      payload: { username: 'TestUser', text, platform, color: '#a5b4fc' }
+                                    }),
+                                  });
+                                } catch (e) {
+                                  console.warn('[test-fire] failed:', e);
                                 }
                               }}
                               className="flex-1 text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 capitalize"

@@ -52,6 +52,15 @@ registerWidget({
       // Limits
       { key: 'limitsMaxMessages', type: 'number', label: 'Max messages shown',   default: 20 },
       { key: 'limitsFadeMs',    type: 'number',  label: 'Fade out after (ms, 0=never)', default: 0 },
+      // Limits (extended)
+      { key: 'bufferMax',       type: 'number',  label: 'Memory buffer (max)',   default: 120 },
+      // Visual effects
+      { key: 'glowEnabled',     type: 'boolean', label: 'Name glow effect',      default: false },
+      { key: 'glowColor',       type: 'color',   label: 'Glow colour',           default: '#a5b4fc' },
+      { key: 'glowBlur',        type: 'number',  label: 'Glow blur (px)',        default: 8 },
+      { key: 'depthEnabled',    type: 'boolean', label: 'Depth/3D effect',       default: false },
+      { key: 'depthOffset',     type: 'number',  label: 'Depth offset (px)',     default: 2 },
+      { key: 'depthColor',      type: 'color',   label: 'Depth colour',          default: 'rgba(0,0,0,0.5)' },
       // Platform filters
       { key: 'enableKick',      type: 'boolean', label: 'Show Kick chat',        default: true },
       { key: 'enableYoutube',   type: 'boolean', label: 'Show YouTube chat',     default: true },
