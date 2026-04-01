@@ -7773,10 +7773,29 @@ function InspectorPanel({
                                         <input type="range" min="0" max="1" step="0.1" className="flex-1 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
                                       </div>
                                     </div>
-                                    {/* Image URL */}
+                                    {/* Image/GIF upload */}
                                     <div className="flex items-center gap-2">
                                       <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Image/GIF</label>
-                                      <input className={`flex-1 ${fieldClass} text-[11px]`} value={ec.image || ''} onChange={e => updateEvent(evKey, { image: e.target.value })} placeholder="https://..." />
+                                      <div className="flex-1 flex gap-1 items-center">
+                                        {ec.image && <img src={ec.image} alt="" className="h-8 w-8 object-cover rounded border border-[rgba(255,255,255,0.08)] flex-shrink-0" />}
+                                        <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                          {ec.image ? 'Change' : 'Upload image / GIF'}
+                                          <input type="file" accept="image/*,image/gif" className="hidden" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const fd = new FormData();
+                                            fd.append('file', file);
+                                            fd.append('scope', 'overlays');
+                                            fd.append('kind', 'images');
+                                            try {
+                                              const r = await fetch('/dashboard/api/uploads/overlay/image', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                              if (r.ok) { const d = await r.json(); updateEvent(evKey, { image: d.url }); }
+                                            } catch { /* ignore */ }
+                                            e.target.value = '';
+                                          }} />
+                                        </label>
+                                        {ec.image && <button type="button" onClick={() => updateEvent(evKey, { image: '' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                      </div>
                                     </div>
                                     {/* Min amount (for tip/gift) */}
                                     {(evKey === 'tip' || evKey === 'gift_sub') && (
