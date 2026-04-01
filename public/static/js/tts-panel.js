@@ -17,6 +17,20 @@
       if (!panel) return;
 
       btn.addEventListener('click', function () {
+        // Build the panel HTML if empty
+        if (!panel.innerHTML.trim()) {
+          panel.innerHTML = [
+            '<div class="pc-contact-title" style="margin-bottom:8px;">🎙️ Send a TTS Message</div>',
+            '<p class="pc-contact-text" data-tts-note="true" style="margin-bottom:8px;">Loading voices...</p>',
+            '<textarea class="pc-contact-input" data-tts-input="true" rows="3" maxlength="500"',
+            '  placeholder="Type your message (max 500 chars)..." style="margin-bottom:8px;"></textarea>',
+            '<div class="pc-contact-form">',
+            '  <div class="pc-contact-text" data-tts-counter="true">0 / 500</div>',
+            '  <button type="button" class="pc-contact-button" data-tts-submit="true" disabled>Send</button>',
+            '  <button type="button" class="pc-contact-button" data-tts-close="true">Close</button>',
+            '</div>',
+          ].join('');
+        }
         panel.hidden = false;
         btn.hidden = true;
         loadVoices(creator, panel);
