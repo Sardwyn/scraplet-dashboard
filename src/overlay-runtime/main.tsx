@@ -414,12 +414,12 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
       }
     }
 
-    // Set global config for the widget script
+    // Set global config AFTER token is resolved so widget reads correct token
     const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
     (window as any)[configKey] = {
-      token,
       channel: channelSlug,
       ...propOverrides,
+      token,  // token last so it overrides any empty propOverrides.token
     };
 
     // Also set legacy token global
