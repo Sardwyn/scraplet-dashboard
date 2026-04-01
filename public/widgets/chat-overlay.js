@@ -78,15 +78,23 @@
   let container;
 
   // Find the bounding box div rendered by ElementRenderer (works in both editor and runtime)
+  // Use rAF retry so React has time to render the div
+  let _findAttempts = 0;
   function findAndInit() {
     const editorRoot = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
     const runtimeRoot = document.querySelector('[data-widget-id="chat-overlay"]');
     const root = editorRoot || runtimeRoot;
     if (root) {
       container = root;
+      // Ensure container is positioned correctly
+      container.style.position = 'absolute';
+      container.style.inset = '0';
+      container.style.overflow = 'hidden';
       applyContainerStyles(container, 'absolute');
       init();
-    } else if (editorPreview) {
+    } else if (_findAttempts < 60) {
+      // Retry for up to ~1 second (60 frames)
+      _findAttempts++;
       requestAnimationFrame(findAndInit);
     } else {
       // Fallback: full-screen fixed div
@@ -99,8 +107,7 @@
     }
   }
   findAndInit();
-  if (!editorPreview) return; // runtime: findAndInit calls init() synchronously or via fallback
-  return; // editor: findAndInit calls init() async
+  return; // init() called async by findAndInit
 
 
   function init() {
