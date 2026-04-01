@@ -111,6 +111,7 @@ router.get("/w/:token/stream", async (req, res) => {
         `SELECT id, v, source, kind, ts, channel_slug, actor_id, actor_username, payload
          FROM public.events
          WHERE user_id = $1
+           AND kind != 'chat.message.sent'
          ORDER BY ts DESC
          LIMIT 50`,
         [userId]
@@ -158,6 +159,7 @@ router.get("/w/:token/stream", async (req, res) => {
            FROM public.events
            WHERE user_id = $1
              AND ts > $2
+             AND kind != 'chat.message.sent'
            ORDER BY ts ASC
            LIMIT 200`,
           [userId, lastTs]
