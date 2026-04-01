@@ -50,14 +50,9 @@
   if (token) window.__WIDGET_TOKEN__ = token;
 
   // ── DOM setup ─────────────────────────────────────────────────────────────
-  // In editor preview mode, render into a scoped container div
-  // In runtime mode, render full-screen into document.body
-  let container;
-  const previewRoot = editorPreview && document.querySelector('[data-widget-editor-preview="chat-overlay"]');
-  if (previewRoot) {
-    container = previewRoot;
-    container.style.cssText = `
-      position: absolute; inset: 0;
+  function applyContainerStyles(el, position) {
+    el.style.cssText = `
+      position: ${position}; inset: 0;
       display: flex; flex-direction: column-reverse;
       padding: 12px; gap: ${messageGapPx}px;
       overflow: hidden; pointer-events: none;
@@ -65,22 +60,34 @@
       font-size: ${fontSizePx}px;
       line-height: ${lineHeight};
     `;
+  }
+
+  let container;
+
+  if (editorPreview) {
+    // Wait for React to render the scoped container div, then initialise
+    function findAndInit() {
+      const root = document.querySelector('[data-widget-editor-preview="chat-overlay"]');
+      if (root) {
+        container = root;
+        applyContainerStyles(container, 'absolute');
+        init();
+      } else {
+        requestAnimationFrame(findAndInit);
+      }
+    }
+    findAndInit();
+    return; // init() called async once container is found
   } else {
     container = document.createElement('div');
     container.id = 'chat-overlay-root';
-    container.style.cssText = `
-      position: fixed; inset: 0;
-      display: flex; flex-direction: column-reverse;
-      padding: 12px; gap: ${messageGapPx}px;
-      overflow: hidden; pointer-events: none;
-      font-family: ${fontFamily};
-      font-size: ${fontSizePx}px;
-      line-height: ${lineHeight};
-    `;
+    applyContainerStyles(container, 'fixed');
     document.body.style.background = 'transparent';
     document.body.appendChild(container);
   }
 
+
+  function init() {
   // ── CSS ───────────────────────────────────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
@@ -274,4 +281,8 @@
   }
 
   console.log('[chat-overlay] v2 started — platforms:', { kick: enableKick, youtube: enableYoutube, twitch: enableTwitch });
+  }
+
+  init();
+
 })();
