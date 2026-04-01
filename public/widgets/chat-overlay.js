@@ -86,6 +86,7 @@
     const root = editorRoot || runtimeRoot;
     if (root) {
       container = root;
+      console.log('[chat-overlay] found container:', root.tagName, 'data-widget-id:', root.getAttribute('data-widget-id'), 'style:', root.getAttribute('style'));
       // Don't override the bounding box positioning - just set display/overflow
       container.style.display = 'flex';
       container.style.flexDirection = 'column-reverse';
@@ -251,7 +252,7 @@
           const rawText = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
           // Strip Kick emote codes like [emote:123:emojiName]
-          const text = rawText.replace(/\[emote:\d+:[^\]]+\]/g, '').trim();
+          const text = rawText.replace(/\[emote:[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
           const platform = payload.platform || d.platform || d.source || 'kick';
           const avatar = sender.profile_picture || payload.actor?.avatar_url || d.avatar || '';
           // Use platform colour from identity if available, else fall back
