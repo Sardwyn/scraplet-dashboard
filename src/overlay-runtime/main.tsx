@@ -415,7 +415,7 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     }
 
     // Set global config for the widget script
-    const configKey = `WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}`;
+    const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
     (window as any)[configKey] = {
       token,
       channel: channelSlug,
