@@ -1808,7 +1808,7 @@ export function ElementRenderer({
                 if (!document.getElementById(scriptId)) {
                     const s = document.createElement('script');
                     s.id = scriptId;
-                    s.src = scriptSrc;
+                    s.src = scriptSrc + '?v=' + Date.now();
                     document.head.appendChild(s);
                 }
             }
