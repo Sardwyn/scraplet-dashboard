@@ -69,7 +69,6 @@ import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
 import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
-import './src/ttsWidget/index.js';
 import { scheduleInsightEngine } from './services/insightEngine.js';
 
 
