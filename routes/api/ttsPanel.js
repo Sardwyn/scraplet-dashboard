@@ -35,7 +35,7 @@ router.get('/api/tts/voices/:channelSlug', async (req, res) => {
 
     // Check TTS feature flag
     const { rows: featureRows } = await db.query(
-      `SELECT flags_json FROM creator_features WHERE user_id = $1 LIMIT 1`,
+      `SELECT flags_json FROM creator_features WHERE scraplet_user_id = $1 LIMIT 1`,
       [userId]
     );
     const flags = featureRows[0]?.flags_json || {};
