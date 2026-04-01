@@ -401,7 +401,8 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     // Fetch a widget token if needed and not already set
     if (TOKEN_WIDGETS.has(widgetId) && !token) {
       try {
-        const overlayPublicId = new URLSearchParams(window.location.search).get('id') ||
+        const overlayPublicId = (window as any).__OVERLAY_PUBLIC_ID__ ||
+          new URLSearchParams(window.location.search).get('id') ||
           window.location.pathname.split('/').pop() || '';
         const resp = await fetch(`/api/widget-token/public?widgetId=${encodeURIComponent(widgetId)}&overlayPublicId=${encodeURIComponent(overlayPublicId)}`);
         if (resp.ok) {
@@ -738,6 +739,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                     y: 0,
                   }}
                   elementsById={elementsById}
+                  overlayComponents={(overlay as any).components || []}
                   animationPhase={animationPhases[el.id]?.phase}
                   animationPhases={animationPhases}
                   data={{}} // Test data placeholder
@@ -755,6 +757,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 element={el}
                 yOffset={pinnedHeight}
                 elementsById={elementsById}
+                overlayComponents={(overlay as any).components || []}
                 animationPhase={animationPhases[el.id]?.phase}
                 animationPhases={animationPhases}
                 data={eventData}
