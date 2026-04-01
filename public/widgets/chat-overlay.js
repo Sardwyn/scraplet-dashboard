@@ -147,10 +147,10 @@
 
     let html = '';
 
-    // Avatar
+    // Avatar — show image if available, placeholder circle if not, nothing if disabled
     if (showAvatars) {
       if (avatar) {
-        html += `<img class="cm-avatar" src="${escHtml(avatar)}" alt="" onerror="this.style.display='none'" />`;
+        html += `<img class="cm-avatar" src="${escHtml(avatar)}" alt="${escHtml(username)}" onerror="this.outerHTML='<div class=cm-avatar-placeholder></div>'" />`;
       } else {
         html += `<div class="cm-avatar-placeholder"></div>`;
       }
@@ -285,10 +285,10 @@
   // Editor preview: show dummy messages so users can style the widget
   if (editorPreview) {
     const dummies = [
-      { username: 'StreamerFan99', text: 'This is what your chat overlay looks like!', platform: 'kick', color: '#53fc18' },
-      { username: 'YTViewer',      text: 'Loving the stream today 🔥', platform: 'youtube', color: '#ff0000' },
-      { username: 'TwitchUser',    text: 'PogChamp PogChamp PogChamp', platform: 'twitch', color: '#9146ff' },
-      { username: 'Sardwyn',       text: 'Welcome to the overlay editor preview!', platform: 'kick', color: '#a5b4fc' },
+      { username: 'StreamerFan99', text: 'This is what your chat overlay looks like!', platform: 'kick',    color: '#53fc18', avatar: 'https://i.pravatar.cc/24?u=1' },
+      { username: 'YTViewer',      text: 'Loving the stream today',                    platform: 'youtube', color: '#ff0000', avatar: 'https://i.pravatar.cc/24?u=2' },
+      { username: 'TwitchUser',    text: 'PogChamp PogChamp PogChamp',                 platform: 'twitch',  color: '#9146ff', avatar: 'https://i.pravatar.cc/24?u=3' },
+      { username: 'Sardwyn',       text: 'Welcome to the overlay editor preview!',     platform: 'kick',    color: '#a5b4fc', avatar: 'https://i.pravatar.cc/24?u=4' },
     ];
     dummies.forEach((d, i) => setTimeout(() => addMessage(d), i * 300));
   }

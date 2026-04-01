@@ -7638,6 +7638,11 @@ function InspectorPanel({
                               max={field.key === "volume" ? 100 : undefined}
                               onChange={(e) => { const n = { ...overrides, [field.key]: Number(e.target.value) }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
                             />
+                          ) : field.type === "color" ? (
+                            <ColorSwatch
+                              value={val || '#ffffff'}
+                              onChange={(v) => { const n = { ...overrides, [field.key]: v }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                            />
                           ) : (
                             <input
                               className={`flex-1 ${fieldClass}`}
