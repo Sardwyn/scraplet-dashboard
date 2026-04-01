@@ -86,11 +86,16 @@
     const root = editorRoot || runtimeRoot;
     if (root) {
       container = root;
-      // Ensure container is positioned correctly
-      container.style.position = 'absolute';
-      container.style.inset = '0';
+      // Don't override the bounding box positioning - just set display/overflow
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column-reverse';
       container.style.overflow = 'hidden';
-      applyContainerStyles(container, 'absolute');
+      container.style.padding = messageGapPx + 'px';
+      container.style.gap = messageGapPx + 'px';
+      container.style.fontFamily = fontFamily;
+      container.style.fontSize = fontSizePx + 'px';
+      container.style.lineHeight = lineHeight;
+      container.style.pointerEvents = 'none';
       init();
     } else if (_findAttempts < 60) {
       // Retry for up to ~1 second (60 frames)
