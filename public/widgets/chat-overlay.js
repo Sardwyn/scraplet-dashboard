@@ -222,7 +222,7 @@
     console.log('[chat-overlay] connected, token:', token.slice(0, 8) + '...');
   }
 
-  connect();
+  if (!editorPreview) connect();
 
   // ── Test fire SSE listener ────────────────────────────────────────────────
   // Connects to the dashboard test fire endpoint to receive test events
@@ -251,8 +251,8 @@
     } catch { /* test fire is optional */ }
   }
 
-  // Only connect test fire if we're in an editor context (has parent frame)
-  if (window.parent !== window) {
+  // Connect test fire in editor preview mode or when in an iframe
+  if (editorPreview || window.parent !== window) {
     connectTestFire();
   }
 
