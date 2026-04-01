@@ -7641,6 +7641,11 @@ function InspectorPanel({
 
                     <label className={uiClasses.label}>Widget Settings</label>
                     {schema.map((field: any) => {
+                      // Conditional visibility
+                      if (field.showWhen) {
+                        const condVal = overrides[field.showWhen.key] !== undefined ? overrides[field.showWhen.key] : (schema.find((f: any) => f.key === field.showWhen.key)?.default);
+                        if (condVal !== field.showWhen.value) return null;
+                      }
                       const val = overrides[field.key] !== undefined ? overrides[field.key] : field.default;
                       return (
                         <div key={field.key} className="flex items-center gap-2">
