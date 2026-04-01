@@ -1259,21 +1259,8 @@ export async function kickWebhookHandler(req, res) {
         console.error("[kickWebhook] error enqueuing to Outbox", err);
       }
 
-      // Phase 3: Centralized fan-out with moderation gating
-      const chatOverlay = await getOrCreateUserChatOverlay(ownerRow.user_id);
-      if (chatOverlay?.public_id) {
-        const fanOutResult = fanOutAfterModeration({
-          chat_v1,
-          decision: scrapbotDecision,
-          publicId: chatOverlay.public_id,
-          ownerUserId: ownerRow.user_id,
-        });
-
-        if (VERBOSE_KICK_WEBHOOK && fanOutResult) {
-          console.log("[kickWebhook] Fan-out result:", fanOutResult);
-        }
-      }
-
+      // Phase 3: Fan-out is handled by chat-outbox-worker after moderation
+      // Do NOT fan-out here to avoid double delivery
       return res.json({ ok: true });
     }
 
