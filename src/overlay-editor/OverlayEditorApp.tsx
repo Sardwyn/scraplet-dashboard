@@ -7563,6 +7563,7 @@ function InspectorPanel({
             const manifest = widgetDef?.widgetManifest;
             const schema = manifest?.configSchema || [];
             const overrides = (element as any).propOverrides || {};
+            const overlaySlug = slug; // capture from outer scope
             if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
             return (
               <div className="space-y-3">
@@ -7574,11 +7575,11 @@ function InspectorPanel({
 
                 {/* Live widget preview — loads the actual overlay runtime */}
                 <div className="mx-1 rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] bg-black" style={{height: '200px', position: 'relative'}}>
-                  {slug ? (
+                  {overlaySlug ? (
                     <>
                       <iframe
                         key={`widget-preview-${widgetId}-${slug}`}
-                        src={`/o/${encodeURIComponent(slug)}`}
+                        src={`/o/${encodeURIComponent(overlaySlug)}`}
                         style={{width: '100%', height: '100%', border: 'none', background: 'transparent'}}
                         title="Widget Preview"
                         data-overlay-preview="true"
