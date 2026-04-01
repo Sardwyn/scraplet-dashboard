@@ -124,17 +124,17 @@ router.get("/w/:token/stream", async (req, res) => {
       console.warn("[widget] replay failed:", e?.message || e);
     }
 
-    // Get the user's chat overlay public_id for ring buffer polling
+    // Get the user's chat overlay public_id from obs_widgets for ring buffer polling
     let chatOverlayPublicId = null;
     let lastRingSeq = 0;
     try {
-      const overlayRow = await db.query(
-        `SELECT public_id FROM overlays WHERE user_id = $1 ORDER BY id ASC LIMIT 1`,
+      const obsRow = await db.query(
+        `SELECT public_id FROM obs_widgets WHERE owner_user_id = $1 AND type = 'chat_overlay' LIMIT 1`,
         [userId]
       );
-      if (overlayRow.rows.length) {
-        chatOverlayPublicId = overlayRow.rows[0].public_id;
-        // Get current seq so we only deliver new messages
+      if (obsRow.rows.length) {
+        chatOverlayPublicId = obsRow.rows[0].public_id;
+        // Start from current seq so we only deliver NEW messages (not history)
         const seqRow = await db.query(
           `SELECT last_seq FROM widget_event_seq WHERE public_id = $1`,
           [chatOverlayPublicId]
