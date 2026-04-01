@@ -281,6 +281,17 @@
   }
 
   console.log('[chat-overlay] v2 started — platforms:', { kick: enableKick, youtube: enableYoutube, twitch: enableTwitch });
+
+  // Editor preview: show dummy messages so users can style the widget
+  if (editorPreview) {
+    const dummies = [
+      { username: 'StreamerFan99', text: 'This is what your chat overlay looks like!', platform: 'kick', color: '#53fc18' },
+      { username: 'YTViewer',      text: 'Loving the stream today 🔥', platform: 'youtube', color: '#ff0000' },
+      { username: 'TwitchUser',    text: 'PogChamp PogChamp PogChamp', platform: 'twitch', color: '#9146ff' },
+      { username: 'Sardwyn',       text: 'Welcome to the overlay editor preview!', platform: 'kick', color: '#a5b4fc' },
+    ];
+    dummies.forEach((d, i) => setTimeout(() => addMessage(d), i * 300));
+  }
   }
 
   init();
