@@ -53,8 +53,6 @@ registerWidget({
       // Limits
       { key: 'limitsMaxMessages', type: 'number', label: 'Max messages shown',   default: 20 },
       { key: 'limitsFadeMs',    type: 'number',  label: 'Fade out after (ms, 0=never)', default: 0 },
-      // Limits (extended)
-      { key: 'bufferMax',       type: 'number',  label: 'Memory buffer (max)',   default: 120 },
       // Visual effects
       { key: 'glowEnabled',     type: 'boolean', label: 'Name glow effect',      default: false },
       { key: 'glowColor',       type: 'color',   label: 'Glow colour',           default: '#a5b4fc' },
