@@ -50,6 +50,8 @@
   const depthOffset     = parseInt(cfg.depthOffset) || 2;
   const depthColor      = cfg.depthColor || 'rgba(0,0,0,0.5)';
   const stripEmotes     = cfg.stripEmotes === true || cfg.stripEmotes === 'true';
+  const showBadges      = cfg.showBadges !== false && cfg.showBadges !== 'false';
+  const gradientNames   = cfg.gradientNames === true || cfg.gradientNames === 'true';
 
   const PLATFORM_COLORS = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
   const PLATFORM_ICONS  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
@@ -159,6 +161,8 @@
     }
     .cm-fade { animation: cm-fade 0.5s ease forwards; }
     .cm-emote { height: 1.4em; width: auto; vertical-align: middle; display: inline-block; margin: 0 1px; }
+    .cm-badge { height: 1.1em; width: auto; vertical-align: middle; display: inline-block; margin: 0 1px 0 0; }
+    .cm-badges { display: inline-flex; align-items: center; gap: 2px; margin-right: 3px; flex-shrink: 0; }
     @keyframes cm-in { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
     @keyframes cm-fade { to { opacity:0; } }
   `;
@@ -167,7 +171,7 @@
   // ── Message rendering ─────────────────────────────────────────────────────
   const messages = [];
 
-  function addMessage({ username, text, platform, avatar, color }) {
+  function addMessage({ username, text, platform, avatar, color, badges = [] }) {
     // Platform filter
     if (platform === 'kick'    && !enableKick)    return;
     if (platform === 'youtube' && !enableYoutube) return;
@@ -192,6 +196,25 @@
       html += `<span class="cm-platform" title="${escHtml(platform)}">${PLATFORM_ICONS[platform] || '💬'}</span>`;
     }
 
+    // Badges
+    if (showBadges && badges.length > 0) {
+      const BADGE_URLS = {
+        broadcaster: 'https://files.kick.com/images/badges/broadcaster/badge_image',
+        moderator:   'https://files.kick.com/images/badges/moderator/badge_image',
+        subscriber:  'https://files.kick.com/images/badges/subscriber/badge_image',
+        verified:    'https://files.kick.com/images/badges/verified/badge_image',
+        og:          'https://files.kick.com/images/badges/og/badge_image',
+        vip:         'https://files.kick.com/images/badges/vip/badge_image',
+      };
+      const badgeHtml = badges.map(b => {
+        const type = (b.type || '').toLowerCase();
+        const url = BADGE_URLS[type];
+        if (!url) return '';
+        return `<img src="${url}" alt="${escHtml(b.text || type)}" class="cm-badge" title="${escHtml(b.text || type)}" />`;
+      }).filter(Boolean).join('');
+      if (badgeHtml) html += `<span class="cm-badges">${badgeHtml}</span>`;
+    }
+
     // Name + message
     let nameCol;
     if (nameColorMode === 'user') {
@@ -201,7 +224,11 @@
     } else {
       nameCol = nameColor;
     }
-    html += `<span class="cm-name" style="color:${escHtml(nameCol)}">${escHtml(username || 'User')}</span>`;
+    let nameStyle = `color:${escHtml(nameCol)}`;
+    if (gradientNames && nameCol && nameCol.startsWith('#')) {
+      nameStyle = `background:linear-gradient(90deg,${escHtml(nameCol)},${escHtml(nameCol)}99);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text`;
+    }
+    html += `<span class="cm-name" style="${nameStyle}">${escHtml(username || 'User')}</span>`;
     // Render text with emote images - escape text parts but preserve img tags
     const renderedText = text.includes('<img') 
       ? text.replace(/(<img[^>]+>)|([^<]+)/g, (m, img, txt) => img || escHtml(txt))
@@ -255,6 +282,7 @@
           // Extract from Kick webhook nested structure first, then fall back to flat
           const username = sender.username || payload.message?.sender_username ||
                            d.actor_username || payload.actor?.username || d.username || 'User';
+          const badges = sender.identity?.badges || d.badges || d.payload?.badges || [];
           const rawText = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
           // Strip Kick emote codes like [emote:123:emojiName]
@@ -269,7 +297,7 @@
           const color = sender.identity?.username_color || d.color || d.nameColor || '';
 
           console.log('[chat-overlay] message received:', username, text.slice(0,20));
-          if (text) addMessage({ username, text, platform, avatar, color });
+          if (text) addMessage({ username, text, platform, avatar, color, badges });
         }
       } catch { /* ignore */ }
     }

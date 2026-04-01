@@ -191,8 +191,11 @@ router.get("/w/:token/stream", async (req, res) => {
                   raw: {
                     sender: {
                       username: msg.username || msg.display_name,
-                      profile_picture: msg.avatar_url || '',
-                      identity: { username_color: '' },
+                      profile_picture: msg.avatar_url || msg.user?.avatar || '',
+                      identity: {
+                        username_color: msg.color || '',
+                        badges: msg.badges || [],
+                      },
                     },
                     content: msg.text || '',
                     emotes: msg.emotes || [],
@@ -200,6 +203,7 @@ router.get("/w/:token/stream", async (req, res) => {
                   sender_username: msg.username || msg.display_name,
                 },
               },
+              badges: msg.badges || [],
             });
             if (row.seq > lastRingSeq) lastRingSeq = row.seq;
           }

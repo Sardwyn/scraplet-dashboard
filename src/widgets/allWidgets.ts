@@ -42,6 +42,8 @@ registerWidget({
       { key: 'messageColor',    type: 'color',   label: 'Message colour',        default: '#ffffff' },
       // Display options
       { key: 'showAvatars',     type: 'boolean', label: 'Show avatars',          default: false },
+      { key: 'showBadges',      type: 'boolean', label: 'Show badges',           default: true },
+      { key: 'gradientNames',   type: 'boolean', label: 'Gradient name colours', default: false },
       { key: 'showPlatformIcon',type: 'boolean', label: 'Show platform icon',    default: true },
       { key: 'shadow',          type: 'boolean', label: 'Text shadow',           default: true },
       { key: 'animateIn',       type: 'boolean', label: 'Animate messages in',   default: true },
