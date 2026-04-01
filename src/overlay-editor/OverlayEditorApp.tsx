@@ -5499,6 +5499,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       animationPhases={previewAnimationPhases}
                       data={renderData}
                       visited={new Set()}
+                      overlayPublicId={initialOverlay.public_id}
                     />
 
                     {isPrimary && !resizeStatus && (

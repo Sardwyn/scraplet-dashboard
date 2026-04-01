@@ -859,6 +859,7 @@ export function ElementRenderer({
     yOffset = 0,
     layout = "absolute",
     visited,
+    overlayPublicId,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -869,6 +870,7 @@ export function ElementRenderer({
     yOffset?: number;
     layout?: "absolute" | "fill";
     visited?: Set<string>;
+    overlayPublicId?: string;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
@@ -1779,37 +1781,36 @@ export function ElementRenderer({
         );
     }
 
-    // WIDGET ELEMENT
     if ((el as any).type === "widget") {
         const widgetEl = el as any;
         const widgetId = widgetEl.widgetId;
         const propOverrides = widgetEl.propOverrides || {};
-
-        // Build query string from propOverrides for the runtime script
-        const params = new URLSearchParams();
-        Object.entries(propOverrides).forEach(([k, v]) => {
-            params.set(k, String(v));
-        });
-
-        // Get the runtime script URL from the widget registry
-        // We use a data attribute approach so the runtime can load the script
-        if (widgetEl.liveDataSource?.sseEventType || widgetEl.widgetId) {
+        const w = widgetEl.visible === false ? 0 : (baseStyle.width || 0);
+        const h = widgetEl.visible === false ? 0 : (baseStyle.height || 0);
+        if (overlayPublicId) {
+            const p = new URLSearchParams({ widgetPreview: widgetId });
+            Object.entries(propOverrides).forEach(([k, v]) => p.set(k, String(v)));
+            const iframeSrc = `/o/${encodeURIComponent(overlayPublicId)}?${p.toString()}`;
             return (
-                <div
-                    style={{
-                        ...baseStyle,
-                        // Invisible widgets render as 0x0 but still exist in DOM
-                        width: widgetEl.visible === false ? 0 : (baseStyle.width || 0),
-                        height: widgetEl.visible === false ? 0 : (baseStyle.height || 0),
-                        overflow: 'hidden',
-                        pointerEvents: 'none',
-                    }}
-                    data-widget-id={widgetId}
-                    data-widget-params={params.toString()}
-                />
+                <div style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}>
+                    <iframe
+                        src={iframeSrc}
+                        style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }}
+                        allowTransparency={true}
+                        data-overlay-widget-preview={widgetId}
+                    />
+                </div>
             );
         }
-        return null;
+        const rp = new URLSearchParams();
+        Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
+        return (
+            <div
+                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}
+                data-widget-id={widgetId}
+                data-widget-params={rp.toString()}
+            />
+        );
     }
 
     return null;
