@@ -1,6 +1,25 @@
 // /root/scrapletdashboard/src/tts/enqueue.js
 import db from "../../db.js";
 
+const BOT_INTERNAL_PORT = process.env.BOT_INTERNAL_PORT || 3025;
+
+/**
+ * Send a Scrapbot notification in Kick chat when TTS is queued.
+ * Non-blocking — failure is silently ignored.
+ */
+async function notifyScrapbot(channelSlug, senderUsername, scrapbotNotify) {
+  if (!scrapbotNotify || !senderUsername || senderUsername === 'anonymous') return;
+  try {
+    const message = `@${senderUsername} your TTS message is queued and will play shortly 🎙️`;
+    await fetch(`http://127.0.0.1:${BOT_INTERNAL_PORT}/internal/send-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channelSlug, message }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch { /* non-blocking */ }
+}
+
 export function normalizeText(s) {
   return (s || "").toString().trim();
 }
@@ -17,7 +36,9 @@ export async function enqueueTTSJob({
   voiceId = "en_GB-alba-medium",
   source,              // e.g. 'paid_tts' | 'free_tts' (enum)
   priority = 0,
-  entitlementId = null // only for paid
+  entitlementId = null, // only for paid
+  senderUsername = null, // for Scrapbot notification
+  scrapbotNotify = true, // whether to notify sender in chat
 }) {
   const uid = Number(scrapletUserId);
   if (!Number.isFinite(uid) || uid <= 0) throw new Error("scrapletUserId required");
@@ -82,6 +103,11 @@ export async function enqueueTTSJob({
     t,
     t
   ]);
+
+  // Notify sender via Scrapbot (non-blocking)
+  if (scrapbotNotify && senderUsername) {
+    notifyScrapbot(ch, senderUsername, scrapbotNotify).catch(() => {});
+  }
 
   return rows[0];
 }

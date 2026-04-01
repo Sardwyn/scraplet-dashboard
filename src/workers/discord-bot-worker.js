@@ -1260,6 +1260,28 @@ internalApp.post('/internal/content-pack', express.json(), async (req, res) => {
   }
 });
 
+// ── POST /internal/send-chat ─────────────────────────────────────────────────
+// Sends a message to a Kick channel via Scrapbot's chat outbox
+internalApp.post('/internal/send-chat', express.json(), async (req, res) => {
+  try {
+    const { channelSlug, message } = req.body || {};
+    if (!channelSlug || !message) return res.status(400).json({ ok: false });
+
+    // Use the chat outbox to send via Kick
+    await db.query(
+      `INSERT INTO chat_outbox (channel_slug, platform, payload, status)
+       VALUES ($1, 'kick', $2, 'pending')`,
+      [channelSlug, JSON.stringify({ chat_v1: { text: message } })]
+    );
+
+    console.log('[send-chat] queued message to', channelSlug, ':', message.slice(0, 50));
+    return res.json({ ok: true });
+  } catch (e) {
+    console.error('[send-chat] error:', e.message);
+    return res.status(500).json({ ok: false });
+  }
+});
+
 internalApp.listen(3025, "localhost", () => {
   console.log("[discord-bot] internal structure API on localhost:3025");
   if (typeof process.send === "function") {
