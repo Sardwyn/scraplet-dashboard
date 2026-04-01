@@ -8,6 +8,7 @@
 
   const cfg = window.__WIDGET_CONFIG_CHAT_OVERLAY__ || {};
   const token = cfg.token || window.__WIDGET_TOKEN__ || '';
+  console.log('[chat-overlay] INIT cfg keys:', Object.keys(cfg), 'token:', token ? token.slice(0,15)+'...' : 'EMPTY', 'editorPreview:', cfg.editorPreview);
 
   // Config with defaults
   const fontName        = cfg.fontFamily || 'Inter';
@@ -239,6 +240,7 @@
           // Use platform colour from identity if available, else fall back
           const color = sender.identity?.username_color || d.color || d.nameColor || '';
 
+          console.log('[chat-overlay] message received:', username, text.slice(0,20));
           if (text) addMessage({ username, text, platform, avatar, color });
         }
       } catch { /* ignore */ }
@@ -251,7 +253,7 @@
     es.onmessage = e => handleEvent(e.data);
     es.onerror = () => { es.close(); setTimeout(connect, 5000); };
 
-    console.log('[chat-overlay] connected, token:', token.slice(0, 8) + '...');
+    console.log('[chat-overlay] SSE connected to /w/'+token.slice(0,8)+'...');
   }
 
   if (!editorPreview) connect();
