@@ -45,6 +45,7 @@ registerWidget({
       { key: 'showPlatformIcon',type: 'boolean', label: 'Show platform icon',    default: true },
       { key: 'shadow',          type: 'boolean', label: 'Text shadow',           default: true },
       { key: 'animateIn',       type: 'boolean', label: 'Animate messages in',   default: true },
+      { key: 'stripEmotes',     type: 'boolean', label: 'Strip emote codes',      default: false },
       // Bubble style
       { key: 'bubbleEnabled',   type: 'boolean', label: 'Message bubbles',       default: false },
       { key: 'bubbleRadiusPx',  type: 'number',  label: 'Bubble corner radius',  default: 8 },

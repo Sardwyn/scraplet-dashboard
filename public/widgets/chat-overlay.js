@@ -49,6 +49,7 @@
   const depthEnabled    = cfg.depthEnabled === true || cfg.depthEnabled === 'true';
   const depthOffset     = parseInt(cfg.depthOffset) || 2;
   const depthColor      = cfg.depthColor || 'rgba(0,0,0,0.5)';
+  const stripEmotes     = cfg.stripEmotes === true || cfg.stripEmotes === 'true';
 
   const PLATFORM_COLORS = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
   const PLATFORM_ICONS  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
@@ -252,7 +253,7 @@
           const rawText = payload.message?.text || raw.content ||
                        d.text || d.message || d.content || '';
           // Strip Kick emote codes like [emote:123:emojiName]
-          const text = rawText.replace(/\[emote:[^\]]+\]/g, '').replace(/\s+/g, ' ').trim();
+          const text = stripEmotes ? rawText.replace(/\[emote:[^\]]+\]/g, '').replace(/\s+/g, ' ').trim() : rawText;
           const platform = payload.platform || d.platform || d.source || 'kick';
           const avatar = sender.profile_picture || payload.actor?.avatar_url || d.avatar || '';
           // Use platform colour from identity if available, else fall back
