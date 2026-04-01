@@ -7682,6 +7682,132 @@ function InspectorPanel({
                         if (condVal !== field.showWhen.value) return null;
                       }
                       const val = overrides[field.key] !== undefined ? overrides[field.key] : field.default;
+
+                      // alertConfig type — full per-event accordion
+                      if (field.type === "alertConfig") {
+                        const ALERT_EVENTS = [
+                          { key: 'follow',       label: 'Follow',        color: '#53fc18' },
+                          { key: 'subscription', label: 'Subscription',  color: '#9146ff' },
+                          { key: 'resub',        label: 'Resub',         color: '#9146ff' },
+                          { key: 'gift_sub',     label: 'Gift Sub',      color: '#ff6b6b' },
+                          { key: 'raid',         label: 'Raid',          color: '#f59e0b' },
+                          { key: 'tip',          label: 'Tip / Donation',color: '#fbbf24' },
+                          { key: 'redemption',   label: 'Redemption',    color: '#a78bfa' },
+                        ];
+                        const ANIM_OPTIONS = ['slide-down','bounce','scale-pop','shake','fade'];
+                        const SOUND_OPTIONS = ['none','pop','chime','horn','coins'];
+                        const alertTypes = (val && typeof val === 'object') ? val : {};
+                        const EVENT_DEFAULTS: Record<string, any> = {
+                          follow:       { enabled: true,  template: '🎉 {username} just followed!',               color: '#53fc18', bg: 'rgba(0,0,0,0.85)', duration: 5000, animation: 'bounce',    sound: 'pop',   soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          subscription: { enabled: true,  template: '⭐ {username} subscribed!',                   color: '#9146ff', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'scale-pop', sound: 'chime', soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          resub:        { enabled: true,  template: '🔄 {username} resubbed for {months} months!', color: '#9146ff', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'scale-pop', sound: 'chime', soundVol: 0.8, image: '', minAmount: 0, tts: true  },
+                          gift_sub:     { enabled: true,  template: '🎁 {username} gifted {count} sub(s)!',        color: '#ff6b6b', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'shake',     sound: 'horn',  soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          raid:         { enabled: true,  template: '⚔️ {username} raided with {count} viewers!',  color: '#f59e0b', bg: 'rgba(0,0,0,0.85)', duration: 8000, animation: 'slide-down', sound: 'horn',  soundVol: 1.0, image: '', minAmount: 0, tts: false },
+                          tip:          { enabled: true,  template: '💰 {username} tipped {amount}!',              color: '#fbbf24', bg: 'rgba(0,0,0,0.85)', duration: 7000, animation: 'bounce',    sound: 'coins', soundVol: 0.8, image: '', minAmount: 1, tts: true  },
+                          redemption:   { enabled: false, template: '✨ {username} redeemed {reward}!',            color: '#a78bfa', bg: 'rgba(0,0,0,0.85)', duration: 5000, animation: 'fade',      sound: 'pop',   soundVol: 0.6, image: '', minAmount: 0, tts: false },
+                        };
+                        const updateEvent = (evKey: string, patch: any) => {
+                          const current = alertTypes[evKey] || EVENT_DEFAULTS[evKey] || {};
+                          const next = { ...overrides, alertTypes: { ...alertTypes, [evKey]: { ...current, ...patch } } };
+                          triggerWidgetReinit(next);
+                          onChange({ propOverrides: next } as any);
+                        };
+                        return (
+                          <div key={field.key} className="space-y-1">
+                            <label className={uiClasses.label}>Alert Events</label>
+                            {ALERT_EVENTS.map(({ key: evKey, label: evLabel, color: evDefaultColor }) => {
+                              const ec = { ...(EVENT_DEFAULTS[evKey] || {}), ...(alertTypes[evKey] || {}) };
+                              return (
+                                <AccordionSection key={evKey} title={
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ec.color || evDefaultColor }} />
+                                    <span>{evLabel}</span>
+                                    {!ec.enabled && <span className="text-[10px] text-slate-600 ml-auto">off</span>}
+                                  </span>
+                                } defaultOpen={false}>
+                                  <div className="space-y-2">
+                                    {/* Enable toggle */}
+                                    <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                                      <input type="checkbox" checked={!!ec.enabled} onChange={e => updateEvent(evKey, { enabled: e.target.checked })} className="accent-indigo-500" />
+                                      Enabled
+                                    </label>
+                                    {/* Template */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Template</label>
+                                      <input className={`flex-1 ${fieldClass} text-[11px]`} value={ec.template || ''} onChange={e => updateEvent(evKey, { template: e.target.value })} placeholder="{username} just followed!" />
+                                    </div>
+                                    {/* Colours */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Accent</label>
+                                        <ColorSwatch value={ec.color || evDefaultColor} onChange={v => updateEvent(evKey, { color: v })} />
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>BG</label>
+                                        <ColorSwatch value={ec.bg || 'rgba(0,0,0,0.85)'} onChange={v => updateEvent(evKey, { bg: v })} showAlpha />
+                                      </div>
+                                    </div>
+                                    {/* Animation + Duration */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Anim</label>
+                                        <select className={`flex-1 ${fieldClass} text-[11px]`} value={ec.animation || 'fade'} onChange={e => updateEvent(evKey, { animation: e.target.value })}>
+                                          {ANIM_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Dur ms</label>
+                                        <input type="number" className={`flex-1 ${fieldClass} text-[11px]`} value={ec.duration || 5000} min={1000} max={30000} step={500} onChange={e => updateEvent(evKey, { duration: Number(e.target.value) })} />
+                                      </div>
+                                    </div>
+                                    {/* Sound */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Sound</label>
+                                        <select className={`flex-1 ${fieldClass} text-[11px]`} value={ec.sound || 'none'} onChange={e => updateEvent(evKey, { sound: e.target.value })}>
+                                          {SOUND_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Vol</label>
+                                        <input type="range" min="0" max="1" step="0.1" className="flex-1 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
+                                      </div>
+                                    </div>
+                                    {/* Image URL */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Image/GIF</label>
+                                      <input className={`flex-1 ${fieldClass} text-[11px]`} value={ec.image || ''} onChange={e => updateEvent(evKey, { image: e.target.value })} placeholder="https://..." />
+                                    </div>
+                                    {/* Min amount (for tip/gift) */}
+                                    {(evKey === 'tip' || evKey === 'gift_sub') && (
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Min amount</label>
+                                        <input type="number" className={`flex-1 ${fieldClass} text-[11px]`} value={ec.minAmount ?? 0} min={0} step={1} onChange={e => updateEvent(evKey, { minAmount: Number(e.target.value) })} />
+                                      </div>
+                                    )}
+                                    {/* TTS toggle */}
+                                    <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                                      <input type="checkbox" checked={!!ec.tts} onChange={e => updateEvent(evKey, { tts: e.target.checked })} className="accent-indigo-500" />
+                                      Read user message via TTS
+                                    </label>
+                                    {/* Test fire */}
+                                    <button
+                                      onClick={() => {
+                                        const fn = (window as any).__alertBoxTestFire;
+                                        if (typeof fn === 'function') fn(evKey);
+                                      }}
+                                      className="w-full text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                                    >
+                                      Test {evLabel}
+                                    </button>
+                                  </div>
+                                </AccordionSection>
+                              );
+                            })}
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={field.key} className="flex items-center gap-2">
                           <label className="w-24 truncate text-[11px] leading-[1.4] text-slate-500 flex-shrink-0" title={field.label}>{field.label}</label>
@@ -9401,7 +9527,7 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
   );
 }
 
-function AccordionSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function AccordionSection({ title, children, defaultOpen = true }: { title: string | React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-[rgba(255,255,255,0.06)] last:border-0 border-t first:border-t-0">

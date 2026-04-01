@@ -107,11 +107,13 @@ registerWidget({
     invisible:      false,
     runtimeScript:  '/widgets/alert-box-widget.js',
     configSchema: [
-      { key: 'duration', type: 'number', label: 'Alert duration (ms)', default: 5000 },
-      { key: 'position', type: 'select', label: 'Position', default: 'top-center', options: ['top-center', 'top-left', 'top-right', 'bottom-center', 'bottom-left', 'bottom-right'] },
-      { key: 'backgroundColor', type: 'color', label: 'Background colour', default: 'rgba(99,102,241,0.9)' },
-      { key: 'textColor', type: 'color', label: 'Text colour', default: '#ffffff' },
-      { key: 'fontSize', type: 'text', label: 'Font size', default: '18px' }
+      // Global
+      { key: 'fontFamily',    type: 'select', label: 'Font', default: 'Inter', options: ['Inter','Roboto','Open Sans','Oswald','Bebas Neue','Montserrat','Rajdhani','Exo 2','Barlow','Nunito','Poppins','Lato','Space Grotesk','DM Sans'] },
+      { key: 'fontSizePx',    type: 'number', label: 'Font size (px)', default: 20 },
+      { key: 'textColor',     type: 'color',  label: 'Text colour',    default: '#ffffff' },
+      { key: 'masterVolume',  type: 'number', label: 'Master volume',  default: 0.8 },
+      // Per-event config — rendered by alertConfig inspector
+      { key: 'alertTypes', type: 'alertConfig', label: 'Alert Events', default: {} },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
