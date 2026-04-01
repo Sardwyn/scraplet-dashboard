@@ -6122,7 +6122,7 @@ function TimelineFieldLabel({
 }
 
 function parseRgba(v: string): { hex: string; alpha: number } {
-  if (!v) return { hex: '#000000', alpha: 1 };
+  if (!v || v === 'transparent') return { hex: '#000000', alpha: 0 };
   const rgba = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/);
   if (rgba) {
     const r = parseInt(rgba[1]).toString(16).padStart(2,'0');
