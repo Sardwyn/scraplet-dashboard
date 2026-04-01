@@ -7620,6 +7620,59 @@ function InspectorPanel({
                 {manifest.dataContract?.sseEventType && (
                   <div className="text-[10px] text-emerald-500/70 px-1 pt-1">● Live: {manifest.dataContract.sseEventType}</div>
                 )}
+
+                {/* Test Fire section */}
+                <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] mt-2">
+                  <label className={uiClasses.label}>Test Fire</label>
+                  <div className="space-y-2">
+                    {widgetId === 'chat-overlay' && (
+                      <div className="space-y-1">
+                        <input
+                          id={`test-fire-text-${widgetId}`}
+                          className={`w-full ${fieldClass} text-[11px]`}
+                          placeholder="Test message text..."
+                          defaultValue="This is a test chat message!"
+                        />
+                        <div className="flex gap-1">
+                          {['kick','youtube','twitch'].map(platform => (
+                            <button
+                              key={platform}
+                              onClick={() => {
+                                const textEl = document.getElementById(`test-fire-text-${widgetId}`) as HTMLInputElement;
+                                const text = textEl?.value || 'Test message!';
+                                // Send to overlay preview iframe if present
+                                const previewFrame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
+                                if (previewFrame?.contentWindow) {
+                                  previewFrame.contentWindow.postMessage({ type: 'widget:test', widgetId, payload: { username: 'TestUser', text, platform } }, '*');
+                                }
+                                // Also try direct call if in same window
+                                if ((window as any).__chatOverlayTest) {
+                                  (window as any).__chatOverlayTest('TestUser', text, platform);
+                                }
+                              }}
+                              className="flex-1 text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 capitalize"
+                            >
+                              {platform}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {widgetId !== 'chat-overlay' && (
+                      <button
+                        onClick={() => {
+                          const previewFrame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
+                          if (previewFrame?.contentWindow) {
+                            previewFrame.contentWindow.postMessage({ type: 'widget:test', widgetId, payload: {} }, '*');
+                          }
+                        }}
+                        className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                      >
+                        Send Test Event
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })()}

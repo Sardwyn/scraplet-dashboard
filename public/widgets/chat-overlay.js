@@ -1,106 +1,212 @@
 // public/widgets/chat-overlay.js
-// Chat Overlay widget runtime for the overlay editor.
-// Self-contained. Reads config from window.__WIDGET_CONFIG_CHAT_OVERLAY__
-// Connects to /w/:token/stream and renders chat messages.
+// Chat Overlay widget runtime v2 — full feature set.
+// Reads config from window.__WIDGET_CONFIG_CHAT_OVERLAY__
+// Connects to /w/:token/stream SSE and renders chat messages.
 
 (function () {
   'use strict';
 
   const cfg = window.__WIDGET_CONFIG_CHAT_OVERLAY__ || {};
   const token = cfg.token || window.__WIDGET_TOKEN__ || '';
-  const maxMessages = parseInt(cfg.maxMessages || '20');
-  const fontSize = cfg.fontSize || '16px';
-  const fontFamily = cfg.fontFamily || 'system-ui, sans-serif';
-  const msgColor = cfg.messageColor || '#ffffff';
-  const nameColor = cfg.nameColor || '#a5b4fc';
-  const bgColor = cfg.backgroundColor || 'transparent';
-  const showBadges = cfg.showBadges !== false;
-  const animateIn = cfg.animateIn !== false;
+
+  // Config with defaults
+  const fontFamily      = cfg.fontFamily      || 'Inter, system-ui, sans-serif';
+  const fontSizePx      = parseInt(cfg.fontSizePx)  || 16;
+  const lineHeight      = parseFloat(cfg.lineHeight) || 1.4;
+  const messageGapPx    = parseInt(cfg.messageGapPx) || 6;
+  const nameColor       = cfg.nameColor       || '#a5b4fc';
+  const messageColor    = cfg.messageColor    || '#ffffff';
+  const showAvatars     = cfg.showAvatars !== false && cfg.showAvatars !== 'false';
+  const showPlatformIcon= cfg.showPlatformIcon !== false && cfg.showPlatformIcon !== 'false';
+  const shadow          = cfg.shadow !== false && cfg.shadow !== 'false';
+  const animateIn       = cfg.animateIn !== false && cfg.animateIn !== 'false';
+  const bubbleEnabled   = cfg.bubbleEnabled === true || cfg.bubbleEnabled === 'true';
+  const bubbleRadiusPx  = parseInt(cfg.bubbleRadiusPx) || 8;
+  const bubbleBg        = cfg.bubbleBg        || 'rgba(0,0,0,0.4)';
+  const bubbleBorder    = cfg.bubbleBorder    || 'transparent';
+  const maxMessages     = parseInt(cfg.limitsMaxMessages) || 20;
+  const fadeMs          = parseInt(cfg.limitsFadeMs) || 0;
+  const enableKick      = cfg.enableKick !== false && cfg.enableKick !== 'false';
+  const enableYoutube   = cfg.enableYoutube !== false && cfg.enableYoutube !== 'false';
+  const enableTwitch    = cfg.enableTwitch !== false && cfg.enableTwitch !== 'false';
+
+  const PLATFORM_COLORS = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
+  const PLATFORM_ICONS  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
 
   if (!token) {
-    console.warn('[chat-overlay] No token configured');
+    console.warn('[chat-overlay] No token — add widget to overlay and configure');
     return;
   }
 
-  // Set global token for compatibility
   window.__WIDGET_TOKEN__ = token;
 
-  // Create container
+  // ── DOM setup ─────────────────────────────────────────────────────────────
   const container = document.createElement('div');
-  container.id = 'chat-overlay-container';
+  container.id = 'chat-overlay-root';
   container.style.cssText = `
     position: fixed; inset: 0;
     display: flex; flex-direction: column-reverse;
-    padding: 12px; gap: 6px;
+    padding: 12px; gap: ${messageGapPx}px;
     overflow: hidden; pointer-events: none;
     font-family: ${fontFamily};
-    background: ${bgColor};
+    font-size: ${fontSizePx}px;
+    line-height: ${lineHeight};
   `;
+  document.body.style.background = 'transparent';
   document.body.appendChild(container);
 
-  // Add CSS
+  // ── CSS ───────────────────────────────────────────────────────────────────
   const style = document.createElement('style');
   style.textContent = `
-    .chat-msg {
-      display: flex; align-items: flex-start; gap: 8px;
-      padding: 4px 8px; border-radius: 6px;
-      background: rgba(0,0,0,0.35);
-      font-size: ${fontSize}; line-height: 1.4;
-      max-width: 100%; word-break: break-word;
-      ${animateIn ? 'animation: chat-slide-in 0.2s ease;' : ''}
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    .cm {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      max-width: 100%;
+      word-break: break-word;
+      ${bubbleEnabled ? `
+        background: ${bubbleBg};
+        border: 1px solid ${bubbleBorder};
+        border-radius: ${bubbleRadiusPx}px;
+        padding: 5px 10px;
+      ` : ''}
+      ${animateIn ? 'animation: cm-in 0.25s ease;' : ''}
     }
-    .chat-name { color: ${nameColor}; font-weight: 700; flex-shrink: 0; }
-    .chat-text { color: ${msgColor}; }
-    @keyframes chat-slide-in { from { opacity:0; transform:translateX(-8px); } to { opacity:1; transform:translateX(0); } }
+    .cm-avatar {
+      width: 24px; height: 24px; border-radius: 50%;
+      object-fit: cover; flex-shrink: 0; margin-top: 2px;
+    }
+    .cm-avatar-placeholder {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); flex-shrink: 0;
+    }
+    .cm-platform { font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+    .cm-name {
+      font-weight: 600; flex-shrink: 0;
+      ${shadow ? 'text-shadow: 0 1px 3px rgba(0,0,0,0.8);' : ''}
+    }
+    .cm-text {
+      color: ${messageColor};
+      ${shadow ? 'text-shadow: 0 1px 3px rgba(0,0,0,0.8);' : ''}
+    }
+    .cm-fade { animation: cm-fade 0.5s ease forwards; }
+    @keyframes cm-in { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes cm-fade { to { opacity:0; } }
   `;
   document.head.appendChild(style);
 
+  // ── Message rendering ─────────────────────────────────────────────────────
   const messages = [];
 
-  function addMessage(username, text, color) {
+  function addMessage({ username, text, platform, avatar, color }) {
+    // Platform filter
+    if (platform === 'kick'    && !enableKick)    return;
+    if (platform === 'youtube' && !enableYoutube) return;
+    if (platform === 'twitch'  && !enableTwitch)  return;
+
     const el = document.createElement('div');
-    el.className = 'chat-msg';
-    el.innerHTML = `<span class="chat-name" style="color:${color || nameColor}">${escHtml(username)}</span><span class="chat-text">${escHtml(text)}</span>`;
+    el.className = 'cm';
+
+    let html = '';
+
+    // Avatar
+    if (showAvatars) {
+      if (avatar) {
+        html += `<img class="cm-avatar" src="${escHtml(avatar)}" alt="" onerror="this.style.display='none'" />`;
+      } else {
+        html += `<div class="cm-avatar-placeholder"></div>`;
+      }
+    }
+
+    // Platform icon
+    if (showPlatformIcon && platform) {
+      html += `<span class="cm-platform" title="${escHtml(platform)}">${PLATFORM_ICONS[platform] || '💬'}</span>`;
+    }
+
+    // Name + message
+    const nameCol = color || PLATFORM_COLORS[platform] || nameColor;
+    html += `<span class="cm-name" style="color:${escHtml(nameCol)}">${escHtml(username || 'User')}</span>`;
+    html += `<span class="cm-text">${escHtml(text || '')}</span>`;
+
+    el.innerHTML = html;
     container.insertBefore(el, container.firstChild);
-    messages.push(el);
-    if (messages.length > maxMessages) {
+    messages.push({ el, timer: null });
+
+    // Fade out after fadeMs
+    if (fadeMs > 0) {
+      const entry = messages[messages.length - 1];
+      entry.timer = setTimeout(() => {
+        el.classList.add('cm-fade');
+        setTimeout(() => el.remove(), 500);
+      }, fadeMs);
+    }
+
+    // Trim to max
+    while (messages.length > maxMessages) {
       const old = messages.shift();
-      old.remove();
+      if (old.timer) clearTimeout(old.timer);
+      old.el.remove();
     }
   }
 
-  // Connect to SSE stream
+  // ── SSE connection ────────────────────────────────────────────────────────
   function connect() {
     const es = new EventSource(`/w/${encodeURIComponent(token)}/stream`);
 
-    es.addEventListener('chat_message', function (e) {
+    // Handle various event formats
+    function handleEvent(data) {
       try {
-        const d = JSON.parse(e.data);
-        addMessage(d.username || d.sender || 'User', d.text || d.message || '', d.color);
-      } catch { /* ignore */ }
-    });
+        const d = typeof data === 'string' ? JSON.parse(data) : data;
+        const type = d.type || d.event_type || '';
 
-    // Also listen for generic message events
-    es.onmessage = function (e) {
-      try {
-        const d = JSON.parse(e.data);
-        if (d.type === 'chat' || d.type === 'chat_message') {
-          addMessage(d.username || d.sender || 'User', d.text || d.message || '', d.color);
+        if (type === 'chat' || type === 'chat_message' || type === 'message' || !type) {
+          addMessage({
+            username: d.username || d.user?.name || d.sender || 'User',
+            text:     d.text || d.message || d.content || '',
+            platform: d.platform || 'kick',
+            avatar:   d.avatar || d.user?.avatar || '',
+            color:    d.color || d.nameColor || '',
+          });
         }
       } catch { /* ignore */ }
-    };
+    }
 
-    es.onerror = function () {
-      es.close();
-      setTimeout(connect, 5000);
-    };
+    es.addEventListener('chat_message', e => handleEvent(e.data));
+    es.addEventListener('chat', e => handleEvent(e.data));
+    es.addEventListener('message', e => handleEvent(e.data));
+    es.onmessage = e => handleEvent(e.data);
+    es.onerror = () => { es.close(); setTimeout(connect, 5000); };
+
+    console.log('[chat-overlay] connected, token:', token.slice(0, 8) + '...');
   }
 
   connect();
 
+  // ── Test fire support ─────────────────────────────────────────────────────
+  // Listen for test messages from the overlay editor
+  window.addEventListener('message', function (e) {
+    if (e.data?.type === 'widget:test' && e.data?.widgetId === 'chat-overlay') {
+      const d = e.data.payload || {};
+      addMessage({
+        username: d.username || 'TestUser',
+        text:     d.text || 'This is a test message from the overlay editor!',
+        platform: d.platform || 'kick',
+        avatar:   d.avatar || '',
+        color:    d.color || '',
+      });
+    }
+  });
+
+  // Also expose a global for direct test firing
+  window.__chatOverlayTest = function (username, text, platform) {
+    addMessage({ username: username || 'TestUser', text: text || 'Test message!', platform: platform || 'kick', avatar: '', color: '' });
+  };
+
   function escHtml(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  console.log('[chat-overlay] started');
+  console.log('[chat-overlay] v2 started — platforms:', { kick: enableKick, youtube: enableYoutube, twitch: enableTwitch });
 })();
