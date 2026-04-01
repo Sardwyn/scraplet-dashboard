@@ -60,6 +60,12 @@ registerWidget({
       { key: 'depthEnabled',    type: 'boolean', label: 'Depth/3D effect',       default: false },
       { key: 'depthOffset',     type: 'number',  label: 'Depth offset (px)',     default: 2 },
       { key: 'depthColor',      type: 'color',   label: 'Depth colour',          default: 'rgba(0,0,0,0.5)' },
+      // 3D Transform
+      { key: 'tiltX',    type: 'number',  label: 'Tilt X (deg)',     default: 0 },
+      { key: 'tiltY',    type: 'number',  label: 'Tilt Y (deg)',     default: 0 },
+      { key: 'skewX',    type: 'number',  label: 'Skew X (deg)',     default: 0 },
+      { key: 'skewY',    type: 'number',  label: 'Skew Y (deg)',     default: 0 },
+      { key: 'perspective', type: 'number', label: 'Perspective (px)', default: 800 },
       // Platform filters
       { key: 'enableKick',      type: 'boolean', label: 'Show Kick chat',        default: true },
       { key: 'enableYoutube',   type: 'boolean', label: 'Show YouTube chat',     default: true },

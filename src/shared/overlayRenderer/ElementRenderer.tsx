@@ -1788,6 +1788,17 @@ export function ElementRenderer({
         const w = widgetEl.visible === false ? 0 : (baseStyle.width || 0);
         const h = widgetEl.visible === false ? 0 : (baseStyle.height || 0);
 
+        // Build 3D transform from propOverrides if set
+        const tiltX = Number(propOverrides.tiltX) || 0;
+        const tiltY = Number(propOverrides.tiltY) || 0;
+        const skewX = Number(propOverrides.skewX) || 0;
+        const skewY = Number(propOverrides.skewY) || 0;
+        const perspective = Number(propOverrides.perspective) || 800;
+        const has3D = tiltX !== 0 || tiltY !== 0 || skewX !== 0 || skewY !== 0;
+        const transformStyle = has3D
+            ? `perspective(${perspective}px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) skewX(${skewX}deg) skewY(${skewY}deg)`
+            : undefined;
+
         // Editor preview: inject widget script directly, render into scoped div
         if (overlayPublicId) {
             const WIDGET_SCRIPTS: Record<string, string> = {
@@ -1813,7 +1824,7 @@ export function ElementRenderer({
                 }
             }
             return (
-                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden', isolation: 'isolate' }}>
+                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: 'hidden', isolation: 'isolate', ...(transformStyle ? { transform: transformStyle, transformOrigin: 'center center' } : {}) }}>
                     <div
                         id={containerId}
                         style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}
@@ -1828,7 +1839,7 @@ export function ElementRenderer({
         Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
         return (
             <div
-                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none' }}
+                style={{ ...baseStyle, width: w, height: h, overflow: 'hidden', pointerEvents: 'none', ...(transformStyle ? { transform: transformStyle, transformOrigin: 'center center' } : {}) }}
                 data-widget-id={widgetId}
                 data-widget-params={rp.toString()}
             />
