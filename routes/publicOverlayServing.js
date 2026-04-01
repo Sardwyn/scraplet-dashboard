@@ -29,7 +29,7 @@ router.get('/o/:slug', async (req, res) => {
 <body>
     <div id="overlay-runtime-root"></div>
     <script>window.__OVERLAY_PUBLIC_ID__ = "${publicId}";</script>
-    <script type="module" src="${ASSET_BASE}/overlay-runtime.bundle.js"></script>
+    <script type="module" src="${ASSET_BASE}/overlay-runtime.bundle.js?v=${Date.now()}"></script>
 </body>
 </html>`;
 
