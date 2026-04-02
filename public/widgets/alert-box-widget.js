@@ -281,19 +281,31 @@
 
   // ── TTS ────────────────────────────────────────────────────────────────────
   function speakText(text) {
-    if (!text || !window.speechSynthesis) return;
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    var utt = new SpeechSynthesisUtterance(text);
-    utt.rate  = parseFloat(cfg.ttsRate)  || 1.0;
-    utt.pitch = parseFloat(cfg.ttsPitch) || 1.0;
-    utt.volume = parseFloat(cfg.ttsVolume) || 1.0;
-    // Use a natural voice if available
-    var voices = window.speechSynthesis.getVoices();
-    var preferred = voices.find(function(v) { return v.lang.startsWith('en') && !v.localService === false; }) ||
-                    voices.find(function(v) { return v.lang.startsWith('en'); });
-    if (preferred) utt.voice = preferred;
-    window.speechSynthesis.speak(utt);
+    if (!text) return;
+    // Try Kokoro TTS first (server-side, better quality)
+    fetch('/dashboard/api/tts/alert', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ text: text }),
+    }).then(function(r) {
+      if (!r.ok) throw new Error('tts failed');
+      return r.json();
+    }).then(function(d) {
+      if (d.ok && d.url) {
+        var a = new Audio(d.url);
+        a.volume = parseFloat(cfg.ttsVolume) || 1.0;
+        a.play().catch(function() {});
+      }
+    }).catch(function() {
+      // Fallback to browser speechSynthesis
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var utt = new SpeechSynthesisUtterance(text);
+      utt.rate = parseFloat(cfg.ttsRate) || 1.0;
+      utt.volume = parseFloat(cfg.ttsVolume) || 1.0;
+      window.speechSynthesis.speak(utt);
+    });
   }
 
   function escHtml(s) {
