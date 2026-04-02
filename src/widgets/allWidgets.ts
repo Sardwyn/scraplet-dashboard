@@ -219,9 +219,6 @@ registerWidget({
       { key: 'showAvatar',    type: 'boolean', label: 'Show avatars',         default: false },
       { key: 'showPlatform',  type: 'boolean', label: 'Show platform icon',   default: true },
       { key: 'eventTypes',    type: 'alertConfig', label: 'Event Types',      default: {} },
-    ] },
-      { key: 'fontSize', type: 'text', label: 'Font size', default: '13px' },
-      { key: 'backgroundColor', type: 'color', label: 'Background', default: 'rgba(0,0,0,0.7)' }
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
