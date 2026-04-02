@@ -75,6 +75,18 @@
     // Restore state from previous instance if reinit happened
     if (window.__raffleState) {
       Object.assign(state, window.__raffleState);
+      // Apply new config values over restored state
+      if (prefAnim) state.animation = prefAnim;
+      state.joinPhrase = joinCommand || state.joinPhrase;
+    }
+    // If we were mid-roll, re-trigger with new animation after DOM is built
+    if (window.__raffleState && window.__raffleState.status === 'rolling') {
+      setTimeout(function() {
+        var pool = state.sampleNames;
+        if (state.animation === 'wheel') startWheelRolling(pool);
+        else if (state.animation === 'scramble') startScrambleRolling(pool);
+        else startSlotRolling(pool);
+      }, 50);
     }
     injectCSS();
     container.innerHTML = [
