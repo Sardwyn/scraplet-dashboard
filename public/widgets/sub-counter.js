@@ -36,6 +36,12 @@
   var trackColor   = s(cfg.trackColor,   'rgba(255,255,255,0.1)');
   var bgColor      = s(cfg.bgColor,      'transparent');
   var milestoneAnim= s(cfg.milestoneAnim,'pulse');  // 'pulse' | 'confetti' | 'shake' | 'none'
+  var barHeight    = n(cfg.barHeight,   12);
+  var barRadius    = n(cfg.barRadius,   999);
+  var barGlow      = b(cfg.barGlow,     false);
+  var ringSize     = n(cfg.ringSize,    120);
+  var ringStroke   = n(cfg.ringStroke,  10);
+  var ringGlow     = b(cfg.ringGlow,    false);
   var milestoneSound=s(cfg.milestoneSound,'chime');
   var endDate      = cfg.endDate ? new Date(cfg.endDate) : null;
 
@@ -103,7 +109,7 @@
 
     return '<div class="sc-wrap">' +
       '<div class="sc-label"></div>' +
-      (isRing && hasGoal ? '<div class="sc-ring-wrap"><svg class="sc-ring-svg" viewBox="0 0 120 120"><circle class="sc-ring-track" cx="60" cy="60" r="52"/><circle class="sc-ring-fill" cx="60" cy="60" r="52"/></svg><div class="sc-ring-inner"><div class="sc-nums"></div><div class="sc-pct"></div></div></div>' : '') +
+      (isRing && hasGoal ? '<div class="sc-ring-wrap"><svg class="sc-ring-svg" viewBox="0 0 ' + ringSize + ' ' + ringSize + '"><circle class="sc-ring-track" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + (ringSize/2 - ringStroke) + '"/><circle class="sc-ring-fill" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + (ringSize/2 - ringStroke) + '"/></svg><div class="sc-ring-inner"><div class="sc-nums"></div><div class="sc-pct"></div></div></div>' : '') +
       (!isRing ? '<div class="sc-nums"></div>' : '') +
       (!isRing ? '<div class="sc-pct"></div>' : '') +
       (hasBar && hasGoal ? '<div class="sc-track"><div class="sc-fill"></div></div>' : '') +
@@ -120,7 +126,7 @@
     var ringFill = fillColor2
       ? 'url(#sc-grad)'
       : fillColor;
-    var circumference = 2 * Math.PI * 52; // r=52
+    var r = (ringSize / 2) - ringStroke; var circumference = 2 * Math.PI * r;
 
     var s = document.createElement('style');
     s.textContent = [
@@ -128,12 +134,12 @@
       '.sc-label{font-weight:700;font-size:1.1em;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}',
       '.sc-nums{font-size:1.4em;font-weight:800;line-height:1;}',
       '.sc-pct{font-size:0.85em;opacity:0.7;margin-top:2px;}',
-      '.sc-track{height:12px;background:' + trackColor + ';border-radius:999px;overflow:hidden;margin-top:8px;}',
-      '.sc-fill{height:100%;width:0%;background:' + fill + ';border-radius:999px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);}',
-      '.sc-ring-wrap{position:relative;width:120px;height:120px;margin:0 auto 8px;}',
+      '.sc-track{height:' + barHeight + 'px;background:' + trackColor + ';border-radius:' + barRadius + 'px;overflow:hidden;margin-top:8px;}',
+      '.sc-fill{height:100%;width:0%;background:' + fill + ';border-radius:' + barRadius + 'px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1);' + (barGlow ? 'box-shadow:0 0 12px ' + fillColor + ';' : '') + '}',
+      '.sc-ring-wrap{position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:0 auto 8px;}',
       '.sc-ring-svg{width:100%;height:100%;transform:rotate(-90deg);}',
-      '.sc-ring-track{fill:none;stroke:' + trackColor + ';stroke-width:10;}',
-      '.sc-ring-fill{fill:none;stroke:' + ringFill + ';stroke-width:10;stroke-linecap:round;stroke-dasharray:' + circumference + ';stroke-dashoffset:' + circumference + ';transition:stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1);}',
+      '.sc-ring-track{fill:none;stroke:' + trackColor + ';stroke-width:' + ringStroke + ';}',
+      '.sc-ring-fill{fill:none;stroke:' + ringFill + ';stroke-width:' + ringStroke + ';stroke-linecap:round;stroke-dasharray:' + circumference + ';stroke-dashoffset:' + circumference + ';transition:stroke-dashoffset 0.6s cubic-bezier(0.34,1.56,0.64,1);' + (ringGlow ? 'filter:drop-shadow(0 0 8px ' + fillColor + ');' : '') + '}',
       '.sc-ring-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}',
       '.sc-breakdown{display:flex;justify-content:center;gap:12px;margin-top:8px;font-size:0.75em;opacity:0.8;}',
       '.sc-breakdown span{display:flex;align-items:center;gap:3px;}',
@@ -175,7 +181,7 @@
 
     // Ring fill
     if (els.ring) {
-      var circumference = 2 * Math.PI * 52;
+      var r = (ringSize / 2) - ringStroke; var circumference = 2 * Math.PI * r;
       var offset = circumference - (displayPct / 100) * circumference;
       els.ring.style.strokeDashoffset = offset;
     }

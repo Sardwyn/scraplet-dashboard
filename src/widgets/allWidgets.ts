@@ -163,6 +163,14 @@ registerWidget({
       { key: 'showBreakdown', type: 'boolean', label: 'Show platform breakdown', default: false },
       // Milestone
       { key: 'milestoneAnim', type: 'select',  label: 'Milestone animation', default: 'pulse', options: ['pulse','shake','none'] },
+      // Bar style
+      { key: 'barHeight',     type: 'number',  label: 'Bar height (px)',   default: 12, showWhen: { key: 'displayMode', value: 'bar' } },
+      { key: 'barRadius',     type: 'number',  label: 'Bar corner radius', default: 999, showWhen: { key: 'displayMode', value: 'bar' } },
+      { key: 'barGlow',       type: 'boolean', label: 'Bar glow effect',   default: false, showWhen: { key: 'displayMode', value: 'bar' } },
+      // Ring style
+      { key: 'ringSize',      type: 'number',  label: 'Ring size (px)',    default: 120, showWhen: { key: 'displayMode', value: 'ring' } },
+      { key: 'ringStroke',    type: 'number',  label: 'Ring stroke width', default: 10,  showWhen: { key: 'displayMode', value: 'ring' } },
+      { key: 'ringGlow',      type: 'boolean', label: 'Ring glow effect',  default: false, showWhen: { key: 'displayMode', value: 'ring' } },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
