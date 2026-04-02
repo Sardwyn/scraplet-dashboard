@@ -141,9 +141,28 @@ registerWidget({
     invisible:      false,
     runtimeScript:  '/widgets/sub-counter.js',
     configSchema: [
-      { key: 'label', type: 'text', label: 'Label', default: 'Subscribers' },
-      { key: 'goal', type: 'number', label: 'Goal (0 = no goal)', default: 0 },
-      { key: 'showNumbers', type: 'boolean', label: 'Show numbers', default: true }
+      // Display
+      { key: 'displayMode',   type: 'select',  label: 'Display mode',      default: 'bar',   options: ['bar','ring','counter'] },
+      { key: 'label',         type: 'text',    label: 'Label',             default: 'Sub Goal' },
+      { key: 'fontFamily',    type: 'select',  label: 'Font',              default: 'Inter', options: ['Inter','Roboto','Open Sans','Oswald','Bebas Neue','Montserrat','Rajdhani','Exo 2','Barlow','Nunito','Poppins','Lato','Space Grotesk','DM Sans'] },
+      { key: 'fontSizePx',    type: 'number',  label: 'Font size (px)',    default: 18 },
+      { key: 'textColor',     type: 'color',   label: 'Text colour',       default: '#ffffff' },
+      { key: 'fillColor',     type: 'color',   label: 'Bar fill colour',   default: '#6366f1' },
+      { key: 'fillColor2',    type: 'color',   label: 'Bar fill gradient', default: '' },
+      { key: 'trackColor',    type: 'color',   label: 'Bar track colour',  default: 'rgba(255,255,255,0.1)' },
+      { key: 'bgColor',       type: 'color',   label: 'Background',        default: 'transparent' },
+      // Goal
+      { key: 'goal',          type: 'number',  label: 'Goal',              default: 100 },
+      { key: 'startAt',       type: 'number',  label: 'Starting count',    default: 0 },
+      { key: 'overfill',      type: 'boolean', label: 'Overfill bar',      default: true },
+      { key: 'trackPoints',   type: 'boolean', label: 'Track sub points (tier-weighted)', default: false },
+      { key: 'endDate',       type: 'text',    label: 'End date (ISO)',    default: '' },
+      // Numbers
+      { key: 'showNumbers',   type: 'boolean', label: 'Show numbers',      default: true },
+      { key: 'showPercent',   type: 'boolean', label: 'Show percentage',   default: false },
+      { key: 'showBreakdown', type: 'boolean', label: 'Show platform breakdown', default: false },
+      // Milestone
+      { key: 'milestoneAnim', type: 'select',  label: 'Milestone animation', default: 'pulse', options: ['pulse','shake','none'] },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
