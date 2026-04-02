@@ -4769,12 +4769,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           if (msg.op === 0) ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
           if (msg.op === 2) {
             setObsPreviewEnabled(true);
-            const poll = () => {
-              if (!ws || ws.readyState !== WebSocket.OPEN) return;
-              ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetSourceScreenshot', requestId: 'preview', requestData: { sourceName: null, imageFormat: 'jpg', imageWidth: 1920, imageHeight: 1080, imageCompressionQuality: 55 } } }));
-            };
-            poll();
-            (obsPreviewIntervalRef as any).current = window.setInterval(poll, 800);
+            // First get current scene name, then start polling screenshots
+            ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetCurrentProgramScene', requestId: 'getScene', requestData: {} } }));
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'getScene') {
+            const sceneName = msg.d?.responseData?.currentProgramSceneName || msg.d?.responseData?.sceneName;
+            if (sceneName) {
+              (obsWsRef as any)._sceneName = sceneName;
+              const poll = () => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetSourceScreenshot', requestId: 'preview', requestData: { sourceName: (obsWsRef as any)._sceneName, imageFormat: 'jpg', imageWidth: 1920, imageHeight: 1080, imageCompressionQuality: 55 } } }));
+              };
+              poll();
+              (obsPreviewIntervalRef as any).current = window.setInterval(poll, 800);
+            }
           }
           if (msg.op === 7 && msg.d?.requestId === 'preview') {
             const img = msg.d?.responseData?.imageData;
