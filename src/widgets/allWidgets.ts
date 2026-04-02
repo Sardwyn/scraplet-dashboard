@@ -274,3 +274,37 @@ registerWidget({
 });
 
 // cache bust
+
+registerWidget({
+  id: 'subathon-timer',
+  name: 'Subathon Timer',
+  schemaVersion: 1,
+  propsSchema: {},
+  metadata: {},
+  widgetManifest: {
+    widgetId:    'subathon-timer',
+    category:    'display',
+    version:     '1.0.0',
+    displayName: 'Subathon Timer',
+    description: 'Countdown timer that extends when viewers subscribe, follow, or tip. Control from the dashboard.',
+    icon:        'monitor',
+    dataContract: { sseEventType: null, fields: [] },
+    beaconEndpoint: null,
+    invisible:      false,
+    runtimeScript:  '/widgets/subathon-timer.js',
+    configSchema: [
+      { key: 'label',       type: 'text',    label: 'Label text',        default: 'SUBATHON' },
+      { key: 'fontFamily',  type: 'select',  label: 'Font',              default: 'Inter', options: ['Inter','Roboto','Open Sans','Oswald','Bebas Neue','Montserrat','Rajdhani','Exo 2','Barlow','Nunito','Poppins','Lato','Space Grotesk','DM Sans'] },
+      { key: 'fontSizePx',  type: 'number',  label: 'Clock font size',   default: 48 },
+      { key: 'textColor',   type: 'color',   label: 'Text colour',       default: '#ffffff' },
+      { key: 'accentColor', type: 'color',   label: 'Accent colour',     default: '#6366f1' },
+      { key: 'bgColor',     type: 'color',   label: 'Background',        default: 'transparent' },
+      { key: 'showLabel',   type: 'boolean', label: 'Show label',        default: true },
+      { key: 'showBar',     type: 'boolean', label: 'Show progress bar', default: true },
+      { key: 'showAddAnim', type: 'boolean', label: 'Show +time animation', default: true },
+      { key: 'urgentMs',    type: 'number',  label: 'Urgent threshold (ms)', default: 300000 },
+    ],
+    defaultProps: { token: '' },
+    previewImageUrl: null,
+  },
+});

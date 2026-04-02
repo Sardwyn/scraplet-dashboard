@@ -7710,6 +7710,7 @@ function InspectorPanel({
               'tts-player': '/widgets/tts-player.js',
               'stake-monitor': '/widgets/stake-monitor.js',
               'raffle': '/widgets/raffle.js',
+              'subathon-timer': '/widgets/subathon-timer.js',
             };
             const triggerWidgetReinit = (newOverrides: any) => {
               const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;

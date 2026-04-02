@@ -381,6 +381,7 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     'sub-counter':          '/widgets/sub-counter.js',
     'event-console-widget': '/widgets/event-console-widget.js',
     'raffle':               '/widgets/raffle.js',
+    'subathon-timer':       '/widgets/subathon-timer.js',
   };
 
   // Widgets that need a token (connect to /w/:token/stream)

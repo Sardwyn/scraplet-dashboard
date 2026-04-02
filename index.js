@@ -66,6 +66,7 @@ import trainingApiRouter from './routes/trainingApi.js';
 import stakeMonitorRouter from './routes/api/stakeMonitor.js';
 import ttsPanelRouter from './routes/api/ttsPanel.js';
 import widgetTokenRouter from './routes/api/widgetToken.js';
+import subathonRouter from './routes/api/subathon.js';
 import ttsAlertRouter from './routes/api/ttsAlert.js';
 import widgetTestFireRouter from './routes/api/widgetTestFire.js';
 import streamerContextRouter from './routes/streamerContext.js';
@@ -331,6 +332,7 @@ app.use(trainingApiRouter);
 app.use(stakeMonitorRouter);
 app.use(ttsPanelRouter);
 app.use(widgetTokenRouter);
+app.use(subathonRouter);
 app.use(ttsAlertRouter);
 app.use(widgetTestFireRouter);
 

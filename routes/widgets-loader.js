@@ -213,6 +213,28 @@ router.get("/w/:token/stream", async (req, res) => {
       }
     }, 250);
 
+    // Hook subathon timer — add time when events come through
+    const subathonInterval = setInterval(async () => {
+      if (closed) return;
+      try {
+        const { handleEvent: subathonHandleEvent } = await import('../src/services/subathonTimer.js');
+        const r = await db.query(
+          `SELECT id, v, source, kind, ts, payload FROM public.events
+           WHERE user_id = $1 AND ts > $2
+             AND kind IN ('channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts','channel.followed','raid','kicks.gifted','tip','donation')
+           ORDER BY ts ASC LIMIT 50`,
+          [userId, lastTs]
+        );
+        for (const row of r.rows || []) {
+          await subathonHandleEvent(String(userId), row.kind, row.payload);
+        }
+      } catch { /* subathon optional */ }
+    }, 1000);
+
+    req.on("close", () => {
+      clearInterval(subathonInterval);
+    });
+
     req.on("close", () => {
       closed = true;
       clearInterval(interval);
