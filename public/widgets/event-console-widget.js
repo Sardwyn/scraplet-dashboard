@@ -123,6 +123,8 @@
   function addRow(type, vars, platform, avatar) {
     var ec = getEventCfg(type);
     if (!ec.enabled) return;
+    // Platform filter
+    if (platform && ec['platform_' + platform] === false) return;
 
     var text = renderTemplate(ec.template, vars);
     var color = ec.color || PLATFORM_COLORS[platform] || '#94a3b8';

@@ -7731,6 +7731,23 @@ function InspectorPanel({
                                       <input type="checkbox" checked={!!ec.enabled} onChange={e => updateEvent(evKey, { enabled: e.target.checked })} className="accent-indigo-500" />
                                       Enabled
                                     </label>
+                                    {/* Platform filters */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Platforms</label>
+                                      <div className="flex gap-1">
+                                        {([['kick','#53fc18'],['youtube','#ff0000'],['twitch','#9146ff']] as const).map(([plat, col]) => {
+                                          const key = `platform_${plat}` as const;
+                                          const active = ec[key] !== false;
+                                          return (
+                                            <button key={plat} type="button"
+                                              onClick={() => updateEvent(evKey, { [key]: !active })}
+                                              className={`text-[10px] px-2 py-0.5 rounded border capitalize ${active ? 'border-transparent text-black font-semibold' : 'border-[rgba(255,255,255,0.1)] text-slate-500'}`}
+                                              style={active ? { background: col } : {}}
+                                            >{plat}</button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
                                     {/* Template */}
                                     <div className="flex items-center gap-2">
                                       <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Template</label>

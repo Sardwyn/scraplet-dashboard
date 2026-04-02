@@ -197,6 +197,9 @@
     var message  = (raw.message && raw.message.text) || raw.message || p.message || '';
     var reward   = (raw.reward && raw.reward.title) || raw.title || '';
     if (ec.minAmount > 0 && parseFloat(amount) < ec.minAmount) return;
+    // Platform filter
+    var platform = raw.platform || p.source || 'kick';
+    if (platform && ec['platform_' + platform] === false) return;
     var title = renderTemplate(ec.template, { username: username, amount: amount, count: count, months: months, reward: reward });
     enqueue({ type: alertType, title: title, message: ec.tts ? message : '',
       ttsText: ec.tts ? message : '',
