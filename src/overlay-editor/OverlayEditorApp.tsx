@@ -954,6 +954,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [gridSize, setGridSize] = useState(16);
   const [showGrid, setShowGrid] = useState(true);
+  const [obsPreviewEnabled, setObsPreviewEnabled] = useState(false);
+  const [obsPreviewUrl, setObsPreviewUrl] = useState<string | null>(null);
+  const obsWsRef = React.useRef<WebSocket | null>(null);
+  const obsPreviewIntervalRef = React.useRef<number | null>(null);
 
   const [guideSnapEnabled, setGuideSnapEnabled] = useState(true);
   const [guides, setGuides] = useState<GuideState>({ show: false, v: [], h: [] });
@@ -4745,6 +4749,49 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     });
   }, []);
 
+  // ── OBS Preview ────────────────────────────────────────────────────────────
+  function connectObsPreview() {
+    const stored = localStorage.getItem('obs_ws_url') || 'ws://localhost:4455';
+    const storedPwd = localStorage.getItem('obs_ws_password') || '';
+    const url = window.prompt('OBS WebSocket URL:', stored) || stored;
+    const pwd = window.prompt('OBS WebSocket Password (leave blank if none):', storedPwd) ?? storedPwd;
+    localStorage.setItem('obs_ws_url', url);
+    localStorage.setItem('obs_ws_password', pwd);
+    try {
+      const ws = new WebSocket(url);
+      (obsWsRef as any).current = ws;
+      ws.onopen = () => console.log('[OBS Preview] connected');
+      ws.onclose = () => { setObsPreviewEnabled(false); setObsPreviewUrl(null); };
+      ws.onerror = () => { ws.close(); alert('Could not connect to OBS WebSocket. Enable it in OBS: Tools → WebSocket Server Settings.'); };
+      ws.onmessage = (ev: MessageEvent) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.op === 0) ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
+          if (msg.op === 2) {
+            setObsPreviewEnabled(true);
+            const poll = () => {
+              if (!ws || ws.readyState !== WebSocket.OPEN) return;
+              ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetSourceScreenshot', requestId: 'preview', requestData: { sourceName: null, imageFormat: 'jpg', imageWidth: 1920, imageHeight: 1080, imageCompressionQuality: 55 } } }));
+            };
+            poll();
+            (obsPreviewIntervalRef as any).current = window.setInterval(poll, 800);
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'preview') {
+            const img = msg.d?.responseData?.imageData;
+            if (img) setObsPreviewUrl(img);
+          }
+        } catch { /* ignore */ }
+      };
+    } catch { alert('Invalid WebSocket URL.'); }
+  }
+
+  function disconnectObsPreview() {
+    if ((obsPreviewIntervalRef as any).current) { clearInterval((obsPreviewIntervalRef as any).current); (obsPreviewIntervalRef as any).current = null; }
+    if ((obsWsRef as any).current) { (obsWsRef as any).current.close(); (obsWsRef as any).current = null; }
+    setObsPreviewEnabled(false);
+    setObsPreviewUrl(null);
+  }
+
   return (
     <div className="flex h-[calc(100vh-2rem)] w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
       {/* Asset Picker Modal */}
@@ -5057,6 +5104,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             </div>
 
             <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
+            {/* OBS Preview toggle */}
+            <button
+              onClick={() => obsPreviewEnabled ? disconnectObsPreview() : connectObsPreview()}
+              className={`flex items-center gap-1.5 rounded px-2 py-0.5 text-[12px] leading-[1.4] transition-colors ${obsPreviewEnabled ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[rgba(255,255,255,0.05)]'}`}
+              title="Toggle OBS live preview behind canvas"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              OBS Preview
+            </button>
 
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
@@ -5227,6 +5283,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
                 transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
+                backgroundImage: obsPreviewUrl ? `url(${obsPreviewUrl})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
               onMouseDown={(e) => {
                 if (spaceDown || (e as any).button === 1) return;
