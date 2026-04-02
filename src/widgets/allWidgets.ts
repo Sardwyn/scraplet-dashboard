@@ -264,6 +264,7 @@ registerWidget({
       { key: 'showStatus',   type: 'boolean', label: 'Show status dot',   default: true },
       { key: 'showCount',    type: 'boolean', label: 'Show entry count',  default: true },
       { key: 'showJoinCmd',  type: 'boolean', label: 'Show join command', default: true },
+      { key: 'joinCommand',  type: 'text',    label: 'Join command',      default: '!join' },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,

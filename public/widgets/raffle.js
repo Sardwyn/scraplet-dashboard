@@ -26,12 +26,13 @@
   var showStatus    = b(cfg.showStatus,   true);
   var showCount     = b(cfg.showCount,    true);
   var showJoinCmd   = b(cfg.showJoinCmd,  true);
+  var joinCommand   = s(cfg.joinCommand,  '!join');
   var prefAnim      = s(cfg.prefAnim,     ''); // '' = use server value, or override
 
   // ── State ──────────────────────────────────────────────────────────────────
   var state = {
     connected: false,
-    topic: '—', joinPhrase: '!join', count: 0,
+    topic: '—', joinPhrase: joinCommand, count: 0,
     animation: prefAnim || 'wheel',
     status: 'idle',
     sampleNames: ['Wait.', 'Loading.', 'Drawing.'],
@@ -71,6 +72,10 @@
   }
 
   function build() {
+    // Restore state from previous instance if reinit happened
+    if (window.__raffleState) {
+      Object.assign(state, window.__raffleState);
+    }
     injectCSS();
     container.innerHTML = [
       '<div class="rf-wrap">',
@@ -294,6 +299,7 @@
     if (p.animation && !prefAnim) state.animation = String(p.animation);
     if (p.sampleNames && p.sampleNames.length) state.sampleNames = p.sampleNames.slice(0,120);
     updateFooter();
+    window.__raffleState = Object.assign({}, state);
     var status = String(p.status||'').toLowerCase();
     if (status === 'collecting') {
       stopAll(); showMode('none'); state.status = 'collecting';
@@ -384,6 +390,20 @@
       applyWinner({ winner:{ username:'StreamerFan' }, pool:state.sampleNames });
     }, 4500);
   }
+
+  // Test fire — cycles through states for editor preview
+  window.__raffleTestFire = function() {
+    if (!container) return;
+    if (state.status === 'idle' || state.status === 'winner') {
+      applyState({ status:'collecting', count:42, joinPhrase:joinCommand, animation:prefAnim||'wheel',
+        sampleNames:['StreamerFan','BotRix','Sardwyn','NewViewer','ChatGoblin'] });
+    } else if (state.status === 'collecting') {
+      applyState({ status:'rolling', count:state.count, joinPhrase:state.joinPhrase,
+        animation:state.animation, sampleNames:state.sampleNames });
+    } else if (state.status === 'rolling') {
+      applyWinner({ winner:{ username:'StreamerFan' }, pool:state.sampleNames });
+    }
+  };
 
   findAndInit();
 

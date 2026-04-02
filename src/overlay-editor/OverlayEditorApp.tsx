@@ -7971,6 +7971,12 @@ function InspectorPanel({
                         </div>
                       </div>
                     )}
+                    {widgetId === 'raffle' && (
+                      <button
+                        onClick={() => { const fn = (window as any).__raffleTestFire; if (typeof fn === 'function') fn(); }}
+                        className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                      >Cycle Raffle State</button>
+                    )}
                     {widgetId === 'sub-counter' && (
                       <button
                         onClick={() => { const fn = (window as any).__subCounterAddSub; if (typeof fn === 'function') fn(1); }}
