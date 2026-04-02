@@ -1,500 +1,390 @@
-// /public/widgets/raffle.js
-// Raffle OBS widget client.
-// Listens to SSE at: /w/:token/stream
-(() => {
-  const $ = (id) => document.getElementById(id);
+// public/widgets/raffle.js
+// Raffle widget v2 — script injection, bounding box aware, full visual config.
 
-  const el = {
-    statusDot: $("statusDot"),
-    animChip: $("animChip"),
-    countText: $("countText"),
-    joinText: $("joinText"),
-    topicText: $("topicText"),
-    debugText: $("debugText"),
+(function () {
+  'use strict';
 
-    labelText: $("labelText"),
-    nameText: $("nameText"),
-    hintText: $("hintText"),
+  var cfg = window.__WIDGET_CONFIG_RAFFLE__ || {};
+  var token = cfg.token || window.__WIDGET_TOKEN__ || '';
+  var editorPreview = cfg.editorPreview === true || cfg.editorPreview === 'true';
 
-    confetti: $("confetti"),
+  if (!token && !editorPreview) { console.warn('[raffle] No token'); return; }
+  if (token) window.__WIDGET_TOKEN__ = token;
 
-    wheelBox: $("wheelBox"),
-    wheelList: $("wheelList"),
+  // ── Config ─────────────────────────────────────────────────────────────────
+  function s(v,d){ var x=String(v||'').trim(); return x||d; }
+  function n(v,d){ var x=Number(v); return isFinite(x)?x:d; }
+  function b(v,d){ if(v===true||v===false)return v; var t=String(v||'').toLowerCase(); return ['1','true','yes','on'].includes(t)?true:['0','false','no','off'].includes(t)?false:d; }
 
-    slotBox: $("slotBox"),
-    slotTxt: $("slotTxt"),
-  };
+  var fontFamily    = s(cfg.fontFamily,   'Inter, system-ui, sans-serif');
+  var fontSizePx    = n(cfg.fontSizePx,   18);
+  var textColor     = s(cfg.textColor,    '#ffffff');
+  var accentColor   = s(cfg.accentColor,  '#6366f1');
+  var bgColor       = s(cfg.bgColor,      'rgba(0,0,0,0.85)');
+  var winnerColor   = s(cfg.winnerColor,  '#fbbf24');
+  var borderRadius  = n(cfg.borderRadius, 16);
+  var showStatus    = b(cfg.showStatus,   true);
+  var showCount     = b(cfg.showCount,    true);
+  var showJoinCmd   = b(cfg.showJoinCmd,  true);
+  var prefAnim      = s(cfg.prefAnim,     ''); // '' = use server value, or override
 
-  const state = {
+  // ── State ──────────────────────────────────────────────────────────────────
+  var state = {
     connected: false,
-    topic: "—",
-    joinPhrase: "!join",
-    count: 0,
-
-    animation: "wheel", // wheel | slot | scramble
-    status: "idle",     // idle | collecting | rolling | winner
-    sampleNames: ["Wait.", "Loading.", "Drawing."],
-
+    topic: '—', joinPhrase: '!join', count: 0,
+    animation: prefAnim || 'wheel',
+    status: 'idle',
+    sampleNames: ['Wait.', 'Loading.', 'Drawing.'],
     frozenOnWinner: false,
     activeSessionId: null,
-
-    slotTimer: null,
-    wheelTimer: null,
-
+    slotTimer: null, wheelTimer: null,
     lastWinner: null,
   };
 
-  let es = null;
-  let retryMs = 800;
+  var es = null;
+  var retryMs = 800;
 
-  function debug(msg) {
-    if (!el.debugText) return;
-    el.debugText.textContent = msg || "";
+  // ── DOM ────────────────────────────────────────────────────────────────────
+  var container = null;
+  var el = {};
+  var _findAttempts = 0;
+
+  function findAndInit() {
+    var editorRoot  = document.querySelector('[data-widget-editor-preview="raffle"]');
+    var runtimeRoot = document.querySelector('[data-widget-id="raffle"]');
+    var root = editorRoot || runtimeRoot;
+    if (root) {
+      container = root;
+      container.style.position = 'relative';
+      container.style.overflow = 'hidden';
+      build();
+    } else if (_findAttempts < 60) {
+      _findAttempts++;
+      requestAnimationFrame(findAndInit);
+    } else {
+      container = document.createElement('div');
+      container.id = 'raffle-root';
+      container.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;';
+      document.body.appendChild(container);
+      build();
+    }
   }
 
+  function build() {
+    injectCSS();
+    container.innerHTML = [
+      '<div class="rf-wrap">',
+        '<div class="rf-header">',
+          '<span class="rf-dot"></span>',
+          '<span class="rf-label">Waiting</span>',
+          '<span class="rf-anim-chip"></span>',
+        '</div>',
+        '<div class="rf-name">—</div>',
+        '<div class="rf-hint">Start the raffle from the dashboard.</div>',
+        '<div class="rf-wheel-box" style="display:none"><div class="rf-wheel-list"></div></div>',
+        '<div class="rf-slot-box" style="display:none"><div class="rf-slot-txt">—</div></div>',
+        '<div class="rf-footer">',
+          '<span class="rf-count-wrap">👥 <span class="rf-count">0</span></span>',
+          '<span class="rf-join-wrap">Type <b class="rf-join-cmd">!join</b></span>',
+        '</div>',
+        '<div class="rf-confetti-box" style="display:none"></div>',
+      '</div>',
+    ].join('');
+
+    el.dot       = container.querySelector('.rf-dot');
+    el.label     = container.querySelector('.rf-label');
+    el.animChip  = container.querySelector('.rf-anim-chip');
+    el.name      = container.querySelector('.rf-name');
+    el.hint      = container.querySelector('.rf-hint');
+    el.wheelBox  = container.querySelector('.rf-wheel-box');
+    el.wheelList = container.querySelector('.rf-wheel-list');
+    el.slotBox   = container.querySelector('.rf-slot-box');
+    el.slotTxt   = container.querySelector('.rf-slot-txt');
+    el.count     = container.querySelector('.rf-count');
+    el.countWrap = container.querySelector('.rf-count-wrap');
+    el.joinWrap  = container.querySelector('.rf-join-wrap');
+    el.joinCmd   = container.querySelector('.rf-join-cmd');
+    el.confetti  = container.querySelector('.rf-confetti-box');
+    el.footer    = container.querySelector('.rf-footer');
+
+    if (!showStatus) { el.dot.style.display = 'none'; }
+    if (!showCount)  { el.countWrap.style.display = 'none'; }
+    if (!showJoinCmd){ el.joinWrap.style.display = 'none'; }
+
+    resetToWaiting();
+    if (!editorPreview) connect();
+    else showPreview();
+    console.log('[raffle] v2 started');
+  }
+
+  // ── CSS ────────────────────────────────────────────────────────────────────
+  function injectCSS() {
+    var st = document.createElement('style');
+    st.textContent = [
+      '.rf-wrap{width:100%;height:100%;background:'+bgColor+';border-radius:'+borderRadius+'px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'+fontFamily+';font-size:'+fontSizePx+'px;color:'+textColor+';padding:16px;box-sizing:border-box;position:relative;overflow:hidden;}',
+      '.rf-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;width:100%;justify-content:center;}',
+      '.rf-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;transition:background 0.3s;}',
+      '.rf-dot.ok{background:#22c55e;} .rf-dot.warn{background:#f59e0b;}',
+      '.rf-label{font-weight:700;font-size:0.85em;text-transform:uppercase;letter-spacing:0.08em;opacity:0.7;}',
+      '.rf-anim-chip{font-size:0.7em;background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px;opacity:0.6;}',
+      '.rf-name{font-size:1.8em;font-weight:800;text-align:center;line-height:1.1;margin:4px 0;transition:color 0.3s;word-break:break-word;max-width:100%;}',
+      '.rf-name.winner{color:'+winnerColor+';text-shadow:0 0 20px '+winnerColor+'88;}',
+      '.rf-hint{font-size:0.75em;opacity:0.5;text-align:center;margin-bottom:8px;}',
+      '.rf-wheel-box{width:100%;max-height:200px;overflow:hidden;border:2px solid '+accentColor+';border-radius:8px;position:relative;margin:8px 0;}',
+      '.rf-wheel-box::before,.rf-wheel-box::after{content:"";position:absolute;left:0;right:0;height:40%;z-index:2;pointer-events:none;}',
+      '.rf-wheel-box::before{top:0;background:linear-gradient(to bottom,'+bgColor+',transparent);}',
+      '.rf-wheel-box::after{bottom:0;background:linear-gradient(to top,'+bgColor+',transparent);}',
+      '.rf-wheel-list{display:flex;flex-direction:column;will-change:transform;}',
+      '.rf-wheel-pill{padding:8px 12px;text-align:center;font-size:0.9em;opacity:0.5;transition:opacity 0.2s;}',
+      '.rf-wheel-pill.target{opacity:1;font-weight:700;color:'+accentColor+';}',
+      '.rf-slot-box{width:100%;padding:12px;border:2px solid '+accentColor+';border-radius:8px;margin:8px 0;text-align:center;}',
+      '.rf-slot-txt{font-size:1.4em;font-weight:700;color:'+accentColor+';min-height:1.5em;}',
+      '.rf-footer{display:flex;gap:16px;font-size:0.75em;opacity:0.6;margin-top:auto;padding-top:8px;}',
+      '.rf-confetti-box{position:absolute;inset:0;pointer-events:none;overflow:hidden;}',
+      '.rf-confetti{position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;animation:rf-fall 1.8s ease-in forwards;}',
+      '@keyframes rf-fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function sanitize(s) { return s ? String(s).trim().slice(0,36) || '—' : '—'; }
+  function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
   function setDot(mode) {
-    if (!el.statusDot) return;
-    el.statusDot.className = "dot";
-    if (mode === "ok") el.statusDot.classList.add("ok");
-    else if (mode === "warn") el.statusDot.classList.add("warn");
-    else el.statusDot.classList.add("bad");
+    if (!el.dot) return;
+    el.dot.className = 'rf-dot' + (mode==='ok'?' ok':mode==='warn'?' warn':'');
   }
 
   function showMode(which) {
-    if (el.wheelBox) el.wheelBox.style.display = which === "wheel" ? "block" : "none";
-    if (el.slotBox) el.slotBox.style.display = (which === "slot" || which === "scramble") ? "block" : "none";
+    if (el.wheelBox) el.wheelBox.style.display = which==='wheel'?'block':'none';
+    if (el.slotBox)  el.slotBox.style.display  = (which==='slot'||which==='scramble')?'block':'none';
   }
 
-  function setAnimChip(anim) {
-    if (!el.animChip) return;
-    el.animChip.textContent = (anim || "—").toUpperCase();
-  }
-
-  function setFooter({ count, joinPhrase, topic }) {
-    if (el.countText) el.countText.textContent = String(count ?? 0);
-    if (el.joinText) el.joinText.textContent = String(joinPhrase || "!join");
-    if (el.topicText) el.topicText.textContent = String(topic || "—");
+  function updateFooter() {
+    if (el.count)   el.count.textContent   = String(state.count);
+    if (el.joinCmd) el.joinCmd.textContent = state.joinPhrase;
+    if (el.animChip) el.animChip.textContent = state.animation.toUpperCase();
   }
 
   function stopAll() {
-    if (state.slotTimer) {
-      clearInterval(state.slotTimer);
-      state.slotTimer = null;
-    }
-    if (state.wheelTimer) {
-      clearInterval(state.wheelTimer);
-      state.wheelTimer = null;
-    }
+    if (state.slotTimer)  { clearInterval(state.slotTimer);  state.slotTimer  = null; }
+    if (state.wheelTimer) { clearInterval(state.wheelTimer); state.wheelTimer = null; }
   }
 
-  function sanitizeName(s) {
-    if (!s) return "—";
-    const t = String(s).trim();
-    if (!t) return "—";
-    return t.slice(0, 36);
-  }
-
-  function pick(arr) {
-    if (!Array.isArray(arr) || !arr.length) return "…";
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  // ---- token handling (FIX) ----
-  function tokenFromPath() {
-    // /w/<token> or /w/<token>/stream
-    const m = /^\/w\/([^\/?#]+)/.exec(location.pathname || "");
-    return m ? decodeURIComponent(m[1]) : "";
-  }
-
-  function getWidgetToken() {
-    const t = String(window.__WIDGET_TOKEN__ || "").trim();
-    if (t) return t;
-
-    const p = tokenFromPath().trim();
-    if (p) {
-      window.__WIDGET_TOKEN__ = p; // stabilize future calls
-      return p;
-    }
-    return "";
-  }
-
-  // ---- wheel helpers ----
-  function resetWheel() {
-    if (!el.wheelList) return;
-    el.wheelList.style.transition = "none";
-    el.wheelList.style.transform = "translateY(0px)";
-    el.wheelList.innerHTML = "";
-  }
-
-  function renderWheel(reel, targetIndex) {
-    if (!el.wheelList) return;
-    el.wheelList.innerHTML = "";
-    reel.forEach((name, i) => {
-      const row = document.createElement("div");
-      row.className = "wheel-pill";
-      row.textContent = sanitizeName(name);
-      if (i === targetIndex) row.classList.add("target");
+  // ── Wheel ──────────────────────────────────────────────────────────────────
+  function startWheelRolling(pool) {
+    stopAll(); showMode('wheel');
+    var safePool = (pool&&pool.length?pool:state.sampleNames).map(sanitize);
+    var reel = new Array(30).fill(null).map(function(){ return pick(safePool); });
+    el.wheelList.innerHTML = '';
+    reel.forEach(function(name) {
+      var row = document.createElement('div');
+      row.className = 'rf-wheel-pill';
+      row.textContent = name;
       el.wheelList.appendChild(row);
     });
-  }
-
-  function buildWheelReel(pool, winner) {
-    const safePool = (Array.isArray(pool) && pool.length ? pool : state.sampleNames).map(sanitizeName);
-    const safeWinner = sanitizeName(winner);
-
-    const reelSize = 33;
-    const targetIndex = 17;
-    const reel = new Array(reelSize).fill(null).map(() => pick(safePool));
-    reel[targetIndex] = safeWinner;
-    return { reel, targetIndex };
-  }
-
-  function landWheelOnIndex(targetIndex) {
-    if (!el.wheelBox || !el.wheelList) return;
-    const target = el.wheelList.children[targetIndex];
-    if (!target) return;
-
-    const boxRect = el.wheelBox.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const boxCenterY = boxRect.top + (boxRect.height / 2);
-    const targetCenterY = targetRect.top + (targetRect.height / 2);
-
-    const delta = boxCenterY - targetCenterY;
-
-    const m = /translateY\(([-0-9.]+)px\)/.exec(el.wheelList.style.transform || "");
-    const current = m ? Number(m[1]) : 0;
-    const next = current + delta;
-
-    el.wheelList.style.willChange = "transform";
-    el.wheelList.style.transition = "transform 1900ms cubic-bezier(0.12, 0.88, 0.12, 1)";
-    el.wheelList.style.transform = `translateY(${next}px)`;
-  }
-
-  function startWheelRolling(pool) {
-    stopAll();
-    showMode("wheel");
-
-    const safePool = (Array.isArray(pool) && pool.length ? pool : state.sampleNames).map(sanitizeName);
-
-    const reel = new Array(30).fill(null).map(() => pick(safePool));
-    renderWheel(reel, -1);
-
-    const rowEl = el.wheelList?.children?.[0];
-    const rowH = rowEl ? rowEl.getBoundingClientRect().height : 36;
-
-    let y = 0;
-
-    if (el.wheelList) {
-      el.wheelList.style.transition = "none";
-      el.wheelList.style.transform = "translateY(0px)";
-      el.wheelList.style.willChange = "transform";
-    }
-
-    state.wheelTimer = setInterval(() => {
-      if (!el.wheelList) return;
-
+    el.wheelList.style.transition = 'none';
+    el.wheelList.style.transform = 'translateY(0px)';
+    var rowH = 40;
+    var y = 0;
+    state.wheelTimer = setInterval(function() {
       y -= rowH;
-
-      el.wheelList.style.transition = "transform 120ms linear";
-      el.wheelList.style.transform = `translateY(${y}px)`;
-
-      setTimeout(() => {
-        if (!el.wheelList) return;
-
-        const first = el.wheelList.firstElementChild;
-        if (first) el.wheelList.appendChild(first);
-
-        if (Math.random() < 0.35) {
-          const last = el.wheelList.lastElementChild;
-          if (last) last.textContent = pick(safePool);
-        }
-
-        el.wheelList.style.transition = "none";
+      el.wheelList.style.transition = 'transform 120ms linear';
+      el.wheelList.style.transform = 'translateY('+y+'px)';
+      setTimeout(function() {
+        var first = el.wheelList.firstElementChild;
+        if (first) { el.wheelList.appendChild(first); if (Math.random()<0.35) first.textContent = pick(safePool); }
+        el.wheelList.style.transition = 'none';
         y += rowH;
-        el.wheelList.style.transform = `translateY(${y}px)`;
+        el.wheelList.style.transform = 'translateY('+y+'px)';
       }, 130);
     }, 140);
   }
 
+  function landWheel(pool, winner) {
+    stopAll(); showMode('wheel');
+    var safePool = (pool&&pool.length?pool:state.sampleNames).map(sanitize);
+    var safeWinner = sanitize(winner);
+    var reelSize = 33; var targetIdx = 17;
+    var reel = new Array(reelSize).fill(null).map(function(){ return pick(safePool); });
+    reel[targetIdx] = safeWinner;
+    el.wheelList.innerHTML = '';
+    reel.forEach(function(name, i) {
+      var row = document.createElement('div');
+      row.className = 'rf-wheel-pill' + (i===targetIdx?' target':'');
+      row.textContent = name;
+      el.wheelList.appendChild(row);
+    });
+    el.wheelList.style.transition = 'none';
+    el.wheelList.style.transform = 'translateY(0px)';
+    requestAnimationFrame(function() { requestAnimationFrame(function() {
+      var target = el.wheelList.children[targetIdx];
+      if (!target) return;
+      var boxRect = el.wheelBox.getBoundingClientRect();
+      var tRect   = target.getBoundingClientRect();
+      var delta   = (boxRect.top + boxRect.height/2) - (tRect.top + tRect.height/2);
+      el.wheelList.style.transition = 'transform 1900ms cubic-bezier(0.12,0.88,0.12,1)';
+      el.wheelList.style.transform  = 'translateY('+delta+'px)';
+    }); });
+  }
+
+  // ── Slot / Scramble ────────────────────────────────────────────────────────
   function startSlotRolling(pool) {
-    stopAll();
-    showMode("slot");
-
-    const safePool = (Array.isArray(pool) && pool.length ? pool : state.sampleNames).map(sanitizeName);
-    if (!el.slotTxt) return;
-
-    state.slotTimer = setInterval(() => {
-      el.slotTxt.textContent = pick(safePool);
-    }, 60);
+    stopAll(); showMode('slot');
+    var safePool = (pool&&pool.length?pool:state.sampleNames).map(sanitize);
+    state.slotTimer = setInterval(function() { el.slotTxt.textContent = pick(safePool); }, 60);
   }
 
   function startScrambleRolling(pool) {
-    stopAll();
-    showMode("scramble");
-
-    const safePool = (Array.isArray(pool) && pool.length ? pool : state.sampleNames).map(sanitizeName);
-    if (!el.slotTxt) return;
-
-    const glyphs = "!@#$%^&*()_+=-{}[]<>?/\\|~";
-    const glitch = (name) => {
-      const s = sanitizeName(name);
-      const a = s.split("");
-      const n = Math.max(1, Math.min(3, Math.floor(Math.random() * 4)));
-      for (let i = 0; i < n; i++) {
-        const idx = Math.floor(Math.random() * a.length);
-        a[idx] = glyphs[Math.floor(Math.random() * glyphs.length)];
+    stopAll(); showMode('scramble');
+    var safePool = (pool&&pool.length?pool:state.sampleNames).map(sanitize);
+    var glyphs = '!@#$%^&*()_+=-{}[]<>?/\\|~';
+    var base = pick(safePool);
+    state.slotTimer = setInterval(function() {
+      if (Math.random()<0.35) base = pick(safePool);
+      var a = base.split('');
+      for (var i=0;i<Math.min(3,Math.floor(Math.random()*4));i++) {
+        a[Math.floor(Math.random()*a.length)] = glyphs[Math.floor(Math.random()*glyphs.length)];
       }
-      return (Math.random() < 0.25) ? (a.join("") + " ▌") : a.join("");
-    };
-
-    let base = pick(safePool);
-    state.slotTimer = setInterval(() => {
-      if (Math.random() < 0.35) base = pick(safePool);
-      el.slotTxt.textContent = glitch(base);
+      el.slotTxt.textContent = a.join('') + (Math.random()<0.25?' ▌':'');
     }, 55);
   }
 
-  function applyState(payload) {
-    const p = payload || {};
+  // ── Confetti ───────────────────────────────────────────────────────────────
+  function burstConfetti() {
+    if (!el.confetti) return;
+    el.confetti.innerHTML = '';
+    el.confetti.style.display = 'block';
+    var colors = ['#818cf8','#22c55e','#facc15','#ef4444','#f472b6'];
+    for (var i=0;i<70;i++) {
+      var dot = document.createElement('div');
+      dot.className = 'rf-confetti';
+      dot.style.left = (Math.random()*100).toFixed(2)+'%';
+      dot.style.background = colors[i%colors.length];
+      dot.style.animationDelay = (Math.random()*0.15)+'s';
+      el.confetti.appendChild(dot);
+    }
+    setTimeout(function() { el.confetti.style.display='none'; el.confetti.innerHTML=''; }, 1900);
+  }
 
+  // ── State machine ──────────────────────────────────────────────────────────
+  function resetToWaiting() {
+    state.frozenOnWinner = false; state.activeSessionId = null;
+    stopAll();
+    state.status = 'idle'; state.lastWinner = null;
+    setDot(state.connected?'warn':'');
+    showMode('none');
+    if (el.label) el.label.textContent = 'Waiting';
+    if (el.name)  { el.name.textContent = '—'; el.name.classList.remove('winner'); }
+    if (el.hint)  el.hint.textContent = 'Start the raffle from the dashboard.';
+    updateFooter();
+  }
+
+  function applyState(p) {
+    p = p || {};
     if (p.sessionId) {
-      const sid = String(p.sessionId);
+      var sid = String(p.sessionId);
       if (state.activeSessionId && sid !== state.activeSessionId) return;
       if (!state.activeSessionId) state.activeSessionId = sid;
     }
-
     if (state.frozenOnWinner) return;
-
-    const status = String(p.status || "").toLowerCase();
-
-    if (p.sessionId) state.topic = String(p.sessionId);
-    if (p.joinPhrase && String(p.joinPhrase).trim()) state.joinPhrase = String(p.joinPhrase).trim();
-    if (Number.isFinite(Number(p.count))) state.count = Number(p.count);
-    if (p.animation) state.animation = String(p.animation);
-    if (Array.isArray(p.sampleNames) && p.sampleNames.length) state.sampleNames = p.sampleNames.slice(0, 120);
-
-    setFooter({ count: state.count, joinPhrase: state.joinPhrase, topic: state.topic });
-    setAnimChip(state.animation);
-
-    if (status === "collecting") {
-      stopAll();
-      showMode("none");
-      state.status = "collecting";
-
-      setDot("ok");
-      if (el.labelText) el.labelText.textContent = "Collecting";
-      if (el.nameText) el.nameText.textContent = "Entries Open";
-      if (el.nameText) el.nameText.classList.remove("winner");
-      if (el.hintText) el.hintText.textContent = "Waiting for chat joins…";
-      return;
-    }
-
-    if (status === "rolling") {
-      state.status = "rolling";
-
-      setDot("ok");
-      if (el.labelText) el.labelText.textContent = "Rolling";
-      if (el.nameText) el.nameText.textContent = "—";
-      if (el.nameText) el.nameText.classList.remove("winner");
-      if (el.hintText) el.hintText.textContent = "Drawing a winner…";
-
-      const pool = p.sampleNames || state.sampleNames;
-
-      if (state.animation === "wheel") startWheelRolling(pool);
-      else if (state.animation === "scramble") startScrambleRolling(pool);
+    if (p.joinPhrase) state.joinPhrase = String(p.joinPhrase).trim();
+    if (isFinite(Number(p.count))) state.count = Number(p.count);
+    if (p.animation && !prefAnim) state.animation = String(p.animation);
+    if (p.sampleNames && p.sampleNames.length) state.sampleNames = p.sampleNames.slice(0,120);
+    updateFooter();
+    var status = String(p.status||'').toLowerCase();
+    if (status === 'collecting') {
+      stopAll(); showMode('none'); state.status = 'collecting';
+      setDot('ok');
+      if (el.label) el.label.textContent = 'Collecting';
+      if (el.name)  { el.name.textContent = 'Entries Open'; el.name.classList.remove('winner'); }
+      if (el.hint)  el.hint.textContent = 'Waiting for chat joins…';
+    } else if (status === 'rolling') {
+      state.status = 'rolling';
+      setDot('ok');
+      if (el.label) el.label.textContent = 'Rolling';
+      if (el.name)  { el.name.textContent = '—'; el.name.classList.remove('winner'); }
+      if (el.hint)  el.hint.textContent = 'Drawing a winner…';
+      var pool = p.sampleNames || state.sampleNames;
+      if (state.animation==='wheel') startWheelRolling(pool);
+      else if (state.animation==='scramble') startScrambleRolling(pool);
       else startSlotRolling(pool);
     }
   }
 
-  function applyWinner(payload) {
-    const p = payload || {};
+  function applyWinner(p) {
+    p = p || {};
     if (p.sessionId) state.activeSessionId = String(p.sessionId);
-
     stopAll();
-    if (el.wheelList) {
-      el.wheelList.style.transition = "none";
-      el.wheelList.style.willChange = "auto";
-    }
-
-    state.lastWinner = sanitizeName(
-      (p.winner && (p.winner.username || p.winner.name)) ||
-      p.username ||
-      p.name ||
-      "—"
-    );
-
-    state.status = "winner";
-    state.frozenOnWinner = true;
-
-    setDot("ok");
-    if (el.labelText) el.labelText.textContent = "Winner";
-    if (el.nameText) el.nameText.textContent = state.lastWinner;
-    if (el.nameText) el.nameText.classList.add("winner");
-    if (el.hintText) el.hintText.textContent = "Winner selected.";
-
-    const pool = p.pool || p.sampleNames || state.sampleNames;
-
-    if (state.animation === "wheel") {
-      showMode("wheel");
-      const { reel, targetIndex } = buildWheelReel(pool, state.lastWinner);
-      renderWheel(reel, targetIndex);
-      requestAnimationFrame(() => requestAnimationFrame(() => landWheelOnIndex(targetIndex)));
-    } else {
-      showMode(state.animation === "scramble" ? "scramble" : "slot");
-      if (el.slotTxt) el.slotTxt.textContent = state.lastWinner;
-    }
-
+    state.lastWinner = sanitize((p.winner&&(p.winner.username||p.winner.name))||p.username||p.name||'—');
+    state.status = 'winner'; state.frozenOnWinner = true;
+    setDot('ok');
+    if (el.label) el.label.textContent = 'Winner!';
+    if (el.name)  { el.name.textContent = state.lastWinner; el.name.classList.add('winner'); }
+    if (el.hint)  el.hint.textContent = '🎉 Congratulations!';
+    var pool = p.pool || p.sampleNames || state.sampleNames;
+    if (state.animation==='wheel') landWheel(pool, state.lastWinner);
+    else { showMode(state.animation==='scramble'?'scramble':'slot'); if (el.slotTxt) el.slotTxt.textContent = state.lastWinner; }
     burstConfetti();
   }
 
-  function burstConfetti() {
-    if (!el.confetti) return;
-    el.confetti.innerHTML = "";
-    el.confetti.style.display = "block";
-
-    const colors = [
-      "rgba(129,140,248,0.95)",
-      "rgba(34,197,94,0.95)",
-      "rgba(250,204,21,0.95)",
-      "rgba(239,68,68,0.95)",
-      "rgba(244,114,182,0.95)",
-    ];
-
-    for (let i = 0; i < 70; i++) {
-      const dot = document.createElement("div");
-      dot.className = "confetti";
-      dot.style.left = (Math.random() * 100).toFixed(3) + "%";
-      dot.style.background = colors[i % colors.length];
-      dot.style.animationDelay = (Math.random() * 0.15) + "s";
-      dot.style.transform = `translateY(0) scale(${0.8 + Math.random() * 0.6})`;
-      el.confetti.appendChild(dot);
-    }
-
-    setTimeout(() => {
-      el.confetti.style.display = "none";
-      el.confetti.innerHTML = "";
-    }, 1900);
-  }
-
-  function resetToWaiting() {
-    state.frozenOnWinner = false;
-    state.activeSessionId = null;
-    stopAll();
-    resetWheel();
-
-    state.status = "idle";
-    state.lastWinner = null;
-
-    setDot(state.connected ? "warn" : "bad");
-    showMode("none");
-    if (el.labelText) el.labelText.textContent = "Waiting";
-    if (el.nameText) el.nameText.textContent = "—";
-    if (el.nameText) el.nameText.classList.remove("winner");
-    if (el.hintText) el.hintText.textContent = "Start the raffle from the dashboard.";
-    setAnimChip(state.animation);
-    setFooter({ count: state.count, joinPhrase: state.joinPhrase, topic: state.topic });
-    debug("");
-  }
-
-  function normalizeEnvelope(data) {
-    if (!data) return null;
-    try {
-      const obj = JSON.parse(data);
-      if (!obj || typeof obj !== "object") return null;
-      return { id: obj.id || null, kind: obj.kind || null, payload: obj.payload || null };
-    } catch {
-      return null;
-    }
-  }
-
-  const seenEvents = new Set();
-  function hasSeenEvent(id) {
+  // ── SSE ────────────────────────────────────────────────────────────────────
+  var seenEvents = new Set();
+  function seen(id) {
     if (!id) return false;
     if (seenEvents.has(id)) return true;
     seenEvents.add(id);
-    if (seenEvents.size > 500) {
-      const it = seenEvents.values();
-      const oldest = it.next().value;
-      if (oldest) seenEvents.delete(oldest);
-    }
+    if (seenEvents.size > 500) seenEvents.delete(seenEvents.values().next().value);
     return false;
   }
 
-  function getStreamUrl() {
-    const token = getWidgetToken();
-    const base = location.origin.replace(/\/$/, "");
-    return `${base}/w/${encodeURIComponent(token)}/stream`;
+  function parseEnv(data) {
+    try { var o=JSON.parse(data); return o&&typeof o==='object'?{id:o.id,kind:o.kind,payload:o.payload}:null; } catch(e){ return null; }
   }
 
   function connect() {
-    const token = getWidgetToken();
-    if (!token) {
-      setDot("bad");
-      debug("Missing widget token (no /w/:token in URL?)");
-      return;
-    }
-
-    const streamUrl = getStreamUrl();
-
-    try { if (es) es.close(); } catch {}
-    debug("connecting…");
-    setDot("warn");
-
-    es = new EventSource(streamUrl);
-
-    es.addEventListener("hello", () => {
-      state.connected = true;
-      setDot("ok");
-      debug("");
-      retryMs = 800;
-    });
-
-    es.addEventListener("raffle.state", (ev) => {
-      const env = normalizeEnvelope(ev.data);
-      if (!env || hasSeenEvent(env.id)) return;
-      applyState(env.payload);
-      debug("raffle.state");
-      retryMs = 800;
-    });
-
-    es.addEventListener("raffle.winner", (ev) => {
-      const env = normalizeEnvelope(ev.data);
-      if (!env || hasSeenEvent(env.id)) return;
-      applyWinner(env.payload);
-      debug("raffle.winner");
-      retryMs = 800;
-    });
-
-    es.addEventListener("raffle.reset", (ev) => {
-      const env = normalizeEnvelope(ev.data);
-      if (env && hasSeenEvent(env.id)) return;
-      resetToWaiting();
-      debug("raffle.reset");
-      retryMs = 800;
-    });
-
-    es.onmessage = (ev) => {
-      const env = normalizeEnvelope(ev.data);
-      if (!env || hasSeenEvent(env.id)) return;
-      const kind = String(env.kind || "");
-      if (kind === "raffle.state") applyState(env.payload);
-      else if (kind === "raffle.winner") applyWinner(env.payload);
-      else if (kind === "raffle.reset") resetToWaiting();
-      if (kind) debug(kind);
-      retryMs = 800;
+    if (!token) { setDot(''); return; }
+    try { if (es) es.close(); } catch(e){}
+    setDot('warn');
+    es = new EventSource('/w/'+encodeURIComponent(token)+'/stream');
+    es.addEventListener('hello', function() { state.connected=true; setDot('ok'); retryMs=800; });
+    es.addEventListener('raffle.state',  function(ev){ var e=parseEnv(ev.data); if(e&&!seen(e.id)) applyState(e.payload); });
+    es.addEventListener('raffle.winner', function(ev){ var e=parseEnv(ev.data); if(e&&!seen(e.id)) applyWinner(e.payload); });
+    es.addEventListener('raffle.reset',  function(ev){ var e=parseEnv(ev.data); if(!e||!seen(e.id)) resetToWaiting(); });
+    es.onmessage = function(ev) {
+      var e=parseEnv(ev.data); if(!e||seen(e.id)) return;
+      if(e.kind==='raffle.state') applyState(e.payload);
+      else if(e.kind==='raffle.winner') applyWinner(e.payload);
+      else if(e.kind==='raffle.reset') resetToWaiting();
     };
-
-    es.onerror = () => {
-      state.connected = false;
-      setDot("bad");
-      debug("SSE error; retrying…");
-      try { es.close(); } catch {}
+    es.onerror = function() {
+      state.connected=false; setDot('');
+      try{es.close();}catch(e){}
       setTimeout(connect, retryMs);
-      retryMs = Math.min(8000, Math.floor(retryMs * 1.6));
+      retryMs = Math.min(8000, Math.floor(retryMs*1.6));
     };
+    console.log('[raffle] SSE connected');
   }
 
-  // boot
-  resetToWaiting();
-  connect();
+  // ── Editor preview ─────────────────────────────────────────────────────────
+  function showPreview() {
+    if (window.__raffleDummyShown) return;
+    window.__raffleDummyShown = true;
+    state.connected = true; setDot('ok');
+    // Show collecting state
+    applyState({ status:'collecting', count:42, joinPhrase:'!join', animation:'wheel', sampleNames:['StreamerFan','BotRix','Sardwyn','NewViewer','ChatGoblin'] });
+    // Then roll after 2s
+    setTimeout(function() {
+      applyState({ status:'rolling', count:42, joinPhrase:'!join', animation:state.animation, sampleNames:state.sampleNames });
+    }, 2000);
+    // Then winner after 4s
+    setTimeout(function() {
+      applyWinner({ winner:{ username:'StreamerFan' }, pool:state.sampleNames });
+    }, 4500);
+  }
+
+  findAndInit();
+
 })();

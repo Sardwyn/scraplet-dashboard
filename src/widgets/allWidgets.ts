@@ -253,8 +253,20 @@ registerWidget({
     invisible:      false,
     runtimeScript:  '/widgets/raffle.js',
     configSchema: [
-      { key: 'command', type: 'text', label: 'Entry command', default: '!enter' },
-      { key: 'backgroundColor', type: 'color', label: 'Background', default: 'rgba(0,0,0,0.8)' }
+      // Visual
+      { key: 'fontFamily',   type: 'select',  label: 'Font',              default: 'Inter', options: ['Inter','Roboto','Open Sans','Oswald','Bebas Neue','Montserrat','Rajdhani','Exo 2','Barlow','Nunito','Poppins','Lato','Space Grotesk','DM Sans'] },
+      { key: 'fontSizePx',   type: 'number',  label: 'Font size (px)',    default: 18 },
+      { key: 'textColor',    type: 'color',   label: 'Text colour',       default: '#ffffff' },
+      { key: 'accentColor',  type: 'color',   label: 'Accent colour',     default: '#6366f1' },
+      { key: 'winnerColor',  type: 'color',   label: 'Winner colour',     default: '#fbbf24' },
+      { key: 'bgColor',      type: 'color',   label: 'Background',        default: 'rgba(0,0,0,0.85)' },
+      { key: 'borderRadius', type: 'number',  label: 'Border radius (px)',default: 16 },
+      // Animation preference (empty = use server value)
+      { key: 'prefAnim',     type: 'select',  label: 'Animation override',default: '', options: ['','wheel','slot','scramble'] },
+      // Toggles
+      { key: 'showStatus',   type: 'boolean', label: 'Show status dot',   default: true },
+      { key: 'showCount',    type: 'boolean', label: 'Show entry count',  default: true },
+      { key: 'showJoinCmd',  type: 'boolean', label: 'Show join command', default: true },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
