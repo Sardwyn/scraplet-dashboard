@@ -9,7 +9,12 @@ router.get('/o/:slug', async (req, res) => {
     const { slug } = req.params;
     try {
         const result = await db.query(
-            `SELECT public_id, id, name FROM overlays WHERE slug = $1 OR public_id = $1 LIMIT 1`,
+            `SELECT o.public_id, o.id, o.name, o.user_id,
+                    COALESCE(sa.channel_slug, '') as channel_slug
+             FROM overlays o
+             LEFT JOIN scrapbot_accounts sa ON sa.owner_user_id = o.user_id AND sa.platform = 'kick' AND sa.enabled = true
+             WHERE o.slug = $1 OR o.public_id = $1
+             LIMIT 1`,
             [slug]
         );
 
@@ -17,6 +22,7 @@ router.get('/o/:slug', async (req, res) => {
 
         const overlay = result.rows[0];
         const publicId = overlay.public_id;
+        const channelSlug = overlay.channel_slug || '';
 
         const html = `<!DOCTYPE html>
 <html lang="en">
@@ -28,7 +34,7 @@ router.get('/o/:slug', async (req, res) => {
 </head>
 <body>
     <div id="overlay-runtime-root"></div>
-    <script>window.__OVERLAY_PUBLIC_ID__ = "${publicId}";</script>
+    <script>window.__OVERLAY_PUBLIC_ID__ = "${publicId}"; window.__OVERLAY_CHANNEL_SLUG__ = "${channelSlug}";</script>
     <script type="module" src="${ASSET_BASE}/overlay-runtime.bundle.js?v=${Date.now()}"></script>
 </body>
 </html>`;

@@ -498,7 +498,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
       // Load widget runtime scripts for any widget elements
       const allElements = (data as any).elements || [];
-      const channelSlug = new URLSearchParams(window.location.search).get('channel') || '';
+      const channelSlug = new URLSearchParams(window.location.search).get('channel') || (window as any).__OVERLAY_CHANNEL_SLUG__ || '';
       loadWidgetRuntimes(allElements, channelSlug);
     };
 
