@@ -7,6 +7,13 @@ import { overlayGate } from "../services/overlayGate.js";
 
 const router = express.Router();
 
+// Ensure scene_type column exists (idempotent migration)
+(async () => {
+  try {
+    await db.query(`ALTER TABLE overlays ADD COLUMN IF NOT EXISTS scene_type VARCHAR(32) DEFAULT 'overlay'`);
+  } catch (e) { /* ignore */ }
+})();
+
 // v0 default overlay config for new overlays
 function createDefaultOverlayConfig() {
   return {
@@ -39,7 +46,7 @@ router.get("/overlays", requireAuth, async (req, res, next) => {
     const userId = sessionUser.id;
 
     const { rows } = await db.query(
-      `SELECT id, name, slug, public_id, created_at
+      `SELECT id, name, slug, public_id, created_at, COALESCE(scene_type, 'overlay') as scene_type
        FROM overlays
        WHERE user_id = $1
        ORDER BY created_at DESC`,
@@ -79,10 +86,14 @@ router.get("/overlays/new", requireAuth, async (req, res, next) => {
     const publicId = crypto.randomBytes(12).toString("hex");
 
     const { rows } = await db.query(
-      `INSERT INTO overlays (user_id, slug, name, public_id, config_json)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO overlays (user_id, slug, name, public_id, config_json, scene_type)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [userId, slug, "New Overlay", publicId, defaultConfig]
+      [userId, slug,
+        req.query?.scene_type === 'starting_soon' ? 'Starting Soon' :
+        req.query?.scene_type === 'brb' ? 'BRB Screen' :
+        req.query?.scene_type === 'stream_ending' ? 'Stream Ending' : 'New Overlay',
+        publicId, defaultConfig, req.query?.scene_type || req.body?.scene_type || 'overlay']
     );
 
     res.redirect(`/dashboard/overlays/${rows[0].id}/edit`);

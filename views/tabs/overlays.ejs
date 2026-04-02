@@ -1,7 +1,14 @@
 <%
   const overlayItems = overlays || [];
   const templateItems = locals.templates || templates || [];
+  const sceneTypes = {
+    overlay:       overlayItems.filter(o => !o.scene_type || o.scene_type === 'overlay'),
+    starting_soon: overlayItems.filter(o => o.scene_type === 'starting_soon'),
+    brb:           overlayItems.filter(o => o.scene_type === 'brb'),
+    stream_ending: overlayItems.filter(o => o.scene_type === 'stream_ending'),
+  };
   const totalItems = overlayItems.length + templateItems.length;
+  const SCENE_LABELS = { overlay: 'Overlay', starting_soon: 'Starting Soon', brb: 'BRB', stream_ending: 'Stream Ending' };
 %>
 
 <div class="overlay-library" id="overlayLibrary" data-active-filter="all" data-view-mode="grid" data-empty-state="false">
@@ -17,7 +24,16 @@
 
           <div class="mt-4 flex flex-col gap-2">
             <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary justify-center">
-              Create overlay
+              + New overlay
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=starting_soon" class="pc-btn pc-btn--ghost justify-center">
+              + Starting Soon
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=brb" class="pc-btn pc-btn--ghost justify-center">
+              + BRB screen
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=stream_ending" class="pc-btn pc-btn--ghost justify-center">
+              + Stream Ending
             </a>
             <a href="/dashboard" class="pc-btn pc-btn--ghost justify-center">
               Back to dashboard
@@ -50,6 +66,28 @@
                 <span class="overlay-library__nav-sub">Saved broadcast templates</span>
               </span>
               <span class="overlay-library__count"><%= templateItems.length %></span>
+            </button>
+            <div class="overlay-library__eyebrow mt-4 mb-1">Scenes</div>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-starting_soon">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Starting Soon</span>
+                <span class="overlay-library__nav-sub">Pre-stream holding screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.starting_soon.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-brb">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">BRB</span>
+                <span class="overlay-library__nav-sub">Be right back screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.brb.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-stream_ending">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Stream Ending</span>
+                <span class="overlay-library__nav-sub">Outro / end screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.stream_ending.length %></span>
             </button>
           </div>
         </div>
@@ -164,12 +202,13 @@
                 class="overlay-card"
                 data-library-item
                 data-kind="overlay"
-                data-search="<%= [ov.name, ov.slug, ov.public_id].join(' ').toLowerCase() %>"
+                data-scene-type="<%= ov.scene_type || 'overlay' %>"
+                data-search="<%= [ov.name, ov.slug, ov.public_id, ov.scene_type || 'overlay'].join(' ').toLowerCase() %>"
                 style="--card-hue: <%= hue %>;"
               >
                 <div class="overlay-card__preview">
                   <div class="overlay-card__chrome">
-                    <span class="overlay-card__chip">Overlay</span>
+                    <span class="overlay-card__chip"><%= SCENE_LABELS[ov.scene_type] || 'Overlay' %></span>
                     <div class="overlay-card__stage-line overlay-card__stage-line--a"></div>
                     <div class="overlay-card__stage-line overlay-card__stage-line--b"></div>
                     <div class="overlay-card__stage-line overlay-card__stage-line--c"></div>
@@ -179,7 +218,7 @@
                 </div>
                 <div class="overlay-card__body">
                   <div class="overlay-card__meta">
-                    <span class="overlay-card__kind">Overlay</span>
+                    <span class="overlay-card__kind"><%= SCENE_LABELS[ov.scene_type] || 'Overlay' %></span>
                     <span class="overlay-card__stamp">Created <%= createdLabel %></span>
                   </div>
                   <div>
@@ -305,15 +344,32 @@
 
         sectionItems.forEach((item) => {
           const itemKind = item.dataset.kind || "";
+          const itemSceneType = item.dataset.sceneType || "overlay";
           const haystack = item.dataset.search || "";
-          const matchesFilter = activeFilter === "all" || itemKind === activeFilter;
+          let matchesFilter;
+          if (activeFilter === "all") {
+            matchesFilter = true;
+          } else if (activeFilter.startsWith("scene-")) {
+            const sceneType = activeFilter.replace("scene-", "");
+            matchesFilter = itemKind === "overlay" && itemSceneType === sceneType;
+          } else if (activeFilter === "overlay") {
+            // "overlay" filter shows only items with scene_type = 'overlay' (not BRB/starting soon etc)
+            matchesFilter = itemKind === "overlay" && itemSceneType === "overlay";
+          } else {
+            matchesFilter = itemKind === activeFilter;
+          }
           const matchesQuery = !activeQuery || haystack.includes(activeQuery);
           const visible = matchesFilter && matchesQuery;
           item.style.display = visible ? "" : "none";
           if (visible) visibleInSection += 1;
         });
 
-        const showSection = visibleInSection > 0 && (activeFilter === "all" || sectionKind === activeFilter);
+        const showSection = visibleInSection > 0 && (
+          activeFilter === "all" ||
+          sectionKind === activeFilter ||
+          (activeFilter.startsWith("scene-") && sectionKind === "overlay") ||
+          (activeFilter === "overlay" && sectionKind === "overlay")
+        );
         section.dataset.hidden = showSection ? "false" : "true";
         if (showSection) anyVisible = true;
       });
