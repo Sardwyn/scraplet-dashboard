@@ -26,7 +26,9 @@
   var showStatus    = b(cfg.showStatus,   true);
   var showCount     = b(cfg.showCount,    true);
   var showJoinCmd   = b(cfg.showJoinCmd,  true);
-  var joinCommand   = s(cfg.joinCommand,  '!join');
+  var joinCommand    = s(cfg.joinCommand,  '!join');
+  var autoDismissSec = n(cfg.autoDismissSec, 10);
+  var subWeight      = n(cfg.subWeight,      1);
   var prefAnim      = s(cfg.prefAnim,     ''); // '' = use server value, or override
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -290,6 +292,9 @@
     state.frozenOnWinner = false; state.activeSessionId = null;
     stopAll();
     state.status = 'idle'; state.lastWinner = null;
+    // Restore visibility if auto-dismissed
+    var wrap = container && container.querySelector('.rf-wrap');
+    if (wrap) { wrap.style.opacity = '1'; wrap.style.display = ''; }
     setDot(state.connected?'warn':'');
     showMode('none');
     if (el.label) el.label.textContent = 'Waiting';
@@ -346,6 +351,19 @@
     if (state.animation==='wheel') landWheel(pool, state.lastWinner);
     else { showMode(state.animation==='scramble'?'scramble':'slot'); if (el.slotTxt) el.slotTxt.textContent = state.lastWinner; }
     burstConfetti();
+    // Auto-dismiss after configurable delay
+    if (autoDismissSec > 0) {
+      setTimeout(function() {
+        var wrap = container.querySelector('.rf-wrap');
+        if (wrap) {
+          wrap.style.transition = 'opacity 0.8s ease';
+          wrap.style.opacity = '0';
+          setTimeout(function() {
+            if (wrap) wrap.style.display = 'none';
+          }, 800);
+        }
+      }, autoDismissSec * 1000);
+    }
   }
 
   // ── SSE ────────────────────────────────────────────────────────────────────

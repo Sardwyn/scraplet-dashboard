@@ -265,6 +265,8 @@ registerWidget({
       { key: 'showCount',    type: 'boolean', label: 'Show entry count',  default: true },
       { key: 'showJoinCmd',  type: 'boolean', label: 'Show join command', default: true },
       { key: 'joinCommand',  type: 'text',    label: 'Join command',      default: '!join' },
+      { key: 'autoDismissSec', type: 'number',  label: 'Auto-dismiss after winner (s, 0=never)', default: 10 },
+      { key: 'subWeight',      type: 'number',  label: 'Subscriber entry weight (1=normal, 2=double chance)', default: 1 },
     ],
     defaultProps: { token: '' },
     previewImageUrl: null,
