@@ -387,7 +387,7 @@ const WIDGET_SSE_EVENT_TYPES = [
   'subs.update','chat_message','follow','sub','raid','tip','redemption',
   'channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts',
   'channel.followed','channel.reward.redemption.updated',
-  'kicks.gifted','donation',
+  'kicks.gifted','donation','chat.message.sent',
   'subscribe','gift_sub','raffle_update','tts.ready','tts_ready',
   'stake.update','alert','event_console','hello','ping',
 ];
