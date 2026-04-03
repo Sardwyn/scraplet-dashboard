@@ -99,20 +99,59 @@
   }
 
   // ── SSE connection ────────────────────────────────────────────────────────
-  function connect() {
+  // Supports two modes:
+  //   1. Overlay runtime mode: token provided → listen on /w/:token/stream for tts.ready packets
+  //   2. Legacy mode: channel provided (no token) → listen on /api/tts/stream
+
+  const token = cfg.token || window.__WIDGET_TOKEN__ || qs.get('token') || '';
+
+  function handleOverlayPacket(packet) {
+    try {
+      const payload = packet.payload || {};
+      // Filter by tier
+      const isFree = payload.source === 'free_tts' || payload.priority === 0 || (!payload.source && !payload.priority);
+      const isPaid = payload.source === 'paid_tts' || payload.priority === 100;
+      if (isFree && !acceptFree) return;
+      if (isPaid && !acceptPaid) return;
+      enqueue({
+        audioUrl:       payload.audioUrl || payload.audio_url,
+        senderUsername: payload.senderUsername || payload.requested_by_username || 'Anonymous',
+        messageText:    payload.messageText || payload.text_sanitized || payload.text || '',
+        voiceName:      payload.voiceId || payload.voice_id || 'default',
+        jobId:          payload.jobId || payload.id,
+      });
+    } catch (err) {
+      console.warn('[TTS Widget] overlay packet parse error:', err.message);
+    }
+  }
+
+  function connectOverlayRuntime() {
+    const url = '/w/' + encodeURIComponent(token) + '/stream';
+    const es = new EventSource(url);
+    es.addEventListener('message', function (e) {
+      try {
+        const packet = JSON.parse(e.data);
+        if (packet.header && packet.header.type === 'tts.ready') {
+          handleOverlayPacket(packet);
+        }
+      } catch (err) {
+        console.warn('[TTS Widget] parse error:', err.message);
+      }
+    });
+    es.onerror = function () { es.close(); setTimeout(connectOverlayRuntime, 5000); };
+    console.log('[TTS Widget] connected to overlay runtime stream', url.slice(0, 30) + '...');
+  }
+
+  function connectLegacy() {
     const url = `/api/tts/stream?platform=${encodeURIComponent(platform)}&channel=${encodeURIComponent(channel)}&consumer=widget:tts`;
     const es = new EventSource(url);
-
     es.addEventListener('tts_ready', function (e) {
       try {
         const job = JSON.parse(e.data);
-
-        // Filter by tier
         const isFree = job.source === 'free_tts' || job.priority === 0;
         const isPaid = job.source === 'paid_tts' || job.priority === 100;
         if (isFree && !acceptFree) return;
         if (isPaid && !acceptPaid) return;
-
         enqueue({
           audioUrl:       job.audio_url || job.audioUrl,
           senderUsername: job.requested_by_username || job.sender || 'Anonymous',
@@ -124,16 +163,17 @@
         console.warn('[TTS Widget] parse error:', err.message);
       }
     });
-
-    es.onerror = function () {
-      es.close();
-      setTimeout(connect, 5000);
-    };
-
-    console.log('[TTS Widget] connected to', url);
+    es.onerror = function () { es.close(); setTimeout(connectLegacy, 5000); };
+    console.log('[TTS Widget] connected to legacy stream', url);
   }
 
-  connect();
+  if (token) {
+    connectOverlayRuntime();
+  } else if (channel) {
+    connectLegacy();
+  } else {
+    console.warn('[TTS Widget] No token or channel — cannot connect');
+  }
 
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
