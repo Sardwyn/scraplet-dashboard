@@ -189,9 +189,10 @@
     var platform = raw.platform || p.source || 'kick';
     var username = (raw.actor && raw.actor.username) || (raw.follower && raw.follower.username) ||
                    (raw.message && raw.message.raw && raw.message.raw.sender && raw.message.raw.sender.username) ||
-                   p.actor_username || raw.username || '';
-    // Skip events with no identifiable user
-    if (!username) return;
+                   p.actor_username || raw.username || raw.sender || raw.name || '';
+    // Skip events with no identifiable user (but allow 'Someone' for test/dummy events)
+    if (!username && !editorPreview) return;
+    if (!username) username = 'Someone';
     var amount   = raw.amount || raw.kicks || raw.value || p.amount || '';
     var count    = raw.viewers || raw.gifts || raw.count || p.count || '';
     var months   = raw.months || raw.duration || '';
