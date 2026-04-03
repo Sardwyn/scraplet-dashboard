@@ -511,9 +511,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     };
 
     loadConfig().catch((e) => console.error("Failed to load overlay config", e));
-    timer = window.setInterval(() => {
-      loadConfig().catch((e) => console.error("Failed to refresh overlay config", e));
-    }, 2000);
+    // No polling — load once. Config only changes when user saves in editor.
 
     return () => {
       cancelled = true;
@@ -571,46 +569,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     let stopped = false;
     let timer: number | null = null;
 
-    const pollMs = 1000; // V0: simple + low load
-    let lastWarnAt = 0;
-
-    const tick = async () => {
-      if (stopped) return;
-
-      try {
-        const res = await fetch(
-          `/api/overlays/public/${encodeURIComponent(publicId)}/state`,
-          { cache: "no-store" }
-        );
-
-        if (!res.ok) {
-          const now = Date.now();
-          if (now - lastWarnAt > 10_000) {
-            console.warn("Overlay state fetch failed", res.status);
-            lastWarnAt = now;
-          }
-          return;
-        }
-
-        const next = (await res.json()) as OverlayStateV0;
-
-        setState((prev) => {
-          if (!prev) return next;
-          if (prev.rev !== next.rev) return next;
-          if (prev.ts !== next.ts) return next;
-          return prev;
-        });
-      } catch (e) {
-        const now = Date.now();
-        if (now - lastWarnAt > 10_000) {
-          console.warn("Overlay state fetch error", e);
-          lastWarnAt = now;
-        }
-      }
-    };
-
-    tick();
-    timer = window.setInterval(tick, pollMs);
+    // State polling disabled - state is delivered via SSE events instead
+    // const pollMs = 1000;
 
     const onVis = () => {
       if (document.visibilityState === "hidden") return;
