@@ -709,16 +709,16 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           position: "relative",
         }}
       >
-        {/* Stage is centered and scaled to CONTAIN the viewport */}
+        {/* Stage: scaled to CONTAIN the viewport, anchored top-left with letterbox offset */}
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            top: "50%",
+            left: Math.round((viewport.w - baseW * scale) / 2),
+            top: Math.round((viewport.h - baseH * scale) / 2),
             width: baseW,
             height: baseH,
             transformOrigin: "top left",
-            transform: `translate(-50%, -50%) scale(${scale})`,
+            transform: `scale(${scale})`,
           }}
         >
           {/* PINNED LAYER */}
