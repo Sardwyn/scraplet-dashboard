@@ -18,7 +18,8 @@
   const acceptPaid      = cfg.acceptPaid !== undefined ? cfg.acceptPaid : qs.get('acceptPaid') !== 'false';
   const volume          = Math.min(100, Math.max(0, parseInt(String(cfg.volume || qs.get('volume') || '100')))) / 100;
 
-  if (!channel && !cfg.token) {
+  // In overlay runtime mode, token is sufficient — channel used for legacy SSE only
+  if (!channel && !cfg.token && !window.__OVERLAY_PUBLIC_ID__) {
     console.warn('[TTS Widget] No channel configured');
     return;
   }
@@ -127,20 +128,29 @@
   }
 
   function connectOverlayRuntime() {
-    const url = '/w/' + encodeURIComponent(token) + '/stream';
-    const es = new EventSource(url);
-    es.addEventListener('message', function (e) {
+    // Listen for tts.ready events dispatched by the overlay runtime from overlayGate
+    window.addEventListener('scraplet:overlay:event', function(e) {
       try {
-        const packet = JSON.parse(e.data);
+        const packet = e.detail || JSON.parse(e.data || '{}');
         if (packet.header && packet.header.type === 'tts.ready') {
           handleOverlayPacket(packet);
         }
-      } catch (err) {
-        console.warn('[TTS Widget] parse error:', err.message);
-      }
+      } catch (err) {}
     });
-    es.onerror = function () { es.close(); setTimeout(connectOverlayRuntime, 5000); };
-    console.log('[TTS Widget] connected to overlay runtime stream', url.slice(0, 30) + '...');
+    // Also listen on shared widget SSE for tts.ready named events
+    window.addEventListener('scraplet:widget:event:tts.ready', function(e) {
+      try {
+        const d = JSON.parse(e.data || '{}');
+        enqueue({
+          audioUrl: d.audio_url || d.audioUrl,
+          senderUsername: d.requested_by_username || d.senderUsername || 'Anonymous',
+          messageText: d.text_sanitized || d.text || d.messageText || '',
+          voiceName: d.voice_id || d.voiceId || 'default',
+          jobId: d.id || d.jobId,
+        });
+      } catch (err) {}
+    });
+    console.log('[TTS Widget] listening for tts.ready via overlay events');
   }
 
   function connectLegacy() {

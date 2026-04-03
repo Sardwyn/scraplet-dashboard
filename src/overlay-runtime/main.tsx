@@ -483,8 +483,13 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     // Also set legacy token global
     if (token) {
       (window as any).__WIDGET_TOKEN__ = token;
-      // Start shared SSE multiplexer with first valid token (only once)
-      if (!sharedWidgetSse) startSharedWidgetSse(token);
+      // Start shared SSE multiplexer — prefer visible widgets (chat-overlay, alert-box) over invisible ones
+      if (!sharedWidgetSse) {
+        const PREFERRED_SSE_WIDGETS = ['chat-overlay', 'alert-box-widget', 'sub-counter', 'event-console-widget', 'raffle'];
+        if (PREFERRED_SSE_WIDGETS.includes(widgetId) || !sharedWidgetToken) {
+          startSharedWidgetSse(token);
+        }
+      }
     }
 
     // Load the widget script
