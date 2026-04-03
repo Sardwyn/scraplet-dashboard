@@ -772,6 +772,10 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       </div>
 
       <DebugHud state={state} data={eventData} />
+      {/* Viewport debug — remove after confirming coords */}
+      <div style={{position:'fixed',bottom:4,right:4,background:'rgba(0,0,0,0.7)',color:'#0f0',fontFamily:'monospace',fontSize:11,padding:'2px 6px',zIndex:99999,pointerEvents:'none'}}>
+        vp:{viewport.w}×{viewport.h} base:{baseW}×{baseH} scale:{scale.toFixed(4)} offset:{Math.round((viewport.w-baseW*scale)/2)},{Math.round((viewport.h-baseH*scale)/2)}
+      </div>
     </>
   );
 }
