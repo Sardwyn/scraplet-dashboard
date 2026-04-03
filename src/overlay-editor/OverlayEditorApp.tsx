@@ -8123,6 +8123,17 @@ function InspectorPanel({
                         Send Test Event
                       </button>
                     )}
+                    {widgetId === 'tts-player' && (
+                      <a
+                        href="/dashboard/scrapbot"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Advanced TTS settings in Scrapbot
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
