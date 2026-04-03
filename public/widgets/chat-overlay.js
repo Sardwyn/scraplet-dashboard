@@ -262,7 +262,16 @@
 
   // ── SSE connection ────────────────────────────────────────────────────────
   function connect() {
-    const es = new EventSource(`/w/${encodeURIComponent(token)}/stream`);
+    let es;
+    if (window.__OVERLAY_PUBLIC_ID__) {
+      const _sseListeners = [];
+      const _handler = (ev) => { _sseListeners.forEach(l => { try { l({data:ev.data,type:ev.type}); } catch(e){} }); };
+      window.addEventListener('scraplet:widget:sse', _handler);
+      es = { close: () => window.removeEventListener('scraplet:widget:sse', _handler), addEventListener: (t,fn) => { _sseListeners.push(fn); window.addEventListener('scraplet:widget:event:'+t, fn); }, onerror: null };
+      console.log('[chat-overlay] using shared SSE');
+    } else {
+      es = new EventSource(`/w/${encodeURIComponent(token)}/stream`);
+    }
 
     // Handle various event formats
     function handleEvent(data) {

@@ -384,7 +384,15 @@
     if (!token) { setDot(''); return; }
     try { if (es) es.close(); } catch(e){}
     setDot('warn');
-    es = new EventSource('/w/'+encodeURIComponent(token)+'/stream');
+    if (window.__OVERLAY_PUBLIC_ID__) {
+      var _sseListeners = [];
+      var _handler = function(ev) { _sseListeners.forEach(function(l) { try { l({data:ev.data,type:ev.type}); } catch(e){} }); };
+      window.addEventListener('scraplet:widget:sse', _handler);
+      es = { close: function() { window.removeEventListener('scraplet:widget:sse', _handler); }, addEventListener: function(t,fn) { _sseListeners.push(fn); window.addEventListener('scraplet:widget:event:'+t, fn); }, onerror: null };
+      console.log('[raffle] using shared SSE');
+    } else {
+      es = new EventSource('/w/'+encodeURIComponent(token)+'/stream');
+    }
     es.addEventListener('hello', function() { state.connected=true; setDot('ok'); retryMs=800; });
     es.addEventListener('raffle.state',  function(ev){ var e=parseEnv(ev.data); if(e&&!seen(e.id)) applyState(e.payload); });
     es.addEventListener('raffle.winner', function(ev){ var e=parseEnv(ev.data); if(e&&!seen(e.id)) applyWinner(e.payload); });

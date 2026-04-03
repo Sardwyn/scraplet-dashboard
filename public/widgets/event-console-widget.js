@@ -197,7 +197,16 @@
 
   // ── SSE ────────────────────────────────────────────────────────────────────
   function connect() {
-    var es = new EventSource('/w/'+encodeURIComponent(token)+'/stream');
+    // Use shared SSE multiplexer from overlay runtime
+    if (window.__OVERLAY_PUBLIC_ID__) {
+      var _sseListeners = [];
+      var _handler = function(ev) { _sseListeners.forEach(function(l) { try { l({data:ev.data,type:ev.type}); } catch(e){} }); };
+      window.addEventListener('scraplet:widget:sse', _handler);
+      var es = { close: function() { window.removeEventListener('scraplet:widget:sse', _handler); }, addEventListener: function(t,fn) { _sseListeners.push(fn); window.addEventListener('scraplet:widget:event:'+t, fn); }, onerror: null };
+      console.log('[event-console] using shared SSE');
+    } else {
+      var es = new EventSource('/w/'+encodeURIComponent(token)+'/stream');
+    }
     var types = ['channel.followed','channel.subscription.new','channel.subscription.renewal',
       'channel.subscription.gifts','kicks.gifted','raid','tip','donation',
       'channel.reward.redemption.updated','chat.message.sent',

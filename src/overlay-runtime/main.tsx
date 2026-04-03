@@ -207,6 +207,12 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
         const { header, payload } = packet || {};
 
         console.log("[OverlayEvents] Packet:", header?.type, payload);
+        // Multiplex to widgets via window event (avoids per-widget SSE connections)
+        if (header?.type) {
+          window.dispatchEvent(new CustomEvent('scraplet:overlay:event', {
+            detail: packet
+          }));
+        }
         // Producer → Overlay events
         if (header?.type === "overlay.lower_third.show") {
           // 1. Resolve payload
@@ -372,6 +378,39 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 
 // ── Widget Runtime Loader ─────────────────────────────────────────────────────
 // Scans the overlay for widget elements, fetches tokens, and loads runtime scripts
+// Shared SSE multiplexer — one connection for all widgets
+let sharedWidgetSse: EventSource | null = null;
+let sharedWidgetToken: string | null = null;
+
+function startSharedWidgetSse(token: string) {
+  if (sharedWidgetSse && sharedWidgetToken === token) return; // already running
+  if (sharedWidgetSse) { sharedWidgetSse.close(); sharedWidgetSse = null; }
+  sharedWidgetToken = token;
+  const url = '/w/' + encodeURIComponent(token) + '/stream';
+  const es = new EventSource(url);
+  sharedWidgetSse = es;
+  es.onmessage = (ev) => {
+    // Re-dispatch as window event for all widgets to consume
+    window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data: ev.data }));
+  };
+  // Also forward named events
+  ['subs.update','chat_message','follow','sub','raid','tip','redemption',
+   'channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts',
+   'subscribe','raffle_update','tts.ready','tts_ready','stake.update',
+   'alert','event_console'].forEach(type => {
+    es.addEventListener(type, (ev: MessageEvent) => {
+      window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data: ev.data }));
+      window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data: ev.data }));
+    });
+  });
+  es.onerror = () => {
+    es.close();
+    sharedWidgetSse = null;
+    setTimeout(() => { if (sharedWidgetToken) startSharedWidgetSse(sharedWidgetToken); }, 5000);
+  };
+  console.log('[overlay-runtime] Shared widget SSE started');
+}
+
 async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
   const WIDGET_SCRIPTS: Record<string, string> = {
     'stake-monitor':        '/widgets/stake-monitor.js',
@@ -427,7 +466,11 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     };
 
     // Also set legacy token global
-    if (token) (window as any).__WIDGET_TOKEN__ = token;
+    if (token) {
+      (window as any).__WIDGET_TOKEN__ = token;
+      // Start shared SSE multiplexer with first valid token
+      startSharedWidgetSse(token);
+    }
 
     // Load the widget script
     const params = new URLSearchParams({ channel: channelSlug });
