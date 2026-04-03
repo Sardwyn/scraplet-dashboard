@@ -8125,7 +8125,7 @@ function InspectorPanel({
                     )}
                     {widgetId === 'tts-player' && (
                       <a
-                        href="/dashboard/scrapbot"
+                        href="/dashboard/scrapbot/commands#tts"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center justify-center gap-1.5 w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-slate-400 hover:text-slate-200 transition-colors"
