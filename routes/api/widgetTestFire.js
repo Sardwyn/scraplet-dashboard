@@ -56,9 +56,10 @@ router.get('/dashboard/api/widget-test-events', requireAuth, (req, res) => {
   const userId = req.session.user.id;
 
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
 
   const interval = setInterval(() => {
     const userEvents = testEvents.get(userId);
