@@ -956,6 +956,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [showGrid, setShowGrid] = useState(true);
   const [obsPreviewEnabled, setObsPreviewEnabled] = useState(false);
   const [obsPreviewUrl, setObsPreviewUrl] = useState<string | null>(null);
+  const [obsCanvasSize, setObsCanvasSize] = useState<{ w: number; h: number } | null>(null);
   const obsWsRef = React.useRef<WebSocket | null>(null);
   const obsPreviewIntervalRef = React.useRef<number | null>(null);
 
@@ -4769,8 +4770,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           if (msg.op === 0) ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
           if (msg.op === 2) {
             setObsPreviewEnabled(true);
-            // First get current scene name, then start polling screenshots
+            // Get canvas size and current scene
+            ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetVideoSettings', requestId: 'getVideoSettings', requestData: {} } }));
             ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetCurrentProgramScene', requestId: 'getScene', requestData: {} } }));
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'getVideoSettings') {
+            const d = msg.d?.responseData;
+            if (d?.baseWidth && d?.baseHeight) {
+              setObsCanvasSize({ w: d.baseWidth, h: d.baseHeight });
+            }
           }
           if (msg.op === 7 && msg.d?.requestId === 'getScene') {
             const sceneName = msg.d?.responseData?.currentProgramSceneName || msg.d?.responseData?.sceneName;
@@ -4798,6 +4806,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if ((obsWsRef as any).current) { (obsWsRef as any).current.close(); (obsWsRef as any).current = null; }
     setObsPreviewEnabled(false);
     setObsPreviewUrl(null);
+    setObsCanvasSize(null);
   }
 
   return (
@@ -5121,6 +5130,21 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
               OBS Preview
             </button>
+
+            {/* OBS Canvas Sync */}
+            {obsCanvasSize && (obsCanvasSize.w !== baseResolution.width || obsCanvasSize.h !== baseResolution.height) && (
+              <button
+                onClick={() => {
+                  setConfig(prev => ({ ...prev, baseResolution: { width: obsCanvasSize.w, height: obsCanvasSize.h } }));
+                  setTimeout(() => handleSave(), 300);
+                }}
+                className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[12px] leading-[1.4] bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+                title={`OBS canvas is ${obsCanvasSize.w}×${obsCanvasSize.h} but editor is ${baseResolution.width}×${baseResolution.height}. Click to sync.`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4v5h5"/><path d="M20 20v-5h-5"/><path d="M4 9a9 9 0 0 1 15-3.4"/><path d="M20 15a9 9 0 0 1-15 3.4"/></svg>
+                Sync {obsCanvasSize.w}×{obsCanvasSize.h}
+              </button>
+            )}
 
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
