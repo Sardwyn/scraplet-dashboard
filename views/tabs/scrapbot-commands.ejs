@@ -590,8 +590,11 @@
     }
   };
 
-  // Default to Commands tab
-  window.__sbSwitchTab("commands");
+  // Default tab — check URL hash or query param
+  const _urlHash = window.location.hash.replace('#','');
+  const _urlParam = new URLSearchParams(window.location.search).get('tab');
+  const _defaultTab = (_urlHash === 'tts' || _urlParam === 'tts') ? 'tts' : 'commands';
+  window.__sbSwitchTab(_defaultTab);
 
   // Quick start prefills
   window.__sbPrefill = function(type){
