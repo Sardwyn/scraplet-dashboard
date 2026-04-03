@@ -468,8 +468,8 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
     // Also set legacy token global
     if (token) {
       (window as any).__WIDGET_TOKEN__ = token;
-      // Start shared SSE multiplexer with first valid token
-      startSharedWidgetSse(token);
+      // Start shared SSE multiplexer with first valid token (only once)
+      if (!sharedWidgetSse) startSharedWidgetSse(token);
     }
 
     // Load the widget script
@@ -605,7 +605,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       window.cancelAnimationFrame(frameId);
       playbackStartRef.current = null;
     };
-  }, [isTimelinePlaying, overlay?.timeline?.durationMs, overlay?.timeline?.playback?.loop, overlay?.timeline?.playback?.reverse, playheadMs]);
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs, overlay?.timeline?.playback?.loop, overlay?.timeline?.playback?.reverse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {
