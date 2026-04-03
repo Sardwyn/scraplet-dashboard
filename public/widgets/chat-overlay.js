@@ -101,7 +101,7 @@
       container.style.lineHeight = lineHeight;
       container.style.pointerEvents = 'none';
       init();
-    } else if (_findAttempts < 60) {
+    } else if (_findAttempts < 600) {
       // Retry for up to ~1 second (60 frames)
       _findAttempts++;
       requestAnimationFrame(findAndInit);

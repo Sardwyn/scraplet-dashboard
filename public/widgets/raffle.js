@@ -61,7 +61,7 @@
       container.style.position = 'relative';
       container.style.overflow = 'hidden';
       build();
-    } else if (_findAttempts < 60) {
+    } else if (_findAttempts < 600) {
       _findAttempts++;
       requestAnimationFrame(findAndInit);
     } else {
