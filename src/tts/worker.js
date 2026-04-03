@@ -21,6 +21,9 @@ const STALE_LOCK_MINUTES = toPosInt(process.env.TTS_WORKER_STALE_LOCK_MINUTES, 1
 // Piper config
 const PIPER_BIN = process.env.PIPER_BIN || "/opt/tts/piper/piper/piper";
 
+// Kokoro config
+const KOKORO_BIN = process.env.KOKORO_BIN || "/home/sardwyn/tts/venv/bin/python3";
+const KOKORO_SCRIPT = process.env.KOKORO_SCRIPT || "/home/sardwyn/tts/kokoro_tts.py";
 
 // Voice model path (you installed this)
 const DEFAULT_MODEL =
