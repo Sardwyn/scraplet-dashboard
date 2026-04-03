@@ -623,16 +623,9 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     // State polling disabled - state is delivered via SSE events instead
     // const pollMs = 1000;
 
-    const onVis = () => {
-      if (document.visibilityState === "hidden") return;
-      tick();
-    };
-    document.addEventListener("visibilitychange", onVis);
-
     return () => {
       stopped = true;
       if (timer) window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVis);
     };
   }, [publicId]);
 
