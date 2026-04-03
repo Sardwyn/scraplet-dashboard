@@ -74,7 +74,7 @@
     var root = editorRoot || runtimeRoot;
     if (root) {
       container = root;
-      container.style.position = 'relative';
+      // position managed by overlay runtime
       container.style.overflow = 'hidden';
       build();
     } else if (_findAttempts < 60) {
