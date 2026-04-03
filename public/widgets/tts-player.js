@@ -6,18 +6,19 @@
 (function () {
   'use strict';
 
-  // Config from URL params (set by overlay runtime)
+  // Config from global widget config (overlay runtime) or URL params (legacy)
+  const cfg = window.__WIDGET_CONFIG_TTS_PLAYER__ || {};
   const qs = new URLSearchParams(location.search);
-  const platform        = qs.get('platform') || 'kick';
-  const channel         = qs.get('channel') || '';
-  const showNotif       = qs.get('showNotification') !== 'false';
-  const notifPos        = qs.get('notificationPos') || 'bottom-left';
-  const notifStyle      = qs.get('notificationStyle') || 'dark';
-  const acceptFree      = qs.get('acceptFree') !== 'false';
-  const acceptPaid      = qs.get('acceptPaid') !== 'false';
-  const volume          = Math.min(100, Math.max(0, parseInt(qs.get('volume') || '100'))) / 100;
+  const platform        = cfg.platform || qs.get('platform') || (window.__OVERLAY_CHANNEL_SLUG__ ? 'kick' : 'kick');
+  const channel         = cfg.channel || qs.get('channel') || window.__OVERLAY_CHANNEL_SLUG__ || '';
+  const showNotif       = cfg.showNotification !== undefined ? cfg.showNotification : qs.get('showNotification') !== 'false';
+  const notifPos        = cfg.notificationPos || qs.get('notificationPos') || 'bottom-left';
+  const notifStyle      = cfg.notificationStyle || qs.get('notificationStyle') || 'dark';
+  const acceptFree      = cfg.acceptFree !== undefined ? cfg.acceptFree : qs.get('acceptFree') !== 'false';
+  const acceptPaid      = cfg.acceptPaid !== undefined ? cfg.acceptPaid : qs.get('acceptPaid') !== 'false';
+  const volume          = Math.min(100, Math.max(0, parseInt(String(cfg.volume || qs.get('volume') || '100')))) / 100;
 
-  if (!channel) {
+  if (!channel && !cfg.token) {
     console.warn('[TTS Widget] No channel configured');
     return;
   }

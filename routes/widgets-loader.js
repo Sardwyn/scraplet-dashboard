@@ -153,6 +153,17 @@ router.get("/w/:token/stream", async (req, res) => {
       if (closed) return;
 
       try {
+        // Deliver any pending test events from the editor
+        try {
+          const { testEvents } = await import('./api/widgetTestFire.js');
+          const userTestEvents = testEvents.get(String(userId));
+          if (userTestEvents && userTestEvents.events.length > 0) {
+            const evt = userTestEvents.events.shift();
+            const kind = evt.type || evt.kind;
+            if (kind) send(kind, { kind, actor_username: evt.actor_username || 'TestUser', payload: evt, _test: true });
+          }
+        } catch { /* test events optional */ }
+
         // Poll public.events for non-chat events (subs, follows, etc.)
         const r = await db.query(
           `SELECT id, v, source, kind, ts, channel_slug, actor_id, actor_username, payload

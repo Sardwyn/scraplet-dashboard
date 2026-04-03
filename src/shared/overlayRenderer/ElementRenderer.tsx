@@ -696,23 +696,24 @@ function renderFillDefs(
 
 function renderFillLayers(pathD: string, fills: OverlayFill[], scopeId: string) {
     return fills.map((fill, index) => {
+        const key = `${scopeId}-fill-${index}`;
         if (fill.type === "solid") {
-            return renderPathSvg(pathD, {
+            return <React.Fragment key={key}>{renderPathSvg(pathD, {
                 fill: fill.color,
                 fillOpacity: fillOpacityValue(fill),
-            });
+            })}</React.Fragment>;
         }
         if (fill.type === "linear") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` })}</React.Fragment>;
         }
         if (fill.type === "radial") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` })}</React.Fragment>;
         }
         if (fill.type === "conic") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` })}</React.Fragment>;
         }
         if (fill.type === "pattern" && hasPatternSource(fill)) {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` })}</React.Fragment>;
         }
         return null;
     });

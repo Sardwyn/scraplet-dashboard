@@ -7967,9 +7967,22 @@ function InspectorPanel({
                                     </label>
                                     {/* Test fire */}
                                     <button
-                                      onClick={() => {
+                                      onClick={async () => {
+                                        // Try direct window call first (editor preview)
                                         const fn = (window as any).__alertBoxTestFire;
-                                        if (typeof fn === 'function') fn(evKey);
+                                        if (typeof fn === 'function') { fn(evKey); return; }
+                                        // Fall back to API injection (fires into OBS via SSE)
+                                        const ec = (propOverrides as any)?.alertTypes?.[evKey] || {};
+                                        await fetch('/dashboard/api/widget-test-fire', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          credentials: 'include',
+                                          body: JSON.stringify({
+                                            widgetId: 'alert-box-widget',
+                                            eventType: evKey,
+                                            payload: { actor_username: 'TestUser', amount: '5.00', count: '42', months: '3', reward: 'Test Reward' }
+                                          })
+                                        });
                                       }}
                                       className="w-full text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
                                     >
