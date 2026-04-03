@@ -470,6 +470,10 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     return baseElements.map(el => {
       const ov = overrides[el.id];
       const merged = ov ? ({ ...el, ...ov } as OverlayElement) : el;
+      // Don't apply timeline position overrides to widget elements - they should stay fixed
+      if ((merged as any).type === 'widget') return merged;
+      // Don't apply timeline position overrides to widget elements - they should stay fixed
+      if ((merged as any).type === 'widget') return merged;
       return applyTimelineOverrides(merged, timelineValues[el.id]);
     });
   }, [baseElements, overrides, timelineValues]);
