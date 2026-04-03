@@ -400,19 +400,22 @@ function startSharedWidgetSse(token: string) {
   const es = new EventSource(url);
   sharedWidgetSse = es;
 
-  const dispatch = (type: string, data: string) => {
-    // Dispatch as named event
+  const dispatchNamed = (type: string, data: string) => {
+    // Only dispatch as named event — widgets use addEventListener for specific types
     window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data }));
-    // Also dispatch as generic SSE message with type embedded
+  };
+
+  const dispatchGeneric = (data: string) => {
+    // Generic fallback for onmessage handlers
     window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data }));
   };
 
-  // Forward unnamed messages (fallback)
-  es.onmessage = (ev) => dispatch('message', ev.data);
+  // Forward unnamed messages via generic channel only
+  es.onmessage = (ev) => dispatchGeneric(ev.data);
 
-  // Forward all named events
+  // Forward named events via named channel only (no double-dispatch)
   WIDGET_SSE_EVENT_TYPES.forEach(type => {
-    es.addEventListener(type, (ev: MessageEvent) => dispatch(type, ev.data));
+    es.addEventListener(type, (ev: MessageEvent) => dispatchNamed(type, ev.data));
   });
 
   es.onerror = () => {
