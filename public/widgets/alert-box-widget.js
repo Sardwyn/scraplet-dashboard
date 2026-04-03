@@ -212,16 +212,20 @@
     // Use shared SSE multiplexer from overlay runtime (avoids connection limit)
     // Falls back to direct EventSource if not in overlay runtime context
     if (window.__OVERLAY_PUBLIC_ID__) {
-      // In overlay runtime - use shared SSE via window events
-      var _handler = function(ev) {
-        var fakeEv = { data: ev.data, type: ev.type };
-        // Route to appropriate listeners
-        _sseListeners.forEach(function(l) { if (!l.type || l.type === ev.type || ev.type === 'scraplet:widget:sse') { try { l.fn(fakeEv); } catch(e){} } });
+      var _onmessage = null;
+      var es = {
+        close: function() {},
+        addEventListener: function(type, fn) {
+          window.addEventListener('scraplet:widget:event:' + type, fn);
+        },
+        get onmessage() { return _onmessage; },
+        set onmessage(fn) {
+          if (_onmessage) window.removeEventListener('scraplet:widget:sse', _onmessage);
+          _onmessage = fn;
+          if (fn) window.addEventListener('scraplet:widget:sse', fn);
+        },
+        onerror: null
       };
-      window.addEventListener('scraplet:widget:sse', _handler);
-      var es = { close: function() { window.removeEventListener('scraplet:widget:sse', _handler); }, _shared: true };
-      es.addEventListener = function(type, fn) { _sseListeners.push({type: type, fn: fn}); window.addEventListener('scraplet:widget:event:' + type, fn); };
-      es.onerror = null;
       console.log('[alert-box] using shared SSE');
     } else {
       var es = new EventSource('/w/' + encodeURIComponent(token) + '/stream');

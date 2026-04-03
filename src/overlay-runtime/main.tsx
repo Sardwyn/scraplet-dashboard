@@ -382,6 +382,16 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 let sharedWidgetSse: EventSource | null = null;
 let sharedWidgetToken: string | null = null;
 
+// All event types the widget SSE stream can emit
+const WIDGET_SSE_EVENT_TYPES = [
+  'subs.update','chat_message','follow','sub','raid','tip','redemption',
+  'channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts',
+  'channel.followed','channel.reward.redemption.updated',
+  'kicks.gifted','donation','chat.message.sent',
+  'subscribe','gift_sub','raffle_update','tts.ready','tts_ready',
+  'stake.update','alert','event_console','hello','ping',
+];
+
 function startSharedWidgetSse(token: string) {
   if (sharedWidgetSse && sharedWidgetToken === token) return; // already running
   if (sharedWidgetSse) { sharedWidgetSse.close(); sharedWidgetSse = null; }
@@ -389,26 +399,28 @@ function startSharedWidgetSse(token: string) {
   const url = '/w/' + encodeURIComponent(token) + '/stream';
   const es = new EventSource(url);
   sharedWidgetSse = es;
-  es.onmessage = (ev) => {
-    // Re-dispatch as window event for all widgets to consume
-    window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data: ev.data }));
+
+  const dispatch = (type: string, data: string) => {
+    // Dispatch as named event
+    window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data }));
+    // Also dispatch as generic SSE message with type embedded
+    window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data }));
   };
-  // Also forward named events
-  ['subs.update','chat_message','follow','sub','raid','tip','redemption',
-   'channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts',
-   'subscribe','raffle_update','tts.ready','tts_ready','stake.update',
-   'alert','event_console'].forEach(type => {
-    es.addEventListener(type, (ev: MessageEvent) => {
-      window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data: ev.data }));
-      window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data: ev.data }));
-    });
+
+  // Forward unnamed messages (fallback)
+  es.onmessage = (ev) => dispatch('message', ev.data);
+
+  // Forward all named events
+  WIDGET_SSE_EVENT_TYPES.forEach(type => {
+    es.addEventListener(type, (ev: MessageEvent) => dispatch(type, ev.data));
   });
+
   es.onerror = () => {
     es.close();
     sharedWidgetSse = null;
     setTimeout(() => { if (sharedWidgetToken) startSharedWidgetSse(sharedWidgetToken); }, 5000);
   };
-  console.log('[overlay-runtime] Shared widget SSE started');
+  console.log('[overlay-runtime] Shared widget SSE started for token', token.slice(0,10) + '...');
 }
 
 async function loadWidgetRuntimes(elements: any[], channelSlug: string) {

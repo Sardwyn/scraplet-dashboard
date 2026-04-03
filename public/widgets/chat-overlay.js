@@ -264,10 +264,18 @@
   function connect() {
     let es;
     if (window.__OVERLAY_PUBLIC_ID__) {
-      const _sseListeners = [];
-      const _handler = (ev) => { _sseListeners.forEach(l => { try { l({data:ev.data,type:ev.type}); } catch(e){} }); };
-      window.addEventListener('scraplet:widget:sse', _handler);
-      es = { close: () => window.removeEventListener('scraplet:widget:sse', _handler), addEventListener: (t,fn) => { _sseListeners.push(fn); window.addEventListener('scraplet:widget:event:'+t, fn); }, onerror: null };
+      let _onmessage = null;
+      es = {
+        close: () => {},
+        addEventListener: (type, fn) => { window.addEventListener('scraplet:widget:event:' + type, fn); },
+        get onmessage() { return _onmessage; },
+        set onmessage(fn) {
+          if (_onmessage) window.removeEventListener('scraplet:widget:sse', _onmessage);
+          _onmessage = fn;
+          if (fn) window.addEventListener('scraplet:widget:sse', fn);
+        },
+        onerror: null
+      };
       console.log('[chat-overlay] using shared SSE');
     } else {
       es = new EventSource(`/w/${encodeURIComponent(token)}/stream`);
