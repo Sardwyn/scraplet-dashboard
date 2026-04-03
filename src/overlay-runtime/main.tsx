@@ -385,7 +385,7 @@ async function loadWidgetRuntimes(elements: any[], channelSlug: string) {
   };
 
   // Widgets that need a token (connect to /w/:token/stream)
-  const TOKEN_WIDGETS = new Set(['chat-overlay', 'alert-box-widget', 'sub-counter', 'event-console-widget', 'raffle']);
+  const TOKEN_WIDGETS = new Set(['chat-overlay', 'alert-box-widget', 'sub-counter', 'event-console-widget', 'raffle', 'tts-player']);
 
   for (const el of elements) {
     if (el.type !== 'widget') continue;
@@ -644,8 +644,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
   const normalElements = rootElements.filter((el: any) => el.pinned !== true);
 
-  // IMPORTANT: COVER scale (fills viewport; crops overflow) — NO GAPS
-  const scale = Math.max(viewport.w / baseW, viewport.h / baseH);
+  // CONTAIN scale: fits entire canvas in viewport — coordinates are 1:1 with OBS
+  const scale = Math.min(viewport.w / baseW, viewport.h / baseH);
 
   const elementsById = React.useMemo(() => {
     const map: Record<string, OverlayElement> = {};
@@ -702,11 +702,11 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
               ? overlay.backgroundColor
               : "transparent",
 
-          overflow: "hidden", // crops when using COVER scaling
+          overflow: "hidden",
           position: "relative",
         }}
       >
-        {/* Stage is centered and scaled to COVER the viewport */}
+        {/* Stage is centered and scaled to CONTAIN the viewport */}
         <div
           style={{
             position: "absolute",
