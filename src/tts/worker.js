@@ -8,6 +8,7 @@ import { spawn } from "child_process";
 import { routeJob } from "./voiceRouter.js";
 import { synthesise as elSynthesize } from "./elevenlabs.js";
 import { getPool, query } from "../../db.js";
+import { overlayGate } from "../../services/overlayGate.js";
 
 const WORKER_ID =
   process.env.TTS_WORKER_ID ||
@@ -211,6 +212,49 @@ function runKokoro({ text, outPath }) {
   });
 }
 
+async function publishTtsReady(job, audioUrl, audioMime, audioHash) {
+  try {
+    // Find all overlays for this user that have a tts-player widget
+    const { rows } = await query(
+      `SELECT public_id FROM overlays
+       WHERE user_id = $1
+         AND config_json->'elements' @> '[{"widgetId":"tts-player"}]'`,
+      [job.scraplet_user_id]
+    );
+    for (const overlay of rows) {
+      const packet = {
+        header: {
+          id: `tts-${job.id}-${Date.now()}`,
+          type: 'tts.ready',
+          ts: Date.now(),
+          producer: 'tts-worker',
+          platform: job.platform || 'kick',
+          scope: {
+            tenantId: String(job.scraplet_user_id),
+            overlayPublicId: overlay.public_id,
+          },
+        },
+        payload: {
+          jobId: job.id,
+          audioUrl,
+          audioMime,
+          audioHash,
+          engine: job.engine,
+          voiceId: job.voice_id,
+          senderUsername: job.requested_by_username || null,
+          messageText: job.text_sanitized || job.text || null,
+        },
+      };
+      await overlayGate.publish(String(job.scraplet_user_id), overlay.public_id, packet);
+    }
+    if (rows.length > 0) {
+      console.log(`[tts-worker] published tts.ready to ${rows.length} overlay(s) for job ${job.id}`);
+    }
+  } catch (err) {
+    console.warn(`[tts-worker] publishTtsReady failed for job ${job.id}:`, err?.message || err);
+  }
+}
+
 async function processJob(job) {
   ensureDir(TTS_DIR);
 
@@ -260,6 +304,8 @@ async function processJob(job) {
     text_sanitized: text,
     cost_cents_estimate: 0,
   });
+
+  await publishTtsReady(job, audioUrl, AUDIO_MIME, audioHash);
 
   console.log(
     `[tts-worker] done id=${job.id} ${platform}/${channelSlug} url=${audioUrl} bytes=${st.size}`
