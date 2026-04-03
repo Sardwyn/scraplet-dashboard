@@ -129,6 +129,8 @@
     if (!showStatus) { el.dot.style.display = 'none'; }
     if (!showCount)  { el.countWrap.style.display = 'none'; }
     if (!showJoinCmd){ el.joinWrap.style.display = 'none'; }
+    // Hidden by default — only shown when raffle is explicitly started
+    container.style.display = 'none';
 
     resetToWaiting();
     if (!editorPreview) connect();
@@ -292,9 +294,8 @@
     state.frozenOnWinner = false; state.activeSessionId = null;
     stopAll();
     state.status = 'idle'; state.lastWinner = null;
-    // Restore visibility if auto-dismissed
-    var wrap = container && container.querySelector('.rf-wrap');
-    if (wrap) { wrap.style.opacity = '1'; wrap.style.display = ''; }
+    // Keep container hidden — raffle only shows when explicitly started
+    if (container) { container.style.display = 'none'; container.style.opacity = '1'; }
     setDot(state.connected?'warn':'');
     showMode('none');
     if (el.label) el.label.textContent = 'Waiting';
@@ -320,6 +321,7 @@
     var status = String(p.status||'').toLowerCase();
     if (status === 'collecting') {
       stopAll(); showMode('none'); state.status = 'collecting';
+      container.style.display = '';  // show when raffle starts
       setDot('ok');
       if (el.label) el.label.textContent = 'Collecting';
       if (el.name)  { el.name.textContent = 'Entries Open'; el.name.classList.remove('winner'); }
@@ -354,12 +356,15 @@
     // Auto-dismiss after configurable delay
     if (autoDismissSec > 0) {
       setTimeout(function() {
-        var wrap = container.querySelector('.rf-wrap');
-        if (wrap) {
-          wrap.style.transition = 'opacity 0.8s ease';
-          wrap.style.opacity = '0';
+        if (container) {
+          container.style.transition = 'opacity 0.8s ease';
+          container.style.opacity = '0';
           setTimeout(function() {
-            if (wrap) wrap.style.display = 'none';
+            if (container) {
+              container.style.display = 'none';
+              container.style.opacity = '1';
+              container.style.transition = '';
+            }
           }, 800);
         }
       }, autoDismissSec * 1000);
