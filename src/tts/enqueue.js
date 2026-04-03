@@ -72,6 +72,7 @@ export async function enqueueTTSJob({
       voice_id,
       text,
       text_sanitized,
+      requested_by_username,
       attempts
     )
     VALUES (
@@ -86,6 +87,7 @@ export async function enqueueTTSJob({
       $8,
       $9,
       $10,
+      $11,
       0
     )
     RETURNING id, priority, source, created_at
@@ -101,7 +103,8 @@ export async function enqueueTTSJob({
     engine,
     v,
     t,
-    t
+    t,
+    senderUsername || null
   ]);
 
   // Notify sender via Scrapbot (non-blocking)

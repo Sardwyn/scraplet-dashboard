@@ -8088,13 +8088,26 @@ function InspectorPanel({
                         className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
                       >+ Add 1 Sub</button>
                     )}
-                    {widgetId !== 'chat-overlay' && widgetId !== 'sub-counter' && (
+                    {widgetId !== 'chat-overlay' && widgetId !== 'sub-counter' && widgetId !== 'raffle' && (
                       <button
-                        onClick={() => {
-                          const previewFrame = document.querySelector('iframe[data-overlay-preview]') as HTMLIFrameElement;
-                          if (previewFrame?.contentWindow) {
-                            previewFrame.contentWindow.postMessage({ type: 'widget:test', widgetId, payload: {} }, '*');
-                          }
+                        onClick={async () => {
+                          // Map widget to a sensible default test event type
+                          const TEST_EVENT_MAP: Record<string, string> = {
+                            'alert-box-widget': 'follow',
+                            'event-console-widget': 'follow',
+                            'tts-player': 'follow',
+                          };
+                          const eventType = TEST_EVENT_MAP[widgetId] || 'follow';
+                          await fetch('/dashboard/api/widget-test-fire', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              widgetId,
+                              eventType,
+                              payload: { actor_username: 'TestUser', amount: '5.00', count: '42', months: '3', reward: 'Test Reward' }
+                            })
+                          });
                         }}
                         className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
                       >

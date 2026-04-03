@@ -30,6 +30,20 @@
   audio.volume = volume;
   document.body.appendChild(audio);
 
+  // Unlock AudioContext for OBS browser source (needs a "gesture" — we use a silent play)
+  let audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    const silence = document.createElement('audio');
+    silence.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+    silence.play().catch(() => {});
+  }
+  // Try to unlock on page load (works in OBS)
+  document.addEventListener('click', unlockAudio, { once: true });
+  window.addEventListener('scraplet:overlay:event', unlockAudio, { once: true });
+  setTimeout(unlockAudio, 1000); // OBS auto-unlocks after 1s in most cases
+
   // ── Notification bar ──────────────────────────────────────────────────────
   let notifEl = null;
   if (showNotif) {
