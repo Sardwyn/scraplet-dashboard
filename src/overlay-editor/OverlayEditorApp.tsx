@@ -8091,11 +8091,20 @@ function InspectorPanel({
                     {widgetId !== 'chat-overlay' && widgetId !== 'sub-counter' && widgetId !== 'raffle' && (
                       <button
                         onClick={async () => {
+                          if (widgetId === 'tts-player') {
+                            // TTS test: synthesize a real audio job
+                            await fetch('/dashboard/api/tts/alert', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ text: 'This is a test TTS message from the overlay editor.' })
+                            });
+                            return;
+                          }
                           // Map widget to a sensible default test event type
                           const TEST_EVENT_MAP: Record<string, string> = {
                             'alert-box-widget': 'follow',
                             'event-console-widget': 'follow',
-                            'tts-player': 'follow',
                           };
                           const eventType = TEST_EVENT_MAP[widgetId] || 'follow';
                           await fetch('/dashboard/api/widget-test-fire', {
