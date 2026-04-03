@@ -183,10 +183,17 @@
     'follow': 'follow', 'subscribe': 'subscription', 'gift_sub': 'gift_sub',
   };
 
+  // Event types that should never trigger alerts
+  var ALERT_BLOCKLIST = ['chat.message.sent','chat_message','ping','hello','subs.update',
+    'stake.update','raffle_update','tts.ready','tts_ready','message'];
+
   function handleEvent(kind, payload) {
+    if (!kind || ALERT_BLOCKLIST.indexOf(kind) !== -1) return;
     var p = payload || {};
     var raw = p.payload || p;
     var alertType = TYPE_MAP[kind] || kind;
+    // Only process known alert types
+    if (!TYPE_MAP[kind] && !['follow','subscription','resub','gift_sub','raid','tip','redemption'].includes(alertType)) return;
     var ec = getEventCfg(alertType);
     if (!ec.enabled) return;
     var username = (raw.actor && raw.actor.username) || (raw.follower && raw.follower.username) ||
