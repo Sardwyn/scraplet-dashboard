@@ -175,14 +175,23 @@
   }
 
   // ── Event handler ──────────────────────────────────────────────────────────
+  var KNOWN_EVENT_KINDS = Object.keys(TYPE_MAP).concat(Object.keys(EVENT_DEFAULTS));
+
   function handleEvent(kind, data) {
+    // Skip unknown/noise event types
+    if (!kind || KNOWN_EVENT_KINDS.indexOf(kind) === -1) return;
     var p = data || {};
     var raw = p.payload || p;
     var alertType = TYPE_MAP[kind] || kind;
+    // Skip if event config is disabled
+    var ec = EVENT_DEFAULTS[alertType];
+    if (ec && !ec.enabled) return;
     var platform = raw.platform || p.source || 'kick';
     var username = (raw.actor && raw.actor.username) || (raw.follower && raw.follower.username) ||
                    (raw.message && raw.message.raw && raw.message.raw.sender && raw.message.raw.sender.username) ||
-                   p.actor_username || raw.username || 'Someone';
+                   p.actor_username || raw.username || '';
+    // Skip events with no identifiable user
+    if (!username) return;
     var amount   = raw.amount || raw.kicks || raw.value || p.amount || '';
     var count    = raw.viewers || raw.gifts || raw.count || p.count || '';
     var months   = raw.months || raw.duration || '';
