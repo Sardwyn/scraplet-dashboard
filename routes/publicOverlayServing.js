@@ -10,9 +10,10 @@ router.get('/o/:slug', async (req, res) => {
     try {
         const result = await db.query(
             `SELECT o.public_id, o.id, o.name, o.user_id,
-                    COALESCE(sa.channel_slug, '') as channel_slug
+                    COALESCE(c.channel_slug, '') as channel_slug
              FROM overlays o
-             LEFT JOIN scrapbot_accounts sa ON sa.owner_user_id = o.user_id AND sa.platform = 'kick' AND sa.enabled = true
+             LEFT JOIN external_accounts ea ON ea.user_id = o.user_id AND ea.platform = 'kick' AND ea.enabled = true
+             LEFT JOIN channels c ON c.account_id = ea.id AND c.platform = 'kick'
              WHERE o.slug = $1 OR o.public_id = $1
              LIMIT 1`,
             [slug]
