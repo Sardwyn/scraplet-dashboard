@@ -9955,6 +9955,51 @@ function CreationToolbar({
 
           {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
         </button>
+
+        {/* Publish to Marketplace */}
+        {initialOverlay?.id && !editingMasterId && (
+          <button
+            onClick={async () => {
+              const title = window.prompt('Listing title:', initialOverlay.name || 'My Overlay');
+              if (!title) return;
+              const priceStr = window.prompt('Price in USD (0 for free):', '0');
+              const priceCents = Math.round(parseFloat(priceStr || '0') * 100);
+              const description = window.prompt('Short description (optional):', '') || '';
+
+              // Scan assets first
+              const scanRes = await fetch('/dashboard/api/marketplace/publish', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ overlayId: initialOverlay.id, title, description, priceCents })
+              });
+              const scan = await scanRes.json();
+              if (!scan.ok) { alert('Error: ' + scan.error); return; }
+
+              if (scan.assetPaths.length > 0) {
+                const confirmed = window.confirm(
+                  `This overlay uses ${scan.assetPaths.length} uploaded asset(s).\n\nBy publishing, you confirm you own the rights to these assets and they may be used by buyers.\n\nContinue?`
+                );
+                if (!confirmed) return;
+              }
+
+              const pubRes = await fetch('/dashboard/api/marketplace/publish/confirm', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ overlayId: initialOverlay.id, title, description, priceCents })
+              });
+              const pub = await pubRes.json();
+              if (pub.ok) {
+                alert('✓ Published to marketplace! View it in Earnings → Marketplace Listings.');
+              } else {
+                alert('Error publishing: ' + pub.error);
+              }
+            }}
+            className="flex h-8 items-center justify-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 text-[11px] leading-[1.4] font-semibold text-amber-200 hover:bg-amber-500/20 transition-colors whitespace-nowrap"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Publish
+          </button>
+        )}
       </div>
     </div>
   );

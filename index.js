@@ -69,6 +69,7 @@ import widgetTokenRouter from './routes/api/widgetToken.js';
 import subathonRouter from './routes/api/subathon.js';
 import ttsAlertRouter from './routes/api/ttsAlert.js';
 import earningsRouter from './routes/earnings.js';
+import marketplaceRouter from './routes/api/marketplace.js';
 import widgetTestFireRouter from './routes/api/widgetTestFire.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
@@ -336,6 +337,7 @@ app.use(widgetTokenRouter);
 app.use(subathonRouter);
 app.use(ttsAlertRouter);
 app.use(earningsRouter);
+app.use(marketplaceRouter);
 app.use(widgetTestFireRouter);
 
 // 🎛 Studio Controller — auth-gated React build
