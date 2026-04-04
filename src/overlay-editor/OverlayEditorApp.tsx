@@ -4900,6 +4900,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               alert("Failed to send test event (Network)");
             }
           }}
+          overlayId={initialOverlay?.id ?? null}
+          overlayName={initialOverlay?.name ?? ''}
+          editingMasterId={editingMasterId ?? null}
         />
 
         {/* Sidebar Tabs */}
@@ -9848,7 +9851,10 @@ function CreationToolbar({
   saving,
   saveOk,
   saveError,
-  onTestEvent
+  onTestEvent,
+  overlayId,
+  overlayName,
+  editingMasterId
 }: {
   onAddText: () => void;
   onAddBox: () => void;
@@ -9957,10 +9963,10 @@ function CreationToolbar({
         </button>
 
         {/* Publish to Marketplace */}
-        {initialOverlay?.id && !editingMasterId && (
+        {overlayId && !editingMasterId && (
           <button
             onClick={async () => {
-              const title = window.prompt('Listing title:', initialOverlay.name || 'My Overlay');
+              const title = window.prompt('Listing title:', overlayName || 'My Overlay');
               if (!title) return;
               const priceStr = window.prompt('Price in USD (0 for free):', '0');
               const priceCents = Math.round(parseFloat(priceStr || '0') * 100);
@@ -9970,7 +9976,7 @@ function CreationToolbar({
               const scanRes = await fetch('/dashboard/api/marketplace/publish', {
                 method: 'POST', credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ overlayId: initialOverlay.id, title, description, priceCents })
+                body: JSON.stringify({ overlayId, title, description, priceCents })
               });
               const scan = await scanRes.json();
               if (!scan.ok) { alert('Error: ' + scan.error); return; }
@@ -9985,7 +9991,7 @@ function CreationToolbar({
               const pubRes = await fetch('/dashboard/api/marketplace/publish/confirm', {
                 method: 'POST', credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ overlayId: initialOverlay.id, title, description, priceCents })
+                body: JSON.stringify({ overlayId, title, description, priceCents })
               });
               const pub = await pubRes.json();
               if (pub.ok) {

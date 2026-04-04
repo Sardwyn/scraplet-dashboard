@@ -7,7 +7,7 @@ import db from '../db.js';
 const router = express.Router();
 
 // GET /marketplace — public browse page
-router.get('/marketplace', async (req, res, next) => {
+router.get('/dashboard/marketplace', async (req, res, next) => {
   try {
     const { rows: listings } = await db.query(`
       SELECT m.id, m.title, m.description, m.price_cents, m.published_at,
