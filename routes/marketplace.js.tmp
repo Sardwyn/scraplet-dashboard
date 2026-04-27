@@ -1,0 +1,23 @@
+// GET /marketplace/:listingId ? public listing landing page
+router.get('/marketplace/:listingId', async (req, res, next) => {
+  try {
+    const { rows: [listing] } = await db.query(`
+      SELECT m.*, u.username as creator_username, o.public_id as overlay_public_id
+      FROM marketplace_overlays m
+      JOIN users u ON u.id = m.user_id
+      JOIN overlays o ON o.id = m.overlay_id
+      WHERE m.id = $1 AND m.status = 'published'
+    `, [Number(req.params.listingId)]);
+
+    if (!listing) return res.status(404).render('404', { user: req.session?.user || null });
+
+    // Extract widget type names from snapshot_config
+    const widgets = listing.snapshot_config?.elements || [];
+    listing.widget_list = [...new Set(widgets.map(e => e.type).filter(Boolean))];
+
+    res.render('marketplace-listing', {
+      listing,
+      user: req.session?.user || null,
+    });
+  } catch (err) { next(err); }
+});

@@ -1,387 +1,377 @@
-<!-- Page-specific styles (loaded in body is fine for now) -->
+<!-- Profile Editor — 3-panel redesign -->
 <link rel="stylesheet" href="/dashboard/profile-assets/css/profile-editor.css" />
 <link rel="stylesheet" href="/dashboard/profile-assets/css/profile-card.css?v=1" />
-
-
-<!-- SortableJS (global for buttons list) -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
-<!-- =============================================== -->
-<!-- PAGE WRAPPER -->
-<!-- =============================================== -->
-<div class="pe-page-root min-h-[70vh] flex bg-slate-900 text-white rounded-2xl border border-slate-800 overflow-hidden">
+<style>
+/* ── 3-panel layout ─────────────────────────────────────────────────────────── */
+.pe-page-root {
+  display: grid;
+  grid-template-columns: 260px 1fr 360px;
+  min-height: 80vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 16px;
+  border: 1px solid #1e293b;
+  overflow: hidden;
+}
 
-  <!-- ===================================================== -->
-  <!-- LEFT SIDE: PREVIEW PANE -->
-  <!-- ===================================================== -->
-  <div class="pe-preview-side w-1/2 min-h-[70vh] flex justify-center items-start p-10 overflow-y-auto bg-slate-950">
-    <!-- Server-rendered card will be injected here -->
-    <div id="preview-root" class="pe-preview-root"></div>
+/* Left: section library */
+.pe-library-panel {
+  background: #1e293b;
+  border-right: 1px solid #334155;
+  overflow-y: auto;
+  padding: 16px 12px;
+}
+.pe-library-panel-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  margin-bottom: 12px;
+  padding: 0 4px;
+}
+.pe-library-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+  font-size: 13px;
+}
+.pe-library-tile:hover { background: #334155; }
+.pe-library-tile.active { background: rgba(99,102,241,0.12); border-color: rgba(99,102,241,0.3); }
+.pe-library-tile.selected { background: rgba(99,102,241,0.25); border-color: #6366f1; }
+.pe-library-tile.inactive { opacity: 0.55; }
+.pe-library-tile.inactive:hover { opacity: 0.85; }
+.pe-library-icon { font-size: 16px; flex-shrink: 0; }
+.pe-library-label { flex: 1; }
+.pe-library-badge { font-size: 11px; color: #6366f1; font-weight: 700; }
+.pe-library-badge--add { color: #94a3b8; }
+
+/* Middle: preview */
+.pe-preview-panel {
+  background: #020617;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  overflow-y: auto;
+}
+.pe-preview-scroll {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 20px;
+  width: 100%;
+  overflow-y: auto;
+}
+.pe-preview-root { width: 100%; max-width: 380px; }
+
+/* Right: inspector */
+.pe-inspector-panel {
+  background: #1e293b;
+  border-left: 1px solid #334155;
+  overflow-y: auto;
+}
+.pe-inspector-header-bar {
+  padding: 14px 16px;
+  border-bottom: 1px solid #334155;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+#pe-inspector-content {
+  padding: 16px;
+}
+
+/* Inspector components */
+.pe-inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #334155;
+}
+.pe-inspector-icon { font-size: 18px; }
+.pe-inspector-title { flex: 1; font-weight: 600; font-size: 14px; }
+.pe-inspector-remove {
+  background: none; border: none; color: #64748b; cursor: pointer;
+  font-size: 14px; padding: 2px 6px; border-radius: 4px;
+}
+.pe-inspector-remove:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+.pe-inspector-section { margin-bottom: 14px; }
+.pe-inspector-label {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #94a3b8; margin-bottom: 5px; font-weight: 500;
+}
+.pe-inspector-counter { color: #64748b; }
+.pe-inspector-input {
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; padding: 7px 10px; color: #e2e8f0; font-size: 13px;
+  box-sizing: border-box;
+}
+.pe-inspector-input:focus { outline: none; border-color: #6366f1; }
+.pe-inspector-textarea {
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  border-radius: 6px; padding: 7px 10px; color: #e2e8f0; font-size: 13px;
+  min-height: 80px; resize: vertical; box-sizing: border-box;
+}
+.pe-inspector-textarea:focus { outline: none; border-color: #6366f1; }
+.pe-inspector-toggle-row {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;
+}
+.pe-inspector-hint { font-size: 11px; color: #64748b; margin-bottom: 8px; }
+.pe-inspector-empty { color: #64748b; font-size: 13px; text-align: center; padding: 24px 0; }
+.pe-inspector-avatar-preview img,
+.pe-inspector-cover-preview img {
+  width: 100%; border-radius: 8px; margin-bottom: 8px; object-fit: cover; max-height: 80px;
+}
+.pe-inspector-upload-form { margin-top: 4px; }
+.pe-inspector-upload-row { display: flex; gap: 8px; align-items: center; }
+.pe-inspector-file { flex: 1; font-size: 12px; color: #94a3b8; }
+.pe-inspector-button-row {
+  padding: 6px 8px; background: #0f172a; border-radius: 6px; margin-bottom: 4px;
+  font-size: 12px;
+}
+.pe-inspector-button-label { font-weight: 500; }
+.pe-inspector-button-url { color: #64748b; margin-left: 8px; }
+.pe-theme-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+.pe-theme-tile {
+  padding: 5px 10px; border-radius: 6px; border: 1px solid #334155;
+  background: #0f172a; color: #94a3b8; font-size: 12px; cursor: pointer;
+  text-transform: capitalize;
+}
+.pe-theme-tile.active { border-color: #6366f1; color: #a5b4fc; background: rgba(99,102,241,0.15); }
+.pe-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; }
+.pe-btn-sm { background: #334155; color: #e2e8f0; }
+.pe-btn-sm:hover { background: #475569; }
+
+/* Selection highlight on preview sections */
+[data-section-type] { position: relative; transition: outline 0.1s; }
+[data-section-type]:hover { outline: 1px dashed rgba(99,102,241,0.4); outline-offset: 2px; }
+.pe-section-selected { outline: 2px solid #6366f1 !important; outline-offset: 2px; border-radius: 4px; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .pe-page-root { grid-template-columns: 1fr 320px; }
+  .pe-library-panel { display: none; }
+  .pe-library-panel.open { display: block; position: fixed; left: 0; top: 0; height: 100vh; z-index: 100; width: 260px; }
+}
+
+/* Cover image zone */
+.pe-inspector-global-hint {
+  font-size: 12px; color: #64748b; padding: 12px 0 16px; line-height: 1.5;
+  border-bottom: 1px solid #334155; margin-bottom: 16px;
+}
+.pe-inspector-cover-zone {
+  position: relative; border-radius: 10px; overflow: hidden;
+  border: 2px dashed #334155; cursor: pointer; min-height: 90px;
+  display: flex; align-items: center; justify-content: center;
+  background: #0f172a; transition: border-color 0.15s;
+}
+.pe-inspector-cover-zone:hover { border-color: #6366f1; }
+.pe-inspector-cover-img { width: 100%; height: 90px; object-fit: cover; display: block; }
+.pe-inspector-cover-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 600; opacity: 0;
+  transition: opacity 0.15s;
+}
+.pe-inspector-cover-zone:hover .pe-inspector-cover-overlay { opacity: 1; }
+.pe-inspector-cover-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px; color: #64748b; font-size: 12px; text-align: center;
+}
+.pe-inspector-cover-icon { font-size: 24px; margin-bottom: 4px; }
+
+
+/* Theme hot-swap bar */
+.pe-theme-bar {
+  display: flex; align-items: center; gap: 6px; padding: 10px 16px;
+  background: #0f172a; border-top: 1px solid #1e293b; flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.pe-theme-bar-label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 4px; }
+.pe-theme-bar-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;
+  background: #1e293b; color: #94a3b8; font-size: 12px; cursor: pointer;
+  transition: all 0.12s;
+}
+.pe-theme-bar-btn:hover { border-color: #6366f1; color: #a5b4fc; }
+.pe-theme-bar-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; font-weight: 600; }
+
+
+/* Canvas background presets */
+.pe-canvas-presets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.pe-canvas-preset {
+  padding: 3px 8px; border-radius: 4px; border: 1px solid #334155;
+  background: #0f172a; color: #94a3b8; font-size: 11px; cursor: pointer;
+}
+.pe-canvas-preset:hover { border-color: #6366f1; color: #a5b4fc; }
+
+
+/* Colour picker */
+.pe-bg-type-tabs { display: flex; gap: 4px; margin-bottom: 4px; }
+.pe-bg-tab {
+  flex: 1; padding: 5px; border-radius: 6px; border: 1px solid #334155;
+  background: #0f172a; color: #94a3b8; font-size: 12px; cursor: pointer;
+}
+.pe-bg-tab.active { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.pe-colour-picker-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.pe-colour-input {
+  width: 40px; height: 32px; border: 1px solid #334155; border-radius: 6px;
+  padding: 2px; background: #0f172a; cursor: pointer; flex-shrink: 0;
+}
+.pe-colour-hex { flex: 1; }
+.pe-gradient-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.pe-gradient-arrow { color: #64748b; font-size: 16px; }
+.pe-grad-dir.active { border-color: #6366f1; color: #a5b4fc; }
+
+
+/* Visual colour picker */
+.cp-root { user-select: none; }
+.cp-sl-wrap {
+  position: relative; width: 220px; height: 140px;
+  border-radius: 6px; overflow: hidden; cursor: crosshair; margin-bottom: 8px;
+}
+.cp-sl-canvas { display: block; width: 100%; height: 100%; }
+.cp-sl-cursor {
+  position: absolute; width: 12px; height: 12px;
+  border: 2px solid #fff; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.cp-hue-wrap {
+  position: relative; width: 220px; height: 14px;
+  border-radius: 7px; overflow: hidden; cursor: pointer; margin-bottom: 8px;
+}
+.cp-hue-canvas { display: block; width: 100%; height: 100%; }
+.cp-hue-cursor {
+  position: absolute; top: 50%; width: 14px; height: 14px;
+  border: 2px solid #fff; border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+}
+.cp-bottom { display: flex; align-items: center; gap: 8px; }
+.cp-preview { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #334155; flex-shrink: 0; }
+.cp-hex-display { font-size: 12px; color: #94a3b8; font-family: monospace; }
+
+
+/* Button inspector */
+.pe-btn-row {
+  background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+  margin-bottom: 8px; overflow: hidden;
+}
+.pe-btn-row--hidden { opacity: 0.5; }
+.pe-btn-row-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; cursor: default;
+}
+.pe-btn-row-label { font-size: 13px; font-weight: 500; flex: 1; }
+.pe-btn-row-actions { display: flex; gap: 4px; }
+.pe-btn-row-actions button {
+  background: none; border: none; cursor: pointer; font-size: 14px;
+  padding: 2px 4px; border-radius: 4px; opacity: 0.7;
+}
+.pe-btn-row-actions button:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+.pe-btn-editor { padding: 10px; border-top: 1px solid #334155; }
+.pe-btn-shape-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.pe-shape-btn {
+  padding: 4px 10px; border-radius: 6px; border: 1px solid #334155;
+  background: #1e293b; color: #94a3b8; font-size: 12px; cursor: pointer;
+}
+.pe-shape-btn.active { border-color: #6366f1; background: rgba(99,102,241,0.2); color: #a5b4fc; }
+.pe-btn-img-preview { margin-bottom: 6px; border-radius: 6px; overflow: hidden; max-height: 60px; }
+.pe-btn-img-preview img { width: 100%; height: 60px; object-fit: cover; }
+.pe-btn-save { width: 100%; justify-content: center; background: #6366f1; color: #fff; }
+.pe-btn-save:hover { background: #4f46e5; }
+
+
+/* Range sliders */
+.pe-range-input {
+  width: 100%; height: 4px; border-radius: 2px;
+  background: #334155; outline: none; cursor: pointer;
+  accent-color: #6366f1;
+}
+
+
+/* Preview size controls */
+.pe-preview-controls {
+  display: flex; gap: 4px; padding: 8px 16px 0;
+  justify-content: center; flex-shrink: 0;
+}
+.pe-preview-size-btn {
+  background: none; border: 1px solid #334155; border-radius: 6px;
+  padding: 4px 8px; cursor: pointer; font-size: 14px; opacity: 0.5;
+}
+.pe-preview-size-btn.active { opacity: 1; border-color: #6366f1; }
+.pe-preview-root.desktop-mode { max-width: 800px; }
+
+</style>
+
+<!-- =============================================== -->
+<!-- PAGE WRAPPER — 3 panels -->
+<!-- =============================================== -->
+<div class="pe-page-root">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LEFT: Section Library -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="pe-library-panel" id="pe-section-library-panel">
+    <div class="pe-library-panel-title">Sections</div>
+    <div id="pe-section-library">
+      <!-- Populated by profile-editor-library.js -->
+    </div>
   </div>
 
-  <!-- ===================================================== -->
-  <!-- RIGHT SIDE: EDITOR UI -->
-  <!-- ===================================================== -->
-  <div class="pe-editor-side w-1/2 bg-slate-800 border-l border-slate-700 p-8 overflow-y-auto">
-    <h1 class="text-2xl font-bold mb-6">Profile Editor</h1>
-
-    <!-- ====================== -->
-    <!-- BASIC INFO SECTION -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Basic Information</h2>
-
-      <!-- Avatar upload (replaces /account avatar field) -->
-      <form
-        class="mb-6 p-4 rounded-lg bg-slate-900 border border-slate-700"
-        method="POST"
-        action="/dashboard/api/profile/avatar"
-        enctype="multipart/form-data"
-      >
-        <div class="flex items-start gap-4">
-          <div class="w-16 h-16 rounded-full overflow-hidden border border-slate-600 bg-slate-950 flex items-center justify-center">
-            <% if (profile && profile.avatar_url) { %>
-              <img src="<%= profile.avatar_url %>" alt="Avatar" class="w-full h-full object-cover" />
-            <% } else { %>
-              <span class="text-xs text-slate-500">No avatar</span>
-            <% } %>
-          </div>
-
-          <div class="flex-1">
-            <div class="text-sm font-semibold mb-1">Avatar</div>
-            <div class="text-xs text-slate-400 mb-2">Upload a square image. Max 8MB.</div>
-
-            <div class="flex items-center gap-3">
-              <input
-                type="file"
-                name="avatar"
-                accept="image/*"
-                class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4
-                       file:rounded file:border-0 file:text-sm file:font-semibold
-                       file:bg-slate-700 file:text-white hover:file:bg-slate-600
-                       border border-slate-600 bg-slate-700 rounded"
-              />
-              <button
-                type="submit"
-                class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-              >
-                Upload
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
-
-      <!-- Basic fields save (HTML submit works even if JS changes) -->
-      <form id="pe-basic-form" method="POST" action="/dashboard/api/profile/basic" class="space-y-3">
-
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">Display Name</span>
-        <input
-          id="pe-display-name"
-          name="display_name"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= profile.display_name || '' %>"
-        >
-      </label>
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">Bio</span>
-        <textarea
-          id="pe-bio"
-          rows="3"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"><%= profile.bio || '' %></textarea>
-      </label>
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">Tags (comma separated)</span>
-        <input
-          id="pe-tags"
-          name="tags"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= Array.isArray(profile.tags) ? profile.tags.join(', ') : (profile.tags || '') %>"
-          placeholder="gaming, variety, coding..."
-        >
-      </label>
-
-
-      <label class="block">
-        <span class="text-sm text-slate-300">Cover Image URL</span>
-        <input
-          id="pe-cover-image"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= profile.cover_image_url || '' %>"
-        >
-      </label>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MIDDLE: Preview -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="pe-preview-panel">
+    <div class="pe-preview-controls">
+      <button class="pe-preview-size-btn active" data-preview-size="phone" title="Phone">📱</button>
+      <button class="pe-preview-size-btn" data-preview-size="desktop" title="Desktop">🖥️</button>
     </div>
-
-      <div class="pt-2 flex items-center justify-end">
-        <button
-          type="submit"
-          class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
-        >
-          Save Basic Info
-        </button>
-      </div>
-      </form>
-
-    <!-- ====================== -->
-    <!-- SOCIAL LINKS -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Social Links</h2>
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">X (handle or URL)</span>
-        <input
-          id="pe-x"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= (profile && profile.x) || '' %>"
-        >
-      </label>
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">YouTube URL</span>
-        <input
-          id="pe-youtube"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= (profile && profile.youtube) || '' %>"
-        >
-      </label>
-
-      <label class="block mb-3">
-        <span class="text-sm text-slate-300">Twitch URL</span>
-        <input
-          id="pe-twitch"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= (profile && profile.twitch) || '' %>"
-        >
-      </label>
-
-      <label class="block">
-        <span class="text-sm text-slate-300">Kick URL</span>
-        <input
-          id="pe-kick"
-          type="text"
-          class="mt-1 w-full rounded bg-slate-700 border border-slate-600 p-2"
-          value="<%= (profile && profile.kick) || '' %>"
-        >
-      </label>
+    <div class="pe-preview-scroll">
+      <div id="preview-root" class="pe-preview-root"></div>
     </div>
-
-    <!-- ====================== -->
-    <!-- THEME / APPEARANCE -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Appearance & Theme</h2>
-
-      <div class="flex flex-wrap gap-3">
-        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="midnight">
-          Midnight
-        </button>
-
-        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="kick">
-          Kick
-        </button>
-
-        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="neon">
-          Neon
-        </button>
-
-        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="soft">
-          Soft
-        </button>
-
-        <button class="pe-theme-btn px-4 py-2 bg-slate-700 rounded" data-theme="pixel">
-          Pixel
-        </button>
-      </div>
+    <!-- Theme hot-swap bar -->
+    <div class="pe-theme-bar" id="pe-theme-bar">
+      <span class="pe-theme-bar-label">Theme:</span>
+      <% const currentTheme = (typeof appearance !== 'undefined' && appearance && (appearance.theme || appearance.background)) || 'midnight'; %>
+      <% ['midnight','kick','neon','soft','pixel'].forEach(function(t) { %>
+        <button class="pe-theme-bar-btn <%= currentTheme === t ? 'active' : '' %>"
+                data-theme-bar="<%= t %>"><%= t.charAt(0).toUpperCase() + t.slice(1) %></button>
+      <% }); %>
     </div>
+  </div>
 
-    <!-- ====================== -->
-    <!-- CUSTOM BUTTONS -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Custom Buttons</h2>
-
-      <div id="pe-buttons-list" class="flex flex-col gap-3">
-        <!-- JS populates -->
-      </div>
-
-      <button
-        id="pe-add-button"
-        class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded"
-      >
-        Add New Button
-      </button>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- RIGHT: Properties Inspector -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="pe-inspector-panel">
+    <div class="pe-inspector-header-bar">Properties</div>
+    <div id="pe-inspector-content">
+      <!-- Populated by profile-editor-inspector.js -->
     </div>
+  </div>
 
-    <!-- ====================== -->
-    <!-- SPONSORS -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Sponsors</h2>
-
-      <p class="text-xs text-slate-400 mb-3">
-        Add sponsor logos and links. These appear in the Sponsors block on your card.
-      </p>
-
-      <div id="pe-sponsors-list" class="flex flex-col gap-3">
-        <!-- JS populates -->
-      </div>
-
-      <button
-        id="pe-add-sponsor"
-        class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded"
-      >
-        Add Sponsor
-      </button>
-    </div>
-
-
-
-    <!-- ====================== -->
-    <!-- SECTIONS / ORDER -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-2">Sections &amp; Order</h2>
-      <p class="text-xs text-slate-400 mb-3">
-        Drag to reorder the sections on your card.
-      </p>
-      <div id="pe-blocks-list" class="pe-blocks-list">
-        <!-- JS populates -->
-      </div>
-
-      <div id="pe-block-settings" class="pe-block-settings hidden">
-        <h3 class="pe-block-settings-title text-sm font-semibold mb-2">
-          Block Settings
-        </h3>
-        <div
-          id="pe-block-settings-body"
-          class="pe-block-settings-body text-xs text-slate-200">
-        </div>
-      </div>
-    </div>
-
-
-    <!-- ====================== -->
-    <!-- LAYOUT SETTINGS -->
-    <!-- ====================== -->
-    <div class="pe-section mb-10">
-      <h2 class="text-xl font-semibold mb-4">Layout Options</h2>
-
-      <div class="pe-layout-options-list space-y-2">
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="avatar"
-            <%= sectionVisibility.avatar !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Avatar</span>
-        </label>
-
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="socialLinks"
-            <%= sectionVisibility.socialLinks !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Social Links</span>
-        </label>
-
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="stats"
-            <%= sectionVisibility.stats !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Stats</span>
-        </label>
-
-        <!-- Toggle for stats flip/breakdown -->
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="statsBreakdown"
-            <%= sectionVisibility.statsBreakdown !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Enable stats breakdown flip</span>
-        </label>
-
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="marketability"
-            <%= sectionVisibility.marketability !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Marketability Score</span>
-        </label>
-
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="bio"
-            <%= sectionVisibility.bio !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Bio</span>
-        </label>
-
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="buttons"
-            <%= sectionVisibility.buttons !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Buttons</span>
-        </label>
-
-        <!-- Sponsors toggle -->
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="sponsors"
-            <%= sectionVisibility.sponsors !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show Sponsors</span>
-        </label>
-
-        <!-- NEW: TTS toggle -->
-        <label class="pe-layout-options-item flex items-center gap-2">
-          <input
-            type="checkbox"
-            class="pe-section-toggle"
-            data-section="tts"
-            <%= sectionVisibility.tts !== false ? 'checked' : '' %>
-          />
-          <span class="pe-layout-options-label">Show TTS Button</span>
-        </label>
-      </div>
-    </div>
-
-
-  </div> <!-- END EDITOR SIDE -->
-
-</div> <!-- END PAGE ROOT -->
+</div>
 
 <!-- =============================================== -->
 <!-- Inject initial profile bundle -->
 <!-- =============================================== -->
- <% const safeBlocks = (typeof blocks !== 'undefined' && Array.isArray(blocks)) ? blocks : []; %>
+<% const safeBlocks = (typeof blocks !== 'undefined' && Array.isArray(blocks)) ? blocks : []; %>
 
 <script id="initialProfileData" type="application/json">
   <%- JSON.stringify({
@@ -392,13 +382,13 @@
     sectionVisibility,
     stats,
     marketability,
-    blocks,
+    blocks: safeBlocks,
     sponsors
   }) %>
 </script>
 
 <!-- =============================================== -->
-<!-- Load JS modules (ES6) -->
+<!-- Load JS modules -->
 <!-- =============================================== -->
 <script type="module" src="/dashboard/profile-assets/js/profile-preview-renderer.js"></script>
 <script type="module" src="/dashboard/profile-assets/js/profile-editor-core.js"></script>
@@ -410,10 +400,8 @@
 <script type="module" src="/dashboard/profile-assets/js/profile-editor-card-sections-dnd.js"></script>
 <script type="module" src="/dashboard/profile-assets/js/profile-editor-sponsors.js"></script>
 
-
-
 <!-- =============================================== -->
-<!-- Initialise preview + state on load -->
+<!-- Initialise 3-panel editor -->
 <!-- =============================================== -->
 <script type="module">
   import { updateRendererState, renderPreview } from "/dashboard/profile-assets/js/profile-preview-renderer.js";
@@ -421,6 +409,9 @@
   import { setupButtonsModule } from "/dashboard/profile-assets/js/profile-editor-buttons.js";
   import { setupSponsorsModule } from "/dashboard/profile-assets/js/profile-editor-sponsors.js";
   import { setupBlocksModule } from "/dashboard/profile-assets/js/profile-editor-blocks.js";
+  import { setupInspector } from "/dashboard/profile-assets/js/profile-editor-inspector.js";
+  import { setupSectionLibrary } from "/dashboard/profile-assets/js/profile-editor-library.js";
+  import { attachSectionClickHandlers, setupEscapeDeselect } from "/dashboard/profile-assets/js/profile-editor-select.js";
 
   const initialEl = document.getElementById("initialProfileData");
 
@@ -432,23 +423,81 @@
     // Seed editorState with server data
     editorInitState(initial);
 
-    // Optional: expose current state for debugging
+    // Expose for debugging
     window.editorState = editorState;
 
     // Seed renderer state + draw card
     updateRendererState(editorState);
     renderPreview();
 
-    // Custom Buttons UI
+    // Set up existing modules
     setupButtonsModule();
-
-    // Sponsors UI
     setupSponsorsModule();
-
-    // Sections / Blocks UI
     setupBlocksModule();
 
+    // Set up 3-panel modules
+    setupInspector();
+    setupSectionLibrary();
+    setupEscapeDeselect();
+
+    // Global hook: re-attach click handlers after every preview re-render
+    window.onProfilePreviewRendered = () => {
+      attachSectionClickHandlers();
+    };
+
     // Global hook for other modules to refresh the preview
+
+    // Wire cover image zone click
+    document.addEventListener('click', (e) => {
+      const zone = e.target.closest('#pe-cover-drop-zone');
+      if (zone) {
+        const fileInput = document.getElementById('pe-cover-file-input');
+        if (fileInput) fileInput.click();
+      }
+    });
+
+
+    // Wire theme hot-swap bar
+    document.querySelectorAll('[data-theme-bar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.themeBar;
+        editorState.layout = editorState.layout || {};
+        editorState.layout.theme = editorState.layout.theme || {};
+        editorState.layout.theme.color = theme;
+        editorState.appearance = editorState.appearance || {};
+        editorState.appearance.background = theme;
+        // Update active state
+        document.querySelectorAll('[data-theme-bar]').forEach(b => b.classList.toggle('active', b === btn));
+        // Update editorState.appearance so preview-render gets the new theme
+        editorState.appearance = editorState.appearance || {};
+        editorState.appearance.theme = theme;
+        // Save to server
+        fetch('/dashboard/api/profile/appearance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ theme: theme }),
+        }).then(r => {
+          console.log('[theme] save status:', r.status, r.url);
+          return r.json();
+        }).then(d => console.log('[theme] response:', JSON.stringify(d)))
+          .catch(e => console.warn('[theme] error:', e.message));
+        // Re-render preview with new theme
+        if (window.updatePreview) window.updatePreview();
+      });
+    });
+
+
+    // Wire preview size toggle
+    document.querySelectorAll('[data-preview-size]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = btn.dataset.previewSize;
+        document.querySelectorAll('[data-preview-size]').forEach(b => b.classList.toggle('active', b === btn));
+        const root = document.getElementById('preview-root');
+        if (root) root.classList.toggle('desktop-mode', size === 'desktop');
+      });
+    });
+
     window.updatePreview = () => {
       updateRendererState(editorState);
       renderPreview();

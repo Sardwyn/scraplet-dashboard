@@ -118,6 +118,16 @@
 
   // -------- Appearance from users.appearance --------
   const themeName = ((appearance && appearance.theme) || 'midnight').toLowerCase();
+  const bioFont      = (appearance && appearance.bioFont) ? String(appearance.bioFont) : '';
+  const cardOpacity  = (appearance && appearance.cardOpacity !== undefined) ? parseFloat(appearance.cardOpacity) : 1.0;
+  const cardBlur     = (appearance && appearance.cardBlur !== undefined) ? parseInt(appearance.cardBlur) : 12;
+  const bioFontSize  = (appearance && appearance.bioFontSize) || 'md';
+  const nameFontSize = (appearance && appearance.nameFontSize) || 'md';
+  const bioSizeMap  = { sm: '12px', md: '14px', lg: '17px' };
+  const nameSizeMap = { sm: '16px', md: '20px', lg: '26px', xl: '32px' };
+  const bioSizePx   = bioSizeMap[bioFontSize]  || '14px';
+  const nameSizePx  = nameSizeMap[nameFontSize] || '20px';
+  const fontStyle   = bioFont ? ("font-family:'" + bioFont + "',sans-serif;") : '';
   const bgName    = ((appearance && appearance.background) || 'hero-dark').toLowerCase();
   const btnStyle  = ((appearance && appearance.buttonStyle) || 'solid').toLowerCase();
   const cardStyle = ((appearance && appearance.cardStyle) || 'glass').toLowerCase();
@@ -166,9 +176,9 @@
   const sections = orderedSections();
 %>
 
-<article class="pc-card-root <%= classNames %>">
+<article class="pc-card-root <%= classNames %>" style="--card-opacity:<%- cardOpacity %>;--card-blur:<%- cardBlur %>px;">
   <!-- HERO -->
-  <header class="pc-hero">
+  <header class="pc-hero" data-section-type="background">
     <% if (profile && profile.cover_image_url) { %>
       <img src="<%= profile.cover_image_url %>" alt="" class="pc-hero-media" />
     <% } %>
@@ -181,7 +191,7 @@
     <% sections.forEach(function (sectionType) { %>
 
       <% if (sectionType === 'avatar' && visible('avatar')) { %>
-        <div class="pc-identity">
+        <div class="pc-identity" data-section-type="avatar">
           <div class="pc-avatar-shell">
             <% if (profile && profile.avatar_url) { %>
               <img src="<%= profile.avatar_url %>" class="pc-avatar" alt="" />
@@ -191,28 +201,35 @@
           </div>
 
           <div>
-            <div class="pc-display-name">
+            <div class="pc-display-name" style="<%- fontStyle %>font-size:<%- nameSizePx %>;">
               <%= (profile && (profile.display_name || profile.username)) || 'Your name' %>
             </div>
             <% if (profile && profile.username) { %>
-              <div class="pc-username">@<%= profile.username %></div>
+              <div class="pc-username" style="<%- fontStyle %>">@<%= profile.username %></div>
             <% } %>
           </div>
         </div>
       <% } %>
 
-      <% if (sectionType === 'socialLinks' && visible('socialLinks')) { %>
-        <div class="pc-social-row">
-          <% if (xHandle) { %>
+      <% if (sectionType === 'socialLinks' && visible('socialLinks')) {
+          var socialSection2 = sectionEntry('socialLinks') || {};
+          var socialCfg = socialSection2.settings || {};
+          var showX = socialCfg.show_x !== false;
+          var showYoutube = socialCfg.show_youtube !== false;
+          var showTwitch = socialCfg.show_twitch !== false;
+          var showKick = socialCfg.show_kick !== false;
+      %>
+        <div class="pc-social-row" data-section-type="socialLinks">
+          <% if (xHandle && showX) { %>
             <a class="pc-social-pill" href="https://x.com/<%= xHandle %>" target="_blank" rel="noopener noreferrer">X</a>
           <% } %>
-          <% if (youtubeUrl) { %>
+          <% if (youtubeUrl && showYoutube) { %>
             <a class="pc-social-pill" href="<%= youtubeUrl %>" target="_blank" rel="noopener noreferrer">YT</a>
           <% } %>
-          <% if (twitchUrl) { %>
+          <% if (twitchUrl && showTwitch) { %>
             <a class="pc-social-pill" href="<%= twitchUrl %>" target="_blank" rel="noopener noreferrer">Tw</a>
           <% } %>
-          <% if (kickUrl) { %>
+          <% if (kickUrl && showKick) { %>
             <a class="pc-social-pill" href="<%= kickUrl %>" target="_blank" rel="noopener noreferrer">K</a>
           <% } %>
         </div>
@@ -253,7 +270,7 @@
         %>
 
         <% if (hasBreakdown && breakdownRows.length) { %>
-          <div class="pc-stats-row pc-stats-row--has-breakdown">
+          <div class="pc-stats-row pc-stats-row--has-breakdown" data-section-type="stats">
             <button type="button" class="pc-stats-pill pc-stats-pill-toggle">
               <span class="pc-stats-dot"></span>
               <span class="pc-stats-label"><%= statsLabel %></span>
@@ -274,7 +291,7 @@
             </div>
           </div>
         <% } else { %>
-          <div class="pc-stats-row">
+          <div class="pc-stats-row" data-section-type="stats">
             <div class="pc-stats-pill">
               <span class="pc-stats-dot"></span>
               <span class="pc-stats-label"><%= statsLabel %></span>
@@ -285,12 +302,12 @@
 
       <% if (sectionType === 'bio' && visible('bio')) { %>
         <% if (profile && profile.bio) { %>
-          <div class="pc-bio"><%= profile.bio %></div>
+          <div class="pc-bio" data-section-type="bio" style="<%- fontStyle %>font-size:<%- bioSizePx %>;"><%= profile.bio %></div>
         <% } %>
       <% } %>
 
       <% if (sectionType === 'buttons' && visible('buttons')) { %>
-        <div class="pc-buttons">
+        <div class="pc-buttons" data-section-type="buttons">
           <%
             function accentMeta(btn) {
               var color = (btn && btn.accent_color) ? btn.accent_color : '';
@@ -308,7 +325,13 @@
               var btn = visibleButtons[i];
               if (!btn) { i++; continue; }
 
-              var size = String(btn.size || 'sm').toLowerCase();
+              function buttonClasses(btn, fallbackSize) {
+              var shape = String((btn && btn.shape) || 'pill').toLowerCase();
+              var sz = String((btn && btn.size) || fallbackSize || 'sm').toLowerCase();
+              return 'pc-button pc-button--shape-' + shape + ' pc-button--size-' + sz;
+            }
+
+            var size = String(btn.size || 'sm').toLowerCase();
               var featuredUrl = btn.featured_image_url || '';
               var hasImage = !!featuredUrl;
               var accent = accentMeta(btn);
@@ -386,7 +409,7 @@
                         var a3 = accentMeta(b3);
                     %>
                       <a href="<%- b3.url || '#' %>" target="_blank"
-                         class="pc-button pc-button--shape-pill pc-button--size-md"
+                         class="<%- buttonClasses(b3, 'md') %>"
                          <% if (a3.style) { %>style="<%- a3.style %>"<% } %>
                          data-accent-target="<%- a3.target %>">
                         <span class="pc-button-label"><%- b3.label || 'Link' %></span>
@@ -399,7 +422,7 @@
               }
           %>
               <a href="<%- btn.url || '#' %>" target="_blank"
-                 class="pc-button pc-button--shape-pill pc-button--size-sm"
+                 class="<%- buttonClasses(btn, 'sm') %>"
                  <% if (accent.style) { %>style="<%- accent.style %>"<% } %>
                  data-accent-target="<%- accent.target %>">
                 <span class="pc-button-label"><%- btn.label || 'Link' %></span>
@@ -421,7 +444,7 @@
         %>
 
         <% if (activeSponsors.length) { %>
-          <section class="pc-sponsors">
+          <section class="pc-sponsors" data-section-type="sponsors">
             <div class="pc-sponsors-title"><%= sHeadline %></div>
 
             <div class="pc-sponsors-strip">
@@ -481,7 +504,7 @@
         %>
 
         <% if (hasP || hasS || renderTtsHere) { %>
-          <section class="pc-tipjar">
+          <section class="pc-tipjar" data-section-type="tipJar">
             <div class="pc-tipjar-title"><%= ts.headline || 'Tip Jar' %></div>
 
             <% if (hasP || hasS) { %>
@@ -517,6 +540,9 @@
                 </button>
               </div>
 
+              <!-- TTS panel container — populated by tts-panel.js with voice picker + Stripe -->
+              <div data-tts-panel="true" hidden style="margin-top:12px;"></div>
+
               <% if (ttsSubtext) { %>
                 <div class="pc-contact-text"><%= ttsSubtext %></div>
               <% } %>
@@ -536,7 +562,7 @@
           var cButtonLabel = cs.buttonLabel || 'Notify me';
         %>
 
-        <section class="pc-contact">
+        <section class="pc-contact" data-section-type="contact">
           <div class="pc-contact-title"><%= cHeadline %></div>
 
           <% if (cDescription) { %>

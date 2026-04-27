@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= listing.title %> — Scraplet Marketplace</title>
+  <meta name="description" content="<%= listing.description || listing.title %>" />
+  <% if (listing.hero_image_path || listing.thumbnail_path) { %>
+  <meta property="og:image" content="<%= listing.hero_image_path || listing.thumbnail_path %>" />
+  <% } %>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0f; color: #e2e8f0; font-family: system-ui, sans-serif; }
+    .gallery-thumb { cursor: pointer; transition: opacity 0.15s; }
+    .gallery-thumb:hover { opacity: 0.8; }
+    .gallery-thumb.active { ring: 2px; ring-color: #6366f1; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Nav -->
+  <nav class="border-b border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0a0a0f]/95 backdrop-blur-sm z-10">
+    <a href="/dashboard/marketplace" class="text-sm text-gray-400 hover:text-white transition-colors">← Marketplace</a>
+    <a href="/" class="text-white font-bold text-lg tracking-tight">Scraplet</a>
+    <% if (user) { %><a href="/dashboard/" class="text-sm text-gray-400 hover:text-white">Dashboard</a><% } else { %><a href="/auth/login" class="text-sm text-indigo-400 hover:text-indigo-300">Sign in</a><% } %>
+  </nav>
+
+  <!-- Hero -->
+  <div class="relative w-full bg-gray-950" style="max-height:520px;overflow:hidden;">
+    <% const heroSrc = listing.hero_image_path || (listing.gallery_images && listing.gallery_images[0]) || listing.thumbnail_path; %>
+    <% if (heroSrc) { %>
+      <img id="heroImg" src="<%= heroSrc %>" alt="<%= listing.title %>" class="w-full object-cover" style="max-height:520px;" />
+      <div class="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent"></div>
+    <% } else { %>
+      <div class="w-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950" style="height:360px;">
+        <svg class="w-20 h-20 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      </div>
+    <% } %>
+    <a href="/o/<%= listing.overlay_public_id %>" target="_blank" rel="noopener"
+       class="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs font-semibold hover:bg-black/80 backdrop-blur-sm transition-colors">
+      Preview live ↗
+    </a>
+  </div>
+
+  <!-- Gallery strip -->
+  <% const gallery = listing.gallery_images && listing.gallery_images.length > 0 ? listing.gallery_images : (listing.thumbnail_path ? [listing.thumbnail_path] : []); %>
+  <% if (gallery.length > 1) { %>
+  <div class="max-w-5xl mx-auto px-4 py-4 flex gap-3 overflow-x-auto">
+    <% gallery.forEach(function(img, i) { %>
+      <img src="<%= img %>" onclick="setHero('<%= img %>')"
+           class="gallery-thumb h-16 w-28 object-cover rounded-lg border border-gray-800 flex-shrink-0 <%= i===0?'ring-2 ring-indigo-500':'' %>"
+           data-idx="<%= i %>" />
+    <% }) %>
+  </div>
+  <% } %>
+
+  <!-- Main -->
+  <div class="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <!-- Left: details -->
+    <div class="lg:col-span-2 space-y-10">
+
+      <!-- Title + creator -->
+      <div>
+        <h1 class="text-4xl font-bold text-white leading-tight"><%= listing.title %></h1>
+        <p class="text-gray-400 mt-2 text-sm">
+          by <a href="/u/<%= listing.creator_username %>" class="text-indigo-400 hover:underline"><%= listing.creator_username %></a>
+          <% if (listing.published_at) { %> · <%= new Date(listing.published_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) %><% } %>
+        </p>
+      </div>
+
+      <!-- Feature highlights -->
+      <% if (listing.feature_highlights && listing.feature_highlights.length > 0) { %>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <% listing.feature_highlights.forEach(function(h) { %>
+          <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-start gap-3">
+            <span class="text-2xl"><%= h.icon || '✦' %></span>
+            <span class="text-sm text-gray-300 leading-snug"><%= h.text %></span>
+          </div>
+        <% }) %>
+      </div>
+      <% } %>
+
+      <!-- Description -->
+      <% if (listing.long_description || listing.description) { %>
+      <div class="text-sm leading-relaxed text-gray-300 space-y-3">
+        <%- (listing.long_description || listing.description).replace(/\n/g,'<br/>') %>
+      </div>
+      <% } %>
+
+      <!-- What's included -->
+      <% if (listing.widget_list && listing.widget_list.length > 0) { %>
+      <div>
+        <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-widest mb-4">What's included</h2>
+        <div class="grid grid-cols-2 gap-3">
+          <% listing.widget_list.forEach(function(w) { %>
+            <div class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded-xl px-4 py-3">
+              <span class="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0"></span>
+              <span class="text-sm text-gray-200 capitalize"><%= w.replace(/_/g,' ') %></span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+      <% } %>
+
+      <!-- Tags -->
+      <% if (listing.tags && listing.tags.length > 0) { %>
+      <div class="flex flex-wrap gap-2">
+        <% listing.tags.forEach(function(t) { %>
+          <span class="px-3 py-1 rounded-full bg-gray-800 text-gray-400 text-xs">#<%= t %></span>
+        <% }) %>
+      </div>
+      <% } %>
+
+
+  <!-- Share Section (add after tags section in listing page) -->
+  <div class="border-t border-gray-800 pt-6">
+    <h3 class="text-sm font-semibold text-gray-300 uppercase tracking-widest mb-3">Share this overlay</h3>
+    <div class="flex gap-2">
+      <button onclick="shareTwitter()" class="flex-1 px-4 py-2 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+        Twitter
+      </button>
+      
+      <button onclick="copyLink()" id="copyLinkBtn" class="flex-1 px-4 py-2 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg text-gray-300 text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        Copy Link
+      </button>
+    </div>
+  </div>
+
+  <script>
+  function shareTwitter() {
+    const url = window.location.href;
+    const text = 'Check out this overlay: <%= listing.title %>';
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(twitterUrl, '_blank', 'width=550,height=420');
+  }
+
+  async function copyLink() {
+    const url = window.location.href;
+    const btn = document.getElementById('copyLinkBtn');
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+      btn.classList.add('bg-green-600', 'border-green-500');
+      btn.classList.remove('bg-gray-800', 'border-gray-700');
+      
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('bg-green-600', 'border-green-500');
+        btn.classList.add('bg-gray-800', 'border-gray-700');
+      }, 2000);
+    } catch (e) {
+      // Fallback for older browsers
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy Link'; }, 2000);
+    }
+  }
+  </script>
+    </div>
+
+    <!-- Right: purchase card -->
+    <div class="lg:col-span-1">
+      <div class="sticky top-20 bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+
+        <div class="flex items-center justify-between">
+          <span class="text-4xl font-bold <%= listing.price_cents === 0 ? 'text-green-400' : 'text-white' %>">
+            <%= listing.price_cents === 0 ? 'Free' : '$' + (listing.price_cents/100).toFixed(2) %>
+          </span>
+          <% if (listing.price_cents === 0) { %>
+            <span class="text-xs px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400">No cost</span>
+          <% } %>
+        </div>
+
+        <% if (req && req.query && req.query.purchase === 'success') { %>
+          <div class="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-300 text-sm text-center">
+            ✓ Purchase complete — check your overlays
+          </div>
+        <% } %>
+
+        <% if (!user) { %>
+          <a href="/auth/login?next=/marketplace/<%= listing.id %>"
+             class="block w-full text-center py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+            Sign in to get this
+          </a>
+        <% } else if (listing.price_cents === 0) { %>
+          <button id="acquireBtn" onclick="acquireOverlay(<%= listing.id %>)"
+                  class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+            Add to my overlays
+          </button>
+        <% } else { %>
+          <button id="buyBtn" onclick="startCheckout(<%= listing.id %>)"
+                  class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-colors">
+            Buy for $<%= (listing.price_cents/100).toFixed(2) %>
+          </button>
+        <% } %>
+
+        <div class="text-xs text-gray-500 space-y-2 pt-2 border-t border-gray-800">
+          <div class="flex justify-between"><span>Format</span><span class="text-gray-300">Scraplet Overlay</span></div>
+          <div class="flex justify-between"><span>Instant access</span><span class="text-gray-300">Yes</span></div>
+          <div class="flex justify-between"><span>Editable</span><span class="text-gray-300">Fully</span></div>
+          <div class="flex justify-between"><span>OBS ready</span><span class="text-gray-300">Yes</span></div>
+        </div>
+
+        <!-- Creator card -->
+        <div class="pt-2 border-t border-gray-800 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-indigo-600/30 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-sm flex-shrink-0">
+            <%= listing.creator_username.charAt(0).toUpperCase() %>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-white"><%= listing.creator_username %></div>
+            <a href="/u/<%= listing.creator_username %>" class="text-xs text-indigo-400 hover:underline">View profile →</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  function setHero(src) {
+    document.getElementById('heroImg').src = src;
+    document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('ring-2','ring-indigo-500'));
+    event.target.classList.add('ring-2','ring-indigo-500');
+  }
+
+  async function acquireOverlay(listingId) {
+    const btn = document.getElementById('acquireBtn');
+    btn.disabled = true; btn.textContent = 'Adding...';
+    try {
+      const r = await fetch('/dashboard/api/marketplace/acquire/' + listingId, {method:'POST',credentials:'include'});
+      const d = await r.json();
+      if (d.ok) { btn.textContent = '✓ Added'; setTimeout(() => { window.location.href = d.editUrl; }, 900); }
+      else { btn.textContent = 'Error: ' + d.error; btn.disabled = false; }
+    } catch(e) { btn.textContent = 'Failed'; btn.disabled = false; }
+  }
+
+  async function startCheckout(listingId) {
+    const btn = document.getElementById('buyBtn');
+    btn.disabled = true; btn.textContent = 'Redirecting...';
+    try {
+      const r = await fetch('/dashboard/api/marketplace/checkout/' + listingId, {method:'POST',credentials:'include'});
+      const d = await r.json();
+      if (d.ok) { window.location.href = d.checkoutUrl; }
+      else { btn.textContent = 'Error: ' + d.error; btn.disabled = false; }
+    } catch(e) { btn.textContent = 'Failed'; btn.disabled = false; }
+  }
+  </script>
+
+
+  <!-- Reviews Section -->
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <h2 class="text-2xl font-bold text-white mb-6">Reviews & Ratings</h2>
+    
+    <!-- Rating Summary -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6">
+      <div class="flex items-center gap-8">
+        <div class="text-center">
+          <div class="text-5xl font-bold text-white" id="avgRating">
+            <%= listing.average_rating ? Number(listing.average_rating).toFixed(1) : '—' %>
+          </div>
+          <div class="flex items-center justify-center gap-1 mt-2" id="avgStars">
+            <% if (listing.average_rating) { %>
+              <% for (let i = 1; i <= 5; i++) { %>
+                <span class="text-2xl <%= i <= Math.round(listing.average_rating) ? 'text-yellow-400' : 'text-gray-700' %>">★</span>
+              <% } %>
+            <% } else { %>
+              <% for (let i = 1; i <= 5; i++) { %>
+                <span class="text-2xl text-gray-700">★</span>
+              <% } %>
+            <% } %>
+          </div>
+          <div class="text-sm text-gray-400 mt-1" id="reviewCount">
+            <%= listing.review_count || 0 %> <%= (listing.review_count === 1) ? 'review' : 'reviews' %>
+          </div>
+        </div>
+        
+        <div class="flex-1">
+          <div class="text-sm text-gray-400 mb-2">Rating distribution</div>
+          <div class="space-y-1" id="ratingDist">
+            <% for (let i = 5; i >= 1; i--) { %>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-500 w-8"><%= i %>★</span>
+                <div class="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+                  <div class="h-full bg-yellow-400" style="width: 0%" data-rating="<%= i %>"></div>
+                </div>
+                <span class="text-xs text-gray-500 w-8 text-right" data-count="<%= i %>">0</span>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review Form (only if user acquired) -->
+    <% if (user) { %>
+    <div id="reviewFormContainer" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-6" style="display:none;">
+      <h3 class="text-lg font-semibold text-white mb-4">Write a Review</h3>
+      <form id="reviewForm" class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Your Rating</label>
+          <div class="flex gap-2">
+            <% for (let i = 1; i <= 5; i++) { %>
+              <button type="button" onclick="setRating(<%= i %>)" data-star="<%= i %>"
+                      class="star-btn text-4xl text-gray-700 hover:text-yellow-400 transition-colors">★</button>
+            <% } %>
+          </div>
+          <input type="hidden" id="ratingInput" name="rating" required />
+        </div>
+        
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Your Review (optional)</label>
+          <textarea 
+            id="reviewText" 
+            name="review_text" 
+            rows="4"
+            placeholder="Share your experience with this overlay..."
+            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          ></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button type="submit" id="submitReviewBtn"
+                  class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white font-semibold transition-colors">
+            Submit Review
+          </button>
+          <button type="button" id="deleteReviewBtn" onclick="deleteReview()" style="display:none;"
+                  class="px-6 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg text-red-300 font-semibold transition-colors">
+            Delete Review
+          </button>
+        </div>
+      </form>
+    </div>
+    <% } %>
+
+    <!-- Reviews List -->
+    <div id="reviewsList" class="space-y-4">
+      <div class="text-center py-8 text-gray-500">
+        <div class="text-sm">Loading reviews...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  let currentUserRating = null;
+  let hasAcquired = false;
+  const listingId = <%= listing.id %>;
+  const currentUserId = <%= user ? user.id : 'null' %>;
+
+  function setRating(rating) {
+    currentUserRating = rating;
+    document.getElementById('ratingInput').value = rating;
+    document.querySelectorAll('.star-btn').forEach((btn, idx) => {
+      if (idx < rating) {
+        btn.classList.remove('text-gray-700');
+        btn.classList.add('text-yellow-400');
+      } else {
+        btn.classList.add('text-gray-700');
+        btn.classList.remove('text-yellow-400');
+      }
+    });
+  }
+
+  async function loadReviews() {
+    try {
+      const r = await fetch('/api/marketplace/' + listingId + '/reviews');
+      const d = await r.json();
+      
+      if (d.ok) {
+        renderReviews(d.reviews);
+        updateRatingDistribution(d.reviews);
+        
+        // Check if current user has reviewed
+        if (currentUserId) {
+          const userReview = d.reviews.find(rev => rev.user_id === currentUserId);
+          if (userReview) {
+            setRating(userReview.rating);
+            document.getElementById('reviewText').value = userReview.review_text || '';
+            document.getElementById('deleteReviewBtn').style.display = 'block';
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load reviews:', e);
+    }
+  }
+
+  function renderReviews(reviews) {
+    const container = document.getElementById('reviewsList');
+    
+    if (reviews.length === 0) {
+      container.innerHTML = '<div class="text-center py-8 text-gray-500"><div class="text-sm">No reviews yet. Be the first to review!</div></div>';
+      return;
+    }
+    
+    container.innerHTML = reviews.map(r => {
+      const date = new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      const stars = Array.from({length: 5}, (_, i) => 
+        `<span class="text-lg ${i < r.rating ? 'text-yellow-400' : 'text-gray-700'}">★</span>`
+      ).join('');
+      
+      return `
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-500/20 flex items-center justify-center text-indigo-300 font-bold text-xs">
+                  ${r.username.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div class="text-sm font-semibold text-white">${r.username}</div>
+                  <div class="text-xs text-gray-500">${date}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 mb-2">${stars}</div>
+              ${r.review_text ? `<p class="text-sm text-gray-300 leading-relaxed">${r.review_text}</p>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateRatingDistribution(reviews) {
+    const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    reviews.forEach(r => dist[r.rating]++);
+    const total = reviews.length;
+    
+    for (let i = 1; i <= 5; i++) {
+      const pct = total > 0 ? (dist[i] / total * 100) : 0;
+      const bar = document.querySelector(`[data-rating="${i}"]`);
+      const count = document.querySelector(`[data-count="${i}"]`);
+      if (bar) bar.style.width = pct + '%';
+      if (count) count.textContent = dist[i];
+    }
+  }
+
+  document.getElementById('reviewForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!currentUserRating) {
+      alert('Please select a rating');
+      return;
+    }
+    
+    const btn = document.getElementById('submitReviewBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    
+    try {
+      const r = await fetch('/dashboard/api/marketplace/' + listingId + '/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          rating: currentUserRating,
+          review_text: document.getElementById('reviewText').value
+        })
+      });
+      
+      const d = await r.json();
+      
+      if (d.ok) {
+        btn.textContent = '✓ Submitted';
+        setTimeout(() => {
+          btn.textContent = 'Submit Review';
+          btn.disabled = false;
+          document.getElementById('deleteReviewBtn').style.display = 'block';
+          loadReviews();
+          location.reload();
+        }, 1000);
+      } else {
+        alert('Error: ' + d.error);
+        btn.textContent = 'Submit Review';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      alert('Failed to submit review');
+      btn.textContent = 'Submit Review';
+      btn.disabled = false;
+    }
+  });
+
+  async function deleteReview() {
+    if (!confirm('Are you sure you want to delete your review?')) return;
+    
+    try {
+      const r = await fetch('/dashboard/api/marketplace/' + listingId + '/review', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      const d = await r.json();
+      
+      if (d.ok) {
+        alert('Review deleted');
+        location.reload();
+      } else {
+        alert('Error: ' + d.error);
+      }
+    } catch (e) {
+      alert('Failed to delete review');
+    }
+  }
+
+  // Check if user has acquired this overlay
+  async function checkAcquisition() {
+    if (!currentUserId) return;
+    
+    try {
+      const r = await fetch('/dashboard/api/marketplace/' + listingId + '/check-acquisition', {
+        credentials: 'include'
+      });
+      const d = await r.json();
+      
+      if (d.acquired) {
+        hasAcquired = true;
+        document.getElementById('reviewFormContainer').style.display = 'block';
+      }
+    } catch (e) {
+      console.error('Failed to check acquisition:', e);
+    }
+  }
+
+  // Load reviews on page load
+  loadReviews();
+  checkAcquisition();
+  </script>
+
+  <!-- Report Button (add to purchase card, after creator card) -->
+  <div class="pt-2 border-t border-gray-800">
+    <button onclick="openReportModal()" class="w-full px-3 py-2 text-xs text-gray-400 hover:text-red-400 transition-colors">
+      🚩 Report this listing
+    </button>
+  </div>
+
+  <!-- Report Modal -->
+  <div id="reportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-md w-full p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-white">Report Listing</h3>
+        <button onclick="closeReportModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      
+      <form id="reportForm" class="space-y-4">
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Reason for report *</label>
+          <select id="reportReason" required class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            <option value="">Select a reason...</option>
+            <option value="inappropriate_content">Inappropriate content</option>
+            <option value="copyright_violation">Copyright violation</option>
+            <option value="misleading_description">Misleading description</option>
+            <option value="broken_overlay">Broken/non-functional overlay</option>
+            <option value="spam">Spam or scam</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">Additional details (optional)</label>
+          <textarea 
+            id="reportDetails" 
+            rows="4"
+            placeholder="Provide more information about the issue..."
+            class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
+          ></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button type="submit" id="submitReportBtn"
+                  class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-white font-semibold transition-colors">
+            Submit Report
+          </button>
+          <button type="button" onclick="closeReportModal()"
+                  class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-gray-300 font-semibold transition-colors">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+  function openReportModal() {
+    document.getElementById('reportModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeReportModal() {
+    document.getElementById('reportModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    document.getElementById('reportForm').reset();
+  }
+
+  document.getElementById('reportForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const reason = document.getElementById('reportReason').value;
+    const details = document.getElementById('reportDetails').value;
+    
+    if (!reason) {
+      alert('Please select a reason');
+      return;
+    }
+    
+    const btn = document.getElementById('submitReportBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    
+    try {
+      const r = await fetch('/dashboard/api/marketplace/' + listingId + '/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason, details })
+      });
+      
+      const d = await r.json();
+      
+      if (d.ok) {
+        alert('Thank you for your report. We will review it shortly.');
+        closeReportModal();
+      } else {
+        alert('Error: ' + d.error);
+        btn.textContent = 'Submit Report';
+        btn.disabled = false;
+      }
+    } catch (e) {
+      alert('Failed to submit report');
+      btn.textContent = 'Submit Report';
+      btn.disabled = false;
+    }
+  });
+
+  // Close modal on escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeReportModal();
+  });
+
+  // Close modal on backdrop click
+  document.getElementById('reportModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'reportModal') closeReportModal();
+  });
+  </script>
+</body>
+</html>

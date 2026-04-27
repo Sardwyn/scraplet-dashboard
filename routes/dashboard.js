@@ -1,5 +1,6 @@
 // /routes/dashboard.js
 import express from "express";
+import { getPipelineHealth } from "../src/services/pipelineHealth.js";
 import db from "../db.js";
 import requireAuth from "../utils/requireAuth.js";
 import { getValidUserAccessToken } from "../services/kickUserTokens.js";
@@ -1335,6 +1336,7 @@ router.post(
  * GET /dashboard
  */
 router.get("/", requireAuth, async (req, res) => {
+  console.log('[dashboard] GET / hit, user:', req.session?.user?.id);
   // ─────────────────────────────────────────────
   // HARD GUARD: Dashboard must NEVER render in iframe
   // ─────────────────────────────────────────────
@@ -1401,7 +1403,7 @@ router.get("/", requireAuth, async (req, res) => {
 
     const { rows: tokenRows } = await db.query(
       `
-      SELECT eat.refresh_token, eat.access_token, eat.expires_at
+      SELECT eat.refresh_token, eat.access_token, eat.expires_at, eat.refresh_error, eat.refresh_failed_at
       FROM public.external_account_tokens eat
       JOIN public.external_accounts ea ON ea.id = eat.external_account_id
       WHERE ea.platform = 'kick' AND ea.user_id = $1
@@ -1412,8 +1414,12 @@ router.get("/", requireAuth, async (req, res) => {
 
     const t = tokenRows[0] || null;
 
-    kick.connected = !!t?.refresh_token || !!t?.access_token;
-    kick.needsReauth = hasExternal && !kick.connected;
+    // connected = refresh_token present AND no refresh error
+    // access_token alone is not enough — it expires and can't be renewed without refresh_token
+    const hasRefreshToken = !!t?.refresh_token;
+    const hasRefreshError = !!t?.refresh_error;
+    kick.connected = hasRefreshToken && !hasRefreshError;
+    kick.needsReauth = hasExternal && (!hasRefreshToken || hasRefreshError);
 
     // Normalize tile state
     if (kick.connected) {
@@ -1620,13 +1626,100 @@ router.get("/", requireAuth, async (req, res) => {
   const tiktok = tiktokRows[0] || null;
 
   // ─────────────────────────────────────────────
+  // Fetch real overlays from DB with element type counts
+  // ─────────────────────────────────────────────
+  let realOverlays = [];
+  let overlayStats = { total: 0, lowerThirds: 0, widgets: 0, shapes: 0, text: 0, images: 0 };
+  try {
+    const { rows: overlayRows } = await db.query(
+      `SELECT id, name, public_id, config_json, created_at, updated_at
+         FROM overlays WHERE user_id = $1 ORDER BY updated_at DESC`,
+      [sessionUser.id]
+    );
+    realOverlays = overlayRows;
+    overlayStats.total = overlayRows.length;
+
+    // Count element types across all overlays
+    for (const ov of overlayRows) {
+      const elements = ov.config_json?.elements || [];
+      for (const el of elements) {
+        if (el.type === 'lower_third') overlayStats.lowerThirds++;
+        else if (el.type === 'widget') overlayStats.widgets++;
+        else if (el.type === 'shape' || el.type === 'path' || el.type === 'boolean') overlayStats.shapes++;
+        else if (el.type === 'text') overlayStats.text++;
+        else if (el.type === 'image') overlayStats.images++;
+      }
+    }
+  } catch (_) { /* non-fatal */ }
+
+  // ─────────────────────────────────────────────
+  // Profile completeness for dashboard card
+  // ─────────────────────────────────────────────
+  let profileCompleteness = { score: 0, pct: 0, hasAvatar: false, hasBanner: false, hasButton: false, hasSocial: false, hasBio: false };
+  try {
+    // Get profile data using same query as profileViewModel
+    const { rows: [pUser] } = await db.query(
+      `SELECT avatar_url, bio, cover_image_url, youtube, twitch, kick
+         FROM users WHERE id = $1`,
+      [sessionUser.id]
+    );
+    const { rows: btnRows } = await db.query(
+      `SELECT COUNT(*) AS cnt FROM custom_buttons WHERE user_id = $1`,
+      [sessionUser.id]
+    );
+    if (pUser) {
+      const hasAvatar = !!(pUser.avatar_url?.trim());
+      const hasBanner = !!(pUser.cover_image_url?.trim());
+      const hasBio = !!(pUser.bio?.trim());
+      const hasButton = Number(btnRows[0]?.cnt || 0) > 0;
+      const hasSocial = !!(pUser.youtube?.trim() || pUser.twitch?.trim() || pUser.kick?.trim());
+      const score = [hasAvatar, hasBanner, hasButton, hasSocial, hasBio].filter(Boolean).length;
+      profileCompleteness = { score, pct: Math.round(score / 5 * 100), hasAvatar, hasBanner, hasButton, hasSocial, hasBio };
+    }
+  } catch (profErr) {
+    console.error('[profileCompleteness FATAL]', profErr?.message);
+  }
+
+  // ─────────────────────────────────────────────
+  // Fetch earnings summary for dashboard card
+  // ─────────────────────────────────────────────
+  let earningsSummary = { stripeOnboarded: false, pendingCents: 0, lifetimeCents: 0 };
+  try {
+    const { rows: earningsRows } = await db.query(
+      `SELECT stripe_connect_onboarded, pending_cents, lifetime_cents
+         FROM user_earnings WHERE user_id = $1 LIMIT 1`,
+      [sessionUser.id]
+    );
+    if (earningsRows.length > 0) {
+      earningsSummary = {
+        stripeOnboarded: !!earningsRows[0].stripe_connect_onboarded,
+        pendingCents: Number(earningsRows[0].pending_cents || 0),
+        lifetimeCents: Number(earningsRows[0].lifetime_cents || 0),
+      };
+    } else {
+      // Check if stripe_connect_onboarded is on the users table
+      const { rows: userEarnings } = await db.query(
+        `SELECT stripe_connect_onboarded FROM users WHERE id = $1 LIMIT 1`,
+        [sessionUser.id]
+      );
+      if (userEarnings.length > 0) {
+        earningsSummary.stripeOnboarded = !!userEarnings[0].stripe_connect_onboarded;
+      }
+    }
+  } catch (_) { /* non-fatal */ }
+
+  // ─────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────
   res.render("layout", {
     tabView: "dashboard",
+    currentPage: "dashboard",
+    currentPage: "dashboard",
     user: sessionUser,
     widgets,
     overlays,
+    realOverlays,
+    overlayStats,
     profileUrl,
     kick,
     youtube,
@@ -1637,6 +1730,8 @@ router.get("/", requireAuth, async (req, res) => {
     scrapbotChannels,
     scrapbotChannelsError,
     tiktok, // Pass to view
+    earningsSummary,
+    profileCompleteness,
   });
 });
 
@@ -2340,27 +2435,106 @@ router.get("/stats", requireAuth, async (req, res) => {
     const weeklyTrends = historyRows.length ? [] : [];
 
     // -----------------------------
-    // SAFE DEFAULTS (critical)
+    // PROFILE ANALYTICS (real data)
     // -----------------------------
-    const profileAnalytics = {
-      views: 0,
-    };
+    let profileAnalytics = { views: 0 };
+    let referrerStats = [];
+    let clickBuckets = [];
+    let clickDetails = [];
+    let heatmapPoints = [];
+    let profileEngagementTrend = { percentChange: 0, dailyViews: [] };
 
-    const referrerStats = [];
-    const clickBuckets = [];
-    const clickDetails = [];
-    const heatmapPoints = [];
+    try {
+      // Total views in selected window
+      const { rows: viewRows } = await db.query(
+        `SELECT COUNT(*) AS total,
+                COUNT(DISTINCT ip_hash) AS unique_visitors
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval`,
+        [userId, selectedWindow]
+      );
+      profileAnalytics = {
+        views: parseInt(viewRows[0]?.total || 0),
+        uniqueVisitors: parseInt(viewRows[0]?.unique_visitors || 0),
+      };
 
-    const profileEngagementTrend = {
-      percentChange: 0,
-      dailyViews: [],
-    };
+      // Daily views for trend
+      const { rows: dailyRows } = await db.query(
+        `SELECT DATE(visited_at) AS day, COUNT(*) AS views
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY day ORDER BY day ASC`,
+        [userId, selectedWindow]
+      );
+      const dailyViews = dailyRows.map(r => ({ date: r.day, views: parseInt(r.views) }));
+
+      // Trend: compare last half vs first half of window
+      const half = Math.floor(dailyViews.length / 2);
+      const firstHalf = dailyViews.slice(0, half).reduce((s, r) => s + r.views, 0);
+      const secondHalf = dailyViews.slice(half).reduce((s, r) => s + r.views, 0);
+      const pctChange = firstHalf > 0 ? Math.round(((secondHalf - firstHalf) / firstHalf) * 100) : 0;
+      profileEngagementTrend = { percentChange: pctChange, dailyViews };
+
+      // Top referrers
+      const { rows: refRows } = await db.query(
+        `SELECT referrer, COUNT(*) AS count
+         FROM public.profile_views
+         WHERE user_id = $1
+           AND visited_at >= NOW() - ($2 || ' days')::interval
+           AND referrer IS NOT NULL AND referrer != ''
+         GROUP BY referrer ORDER BY count DESC LIMIT 10`,
+        [userId, selectedWindow]
+      );
+      referrerStats = refRows.map(r => ({ referrer: r.referrer, count: parseInt(r.count) }));
+
+      // Click buckets by element type
+      const { rows: bucketRows } = await db.query(
+        `SELECT element_type, COUNT(*) AS count
+         FROM public.profile_clicks
+         WHERE user_id = $1
+           AND clicked_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY element_type ORDER BY count DESC`,
+        [userId, selectedWindow]
+      );
+      clickBuckets = bucketRows.map(r => ({ type: r.element_type, count: parseInt(r.count) }));
+
+      // Click details (top clicked elements)
+      const { rows: detailRows } = await db.query(
+        `SELECT element_type, element_label, COUNT(*) AS count
+         FROM public.profile_clicks
+         WHERE user_id = $1
+           AND clicked_at >= NOW() - ($2 || ' days')::interval
+         GROUP BY element_type, element_label ORDER BY count DESC LIMIT 20`,
+        [userId, selectedWindow]
+      );
+      clickDetails = detailRows.map(r => ({
+        type: r.element_type,
+        label: r.element_label,
+        count: parseInt(r.count)
+      }));
+
+      // Heatmap points from click data
+      heatmapPoints = detailRows.map((r, i) => ({
+        type: r.element_type,
+        label: r.element_label,
+        clicks: parseInt(r.count),
+        x: r.element_type === 'button' ? 50 + (i % 3) * 20 : r.element_type === 'social' ? 20 + i * 15 : 50,
+        y: r.element_type === 'button' ? 60 + Math.floor(i / 3) * 15 : r.element_type === 'social' ? 40 : 70 + i * 10,
+        intensity: Math.min(1, parseInt(r.count) / 10),
+      }));
+    } catch (analyticsErr) {
+      console.warn('[dashboard/stats] profile analytics query failed:', analyticsErr.message);
+    }
 
     // -----------------------------
     // Render
     // -----------------------------
     res.render("layout", {
       tabView: "dashboard-stats",
+    currentPage: "stats",
+    currentPage: "stats",
       user: sessionUser,
       isPro: isProUser(sessionUser),
       pageLayout,
@@ -2389,9 +2563,15 @@ router.get("/stats", requireAuth, async (req, res) => {
 /**
  * GET /dashboard/metrics
  */
+router.get("/api/pipeline-health", requireAuth, (req, res) => {
+  res.json(getPipelineHealth());
+});
+
 router.get("/metrics", requireAuth, (req, res) => {
   res.render("layout", {
     tabView: "dashboard-metrics",
+    currentPage: "metrics",
+    currentPage: "metrics",
     user: req.session.user,
     isPro: isProUser(req.session.user),
   });
@@ -2622,6 +2802,8 @@ router.get("/email", requireAuth, async (req, res) => {
 
     return res.render("layout", {
       tabView: "tabs/email",
+    currentPage: "email",
+    currentPage: "email",
       user: sessionUser,
       isPro: pro,
 
@@ -2656,6 +2838,8 @@ router.get(["/widgets", "/account"], requireAuth, (req, res) => {
   const tab = req.path.replace(/^\//, "");
   res.render("layout", {
     tabView: `tabs/${tab}`,
+    currentPage: tab,
+    currentPage: tab,
     user: req.session.user,
     isPro: isProUser(req.session.user),
   });
@@ -3309,6 +3493,63 @@ router.get("/widgets/:id/configure", requireAuth, async (req, res) => {
       error: req.query.err ? "Save failed." : "",
     },
   });
+});
+
+
+// GET /dashboard/api/discord/ai-config
+router.get("/api/discord/ai-config", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user?.id;
+    const { rows } = await db.query(
+      `SELECT ai_enabled FROM public.discord_guild_integrations
+       WHERE owner_user_id = $1 AND status = 'active' LIMIT 1`,
+      [userId]
+    );
+    if (!rows.length) return res.json({ ok: true, ai_enabled: false });
+    res.json({ ok: true, ai_enabled: Boolean(rows[0].ai_enabled) });
+  } catch (err) {
+    console.error("[discord/ai-config GET] failed:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+// POST /dashboard/api/discord/ai-config
+router.post("/api/discord/ai-config", requireAuth, express.json(), async (req, res) => {
+  try {
+    const userId = req.session.user?.id;
+    const ai_enabled = Boolean(req.body?.ai_enabled);
+    const { rowCount } = await db.query(
+      `UPDATE public.discord_guild_integrations
+       SET ai_enabled = $1, updated_at = now()
+       WHERE owner_user_id = $2 AND status = 'active'`,
+      [ai_enabled, userId]
+    );
+    if (!rowCount) return res.status(404).json({ ok: false, error: "no_guild" });
+    res.json({ ok: true, ai_enabled });
+  } catch (err) {
+    console.error("[discord/ai-config POST] failed:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
+
+// GET /dashboard/api/scrapbot-status — admin only (user id=4)
+router.get('/api/scrapbot-status', requireAuth, async (req, res) => {
+  if (req.session?.user?.id !== 4) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const resp = await fetch('http://127.0.0.1:3030/admin/bot/kick/status');
+    if (!resp.ok) return res.json({ ok: false, error: 'scrapbot unreachable' });
+    const data = await resp.json();
+    res.json(data);
+  } catch (e) {
+    res.json({ ok: false, error: 'scrapbot unreachable', needsReauth: false });
+  }
+});
+
+// GET /dashboard/api/scrapbot-reauth — admin only (user id=4)
+router.get('/api/scrapbot-reauth', requireAuth, (req, res) => {
+  if (req.session?.user?.id !== 4) return res.status(403).send('Forbidden');
+  res.redirect('https://scrapbot.scraplet.store/admin/bot/kick/start');
 });
 
 export default router;

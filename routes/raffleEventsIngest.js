@@ -160,4 +160,49 @@ router.get("/pull", async (req, res) => {
   }
 });
 
+/**
+ * GET /dashboard/api/raffle/config?owner_user_id=4
+ * Returns raffle widget config for a user (subWeight, joinCommand etc)
+ * Scrapbot calls this when starting a raffle to get weighting settings.
+ */
+router.get('/config', async (req, res) => {
+  try {
+    if (!isScrapbotAuthorized(req)) {
+      return res.status(401).json({ ok: false, error: 'unauthorized' });
+    }
+    const ownerUserId = Number(req.query.owner_user_id);
+    if (!ownerUserId) return res.status(400).json({ ok: false, error: 'owner_user_id required' });
+
+    // Find the raffle widget overlay config for this user
+    const { rows } = await query(
+      `SELECT o.config_json FROM overlays o
+       JOIN jsonb_array_elements(o.config_json->'elements') el ON true
+       WHERE o.user_id = $1
+         AND el->>'type' = 'widget'
+         AND el->>'widgetId' = 'raffle'
+       LIMIT 1`,
+      [ownerUserId]
+    );
+
+    if (!rows.length) {
+      return res.json({ ok: true, subWeight: 1, joinCommand: '!join' });
+    }
+
+    // Find the raffle widget element and extract propOverrides
+    const elements = rows[0].config_json?.elements || [];
+    const raffleEl = elements.find(e => e.type === 'widget' && e.widgetId === 'raffle');
+    const overrides = raffleEl?.propOverrides || {};
+
+    return res.json({
+      ok: true,
+      subWeight:   Number(overrides.subWeight)   || 1,
+      joinCommand: String(overrides.joinCommand  || '!join'),
+      autoDismissSec: Number(overrides.autoDismissSec) || 10,
+    });
+  } catch (err) {
+    console.error('[raffleConfig] error:', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 export default router;

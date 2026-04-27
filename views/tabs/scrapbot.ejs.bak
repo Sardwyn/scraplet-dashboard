@@ -1,0 +1,303 @@
+<% const scrapbot=(typeof scrapbotStatus==="object" && scrapbotStatus) ? scrapbotStatus : {}; const
+  scrapbotOnline=!!scrapbot.online; const scrapbotLastCheck=scrapbot.mod_checked_at || scrapbot.checked_at ||
+  scrapbot.last_check || null; function formatTimestamp(ts) { if (!ts) return "-" ; try { const d=new Date(ts); if
+  (Number.isNaN(d.getTime())) return String(ts); return d.toLocaleString(); } catch (e) { return String(ts); } } %>
+
+  <div class="pc-page">
+
+    <!-- HEADER / NAV -->
+    <div class="flex flex-col gap-4 mb-6 md:flex-row md:items-end md:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold font-display text-white tracking-tight">Scrapbot</h1>
+        <p class="pc-text-muted mt-1">
+          Setup, review, and confidence for your chat automation and moderation.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="/dashboard/moderation" class="pc-btn pc-btn--ghost">
+          Moderation
+        </a>
+        <a href="/dashboard/scrapbot/commands" class="pc-btn pc-btn--ghost">
+          Commands
+        </a>
+        <a href="/dashboard/scrapbot/disco-ui" class="pc-btn pc-btn--ghost">
+          Disco
+        </a>
+      </div>
+    </div>
+
+    <!-- PULSE GRAPH (Real-time Chat Telemetry) -->
+    <a href="/dashboard/stats"
+      class="block pc-panel mb-6 overflow-hidden relative group hover:border-white/20 transition-colors"
+      id="pulse_graph_container" data-platform="<%= scrapbot.platform || 'kick' %>"
+      data-channel="<%= scrapbot.channel_slug || '' %>">
+      <div class="pc-panel-hd !border-b-0 absolute top-0 left-0 w-full z-10 pointer-events-none">
+        <div class="flex items-center justify-between w-full pointer-events-auto">
+          <div>
+            <div class="pc-panel-title flex items-center gap-2">
+              Room Pulse
+              <span id="pulse_live_indicator" class="flex h-2 w-2 rounded-full bg-red-500 animate-pulse hidden"></span>
+            </div>
+            <div class="pc-panel-sub">Real-time engagement & activity metrics.</div>
+          </div>
+          <div class="flex items-center gap-4 text-[10px] uppercase tracking-widest font-bold text-white/40">
+            <div class="flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500/80"></span> EI
+            </div>
+            <div class="flex items-center gap-1.5 group-hover:text-white/60 transition-colors">
+              <span class="w-2 h-2 rounded-full bg-emerald-500/80"></span> MPM
+            </div>
+            <div class="ml-2 pl-2 border-l border-white/5 text-white/20 group-hover:text-white/40 transition-colors">
+              Click for Stats &rarr;
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="h-[180px] w-full relative mt-8">
+        <!-- Canvas for the graph -->
+        <canvas id="pulse_canvas" class="w-full h-full cursor-crosshair"></canvas>
+
+        <!-- Hover tooltip -->
+        <div id="pulse_tooltip"
+          class="absolute hidden pointer-events-none bg-black/90 border border-white/10 p-2 rounded text-[10px] z-50 backdrop-blur-sm min-w-[120px]">
+          <div id="pulse_tooltip_time" class="text-white/40 mb-1 border-b border-white/5 pb-1"></div>
+          <div class="flex justify-between gap-4">
+            <span class="text-white/60">Engagement:</span>
+            <span id="pulse_tooltip_ei" class="font-mono text-blue-400"></span>
+          </div>
+          <div class="flex justify-between gap-4">
+            <span class="text-white/60">Msgs/min:</span>
+            <span id="pulse_tooltip_mpm" class="font-mono text-emerald-400"></span>
+          </div>
+          <div class="flex justify-between gap-4">
+            <span class="text-white/60">Viewers:</span>
+            <span id="pulse_tooltip_viewers" class="font-mono text-white/90"></span>
+          </div>
+          <div class="flex justify-between gap-4 mt-1 border-t border-white/5 pt-1">
+            <span class="text-white/60">Mood:</span>
+            <span id="pulse_tooltip_mood" class="font-mono text-yellow-400 truncate max-w-[80px]"></span>
+          </div>
+          <div id="pulse_tooltip_state" class="mt-1 font-bold italic text-center text-white/80"></div>
+        </div>
+
+        <!-- Initial Loader -->
+        <div id="pulse_loader"
+          class="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-opacity duration-500">
+          <div class="text-xs text-white/40 animate-pulse font-mono tracking-widest uppercase">Initializing Pulse...
+          </div>
+        </div>
+      </div>
+    </a>
+
+    <!-- STATUS ROW -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+
+      <!-- Status -->
+      <div class="pc-panel">
+        <div class="pc-panel-bd text-center py-6">
+          <div class="text-xs uppercase tracking-wider text-white/40 font-bold mb-2">Status</div>
+          <div class="text-3xl font-bold font-mono <%= scrapbotOnline ? 'text-green-400' : 'text-red-400' %>">
+            <%= scrapbotOnline ? 'ONLINE' : 'OFFLINE' %>
+          </div>
+          <div class="text-xs text-white/30 mt-2 font-mono">
+            Last check: <%= scrapbotLastCheck ? formatTimestamp(scrapbotLastCheck) : '-' %>
+          </div>
+
+          <!-- Connected Platforms List -->
+          <div class="mt-4 flex flex-wrap gap-2 justify-center">
+            <% if (locals.connectedPlatforms?.kick) { %>
+              <div
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#53fc18]/10 text-[#53fc18] border border-[#53fc18]/20">
+                Kick</div>
+              <% } %>
+                <% if (locals.connectedPlatforms?.twitch) { %>
+                  <div
+                    class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#9146FF]/10 text-[#9146FF] border border-[#9146FF]/20">
+                    Twitch</div>
+                  <% } %>
+                    <% if (locals.connectedPlatforms?.youtube) { %>
+                      <div
+                        class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#FF0000]/10 text-[#FF0000] border border-[#FF0000]/20">
+                        YouTube</div>
+                      <% } %>
+                        <% if (locals.connectedPlatforms?.tiktok) { %>
+                          <div
+                            class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/20">
+                            TikTok</div>
+                          <% } %>
+                            <% if (locals.connectedPlatforms?.discord) { %>
+                              <div
+                                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-[#5865F2]/10 text-[#5865F2] border border-[#5865F2]/20">
+                                Discord</div>
+                              <% } %>
+          </div>
+
+          <% if (scrapbot.error) { %>
+            <div class="text-xs text-red-400 mt-2 font-mono bg-red-500/10 p-1 rounded">
+              <%= scrapbot.error %>
+            </div>
+            <% } %>
+        </div>
+      </div>
+
+      <!-- Moderation Mode -->
+      <div class="pc-panel">
+        <div class="pc-panel-bd text-center py-6">
+          <div class="text-xs uppercase tracking-wider text-white/40 font-bold mb-2">Moderation</div>
+          <div class="text-2xl font-bold text-white mb-1">
+            <%= scrapbot.moderation_mode || '-' %>
+          </div>
+          <% if (typeof scrapbot.moderation_recent_count==='number' ) { %>
+            <div class="text-sm font-mono text-white/80 mt-2">
+              <%= scrapbot.moderation_recent_count %> actions
+                <% if (scrapbot.current_session?.status==='live' ) { %>
+                  <span class="text-xs text-white/50 block">Current Stream Session</span>
+                  <% } else if (scrapbot.current_session?.status==='ended' ) { %>
+                    <span class="text-xs text-white/50 block">Last Stream Session</span>
+                    <% } else { %>
+                      <span class="text-xs text-white/50 block">Lifetime</span>
+                      <% } %>
+            </div>
+            <% } %>
+              <div class="text-[10px] text-white/50 px-4 mt-1">
+                <%= scrapbot.moderation_note || 'Review and adjust settings in Moderation.' %>
+              </div>
+        </div>
+      </div>
+
+      <!-- Connected Channel -->
+      <div class="pc-panel">
+        <div class="pc-panel-bd text-center py-6">
+          <div class="text-xs uppercase tracking-wider text-white/40 font-bold mb-2">Connected</div>
+          <div class="text-2xl font-bold text-white mb-1 tracking-tight">
+            <%= scrapbot.channel_slug ? '@' + scrapbot.channel_slug : (scrapbot.channel || '-' ) %>
+          </div>
+          <div class="text-xs text-white/30 mt-2 uppercase tracking-widest">
+            <%= scrapbot.platform ? scrapbot.platform : '-' %>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- HEALTH & NEXT STEPS -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Health -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Health</div>
+            <div class="pc-panel-sub">Quick signals that Scrapbot is alive.</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="space-y-0">
+
+            <div class="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+              <span class="pc-text-muted text-sm">Ingest Status</span>
+              <span class="font-mono text-sm <%= scrapbot.ingest_ok ? 'text-green-400' : 'text-white/30' %>">
+                <%= scrapbot.ingest_ok ? 'OK' : '-' %>
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+              <span class="pc-text-muted text-sm">Last Event</span>
+              <span class="font-mono text-sm text-white/70">
+                <%= scrapbot.last_event_at ? formatTimestamp(scrapbot.last_event_at) : '-' %>
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+              <span class="pc-text-muted text-sm">Unique Users (Session)</span>
+              <span class="font-mono text-sm text-white/70">
+                <%= (scrapbot.unique_users_short ?? '-' ) %>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Steps -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Next Steps</div>
+            <div class="pc-panel-sub">Setup checklist</div>
+          </div>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="space-y-2">
+
+            <a href="/account"
+              class="block p-3 rounded group hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/50 group-hover:bg-white/20 group-hover:text-white">
+                  1</div>
+                <div class="text-sm text-white/80 group-hover:text-white">Connect your Kick account</div>
+              </div>
+            </a>
+
+            <div class="block p-3 rounded border border-transparent">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/50">
+                  2</div>
+                <div class="text-sm text-white/60">Invite Scrapbot as moderator</div>
+              </div>
+            </div>
+
+            <a href="/dashboard/moderation"
+              class="block p-3 rounded group hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/50 group-hover:bg-white/20 group-hover:text-white">
+                  3</div>
+                <div class="text-sm text-white/80 group-hover:text-white">Set moderation rules</div>
+              </div>
+            </a>
+
+            <a href="/dashboard/scrapbot/commands"
+              class="block p-3 rounded group hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
+              <div class="flex items-center gap-3">
+                <div
+                  class="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white/50 group-hover:bg-white/20 group-hover:text-white">
+                  4</div>
+                <div class="text-sm text-white/80 group-hover:text-white">Configure commands (optional)</div>
+              </div>
+            </a>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MODERATION REVIEW (Added by Antigravity) -->
+    <div class="pc-panel mt-6">
+      <div class="pc-panel-hd">
+        <div>
+          <div class="pc-panel-title">Moderation Review</div>
+          <div class="pc-panel-sub">Recent moderation decisions taken by Scrapbot.</div>
+        </div>
+      </div>
+      <div class="pc-panel-bd">
+        <div id="scrapbot_moderation_review" class="space-y-4">
+          <div class="text-xs text-white/30 italic">Loading reviews...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+
+  <script type="application/json" id="scrapbot_moderation_data">
+  <%- JSON.stringify(moderationReviews || []) %>
+</script>
+  <script src="/js/scrapbot-tab.js"></script>
+  <script src="/js/pulse-graph.js"></script>

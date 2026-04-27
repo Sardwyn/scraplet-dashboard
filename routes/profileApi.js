@@ -32,6 +32,14 @@ const DEFAULT_APPEARANCE = {
   background: 'hero-dark',
   buttonStyle: 'solid',
   cardStyle: 'glass',
+  canvasBg: '',               // CSS background value for the page canvas
+  canvasVideo: '',            // URL for background video
+  qrEnabled: true,            // show QR code toggle on public profile
+  bioFont: '',                // Google Font name for bio and name text
+  bioFontSize: 'md',          // bio text size: sm/md/lg
+  nameFontSize: 'md',         // display name size: sm/md/lg/xl
+  cardOpacity: 1.0,           // card background opacity 0-1
+  cardBlur: 12,               // card backdrop blur in px
 };
 
 function normaliseAppearance(raw) {
@@ -50,6 +58,35 @@ function normaliseAppearance(raw) {
   // Simple passthrough for the rest for now
   if (raw.background && typeof raw.background === 'string') {
     out.background = raw.background.trim();
+  }
+
+  if (raw.canvasBg !== undefined) {
+    out.canvasBg = typeof raw.canvasBg === 'string' ? raw.canvasBg.slice(0, 500) : '';
+  }
+  if (raw.canvasVideo !== undefined) {
+    out.canvasVideo = typeof raw.canvasVideo === 'string' ? raw.canvasVideo.slice(0, 500) : '';
+  }
+  if (raw.qrEnabled !== undefined) {
+    out.qrEnabled = raw.qrEnabled !== false;
+  }
+  if (raw.bioFont !== undefined) {
+    out.bioFont = typeof raw.bioFont === 'string' ? raw.bioFont.slice(0, 100) : '';
+  }
+  if (raw.bioFontSize !== undefined) {
+    const allowed = ['sm', 'md', 'lg'];
+    out.bioFontSize = allowed.includes(raw.bioFontSize) ? raw.bioFontSize : 'md';
+  }
+  if (raw.nameFontSize !== undefined) {
+    const allowed = ['sm', 'md', 'lg', 'xl'];
+    out.nameFontSize = allowed.includes(raw.nameFontSize) ? raw.nameFontSize : 'md';
+  }
+  if (raw.cardOpacity !== undefined) {
+    const v = parseFloat(raw.cardOpacity);
+    out.cardOpacity = isFinite(v) ? Math.max(0, Math.min(1, v)) : 1.0;
+  }
+  if (raw.cardBlur !== undefined) {
+    const v = parseInt(raw.cardBlur);
+    out.cardBlur = isFinite(v) ? Math.max(0, Math.min(40, v)) : 12;
   }
 
   if (raw.buttonStyle && typeof raw.buttonStyle === 'string') {
@@ -119,12 +156,16 @@ router.post(
         [relativePath, userId]
       );
 
-      return res.json({
-        ok: true,
-        cover_image_url: relativePath,
-      });
+      // Redirect back to editor (same pattern as avatar upload)
+      if (String(req.headers.accept || '').includes('text/html')) {
+        return res.redirect('/profile/editor?cover=ok');
+      }
+      return res.json({ ok: true, cover_image_url: relativePath });
     } catch (err) {
       console.error('[profileApi] POST /cover failed:', err);
+      if (String(req.headers.accept || '').includes('text/html')) {
+        return res.redirect('/profile/editor?cover=error');
+      }
       return res.status(500).json({ ok: false, error: 'Failed to upload cover' });
     }
   }
@@ -1432,7 +1473,17 @@ router.post('/appearance', requireAuth, async (req, res) => {
 
   try {
     const incoming = req.body || {};
-    const appearance = normaliseAppearance(incoming);
+
+    // Read current appearance from DB first, then merge incoming on top
+    const { rows: currentRows } = await db.query(
+      'SELECT appearance FROM users WHERE id = $1',
+      [userId]
+    );
+    const currentAppearance = currentRows[0]?.appearance || {};
+
+    // Merge: start from current DB values, apply incoming changes
+    const merged = { ...DEFAULT_APPEARANCE, ...currentAppearance, ...incoming };
+    const appearance = normaliseAppearance(merged);
 
     await db.query(
       `

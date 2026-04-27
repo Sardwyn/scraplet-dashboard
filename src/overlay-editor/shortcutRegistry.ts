@@ -28,7 +28,9 @@ export type ShortcutKey =
   | "Click"
   | "Double Click"
   | "Arrow"
-  | "Esc";
+  | "Esc"
+  | "S"
+  | "Z";
 
 export type ShortcutDef = {
   id: string;
@@ -78,6 +80,18 @@ export const shortcutRegistry: ShortcutDef[] = [
   { id: "timeline-add-keyframe", category: "Timeline", label: "Add Keyframe at Cursor", keys: ["Double Click"], showInCheatsheet: true },
   { id: "timeline-duplicate-keyframe", category: "Timeline", label: "Duplicate Keyframe", keys: ["Alt", "Drag"], showInCheatsheet: true },
   { id: "duplicate", category: "Edit", label: "Duplicate Selection", keys: ["Ctrl", "D"], match: { key: "d", ctrlOrMeta: true }, showInCheatsheet: true, showInTooltip: true },
+  { id: "undo", category: "Edit", label: "Undo", keys: ["Ctrl", "Z"], showInCheatsheet: true, showInTooltip: true },
+  { id: "redo", category: "Edit", label: "Redo", keys: ["Ctrl", "Shift", "Z"], showInCheatsheet: true, showInTooltip: true },
+  { id: "save", category: "Edit", label: "Save", keys: ["Ctrl", "S"], showInCheatsheet: true },
+  { id: "zoom-in", category: "Canvas", label: "Zoom In", keys: ["Ctrl", "+"], showInCheatsheet: true },
+  { id: "zoom-out", category: "Canvas", label: "Zoom Out", keys: ["Ctrl", "-"], showInCheatsheet: true },
+  { id: "escape", category: "Edit", label: "Cancel / Deselect", keys: ["Esc"], showInCheatsheet: true },
+  { id: "undo", category: "Edit", label: "Undo", keys: ["Ctrl", "Z"], showInCheatsheet: true, showInTooltip: true },
+  { id: "redo", category: "Edit", label: "Redo", keys: ["Ctrl", "Shift", "Z"], showInCheatsheet: true, showInTooltip: true },
+  { id: "save", category: "Edit", label: "Save", keys: ["Ctrl", "S"], showInCheatsheet: true },
+  { id: "zoom-in", category: "Canvas", label: "Zoom In", keys: ["Ctrl", "+"], showInCheatsheet: true },
+  { id: "zoom-out", category: "Canvas", label: "Zoom Out", keys: ["Ctrl", "-"], showInCheatsheet: true },
+  { id: "escape", category: "Edit", label: "Cancel / Deselect", keys: ["Esc"], showInCheatsheet: true },
   { id: "delete", category: "Edit", label: "Delete Selection", keys: ["Delete"], showInCheatsheet: true, showInTooltip: true },
 ];
 

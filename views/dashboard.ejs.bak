@@ -1,0 +1,1018 @@
+<div class="w-full">
+
+  <!-- Top -->
+  <div class="flex items-start justify-between gap-6 mb-8">
+    <div class="min-w-0">
+      <div class="inline-flex items-center gap-2 mb-2">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+        <span class="text-xs tracking-[0.28em] text-gray-500">OVERVIEW</span>
+      </div>
+
+      <h1 class="text-4xl font-bold text-gray-100 truncate">
+        Welcome, <%= user.username %>
+      </h1>
+      <p class="text-gray-400 mt-2">
+        Your creator mission-control.
+      </p>
+
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <% if (kick?.connected) { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            Kick: <span class="font-mono text-emerald-200 ml-1">CONNECTED</span>
+            <% if (kick.username) { %>
+              <span class="text-gray-500 ml-2">(@<%= kick.username %>)</span>
+            <% } %>
+          </span>
+        <% } else { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+            Kick: <span class="font-mono text-yellow-200 ml-1">NOT CONNECTED</span>
+          </span>
+        <% } %>
+
+        <span class="pc-chip">
+          Tier: <span class="font-mono text-gray-100 ml-1">
+            <%= isPro ? 'PRO' : 'CREATOR' %>
+          </span>
+        </span>
+
+        <% if (!user?.has_onboarded) { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="font-mono text-yellow-200 ml-1">PROFILE SETUP NEEDED</span>
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+
+  </div>
+
+  <% const widgetsUnlocked = widgets.filter(w => w.status === 'unlocked').length;
+     const widgetsLocked = widgets.filter(w => w.status === 'locked').length;
+     const overlaysInstalled = overlays.filter(o => o.status === 'installed').length;
+     const onboarded = !!user?.has_onboarded;
+  %>
+
+  <!-- Quick Status (replaces the noisy 4-module summary grid) -->
+  <div class="pc-panel mb-10">
+    <div class="pc-panel-hd flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">SYSTEM</span>
+        <span class="text-xs text-gray-300 font-semibold">QUICK STATUS</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost text-xs">Widgets →</a>
+        <a href="/dashboard/overlays" class="pc-btn pc-btn--ghost text-xs">Overlays →</a>
+        <a href="/profile/editor" class="pc-btn pc-btn--ghost text-xs">Profile →</a>
+      </div>
+    </div>
+
+    <div class="pc-panel-bd">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Widgets -->
+        <!-- Overlays — real DB data with element type breakdown -->
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">OVERLAYS</div>
+          <div class="flex items-end justify-between gap-3 mb-3">
+            <div>
+              <div class="text-2xl font-mono pc-text-main">
+                <%= overlayStats?.total || 0 %>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Created</div>
+            </div>
+            <a href="/dashboard/overlays" class="pc-chip text-xs">Manage →</a>
+          </div>
+          <% if ((overlayStats?.total || 0) > 0) { %>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 border-t border-white/5 pt-2">
+            <% if (overlayStats?.lowerThirds > 0) { %>
+            <div class="flex justify-between text-[10px]">
+              <span class="text-gray-500">Lower Thirds</span>
+              <span class="font-mono text-gray-300"><%= overlayStats.lowerThirds %></span>
+            </div>
+            <% } %>
+            <% if (overlayStats?.widgets > 0) { %>
+            <div class="flex justify-between text-[10px]">
+              <span class="text-gray-500">Widgets</span>
+              <span class="font-mono text-gray-300"><%= overlayStats.widgets %></span>
+            </div>
+            <% } %>
+            <% if (overlayStats?.text > 0) { %>
+            <div class="flex justify-between text-[10px]">
+              <span class="text-gray-500">Text</span>
+              <span class="font-mono text-gray-300"><%= overlayStats.text %></span>
+            </div>
+            <% } %>
+            <% if (overlayStats?.shapes > 0) { %>
+            <div class="flex justify-between text-[10px]">
+              <span class="text-gray-500">Shapes</span>
+              <span class="font-mono text-gray-300"><%= overlayStats.shapes %></span>
+            </div>
+            <% } %>
+            <% if (overlayStats?.images > 0) { %>
+            <div class="flex justify-between text-[10px]">
+              <span class="text-gray-500">Images</span>
+              <span class="font-mono text-gray-300"><%= overlayStats.images %></span>
+            </div>
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+
+        <!-- Profile -->
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">PROFILE</div>
+          <% const pct = profileCompleteness?.pct || 0; %>
+          <div class="flex items-end justify-between gap-3 mb-3">
+            <div>
+              <div class="text-2xl font-mono <%= pct === 100 ? 'text-emerald-200' : pct >= 60 ? 'text-indigo-300' : 'text-yellow-200' %>">
+                <%= pct %>%
+              </div>
+              <div class="text-xs text-gray-500 mt-1">Complete</div>
+            </div>
+          </div>
+          <!-- Progress bar -->
+          <div class="w-full h-1.5 rounded-full bg-white/5 mb-3">
+            <div class="h-1.5 rounded-full transition-all duration-500 <%= pct === 100 ? 'bg-emerald-400' : pct >= 60 ? 'bg-indigo-400' : 'bg-yellow-400' %>"
+                 style="width: <%= pct %>%"></div>
+          </div>
+          <!-- Public URL — click to open -->
+          <a href="<%= profileUrl %>" target="_blank" rel="noopener"
+             class="pc-btn pc-btn--ghost text-xs w-full mb-3 truncate block text-center">
+            <%= profileUrl.replace('https://', '') %>
+          </a>
+          <!-- QR code — lazy loaded, same pattern as working profile card -->
+          <div id="profile-qr-wrap" class="hidden mt-2 mb-1">
+            <div class="pc-mini-oled p-3 flex items-center gap-3">
+              <div class="flex-1 text-xs text-gray-400">
+                <div class="font-semibold mb-1">Share your profile</div>
+                <div>Scan to visit your public profile page</div>
+              </div>
+              <div class="flex flex-col items-center gap-2">
+                <img id="profile-qr-img" alt="Profile QR" class="w-[100px] h-[100px] rounded bg-white" />
+                <button onclick="downloadProfileQR()" class="pc-btn pc-btn--ghost text-[9px] px-2 py-1">Download</button>
+              </div>
+            </div>
+          </div>
+          <!-- Action links -->
+          <div class="flex items-center justify-between gap-1 mt-1">
+            <a href="/profile/editor" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">Edit</a>
+            <button onclick="toggleProfileQR()" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">QR</button>
+            <a href="/dashboard/email" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">Leads</a>
+          </div>
+        </div>
+        <!-- Earnings -->
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">EARNINGS</div>
+          <div class="flex items-end justify-between gap-3">
+            <div>
+              <% const pendingDisplay = ((earningsSummary?.pendingCents || 0) / 100).toFixed(2); %>
+              <div class="text-2xl font-mono pc-text-main">
+                $<%= pendingDisplay %>
+              </div>
+              <div class="text-xs pc-text-muted mt-1">Pending payout</div>
+            </div>
+            <% if (!earningsSummary?.stripeOnboarded) { %>
+              <a href="/dashboard/earnings" class="pc-btn pc-btn--primary text-xs">Set up payouts</a>
+            <% } else { %>
+              <a href="/dashboard/earnings" class="pc-chip text-xs">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="font-mono ml-1 text-emerald-200">STRIPE ACTIVE</span>
+              </a>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%
+    /* Derive integration states — multiline JS only (no // comments on same line as code) */
+
+    const kickObj    = (typeof kick    !== 'undefined' && kick)    ? kick    : {};
+    const youtubeObj = (typeof youtube !== 'undefined' && youtube) ? youtube : {};
+    const discordObj = (typeof discord !== 'undefined' && discord) ? discord : {};
+    const tiktokObj  = (typeof tiktok  !== 'undefined' && tiktok)  ? tiktok  : {};
+
+    const kickState = kickObj.connected
+      ? (kickObj.needsReauth ? 'reauth' : 'ok')
+      : 'disconnected';
+
+    const youtubeState = youtubeObj.connected
+      ? (youtubeObj.needsReauth ? 'reauth' : 'ok')
+      : (youtubeObj.username ? 'reauth' : 'not_linked');
+
+    const discordState = discordObj.connected
+      ? 'ok'
+      : (discordObj.needsReauth ? 'reauth' : 'not_linked');
+
+    const tiktokState = tiktokObj.connected
+      ? (tiktokObj.needsReauth ? 'reauth' : 'ok')
+      : (tiktokObj.username ? 'reauth' : 'not_linked');
+
+    const integrations = [
+      {
+        key: 'kick',
+        name: 'Kick',
+        icon: 'K',
+        state: kickState,
+        connectedAs: kickObj.username || null,
+        sub: kickObj.connected
+          ? `Connected as @${kickObj.username || '—'}`
+          : (kickObj.needsReauth
+            ? 'Token expired — reconnect required'
+            : 'Connect to unlock widgets + analytics'),
+        primaryHref: kickObj.connected ? null : '/auth/kick/start',
+        primaryLabel: kickObj.needsReauth ? 'Reconnect' : 'Connect',
+        secondaryFormAction: '/api/integrations/kick/disconnect',
+        secondaryLabel: 'Disconnect',
+        showSecondary: true
+      },
+
+      {
+        key: 'twitch',
+        name: 'Twitch',
+        icon: 'T',
+        state: 'not_linked',
+        sub: 'Not linked yet.',
+        primaryHref: null,
+        primaryLabel: 'Soon',
+        showSecondary: false
+      },
+
+      {
+        key: 'tiktok',
+        name: 'TikTok',
+        icon: 'TT',
+        state: tiktokState,
+        connectedAs: tiktokObj.username || tiktokObj.unique_id || null,
+        sub: tiktokObj.connected
+          ? `Connected as @${tiktokObj.username || tiktokObj.unique_id || 'TikTok'}`
+          : ((tiktokObj.username || tiktokObj.unique_id)
+            ? `Reconnect @${tiktokObj.username || tiktokObj.unique_id}`
+            : 'Not linked yet.'),
+        primaryHref: tiktokObj.connected ? null : '/integrations/tiktok/connect',
+        primaryLabel: tiktokObj.connected
+          ? 'Connected'
+          : ((tiktokObj.username || tiktokObj.unique_id) ? 'Reconnect' : 'Connect'),
+        badge: tiktokObj.liveBadge || null,
+        showSecondary: false
+      },
+
+      {
+        key: 'youtube',
+        name: 'YouTube',
+        icon: 'Y',
+        state: youtubeState,
+        connectedAs: youtubeObj.username || null,
+        sub: youtubeObj.connected
+          ? `Connected as ${youtubeObj.username || 'YouTube'}`
+          : (youtubeObj.username
+            ? `Reconnect ${youtubeObj.username || 'YouTube'}`
+            : 'Not linked yet.'),
+        primaryHref: youtubeObj.connected ? null : '/integrations/youtube/connect',
+        primaryLabel: youtubeObj.connected
+          ? 'Connected'
+          : (youtubeObj.username ? 'Reconnect' : 'Connect'),
+        badge: youtubeObj.liveBadge || null,
+        showSecondary: false
+      },
+
+      {
+        key: 'rumble',
+        name: 'Rumble',
+        icon: 'R',
+        state: 'not_linked',
+        sub: 'Not linked yet.',
+        primaryHref: null,
+        primaryLabel: 'Soon',
+        showSecondary: false
+      },
+
+      {
+        key: 'discord',
+        name: 'Discord',
+        icon: 'D',
+        state: discordState,
+        connectedAs: discordObj.guild_name || discordObj.guild_id || null,
+        sub: discordObj.connected
+          ? `Connected: ${discordObj.guild_name || discordObj.guild_id || 'Server'}`
+          : (discordObj.needsReauth
+            ? 'Token expired — reconnect required'
+            : 'Connect to enable producer channels + controls'),
+        primaryHref: discordObj.connected
+          ? '/dashboard/scrapbot/discord'
+          : '/integrations/discord/connect',
+        primaryLabel: discordObj.connected
+          ? 'Manage'
+          : (discordObj.needsReauth ? 'Reconnect' : 'Connect'),
+        showSecondary: false
+      }
+    ];
+
+    const brokenCount = integrations.filter(i => i.state === 'reauth' || i.state === 'disconnected').length;
+    const notLinkedCount = integrations.filter(i => i.state === 'not_linked').length;
+    const actionRequiredCount = brokenCount + notLinkedCount;
+  %>
+
+  <div class="pc-panel pc-bay mb-10 <%= actionRequiredCount > 0 ? 'pc-bay--alert' : '' %>">
+    <div class="pc-panel-hd flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] pc-text-muted">SYSTEM</span>
+        <span class="text-xs pc-text-dim font-semibold">INTEGRATIONS</span>
+
+        <% if (brokenCount > 0) { %>
+          <span class="pc-chip pc-bay-alert">
+            <span class="pc-bay-alert-dot"></span>
+            <span class="font-mono pc-text-warn">ACTION REQUIRED:</span>
+            <span class="font-mono pc-text-main"><%= brokenCount %></span>
+          </span>
+        <% } else if (notLinkedCount > 0) { %>
+          <span class="pc-chip pc-bay-alert">
+            <span class="pc-bay-alert-dot"></span>
+            <span class="font-mono pc-text-warn">INCOMPLETE:</span>
+            <span class="font-mono pc-text-main"><%= notLinkedCount %></span>
+          </span>
+        <% } else { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="font-mono ml-1 pc-text-accent">ALL GREEN</span>
+          </span>
+        <% } %>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <% if (brokenCount > 0) { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="font-mono pc-text-warn ml-1">Operator:</span>
+            <span class="pc-text-muted">fix broken links</span>
+          </span>
+        <% } else if (notLinkedCount > 0) { %>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
+            <span class="font-mono pc-text-warn ml-1">Operator:</span>
+            <span class="pc-text-muted">link remaining platforms</span>
+          </span>
+        <% } %>
+
+        <a href="/dashboard/integrations" class="pc-btn pc-btn--ghost text-xs">
+          Manage all →
+        </a>
+      </div>
+    </div>
+
+    <div class="pc-panel-bd">
+      <div class="pc-bay-grid grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <% integrations.forEach(i => {
+          let cls = 'pc-int';
+          let stateText = 'SOON';
+          let urgent = false;
+
+          if (i.state === 'ok') { cls += ' pc-int--ok'; stateText = 'CONNECTED'; }
+          else if (i.state === 'reauth') { cls += ' pc-int--warn pc-int--urgent'; stateText = 'REAUTH'; urgent = true; }
+          else if (i.state === 'disconnected') { cls += ' pc-int--bad pc-int--urgent'; stateText = 'DISCONNECTED'; urgent = true; }
+          else if (i.state === 'not_linked') { cls += ' pc-int--link'; stateText = 'NOT LINKED'; }
+          else if (i.state === 'soon') { stateText = 'SOON'; }
+        %>
+
+          <div class="<%= cls %> min-w-0">
+            <div class="pc-int-inner">
+              <div class="pc-int-ico">
+                <span class="font-mono text-sm pc-text-main"><%= i.icon %></span>
+              </div>
+
+              <div class="pc-int-meta">
+                <div class="pc-int-name pc-text-main"><%= i.name %></div>
+
+                <% if (i.state === 'ok' && i.connectedAs) { %>
+                  <div class="pc-int-sub pc-text-muted">
+                    Connected as <span class="font-mono pc-text-accent">@<%= i.connectedAs %></span>
+                  </div>
+                <% } else { %>
+                  <div class="pc-int-sub pc-text-muted"><%= i.sub %></div>
+                <% } %>
+
+                <div class="pc-int-row">
+                  <div class="pc-int-state">
+                    <span class="pc-int-dot <%= urgent ? 'bg-yellow-400' : (i.state === 'ok' ? 'bg-emerald-400' : 'bg-gray-500') %>"></span>
+                    <span class="font-mono
+                      <%= urgent
+                        ? 'pc-text-warn'
+                        : (i.state === 'ok'
+                          ? 'pc-text-accent'
+                          : (i.state === 'not_linked'
+                            ? 'pc-text-warn'
+                            : 'pc-text-muted'))
+                      %>">
+                      <%= stateText %>
+                    </span>
+                  </div>
+
+                  <% if (i.state === 'ok' && i.badge && i.badge.text) { %>
+                    <div class="pc-int-badge">
+                      <span class="font-mono text-xs
+                        <%= i.badge.tone === 'good'
+                          ? 'pc-text-accent'
+                          : (i.badge.tone === 'warn'
+                            ? 'pc-text-warn'
+                            : 'pc-text-muted')
+                        %>">
+                        <%= i.badge.text %>
+                      </span>
+                    </div>
+                  <% } %>
+
+                  <div class="pc-int-actions">
+                    <% if (i.state === 'ok') { %>
+                      <% if (i.showSecondary && i.secondaryFormAction) { %>
+                        <form method="POST" action="<%= i.secondaryFormAction %>">
+                          <button class="pc-btn pc-btn--ghost text-xs"><%= i.secondaryLabel %></button>
+                        </form>
+                      <% } %>
+                    <% } else if (i.state === 'soon') { %>
+                      <span class="pc-btn pc-btn--ghost text-xs opacity-60 cursor-not-allowed select-none">
+                        <%= i.primaryLabel || 'Soon' %>
+                      </span>
+                    <% } else { %>
+                      <% if (i.primaryHref) { %>
+                        <a href="<%= i.primaryHref %>" class="pc-btn pc-btn--primary text-xs"><%= i.primaryLabel %></a>
+                      <% } else { %>
+                        <span class="pc-btn pc-btn--ghost text-xs opacity-60 cursor-not-allowed select-none">
+                          <%= i.primaryLabel %>
+                        </span>
+                      <% } %>
+
+                      <% if (i.showSecondary && i.secondaryFormAction) { %>
+                        <form method="POST" action="<%= i.secondaryFormAction %>">
+                          <button class="pc-btn pc-btn--ghost text-xs"><%= i.secondaryLabel %></button>
+                        </form>
+                      <% } %>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Studio / Scrapbot / Public Profile -->
+  <div class="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-12">
+
+    <!-- Studio -->
+    <div class="pc-panel pc-panel--premium pc-panel--premium-studio flex flex-col justify-between">
+      <div>
+        <div class="pc-panel-hd flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-xs tracking-[0.28em] text-gray-500">STATION</span>
+            <span class="text-xs text-gray-300 font-semibold">STUDIO</span>
+          </div>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span class="font-mono ml-1 text-emerald-200">LAUNCH</span>
+          </span>
+        </div>
+
+        <div class="pc-panel-bd">
+          <h2 class="text-xl font-semibold mb-2 text-gray-100">Studio Controller</h2>
+          <p class="text-gray-400 text-sm">
+            Launch the live production controller for your channel.
+          </p>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 pt-0">
+        <a 
+  href="/dashboard/studio/" 
+  target="_blank" 
+  rel="noopener noreferrer"
+  class="pc-btn pc-btn--primary"
+>
+  Launch Studio Controller
+</a>
+      </div>
+    </div>
+
+    <!-- Scrapbot (Premium) -->
+    <div class="pc-panel pc-panel--premium flex flex-col justify-between">
+      <div>
+        <div class="pc-panel-hd flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
+            <span class="text-xs text-gray-100 font-semibold">SCRAPBOT</span>
+            <span class="pc-chip">
+              <span class="inline-block w-2 h-2 rounded-full <%= kick?.connected ? 'bg-emerald-400' : 'bg-yellow-400' %>"></span>
+              <span class="font-mono ml-1 <%= kick?.connected ? 'text-emerald-200' : 'text-yellow-200' %>">
+                <%= kick?.connected ? 'ARMED' : 'LOCKED' %>
+              </span>
+            </span>
+          </div>
+
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full <%= scrapbotChannelsError ? 'bg-orange-400' : 'bg-gray-500' %>"></span>
+            <span class="font-mono ml-1 <%= scrapbotChannelsError ? 'text-orange-200' : 'text-gray-300' %>">
+              <%= scrapbotChannelsError ? 'STATUS DEGRADED' : 'TELEMETRY' %>
+            </span>
+          </span>
+        </div>
+
+        <div class="pc-panel-bd">
+          <%
+            const ss = (typeof scrapbotStatus !== 'undefined' && scrapbotStatus)
+              ? scrapbotStatus
+              : (Array.isArray(scrapbotChannels) ? (scrapbotChannels[0] || null) : null);
+
+            const ms = ((ss?.mod_status || '') + '').toLowerCase();
+
+            // NEW truth signals from /api/status/channels
+            const capable = !!ss?.capable;
+            const activeRecent = !!ss?.active_recent;
+
+            // Prefer capable_checked_at, fallback to mod_checked_at
+            const capableCheckedAt = ss?.capable_checked_at || ss?.mod_checked_at || null;
+
+            let stateLabel = 'NOT CAPABLE';
+            let stateDot   = 'bg-red-500';
+            let stateText  = 'text-red-200';
+            let stateNote  = 'Scrapbot capability has not been verified yet.';
+
+            if (!ss) {
+              stateLabel = 'NOT CONNECTED';
+              stateNote  = 'No channel status available.';
+            } else if (capable) {
+              stateLabel = 'CAPABLE';
+              stateDot   = 'bg-emerald-400';
+              stateText  = 'text-emerald-200';
+              stateNote  = 'Scrapbot can act as a moderator (as of last check).';
+            } else if (ms === 'forbidden' || ms === 'error' || ms === 'not_mod' || ms === 'notmod' || ms === 'unauthorized') {
+              stateLabel = 'NOT CAPABLE';
+              stateDot   = 'bg-amber-400';
+              stateText  = 'text-amber-200';
+              stateNote  = 'Scrapbot is reachable but lacks moderator privileges/authorization.';
+            } else if (ms === 'indeterminate' || ms === 'unknown' || !ms) {
+              stateLabel = 'CAPABILITY UNKNOWN';
+              stateDot   = 'bg-yellow-300';
+              stateText  = 'text-yellow-200';
+              stateNote  = 'Mod capability has not been verified yet.';
+            } else {
+              stateLabel = 'NOT CAPABLE';
+              stateDot   = 'bg-red-500';
+              stateText  = 'text-red-200';
+              stateNote  = 'Capability check is not passing.';
+            }
+
+            if (activeRecent) {
+              stateNote += ' Recent activity detected.';
+            }
+
+            let botOutlineClass = 'pc-bot--red';
+            if (stateDot.includes('emerald')) botOutlineClass = 'pc-bot--green';
+            else if (stateDot.includes('amber')) botOutlineClass = 'pc-bot--amber';
+            else if (stateDot.includes('yellow')) botOutlineClass = 'pc-bot--amber';
+            else if (stateDot.includes('blue')) botOutlineClass = 'pc-bot--blue';
+          %>
+
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Premium mini OLED -->
+            <div class="pc-mini-oled pc-readout">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="text-xs tracking-[0.28em] text-gray-400/80">CORE STATE</div>
+
+                  <div class="mt-2 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full <%= stateDot %>"></span>
+                    <span class="font-mono text-sm <%= stateText %>"><%= stateLabel %></span>
+                  </div>
+
+                  <div class="mt-2 text-xs text-gray-400/80">
+                    <%= stateNote %>
+
+                    <% if (kick?.connected && kick.username) { %>
+                      <span class="ml-2">Kick: <span class="font-mono text-gray-200">@<%= kick.username %></span></span>
+                    <% } %>
+
+                    <% if (capableCheckedAt) { %>
+                      <span class="ml-2">Last check: <span class="font-mono text-gray-300"><%= capableCheckedAt %></span></span>
+                    <% } %>
+
+                    <% if (scrapbotChannelsError) { %>
+                      <span class="ml-2 text-orange-200">Fetch: <span class="font-mono"><%= scrapbotChannelsError %></span></span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div class="pc-bot-outline <%= botOutlineClass %> <%= (kick?.connected && capable) ? 'pc-bot-pulse' : '' %>">
+                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M42 10V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M38 12H46" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <rect x="22" y="18" width="40" height="26" rx="8" stroke="currentColor" stroke-width="2" />
+                    <circle cx="34" cy="31" r="3" stroke="currentColor" stroke-width="2" />
+                    <circle cx="50" cy="31" r="3" stroke="currentColor" stroke-width="2" />
+                    <path d="M32 39H52" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <rect x="18" y="44" width="48" height="26" rx="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M28 56H56" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M18 52H10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M66 52H74" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M30 70V76" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M54 70V76" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Armed systems pips -->
+            <div class="pc-armed-pips">
+              <div class="pc-pip">
+                <div class="k">LINK</div>
+                <div class="v">
+                  <span class="dot <%= kick?.connected ? 'text-emerald-300' : 'text-red-300' %>" style="background: currentColor;"></span>
+                  <span><%= kick?.connected ? 'KICK CONNECTED' : 'KICK NOT LINKED' %></span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">CAPABLE</div>
+                <div class="v">
+                  <span class="dot <%= capable ? 'text-emerald-300' : 'text-red-300' %>" style="background: currentColor;"></span>
+                  <span><%= capable ? 'READY' : 'NOT READY' %></span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">ACTIVITY</div>
+                <div class="v">
+                  <span class="dot <%= activeRecent ? 'text-emerald-300' : 'text-yellow-200' %>" style="background: currentColor;"></span>
+                  <span><%= activeRecent ? 'RECENT' : 'QUIET' %></span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">RULESET</div>
+                <div class="v">
+                  <span class="dot text-yellow-200" style="background: currentColor;"></span>
+                  <span>UNKNOWN</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">FLOODGUARD</div>
+                <div class="v">
+                  <span class="dot text-yellow-200" style="background: currentColor;"></span>
+                  <span>UNKNOWN</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">SWARMGUARD</div>
+                <div class="v">
+                  <span class="dot text-yellow-200" style="background: currentColor;"></span>
+                  <span>UNKNOWN</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">TIMERS</div>
+                <div class="v">
+                  <span class="dot text-yellow-200" style="background: currentColor;"></span>
+                  <span>UNKNOWN</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs text-gray-400/80">
+              <span class="font-mono">Operator note:</span>
+              This panel goes fully live once Scrapbot telemetry reports configured systems (rules, guards, timers).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 pt-0">
+        <div class="flex items-center gap-2">
+          <% if (!kick?.connected) { %>
+            <a href="/auth/kick/start" class="pc-btn pc-btn--primary text-xs">Connect Kick</a>
+          <% } %>
+          <a href="/dashboard/scrapbot" class="pc-btn pc-btn--primary text-sm">Open Scrapbot</a>
+        </div>
+      </div>
+    </div>    <!-- Disco Scrapbot -->
+    <div class="pc-panel pc-panel--premium flex flex-col justify-between">
+      <div>
+        <div class="pc-panel-hd flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
+            <span class="text-xs text-gray-100 font-semibold">DISCO SCRAPBOT</span>
+          </div>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
+            <span class="font-mono ml-1 text-purple-200">DISCO</span>
+          </span>
+        </div>
+
+        <div class="pc-panel-bd">
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Premium mini OLED -->
+            <div class="pc-mini-oled pc-readout">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="text-xs tracking-[0.28em] text-gray-400/80">DISCO STATE</div>
+
+                  <div class="mt-2 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
+                    <span class="font-mono text-sm text-purple-200">READY TO PARTY</span>
+                  </div>
+
+                  <div class="mt-2 text-xs text-gray-400/80">
+                    Disco mode brings the party to your stream with dynamic lighting effects and music-reactive visuals.
+                  </div>
+                </div>
+
+                <div class="pc-bot-outline pc-bot--purple">
+                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <circle cx="42" cy="42" r="20" stroke="currentColor" stroke-width="2" />
+                    <circle cx="42" cy="42" r="8" fill="currentColor" />
+                    <path d="M42 22L46 18M42 62L46 66M22 42L18 46M62 42L66 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M30 30L26 26M54 30L58 26M30 54L26 58M54 54L58 58" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Armed systems pips -->
+            <div class="pc-armed-pips">
+              <div class="pc-pip">
+                <div class="k">LIGHTS</div>
+                <div class="v">
+                  <span class="dot text-purple-300" style="background: currentColor;"></span>
+                  <span>READY</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">MUSIC</div>
+                <div class="v">
+                  <span class="dot text-purple-300" style="background: currentColor;"></span>
+                  <span>SYNCED</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">EFFECTS</div>
+                <div class="v">
+                  <span class="dot text-purple-300" style="background: currentColor;"></span>
+                  <span>LOADED</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs text-gray-400/80">
+              <span class="font-mono">Operator note:</span>
+              Disco Scrapbot transforms your stream into a dance floor with reactive lighting and party effects.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 pt-0">
+        <div class="flex items-center gap-2">
+          <a href="/dashboard/scrapbot/disco-ui" class="pc-btn pc-btn--primary text-sm">Start Party Mode</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scrapbot 3000 -->
+    <div class="pc-panel pc-panel--premium flex flex-col justify-between">
+      <div>
+        <div class="pc-panel-hd flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
+            <span class="text-xs text-gray-100 font-semibold">SCRAPBOT 3000</span>
+          </div>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="font-mono ml-1 text-cyan-200">FUTURE</span>
+          </span>
+        </div>
+
+        <div class="pc-panel-bd">
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Premium mini OLED -->
+            <div class="pc-mini-oled pc-readout">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="text-xs tracking-[0.28em] text-gray-400/80">AI STATE</div>
+
+                  <div class="mt-2 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
+                    <span class="font-mono text-sm text-cyan-200">NEURAL ACTIVE</span>
+                  </div>
+
+                  <div class="mt-2 text-xs text-gray-400/80">
+                    Advanced AI-powered moderation and engagement system with predictive analytics and smart responses.
+                  </div>
+                </div>
+
+                <div class="pc-bot-outline pc-bot--cyan pc-bot-pulse">
+                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="22" y="18" width="40" height="26" rx="8" stroke="currentColor" stroke-width="2" />
+                    <circle cx="34" cy="31" r="3" fill="currentColor" />
+                    <circle cx="50" cy="31" r="3" fill="currentColor" />
+                    <path d="M32 39H52" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <rect x="18" y="44" width="48" height="26" rx="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M28 56H56" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <path d="M42 10L42 18M42 70L42 76" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    <circle cx="42" cy="14" r="2" fill="currentColor" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Armed systems pips -->
+            <div class="pc-armed-pips">
+              <div class="pc-pip">
+                <div class="k">AI CORE</div>
+                <div class="v">
+                  <span class="dot text-cyan-300" style="background: currentColor;"></span>
+                  <span>ONLINE</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">LEARNING</div>
+                <div class="v">
+                  <span class="dot text-cyan-300" style="background: currentColor;"></span>
+                  <span>ACTIVE</span>
+                </div>
+              </div>
+
+              <div class="pc-pip">
+                <div class="k">PREDICT</div>
+                <div class="v">
+                  <span class="dot text-cyan-300" style="background: currentColor;"></span>
+                  <span>ENABLED</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-xs text-gray-400/80">
+              <span class="font-mono">Operator note:</span>
+              Scrapbot 3000 represents the future of stream automation with advanced AI capabilities.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 pb-6 pt-0">
+        <div class="flex items-center gap-2">
+          <button class="pc-btn pc-btn--primary text-sm">Activate AI Mode</button>
+        </div>
+      </div>
+    </div></div> <!-- END PREMIUM PANELS ROW -->
+
+  <!-- Your Overlays -->
+  <div class="mt-10">
+
+    <div class="pc-panel">
+      <div class="pc-panel-hd flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h2 class="text-xl font-bold tracking-wide pc-text-main">Your Overlays</h2>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-indigo-400"></span>
+            INVENTORY
+          </span>
+        </div>
+
+        <span class="pc-chip">
+          Total: <span class="font-mono pc-text-main ml-1"><%= overlays.length %></span>
+        </span>
+      </div>
+
+      <div class="pc-panel-bd">
+        <ul class="flex flex-col gap-4">
+          <% overlays.forEach(item => { %>
+            <li class="pc-panel overflow-hidden group">
+              <div class="pc-panel-hd flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs tracking-[0.28em] pc-text-muted">OVERLAY</span>
+                  <span class="text-xs pc-text-dim font-semibold"><%= (item.status || '').toUpperCase() %></span>
+                </div>
+
+                <% if (item.status === 'locked') { %>
+                  <span class="pc-chip">
+                    <span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>
+                    <span class="font-mono ml-1 pc-text-err">LOCKED</span>
+                  </span>
+                <% } else if (item.status === 'installed') { %>
+                  <span class="pc-chip">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="font-mono ml-1 pc-text-accent">INSTALLED</span>
+                  </span>
+                <% } else { %>
+                  <span class="pc-chip">
+                    <span class="inline-block w-2 h-2 rounded-full bg-gray-500"></span>
+                    <span class="font-mono ml-1 pc-text-muted">UNLOCKED</span>
+                  </span>
+                <% } %>
+              </div>
+
+              <div class="pc-panel-bd">
+                <div class="flex justify-between items-center gap-4">
+                  <div class="flex items-center gap-4 min-w-0">
+                    <div class="pc-icon-box shrink-0 group-hover:scale-105 transition"><%= item.icon %></div>
+                    <div class="min-w-0">
+                      <h3 class="text-lg font-semibold pc-text-main group-hover:text-indigo-300 transition truncate">
+                        <%= item.name %>
+                      </h3>
+                      <p class="text-sm pc-text-muted line-clamp-2"><%= item.description %></p>
+                    </div>
+                  </div>
+
+                  <div class="shrink-0">
+                    <% if (item.status === 'locked') { %>
+                      <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Locked</span>
+                    <% } else if (item.status === 'installed') { %>
+                      <span class="pc-btn pc-btn--ghost text-sm opacity-80 select-none">Installed</span>
+                    <% } else { %>
+                      <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Install</span>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function copyProfileUrl() {
+      const input = document.getElementById('profileUrl');
+      if (!input) return;
+      navigator.clipboard.writeText(input.value);
+    }
+
+    function toggleQR() {
+      const container = document.getElementById('qrContainer');
+      const img = document.getElementById('qrCode');
+      const input = document.getElementById('profileUrl');
+      if (!container || !img || !input) return;
+
+      container.classList.toggle('hidden');
+
+      if (!img.src) {
+        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(input.value)}`;
+      }
+    }
+  </script>
+
+
+<script>
+function toggleProfileQR() {
+  var wrap = document.getElementById('profile-qr-wrap');
+  var img = document.getElementById('profile-qr-img');
+  if (!wrap || !img) return;
+  wrap.classList.toggle('hidden');
+  if (!img.src || img.src === window.location.href) {
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' + encodeURIComponent(document.getElementById('profileUrl')?.value || window.location.origin + '/u/<%= user.username %>');
+  }
+}
+
+function downloadProfileQR() {
+  var img = document.getElementById('profile-qr-img');
+  if (!img || !img.src) return;
+  
+  // Create canvas to download QR at higher resolution
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d');
+  canvas.width = 200;
+  canvas.height = 200;
+  
+  var tempImg = new Image();
+  tempImg.crossOrigin = 'anonymous';
+  tempImg.onload = function() {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, 200, 200);
+    ctx.drawImage(tempImg, 0, 0, 200, 200);
+    
+    canvas.toBlob(function(blob) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'profile-qr-code.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  };
+  tempImg.src = img.src.replace('size=100x100', 'size=200x200');
+}
+</script>
+
+</div>

@@ -1,0 +1,236 @@
+<!-- /views/tabs/scrapbot-3000.ejs -->
+
+<div class="w-full">
+
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="inline-flex items-center gap-2 mb-3">
+      <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+      <span class="text-xs tracking-[0.28em] text-gray-500">AUTOMATION</span>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-100 tracking-tight">Scrapbot 3000</h1>
+    <p class="text-gray-400 mt-2">Next-generation AI-powered stream automation. Coming soon.</p>
+  </div>
+
+  <!-- Status panel -->
+  <div class="pc-panel mb-6">
+    <div class="pc-panel-hd flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">SYSTEM</span>
+        <span class="text-xs text-gray-300 font-semibold">AI CORE STATUS</span>
+      </div>
+      <span class="pc-chip">
+        <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        <span class="font-mono ml-1 text-cyan-200">NEURAL ACTIVE</span>
+      </span>
+    </div>
+    <div class="pc-panel-bd">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] mb-2">AI CORE</div>
+          <div class="text-2xl font-mono pc-text-main">ONLINE</div>
+          <div class="text-xs mt-1">Neural engine ready</div>
+        </div>
+
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] mb-2">LEARNING</div>
+          <div class="text-2xl font-mono pc-text-main">ACTIVE</div>
+          <div class="text-xs mt-1">Model: scrapbot-v1</div>
+        </div>
+
+        <div class="pc-oled pc-readout">
+          <div class="text-xs tracking-[0.28em] mb-2">PREDICT</div>
+          <div class="text-2xl font-mono pc-text-main">ENABLED</div>
+          <div class="text-xs mt-1">Predictive analytics</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Coming soon panels placeholder grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+    <div class="pc-panel opacity-60">
+      <div class="pc-panel-hd flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">MODULE</span>
+        <span class="text-xs text-gray-300 font-semibold">SMART RESPONSES</span>
+        <span class="pc-chip ml-auto">SOON</span>
+      </div>
+      <div class="pc-panel-bd">
+        <p class="text-sm text-gray-400">AI-generated contextual chat responses based on stream activity and viewer history.</p>
+      </div>
+    </div>
+
+    <div class="pc-panel opacity-60">
+      <div class="pc-panel-hd flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">MODULE</span>
+        <span class="text-xs text-gray-300 font-semibold">SENTIMENT ANALYSIS</span>
+        <span class="pc-chip ml-auto">SOON</span>
+      </div>
+      <div class="pc-panel-bd">
+        <p class="text-sm text-gray-400">Real-time chat sentiment tracking with automatic moderation escalation.</p>
+      </div>
+    </div>
+
+    <div class="pc-panel opacity-60">
+      <div class="pc-panel-hd flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">MODULE</span>
+        <span class="text-xs text-gray-300 font-semibold">PREDICTIVE ALERTS</span>
+        <span class="pc-chip ml-auto">SOON</span>
+      </div>
+      <div class="pc-panel-bd">
+        <p class="text-sm text-gray-400">Predict viewer spikes, raid likelihood, and optimal clip moments before they happen.</p>
+      </div>
+    </div>
+
+    <div class="pc-panel opacity-60">
+      <div class="pc-panel-hd flex items-center gap-3">
+        <span class="text-xs tracking-[0.28em] text-gray-500">MODULE</span>
+        <span class="text-xs text-gray-300 font-semibold">AUTO HIGHLIGHTS</span>
+        <span class="pc-chip ml-auto">SOON</span>
+      </div>
+      <div class="pc-panel-bd">
+        <p class="text-sm text-gray-400">Automatically identify and clip highlight moments from your stream using AI detection.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Back link -->
+  <div class="mt-4">
+    <a href="/dashboard/scrapbot" class="pc-btn pc-btn--ghost text-sm">← Back to Scrapbot</a>
+  </div>
+
+  <!-- SCRAPBOT 3000 AI SETTINGS -->
+  <div class="pc-panel mt-6" id="disco-settings-panel">
+    <div class="pc-panel-hd flex items-center justify-between">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs tracking-[0.28em] text-gray-500">AUTOMATION</span>
+          <span class="text-xs text-gray-300 font-semibold">SCRAPBOT 3000</span>
+          <span class="pc-chip">
+            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="font-mono ml-1 text-cyan-200">AI ACTIVE</span>
+          </span>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">Configure AI personality, proactive responses, and stream debriefs.</div>
+      </div>
+      <div id="disco-save-status" class="text-xs text-white/40"></div>
+    </div>
+    <div class="pc-panel-bd space-y-6">
+
+      <!-- Verbosity slider -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm text-white/80 font-medium">Verbosity</label>
+          <span id="verbosity-label" class="text-xs font-mono text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded">—</span>
+        </div>
+        <input type="range" id="verbosity-slider" min="0" max="4" step="1" value="1"
+          class="w-full accent-indigo-500 cursor-pointer">
+        <div class="flex justify-between text-[10px] text-white/30 mt-1">
+          <span>Silent</span>
+          <span>Mentions only</span>
+          <span>Highlights</span>
+          <span>Active</span>
+          <span>Full chaos</span>
+        </div>
+      </div>
+
+      <!-- Proactive toggle -->
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm text-white/80 font-medium">Proactive chat responses</div>
+          <div class="text-xs text-white/40 mt-0.5">Scrapbot chimes in when chat spikes or highlights are detected</div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="proactive-toggle" class="sr-only peer">
+          <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+      </div>
+
+      <!-- Debrief settings -->
+      <div class="border-t border-white/10 pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <div class="text-sm text-white/80 font-medium">Stream debrief</div>
+            <div class="text-xs text-white/40 mt-0.5">Post a summary to Discord when your stream ends</div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="debrief-toggle" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+          </label>
+        </div>
+        <div>
+          <label class="text-xs text-white/50 uppercase tracking-wider">Discord channel ID for debriefs</label>
+          <input type="text" id="debrief-channel-id" placeholder="e.g. 1087720283286274062"
+            class="mt-1 w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500/50">
+          <div class="text-xs text-white/30 mt-1">Right-click a Discord channel → Copy Channel ID</div>
+        </div>
+      </div>
+
+      <button id="disco-save-btn" class="pc-btn pc-btn-primary w-full">
+        Save Settings
+      </button>
+
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const VERBOSITY_LABELS = ['Silent', 'Mentions only', 'Highlights', 'Active', 'Full chaos 🤖'];
+    const slider = document.getElementById('verbosity-slider');
+    const label = document.getElementById('verbosity-label');
+    const proactive = document.getElementById('proactive-toggle');
+    const debriefToggle = document.getElementById('debrief-toggle');
+    const debriefChannel = document.getElementById('debrief-channel-id');
+    const saveBtn = document.getElementById('disco-save-btn');
+    const saveStatus = document.getElementById('disco-save-status');
+
+    slider.addEventListener('input', () => {
+      label.textContent = VERBOSITY_LABELS[slider.value] || slider.value;
+    });
+
+    fetch('/dashboard/api/scrapbot/settings')
+      .then(r => r.json())
+      .then(j => {
+        if (!j.settings) return;
+        const s = j.settings;
+        slider.value = s.verbosity ?? 1;
+        label.textContent = VERBOSITY_LABELS[slider.value];
+        proactive.checked = !!s.proactive_enabled;
+        debriefToggle.checked = s.debrief_enabled !== false;
+        debriefChannel.value = s.debrief_channel_id || '';
+      })
+      .catch(() => { label.textContent = VERBOSITY_LABELS[1]; });
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      saveStatus.textContent = 'Saving...';
+      try {
+        const resp = await fetch('/dashboard/api/scrapbot/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            verbosity: Number(slider.value),
+            proactive_enabled: proactive.checked,
+            debrief_enabled: debriefToggle.checked,
+            debrief_channel_id: debriefChannel.value.trim() || null,
+          }),
+        });
+        const j = await resp.json();
+        saveStatus.textContent = j.ok ? '✓ Saved' : '✗ Error';
+        saveStatus.className = j.ok ? 'text-xs text-emerald-400' : 'text-xs text-red-400';
+      } catch (e) {
+        saveStatus.textContent = '✗ Failed';
+        saveStatus.className = 'text-xs text-red-400';
+      } finally {
+        saveBtn.disabled = false;
+        setTimeout(() => { saveStatus.textContent = ''; saveStatus.className = 'text-xs text-white/40'; }, 3000);
+      }
+    });
+  })();
+  </script>
+
+</div>

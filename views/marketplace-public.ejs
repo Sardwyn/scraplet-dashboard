@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Overlay Marketplace &mdash; Scraplet</title>
+  <meta name="description" content="Browse and download stream overlays created by the Scraplet community." />
+  <% if (marketplaceCss) { %><link rel="stylesheet" href="<%= marketplaceCss %>" /><% } %>
+</head>
+<body>
+<div class="pulp-stage pulp-backdrop-fx min-h-screen text-[#f3efe7]">
+
+  <header class="nav-console"> <!-- TOP BAND --> <div class="border-b border-white/5 py-1.5 bg-black/40"> <div class="pulp-container flex flex-wrap items-center justify-between gap-4"> <div class="flex items-center gap-2"> <span class="w-1.5 h-1.5 rounded-full bg-pulp-teal animate-pulse"></span> <span class="text-[9px] md:text-[10px] font-black tracking-widest uppercase opacity-80">SCRAPLET CONTROL STUDIO</span> <span class="px-1.5 py-0.5 border border-pulp-yellow/40 bg-pulp-yellow/10 text-pulp-yellow text-[8px] font-bold tracking-tighter">ISSUE #01</span> <span class="px-1.5 py-0.5 border border-white/10 bg-white/5 text-white/40 text-[8px] font-bold tracking-tighter">LOADING</span> <span class="px-1.5 py-0.5 border border-pulp-teal/40 bg-pulp-teal/10 text-pulp-teal text-[8px] font-bold tracking-tighter">APPROVED</span> </div> <div class="flex items-center gap-2 text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-white/40"> <span class="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></span>
+SYSTEM ONLINE
+<span class="opacity-30 mx-1">&bull;</span> <span class="text-pulp-yellow opacity-80">DEFENSES ARMED</span> </div> </div> </div> <!-- NAVIGATION BAND --> <div class="nav-rail"> <div class="pulp-container flex items-center justify-between"> <nav class="hidden md:flex items-center gap-1 lg:gap-2"> <a id="nav-dashboard" class="nav-link hidden" href="/dashboard">Dashboard</a> <a class="nav-link" href="/scrapbot">Scrapbot</a> <a class="nav-link" href="/stats">Stats &amp; Profiles</a> <a class="nav-link" href="/widgets">Widgets</a> <a class="nav-link" href="/overlays">Overlays</a> <a class="nav-link" href="/pricing">Pricing</a> <a class="nav-link" href="/roadmap">Roadmap</a> </nav> <!-- Logo/Identity (mobile) --> <a href="/" class="md:hidden flex items-center gap-2"> <span class="font-black text-xs tracking-widest uppercase">SCRAPLET</span> </a> <div class="flex items-center gap-3"> <div class="hidden sm:flex items-center gap-3"> <a id="nav-login" class="nav-chip" href="/auth/login" data-auth data-auth-mode="login">Login</a> <a id="nav-signup" class="btn-pulp btn-pulp-solid !py-1.5 !px-4 !text-[10px]" href="/auth/signup" data-auth data-auth-mode="signup">Get Started</a> </div> <button id="mobile-toggle" class="md:hidden px-3 py-1.5 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/5 transition-colors" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
+Menu
+</button> <script type="module">const e=document.getElementById("mobile-toggle"),t=document.getElementById("mobile-nav");e&&t&&e.addEventListener("click",()=>{const n=t.classList.contains("hidden");t.classList.toggle("hidden",!n),e.setAttribute("aria-expanded",String(n))});</script> </div> </div> <!-- Mobile Nav Slideout --> <div id="mobile-nav" class="hidden fixed inset-x-0 top-full bg-pulp-bg border-t border-white/10 p-6 z-[99]"> <div class="flex flex-col gap-4"> <a id="nav-dashboard-mobile" class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5 hidden" href="/dashboard">Dashboard</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5" href="/scrapbot">Scrapbot</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5" href="/stats">Stats &amp; Profiles</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5" href="/widgets">Widgets</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5" href="/overlays">Overlays</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/5" href="/pricing">Pricing</a> <a class="text-sm font-black uppercase tracking-widest p-2 border-b border-white/10" href="/roadmap">Roadmap</a> <div class="flex flex-col gap-2 mt-4"> <a id="nav-login-mobile" class="w-full text-center py-3 border border-white/10 text-xs font-black uppercase tracking-widest" href="/auth/login" data-auth data-auth-mode="login">Login</a> <a id="nav-signup-mobile" class="w-full text-center py-3 bg-pulp-yellow text-pulp-ink text-xs font-black uppercase tracking-widest shadow-pulp-small" href="/auth/signup" data-auth data-auth-mode="signup">Get Started</a> </div> </div> </div> </div> </header>
+
+  <main class="pulp-page">
+    <div class="pulp-backdrop" aria-hidden="true"></div>
+    <section class="pulp-hero">
+      <div class="pulp-wrap">
+        <div class="pulp-kicker">SCRAPLET &middot; MARKETPLACE</div>
+        <h1 class="pulp-h1">Overlay Marketplace</h1>
+        <p class="pulp-lede">Community-built stream overlays. Browse, preview live, and add to your Scraplet in one click.</p>
+        <% if (user) { %>
+          <div class="pulp-cta-row">
+            <a class="btn btn-solid" href="/dashboard/overlays">Publish an overlay</a>
+            <a class="btn btn-ghost" href="/dashboard/">Dashboard &rarr;</a>
+          </div>
+        <% } else { %>
+          <div class="pulp-cta-row">
+            <a class="btn btn-solid" href="/auth/signup">Get started free</a>
+            <a class="btn btn-ghost" href="/auth/login">Sign in &rarr;</a>
+          </div>
+        <% } %>
+      </div>
+    </section>
+
+    <section class="pb-24">
+      <div class="comic-wrap">
+        <% if (!listings || listings.length === 0) { %>
+          <div style="text-align:center; padding: 6rem 0; color: rgba(255,255,255,0.3);">
+            <div style="font-size:4rem; margin-bottom:1.5rem;">&#127912;</div>
+            <div class="pulp-h1" style="font-size:clamp(24px,3vw,40px); margin-bottom:1rem;">Nothing published yet</div>
+            <p class="pulp-lede" style="margin:0 auto 2rem;">Be the first to publish an overlay to the marketplace.</p>
+            <% if (user) { %>
+              <a href="/dashboard/overlays" class="btn btn-solid">Publish an overlay</a>
+            <% } else { %>
+              <a href="/auth/signup" class="btn btn-solid">Get started free</a>
+            <% } %>
+          </div>
+        <% } else { %>
+          <div class="comic-grid">
+            <% listings.forEach(function(l) { %>
+              <article class="comic-panel panel-medium" style="padding:0; overflow:hidden;">
+                <div style="aspect-ratio:16/9; background:#111; position:relative; overflow:hidden;">
+                  <% if (l.thumbnail_path) { %>
+                    <img src="<%= l.thumbnail_path %>" alt="<%= l.title %>" style="width:100%;height:100%;object-fit:cover;" />
+                  <% } else { %>
+                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                      <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="rgba(0,0,0,0.3)"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    </div>
+                  <% } %>
+                  <a href="/marketplace/<%= l.id %>" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;background:rgba(0,0,0,0.5);color:#fff;font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">View listing &rarr;</a>
+                </div>
+                <div style="padding:1rem;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.5rem;">
+                    <div>
+                      <a href="/marketplace/<%= l.id %>" class="panel-h" style="font-size:15px;display:block;margin:0 0 2px;"><%= l.title %></a>
+                      <span class="panel-p" style="font-size:11px;margin:0;opacity:.6;">by <%= l.creator_username %></span>
+                    </div>
+                    <span style="font-size:13px;font-weight:900;white-space:nowrap;color:<%= l.price_cents === 0 ? '#25c7c7' : 'inherit' %>;">
+                      <%= l.price_cents === 0 ? 'Free' : '$' + (l.price_cents/100).toFixed(2) %>
+                    </span>
+                  </div>
+                  <% if (l.description) { %>
+                    <p class="panel-p" style="font-size:12px;margin:0 0 1rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;"><%= l.description %></p>
+                  <% } %>
+                  <% if (!user) { %>
+                    <a href="/auth/login" class="mini-link">Sign in to get this &rarr;</a>
+                  <% } else if (l.price_cents === 0) { %>
+                    <button onclick="acquireOverlay(<%= l.id %>, this)" class="btn btn-solid ink-btn" style="width:100%;font-size:11px;">Get this free</button>
+                  <% } else { %>
+                    <span class="mini-link" style="opacity:.4;cursor:not-allowed;">Paid &mdash; coming soon</span>
+                  <% } %>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </section>
+  </main>
+
+</div>
+
+<script>
+async function acquireOverlay(listingId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Adding...';
+  try {
+    const r = await fetch('/dashboard/api/marketplace/acquire/' + listingId, { method: 'POST', credentials: 'include' });
+    const d = await r.json();
+    if (d.ok) {
+      btn.textContent = '\u2713 Added!';
+      setTimeout(() => { window.location.href = d.editUrl; }, 800);
+    } else {
+      btn.textContent = 'Error: ' + d.error;
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Failed';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

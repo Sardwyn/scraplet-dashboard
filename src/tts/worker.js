@@ -5,7 +5,10 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import { spawn } from "child_process";
+import { routeJob } from "./voiceRouter.js";
+import { synthesise as elSynthesize } from "./elevenlabs.js";
 import { getPool, query } from "../../db.js";
+import { overlayGate } from "../../services/overlayGate.js";
 
 const WORKER_ID =
   process.env.TTS_WORKER_ID ||
@@ -19,6 +22,9 @@ const STALE_LOCK_MINUTES = toPosInt(process.env.TTS_WORKER_STALE_LOCK_MINUTES, 1
 // Piper config
 const PIPER_BIN = process.env.PIPER_BIN || "/opt/tts/piper/piper/piper";
 
+// Kokoro config
+const KOKORO_BIN = process.env.KOKORO_BIN || "/home/sardwyn/tts/venv/bin/python3";
+const KOKORO_SCRIPT = process.env.KOKORO_SCRIPT || "/home/sardwyn/tts/kokoro_tts.py";
 
 // Voice model path (you installed this)
 const DEFAULT_MODEL =
@@ -188,6 +194,67 @@ function runPiper({ modelPath, text, outPath }) {
   });
 }
 
+function runKokoro({ text, outPath }) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(KOKORO_BIN, [KOKORO_SCRIPT, outPath], {
+      stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, KOKORO_VOICE: "af_sarah" },
+    });
+    let stderr = "";
+    child.stderr.on("data", (d) => (stderr += d.toString()));
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code !== 0) return reject(new Error(`kokoro exited ${code}: ${stderr.slice(-200)}`));
+      resolve();
+    });
+    child.stdin.write(text);
+    child.stdin.end();
+  });
+}
+
+async function publishTtsReady(job, audioUrl, audioMime, audioHash) {
+  try {
+    // Find all overlays for this user that have a tts-player widget
+    const { rows } = await query(
+      `SELECT public_id FROM overlays
+       WHERE user_id = $1
+         AND config_json->'elements' @> '[{"widgetId":"tts-player"}]'`,
+      [job.scraplet_user_id]
+    );
+    for (const overlay of rows) {
+      const packet = {
+        header: {
+          id: `tts-${job.id}-${Date.now()}`,
+          type: 'tts.ready',
+          ts: Date.now(),
+          producer: 'tts-worker',
+          platform: job.platform || 'kick',
+          scope: {
+            tenantId: String(job.scraplet_user_id),
+            overlayPublicId: overlay.public_id,
+          },
+        },
+        payload: {
+          jobId: job.id,
+          audioUrl,
+          audioMime,
+          audioHash,
+          engine: job.engine,
+          voiceId: job.voice_id,
+          senderUsername: job.requested_by_username || null,
+          messageText: job.text_sanitized || job.text || null,
+        },
+      };
+      await overlayGate.publish(String(job.scraplet_user_id), overlay.public_id, packet);
+    }
+    if (rows.length > 0) {
+      console.log(`[tts-worker] published tts.ready to ${rows.length} overlay(s) for job ${job.id}`);
+    }
+  } catch (err) {
+    console.warn(`[tts-worker] publishTtsReady failed for job ${job.id}:`, err?.message || err);
+  }
+}
+
 async function processJob(job) {
   ensureDir(TTS_DIR);
 
@@ -210,13 +277,21 @@ async function processJob(job) {
   const audioPath = path.join(TTS_DIR, filename);
   const audioUrl = `${PUBLIC_UPLOADS_PREFIX}/tts/${filename}`;
 
-  // Generate WAV via Piper
-  await runPiper({ modelPath, text, outPath: audioPath });
+  // Route to correct synthesis backend based on job priority
+  const backend = routeJob(job.priority ?? 0, voiceId);
+  if (backend === 'elevenlabs') {
+    // Map our voice_id to ElevenLabs voice name (strip 'el_' prefix)
+    const elVoiceId = voiceId.startsWith('el_') ? voiceId.slice(3) : voiceId;
+    await elSynthesize(elVoiceId, text, audioPath);
+  } else {
+    // Kokoro (free tier)
+    await runKokoro({ text, outPath: audioPath });
+  }
 
   // Verify file exists and is non-trivial
   const st = fs.statSync(audioPath);
   if (!st.isFile() || st.size < 256) {
-    throw new Error(`Piper wrote invalid audio file: ${audioPath} size=${st.size}`);
+    throw new Error(`TTS wrote invalid audio file: ${audioPath} size=${st.size}`);
   }
 
   // Mark done (DB trigger will emit tts_ready event)
@@ -229,6 +304,8 @@ async function processJob(job) {
     text_sanitized: text,
     cost_cents_estimate: 0,
   });
+
+  await publishTtsReady(job, audioUrl, AUDIO_MIME, audioHash);
 
   console.log(
     `[tts-worker] done id=${job.id} ${platform}/${channelSlug} url=${audioUrl} bytes=${st.size}`

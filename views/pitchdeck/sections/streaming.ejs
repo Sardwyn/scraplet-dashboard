@@ -1,0 +1,52 @@
+<section style="margin-bottom:60px; font-family:'Inter',sans-serif;">
+  <h2 style="font-size:22px;margin-bottom:12px;color:<%= theme.primary %>;border-bottom:2px solid <%= theme.accent %>;display:inline-block;padding-bottom:4px;">
+    🎮 Stream Performance
+  </h2>
+
+  <% if (!streamStats || streamStats.length === 0) { %>
+    <p style="color:#9ca3af;font-style:italic;margin-top:8px;">
+      No stream session data available yet. Stream stats will appear here once live sessions are tracked.
+    </p>
+  <% } else { %>
+    <div style="margin-top:16px;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+      <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+        <thead style="background:<%= theme.primary %>;color:#fff;">
+          <tr>
+            <th style="padding:10px 12px;text-align:left;">Platform</th>
+            <th style="padding:10px 12px;text-align:right;">Streams</th>
+            <th style="padding:10px 12px;text-align:right;">Avg Duration</th>
+            <th style="padding:10px 12px;text-align:right;">Peak CCV</th>
+            <th style="padding:10px 12px;text-align:right;">Avg CCV</th>
+            <th style="padding:10px 12px;text-align:right;">Chat/min</th>
+            <th style="padding:10px 12px;text-align:right;">Return Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% streamStats.forEach((s, i) => { %>
+          <tr style="background:<%= i % 2 === 0 ? '#f9fafb' : '#f3f4f6' %>;color:#111827;">
+            <td style="padding:8px 12px;font-weight:600;text-transform:capitalize;"><%= s.platform %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.total_streams %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.avg_duration_min ? s.avg_duration_min + ' min' : '—' %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.peak_ccv ?? '—' %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.avg_ccv ?? '—' %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.avg_mpm ?? '—' %></td>
+            <td style="padding:8px 12px;text-align:right;"><%= s.avg_return_rate ? s.avg_return_rate + '%' : '—' %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <%
+      const best = streamStats.reduce((a, b) => Number(b.total_streams) > Number(a.total_streams) ? b : a, streamStats[0]);
+    %>
+    <p style="margin-top:14px;font-size:14px;color:#1f2937;background:linear-gradient(90deg,<%= theme.primary %>10,<%= theme.accent %>10);padding:12px 16px;border-left:4px solid <%= theme.primary %>;border-radius:6px;line-height:1.5;">
+      Most active on <strong style="text-transform:capitalize;"><%= best.platform %></strong> with
+      <strong><%= best.total_streams %></strong> recorded streams.
+      <% if (best.avg_duration_min > 0) { %>
+        Average session length of <strong><%= best.avg_duration_min %> minutes</strong> gives sponsors
+        sustained, high-attention exposure per broadcast.
+      <% } %>
+    </p>
+  <% } %>
+</section>

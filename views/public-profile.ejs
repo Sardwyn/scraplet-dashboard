@@ -17,6 +17,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>window.STRIPE_PUBLISHABLE_KEY = "<%= process.env.STRIPE_PUBLISHABLE_KEY || '' %>";</script>
     <link rel="stylesheet" href="/dashboard/css/profile-card.css?v=1" />
 
     <style>
@@ -100,9 +102,45 @@
     </style>
   </head>
 
-  <body class="min-h-screen bg-slate-950 text-white">
+  <%
+    const _canvasBg = _appearance.canvasBg || '';
+    const _canvasVideo = _appearance.canvasVideo || '';
+    const _qrEnabled = _appearance.qrEnabled !== false;
+    const _bioFont = _appearance.bioFont || '';
+    const _bodyStyle = _canvasBg ? 'style="background:' + _canvasBg + '"' : '';
+  %>
+  <% if (_bioFont) { %>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=<%= encodeURIComponent(_bioFont).replace(/%20/g, '+') %>:wght@400;500;600&display=swap" rel="stylesheet" />
+  <% } %>
+  <body class="min-h-screen text-white" <%- _bodyStyle %>>
+    <% if (_canvasVideo) {
+      // Detect YouTube URLs and convert to embed format
+      const _ytMatch = _canvasVideo.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+      const _ytId = _ytMatch ? _ytMatch[1] : null;
+    %>
+    <% if (_ytId) { %>
+      <!-- YouTube background via iframe -->
+      <div style="position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;">
+        <iframe
+          src="https://www.youtube.com/embed/<%= _ytId %>?autoplay=1&mute=1&loop=1&playlist=<%= _ytId %>&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+          style="position:absolute;top:50%;left:50%;width:177.78vh;height:100vh;min-width:100%;min-height:56.25vw;transform:translate(-50%,-50%);border:none;"
+          allow="autoplay; encrypted-media"
+          allowfullscreen
+        ></iframe>
+      </div>
+    <% } else { %>
+      <!-- Direct video file background -->
+      <video autoplay muted loop playsinline
+             style="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+        <source src="<%= _canvasVideo %>" />
+      </video>
+    <% } %>
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1;pointer-events:none;"></div>
+    <% } %>
 
-    <main class="min-h-screen flex items-center justify-center p-6">
+    <main class="min-h-screen flex items-center justify-center p-6" style="position:relative;z-index:2;">
       <div class="w-full max-w-2xl">
         <%- include("partials/profile-card", { profile: _profile, layout: _layout, sectionVisibility:
           _sectionVisibility, customButtons: _customButtons, appearance: _appearance, stats: _stats, marketability:
@@ -110,7 +148,7 @@
       </div>
     </main>
 
-    <% if (_profile && _profile.username) { %>
+    <% if (_profile && _profile.username && _qrEnabled) { %>
       <div class="profile-qr" data-profile-qr>
         <button class="profile-qr-toggle" type="button" aria-label="Show QR">
           QR
@@ -152,6 +190,66 @@
             });
           })();
         </script>
+    <script src="/dashboard/static/js/tts-panel.js"></script>
+
+    <script>
+    (function() {
+      var username = '<%= _profile.username || "" %>';
+      if (!username) return;
+
+      // Track page view
+      fetch('/dashboard/api/profile/track/view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: username,
+          referrer: document.referrer || null
+        }),
+        keepalive: true
+      }).catch(function() {});
+
+      // Track clicks on buttons, social links, tipjar, sponsors
+      document.addEventListener('click', function(e) {
+        var el = e.target.closest('a[href], button[type="button"]');
+        if (!el) return;
+
+        var type = null, id = null, label = null;
+
+        if (el.closest('.pc-buttons')) {
+          type = 'button';
+          id = el.dataset.buttonId || null;
+          label = el.querySelector('.pc-button-label')?.textContent?.trim() || null;
+        } else if (el.closest('.pc-social-row')) {
+          type = 'social';
+          var href = el.getAttribute('href') || '';
+          if (href.includes('x.com') || href.includes('twitter')) id = 'x';
+          else if (href.includes('youtube')) id = 'youtube';
+          else if (href.includes('twitch')) id = 'twitch';
+          else if (href.includes('kick')) id = 'kick';
+          else id = 'other';
+          label = id;
+        } else if (el.closest('.pc-tipjar')) {
+          type = 'tipjar';
+          label = el.querySelector('.pc-button-label')?.textContent?.trim() || 'tip';
+        } else if (el.closest('.pc-sponsors')) {
+          type = 'sponsor';
+          label = el.querySelector('.pc-sponsors-name')?.textContent?.trim() || null;
+        } else if (el.closest('.pc-contact')) {
+          type = 'contact';
+          label = 'contact_form';
+        }
+
+        if (!type) return;
+
+        fetch('/dashboard/api/profile/track/click', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: username, elementType: type, elementId: id, elementLabel: label }),
+          keepalive: true
+        }).catch(function() {});
+      });
+    })();
+    </script>
   </body>
 
   </html>

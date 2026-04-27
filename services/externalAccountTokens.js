@@ -37,13 +37,17 @@ export async function upsertExternalAccountToken({
     )
     VALUES ($1, $2, $3, $4, $5::text[], $6, $7::jsonb, now())
     ON CONFLICT (external_account_id) DO UPDATE SET
-      access_token  = EXCLUDED.access_token,
-      refresh_token = COALESCE(EXCLUDED.refresh_token, external_account_tokens.refresh_token),
-      expires_at    = EXCLUDED.expires_at,
-      scopes        = EXCLUDED.scopes,
-      token_type    = EXCLUDED.token_type,
-      provider_meta = external_account_tokens.provider_meta || EXCLUDED.provider_meta,
-      updated_at    = now()
+      access_token       = EXCLUDED.access_token,
+      refresh_token      = COALESCE(EXCLUDED.refresh_token, external_account_tokens.refresh_token),
+      expires_at         = EXCLUDED.expires_at,
+      scopes             = EXCLUDED.scopes,
+      token_type         = EXCLUDED.token_type,
+      provider_meta      = external_account_tokens.provider_meta || EXCLUDED.provider_meta,
+      -- Clear any previous refresh error — this is a fresh successful auth
+      refresh_error      = NULL,
+      refresh_failed_at  = NULL,
+      refresh_ok_at      = now(),
+      updated_at         = now()
     RETURNING *
     `,
     [

@@ -46,6 +46,7 @@ router.post("/free", express.json({ limit: "32kb" }), async (req, res) => {
     const channelSlug = (req.body?.channelSlug || "").toString().trim();
     const text = (req.body?.text || "").toString();
     const voiceId = (req.body?.voiceId || "en_GB-alba-medium").toString().trim();
+    const requestedByUsername = (req.body?.requestedByUsername || "").toString().trim() || null;
 
     const job = await enqueueTTSJob({
       scrapletUserId,
@@ -56,6 +57,7 @@ router.post("/free", express.json({ limit: "32kb" }), async (req, res) => {
       source: "free_tts",
       priority: 0,
       entitlementId: null,
+      senderUsername: requestedByUsername,
     });
 
     noStore(res);

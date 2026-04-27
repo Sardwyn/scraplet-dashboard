@@ -1,6 +1,7 @@
 <header class="bg-gray-950 border-b border-gray-800 text-gray-200">
+<% const _page = (typeof currentPage !== 'undefined' ? currentPage : ''); %>
   <!-- Control-strip -->
-  <div class="w-full px-6 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/70">
+  <div class="w-full px-6 py-2 flex flex-wrap items-center justify-between gap-3 border-b border-gray-800/70">  
     <div class="flex items-center gap-3 text-xs">
       <span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-gray-800 bg-gray-900/60">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -56,35 +57,30 @@
     </a>
 
     <nav class="flex flex-wrap items-center gap-2 text-sm">
-      <a href="/dashboard"
-        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+      <a href="/dashboard" class="px-3 py-2 rounded-md border <%= (_page === 'dashboard') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
         Overview
       </a>
-      <a href="/profile/editor" class="relative px-3 py-2 rounded-md border border-indigo-700/40
-                bg-indigo-600/10 hover:bg-indigo-600/20
-                text-indigo-300 hover:text-indigo-200
-                font-medium">
+      <a href="/profile/editor" class="relative px-3 py-2 rounded-md border <%= (_page === 'profile') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
         Profile
         <% if (!user?.has_onboarded) { %>
           <span class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-400"></span>
           <% } %>
       </a>
 
-      <a href="/dashboard/scrapbot"
-        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+      <a href="/dashboard/scrapbot" class="px-3 py-2 rounded-md border <%= (_page === 'scrapbot') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
         Scrapbot
       </a>
-      <a href="/dashboard/widgets"
-        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
-        Widgets
-      </a>
-      <a href="/dashboard/overlays"
-        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+      <a href="/dashboard/overlays" class="px-3 py-2 rounded-md border <%= (_page === 'overlays') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
         Overlays
       </a>
-      <a href="/dashboard/email"
-        class="px-3 py-2 rounded-md border border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200">
+      <a href="/dashboard/email" class="px-3 py-2 rounded-md border <%= (_page === 'email') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
         Email
+      </a>
+      <a href="/dashboard/marketplace" class="px-3 py-2 rounded-md border <%= (_page === 'marketplace') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
+        Marketplace
+      </a>
+      <a href="/dashboard/earnings" class="px-3 py-2 rounded-md border <%= (_page === 'earnings') ? 'border-indigo-700/40 bg-indigo-600/10 text-indigo-300 font-medium' : 'border-transparent hover:border-gray-800 hover:bg-gray-900/50 text-gray-200' %>">
+        Earnings
       </a>
 
       <span class="mx-2 text-gray-700">|</span>
@@ -109,9 +105,14 @@
 
     <div class="flex items-center bg-gray-900 border border-gray-800 rounded-md p-0.5" role="group"
       aria-label="Theme Switcher">
-      <button onclick="setTheme('system-saas')" id="btn-saas"
+      <button onclick="setTheme('analog-synth')" id="btn-analog"
         class="px-3 py-1 text-[10px] font-bold tracking-wider rounded text-gray-400 hover:text-gray-200"
         aria-pressed="true">
+        ANALOG
+      </button>
+      <button onclick="setTheme('system-saas')" id="btn-saas"
+        class="px-3 py-1 text-[10px] font-bold tracking-wider rounded text-gray-400 hover:text-gray-200"
+        aria-pressed="false">
         SYSTEM
       </button>
       <button onclick="setTheme('control-room')" id="btn-control"
@@ -126,8 +127,8 @@
 
 <script>
   (function () {
-    // 1. Init from Storage
-    const saved = localStorage.getItem('dashTheme') || 'system-saas';
+    // 1. Init from Storage (default to analog-synth)
+    const saved = localStorage.getItem('dashTheme') || 'analog-synth';
     applyTheme(saved);
 
     // 2. Make global for button clicks
@@ -137,42 +138,38 @@
     };
 
     function applyTheme(theme) {
-      const isControl = theme === 'control-room';
-
       // HTML Attribute
-      if (isControl) {
+      if (theme === 'control-room') {
         document.documentElement.setAttribute('data-theme', 'control-room');
+      } else if (theme === 'analog-synth') {
+        document.documentElement.setAttribute('data-theme', 'analog-synth');
       } else {
         document.documentElement.removeAttribute('data-theme');
       }
 
-      // Button UI (Simple toggle class logic)
+      // Button UI
+      const btnAnalog = document.getElementById('btn-analog');
       const btnSaas = document.getElementById('btn-saas');
       const btnControl = document.getElementById('btn-control');
 
-      if (!btnSaas || !btnControl) return; // safety
+      if (!btnAnalog || !btnSaas || !btnControl) return; // safety
 
-      if (isControl) {
-        // Active: Control
-        btnControl.classList.add('bg-gray-700', 'text-white', 'shadow-sm');
-        btnControl.classList.remove('text-gray-400');
-        btnControl.setAttribute('aria-pressed', 'true');
+      // Reset all buttons
+      [btnAnalog, btnSaas, btnControl].forEach(btn => {
+        btn.classList.remove('bg-gray-700', 'text-white', 'shadow-sm');
+        btn.classList.add('text-gray-400');
+        btn.setAttribute('aria-pressed', 'false');
+      });
 
-        // Inactive: SaaS
-        btnSaas.classList.remove('bg-gray-700', 'text-white', 'shadow-sm');
-        btnSaas.classList.add('text-gray-400');
-        btnSaas.setAttribute('aria-pressed', 'false');
-      } else {
-        // Active: SaaS
-        btnSaas.classList.add('bg-gray-700', 'text-white', 'shadow-sm');
-        btnSaas.classList.remove('text-gray-400');
-        btnSaas.setAttribute('aria-pressed', 'true');
+      // Activate selected button
+      let activeBtn;
+      if (theme === 'analog-synth') activeBtn = btnAnalog;
+      else if (theme === 'control-room') activeBtn = btnControl;
+      else activeBtn = btnSaas;
 
-        // Inactive: Control
-        btnControl.classList.remove('bg-gray-700', 'text-white', 'shadow-sm');
-        btnControl.classList.add('text-gray-400');
-        btnControl.setAttribute('aria-pressed', 'false');
-      }
+      activeBtn.classList.add('bg-gray-700', 'text-white', 'shadow-sm');
+      activeBtn.classList.remove('text-gray-400');
+      activeBtn.setAttribute('aria-pressed', 'true');
     }
   })();
 </script>

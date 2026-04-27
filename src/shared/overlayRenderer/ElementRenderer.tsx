@@ -1,4 +1,8 @@
-import React, { useId } from "react";
+import React, { useId, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getWidgetRenderer } from './widgetContract';
+import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS } from "../effects/parametricEffects";
+import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderMotionTrail, cleanupTrailState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
+import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
 import {
     OverlayAnimation,
     OverlayAnimationPhase,
@@ -35,7 +39,8 @@ import { getFontStack } from "../FontManager";
 import { resolveBinding } from "../bindingEngine";
 import { KeyedMedia } from "../mediaEffects/KeyedMedia";
 import { resolveElementGeometry } from "../geometry/resolveGeometry";
-import { elementToOverlayPath, isClosedPath, svgPathFromCommands } from "../geometry/pathUtils";
+import { elementToOverlayPath, isClosedPath, svgPathFromCommands, translateOverlayPath } from "../geometry/pathUtils";
+import { resolveElementTransform } from "./renderResolver";
 
 type ElementAnimationPhaseMap = Record<string, { phase: OverlayAnimationPhase }>;
 
@@ -64,6 +69,13 @@ function renderShapeGeometry(
 ) {
     if (shape.shape === "rect") {
         const radius = shape.cornerRadiusPx ?? (shape as any).cornerRadius ?? 0;
+        const cornerType = (shape as any).cornerType ?? "round";
+        // Use path for cut/angle corners since <rect> only supports round
+        if (cornerType !== "round" && radius > 0) {
+            const shapePath = shapeElementToPath(shape);
+            const d = svgPathFromCommands(shapePath);
+            return <path d={d} {...props} />;
+        }
         return (
             <rect
                 x={strokeWidth / 2}
@@ -127,19 +139,40 @@ function getAnimationTransition(
 }
 
 function getEnterMotionPresetStyle(
-    preset?: OverlayAnimation["enter"]
+    preset?: OverlayAnimation["enter"],
+    animation?: OverlayAnimation
 ): React.CSSProperties {
+    const d = animation?.distance ?? 32;
+    const s = animation?.scale ?? 0.8;
+    const r = animation?.rotation ?? 90;
+    const b = animation?.blur ?? 12;
     switch (preset) {
         case "fade":
             return { opacity: 0 };
         case "slideUp":
-            return { transform: "translateY(32px)", opacity: 0 };
+            return { transform: `translateY(${d}px)`, opacity: 0 };
         case "slideDown":
-            return { transform: "translateY(-32px)", opacity: 0 };
+            return { transform: `translateY(-${d}px)`, opacity: 0 };
         case "slideLeft":
-            return { transform: "translateX(32px)", opacity: 0 };
+            return { transform: `translateX(${d}px)`, opacity: 0 };
         case "slideRight":
-            return { transform: "translateX(-32px)", opacity: 0 };
+            return { transform: `translateX(-${d}px)`, opacity: 0 };
+        case "scaleIn":
+            return { transform: `scale(${s})`, opacity: 0 };
+        case "scaleOut":
+            return { transform: `scale(${2 - s})`, opacity: 0 };
+        case "zoomIn":
+            return { transform: `scale(${s * 0.5})`, opacity: 0 };
+        case "zoomOut":
+            return { transform: `scale(${1 + (1 - s) * 2})`, opacity: 0 };
+        case "blurIn":
+            return { filter: `blur(${b}px)`, opacity: 0 };
+        case "blurOut":
+            return { filter: `blur(${b}px)`, opacity: 0 };
+        case "rotateIn":
+            return { transform: `rotate(${r}deg) scale(0.8)`, opacity: 0 };
+        case "rotateOut":
+            return { transform: `rotate(-${r}deg) scale(0.8)`, opacity: 0 };
         case "none":
         default:
             return {};
@@ -147,19 +180,40 @@ function getEnterMotionPresetStyle(
 }
 
 function getExitMotionPresetStyle(
-    preset?: OverlayAnimation["exit"]
+    preset?: OverlayAnimation["exit"],
+    animation?: OverlayAnimation
 ): React.CSSProperties {
+    const d = animation?.distance ?? 32;
+    const s = animation?.scale ?? 0.8;
+    const r = animation?.rotation ?? 90;
+    const b = animation?.blur ?? 12;
     switch (preset) {
         case "fade":
             return { opacity: 0 };
         case "slideUp":
-            return { transform: "translateY(-32px)", opacity: 0 };
+            return { transform: `translateY(-${d}px)`, opacity: 0 };
         case "slideDown":
-            return { transform: "translateY(32px)", opacity: 0 };
+            return { transform: `translateY(${d}px)`, opacity: 0 };
         case "slideLeft":
-            return { transform: "translateX(-32px)", opacity: 0 };
+            return { transform: `translateX(-${d}px)`, opacity: 0 };
         case "slideRight":
-            return { transform: "translateX(32px)", opacity: 0 };
+            return { transform: `translateX(${d}px)`, opacity: 0 };
+        case "scaleIn":
+            return { transform: `scale(${s})`, opacity: 0 };
+        case "scaleOut":
+            return { transform: `scale(${2 - s})`, opacity: 0 };
+        case "zoomIn":
+            return { transform: `scale(${1 + (1 - s) * 2})`, opacity: 0 };
+        case "zoomOut":
+            return { transform: `scale(${s * 0.5})`, opacity: 0 };
+        case "blurIn":
+            return { filter: `blur(${b}px)`, opacity: 0 };
+        case "blurOut":
+            return { filter: `blur(${b}px)`, opacity: 0 };
+        case "rotateIn":
+            return { transform: `rotate(-${r}deg) scale(0.8)`, opacity: 0 };
+        case "rotateOut":
+            return { transform: `rotate(${r}deg) scale(0.8)`, opacity: 0 };
         case "none":
         default:
             return {};
@@ -179,7 +233,7 @@ function getAnimationStyle(
         }
 
         return {
-            ...getEnterMotionPresetStyle(animation.enter),
+            ...getEnterMotionPresetStyle(animation.enter, animation),
             pointerEvents: "none",
         };
     }
@@ -194,7 +248,7 @@ function getAnimationStyle(
 
     if (phase === "exiting") {
         return {
-            ...getExitMotionPresetStyle(animation.exit),
+            ...getExitMotionPresetStyle(animation.exit, animation),
             pointerEvents: "none",
         };
     }
@@ -257,8 +311,16 @@ function cssColorWithOpacity(color: string | undefined, opacity = 1) {
 }
 
 function getElementEffects(el: OverlayElement): OverlayEffect[] {
-    if (Array.isArray((el as any).effects) && (el as any).effects.length) {
-        return (el as any).effects.filter((effect: OverlayEffect) => effect?.enabled !== false);
+    const legacyEffects: OverlayEffect[] = Array.isArray((el as any).effects)
+        ? (el as any).effects.filter((effect: OverlayEffect) => effect?.enabled !== false)
+        : [];
+    const parametricEffects: OverlayEffect[] = Array.isArray((el as any).parametricEffects)
+        ? (el as any).parametricEffects
+            .filter((pe: any) => pe?.enabled !== false)
+            .map((pe: any) => ({ ...pe, type: 'parametric' } as any))
+        : [];
+    if (legacyEffects.length || parametricEffects.length) {
+        return [...legacyEffects, ...parametricEffects];
     }
 
     if ((el as any).shadow?.enabled) {
@@ -300,9 +362,34 @@ function buildCssEffectStyle(effects: OverlayEffect[]): React.CSSProperties {
     return filterParts.length ? { filter: filterParts.join(" ") } : {};
 }
 
-function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string) {
-    const active = effects.filter((effect) => effect.enabled !== false);
-    if (!active.length) return null;
+function buildParametricCssStyle(effects: OverlayEffect[], t: number): React.CSSProperties {
+    let result: React.CSSProperties = {};
+    const filterParts: string[] = [];
+    for (const effect of effects) {
+        if (effect.type !== "parametric" || effect.enabled === false) continue;
+        const pe = effect as any;
+        const preset = EFFECT_PRESETS[pe.preset];
+        if (!preset?.produces.includes("css")) continue;
+        const params = pe.keyframes?.length
+            ? interpolateParams(pe.params, pe.keyframes, t, pe.duration ?? 1000)
+            : pe.params;
+        const css = renderParametricEffectCSS(pe.preset, params, t);
+        if (css.filter) filterParts.push(css.filter as string);
+        const { filter: _f, ...rest } = css;
+        result = { ...result, ...rest };
+    }
+    if (filterParts.length) result.filter = filterParts.join(" ");
+    return result;
+}
+
+function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: number) {
+    const nonParametric = effects.filter((effect) => effect.enabled !== false && (effect as any).type !== "parametric");
+    const svgFilterParametric = effects.filter((e: any) =>
+        e.type === "parametric" && e.enabled !== false &&
+        EFFECT_PRESETS[e.preset]?.produces.includes("svgFilter")
+    ) as any[];
+    const active = nonParametric;
+    if (!active.length && !svgFilterParametric.length) return null;
 
     const nodes: React.ReactNode[] = [];
     let currentResult = "SourceGraphic";
@@ -471,6 +558,110 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string) {
                 <feBlend key={`${resultId}-blend`} in={currentResult} in2={clipId} mode="overlay" result={resultId} />
             );
             currentResult = resultId;
+        }
+    });
+
+    // Parametric svgFilter effects — inject primitives into the filter
+    const now2 = t ?? performance.now();
+    svgFilterParametric.forEach((e: any, pi: number) => {
+        const params = e.keyframes?.length
+            ? interpolateParams(e.params, e.keyframes, now2, e.duration ?? 1000)
+            : e.params;
+        const speed = Number(params.speed ?? 1);
+        const intensity = Number(params.intensity ?? 4);
+        const angle = Number(params.angle ?? 0) * Math.PI / 180;
+        const pulse = 0.5 + 0.5 * Math.sin((now2 / 1000) * Math.PI * 2 * speed);
+        const offset = intensity * pulse;
+        const ox = Math.cos(angle) * offset;
+        const oy = Math.sin(angle) * offset;
+        const gox = Math.cos(angle + Math.PI / 2) * offset * Number(params.greenOffset ?? 0.3);
+        const goy = Math.sin(angle + Math.PI / 2) * offset * Number(params.greenOffset ?? 0.3);
+        const pid = `${filterId}-p${pi}`;
+        if (e.preset === "caFull") {
+            // True CA: R channel shifts along angle, B shifts opposite, G stays centred
+            // Use multiply blend to darken overlap areas (more realistic than screen)
+            const gShift = Number(params.greenOffset ?? 0.3);
+            const gox2 = Math.cos(angle) * offset * gShift;
+            const goy2 = Math.sin(angle) * offset * gShift;
+            nodes.push(
+                <React.Fragment key={`ca-${pi}`}>
+                    {/* Isolate and offset each channel */}
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-r`}/>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-g`}/>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result={`${pid}-src-b`}/>
+                    <feOffset in={`${pid}-src-r`} dx={ox} dy={oy} result={`${pid}-r`}/>
+                    <feOffset in={`${pid}-src-g`} dx={gox2} dy={goy2} result={`${pid}-g`}/>
+                    <feOffset in={`${pid}-src-b`} dx={-ox} dy={-oy} result={`${pid}-b`}/>
+                    {/* Recombine channels using screen (additive for light) */}
+                    <feBlend in={`${pid}-r`} in2={`${pid}-g`} mode="screen" result={`${pid}-rg`}/>
+                    <feBlend in={`${pid}-rg`} in2={`${pid}-b`} mode="screen" result={`${pid}-rgb`}/>
+                    {/* Clip to original alpha so CA doesn't bleed outside element */}
+                    <feComposite in={`${pid}-rgb`} in2="SourceAlpha" operator="in" result={`${pid}-clipped`}/>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-clipped`;
+        } else if (e.preset === "caEdges") {
+            // Edge-only CA: detect edges, apply CA only there, blend back with interior
+            const ew = Number(params.edgeWidth ?? 2);
+            nodes.push(
+                <React.Fragment key={`cae-${pi}`}>
+                    {/* Build edge mask */}
+                    <feMorphology in="SourceAlpha" operator="dilate" radius={ew} result={`${pid}-dilate`}/>
+                    <feMorphology in="SourceAlpha" operator="erode" radius={Math.max(0, ew - 1)} result={`${pid}-erode`}/>
+                    <feComposite in={`${pid}-dilate`} in2={`${pid}-erode`} operator="out" result={`${pid}-edge-mask`}/>
+                    {/* Isolate channels */}
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-r`}/>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result={`${pid}-src-b`}/>
+                    {/* Offset channels */}
+                    <feOffset in={`${pid}-src-r`} dx={ox} dy={oy} result={`${pid}-r`}/>
+                    <feOffset in={`${pid}-src-b`} dx={-ox} dy={-oy} result={`${pid}-b`}/>
+                    {/* Recombine R+G+B (G from original) */}
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-g`}/>
+                    <feBlend in={`${pid}-r`} in2={`${pid}-src-g`} mode="screen" result={`${pid}-rg`}/>
+                    <feBlend in={`${pid}-rg`} in2={`${pid}-b`} mode="screen" result={`${pid}-ca`}/>
+                    {/* Apply CA only at edges */}
+                    <feComposite in={`${pid}-ca`} in2={`${pid}-edge-mask`} operator="in" result={`${pid}-edge-ca`}/>
+                    {/* Keep interior unchanged */}
+                    <feComposite in="SourceGraphic" in2={`${pid}-edge-mask`} operator="out" result={`${pid}-interior`}/>
+                    {/* Merge */}
+                    <feBlend in={`${pid}-interior`} in2={`${pid}-edge-ca`} mode="normal" result={`${pid}-merged`}/>
+                    <feComposite in={`${pid}-merged`} in2="SourceAlpha" operator="in"/>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-merged`;
+        } else if (e.preset === "turbulence") {
+            const scale = Number(params.scale ?? 20);
+            const octaves = Number(params.octaves ?? 2);
+            const seed = Math.floor(now2 * speed / 500) % 100;
+            const disp = intensity * pulse;
+            nodes.push(
+                <React.Fragment key={`turb-${pi}`}>
+                    <feTurbulence type="turbulence" baseFrequency={1/scale} numOctaves={octaves} seed={seed} result={`${pid}-turb`}/>
+                    <feDisplacementMap in={currentResult} in2={`${pid}-turb`} scale={disp} xChannelSelector="R" yChannelSelector="G"/>
+                </React.Fragment>
+            );
+        } else if (e.preset === "rgbSplit") {
+            // Clean RGB split — no glitch movement, pure channel separation
+            const amount = Number(params.amount ?? 4);
+            const angle = Number(params.angle ?? 0) * Math.PI / 180;
+            const animate = params.animate === true;
+            const animPulse = animate ? 0.5 + 0.5 * Math.sin((now2 / 1000) * Math.PI * 2 * speed) : 1;
+            const eff = amount * animPulse;
+            const rx = Math.cos(angle) * eff;
+            const ry = Math.sin(angle) * eff;
+            nodes.push(
+                <React.Fragment key={`rgb-${pi}`}>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-r`}/>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result={`${pid}-src-g`}/>
+                    <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result={`${pid}-src-b`}/>
+                    <feOffset in={`${pid}-src-r`} dx={rx} dy={ry} result={`${pid}-r`}/>
+                    <feOffset in={`${pid}-src-b`} dx={-rx} dy={-ry} result={`${pid}-b`}/>
+                    <feBlend in={`${pid}-r`} in2={`${pid}-src-g`} mode="screen" result={`${pid}-rg`}/>
+                    <feBlend in={`${pid}-rg`} in2={`${pid}-b`} mode="screen" result={`${pid}-rgb`}/>
+                    <feComposite in={`${pid}-rgb`} in2="SourceAlpha" operator="in" result={`${pid}-out`}/>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-out`;
         }
     });
 
@@ -696,23 +887,29 @@ function renderFillDefs(
 
 function renderFillLayers(pathD: string, fills: OverlayFill[], scopeId: string) {
     return fills.map((fill, index) => {
+        const key = `${scopeId}-fill-${index}`;
         if (fill.type === "solid") {
-            return renderPathSvg(pathD, {
+            return <React.Fragment key={key}>{renderPathSvg(pathD, {
                 fill: fill.color,
                 fillOpacity: fillOpacityValue(fill),
-            });
+            })}</React.Fragment>;
         }
         if (fill.type === "linear") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` })}</React.Fragment>;
         }
         if (fill.type === "radial") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` })}</React.Fragment>;
         }
         if (fill.type === "conic") {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` })}</React.Fragment>;
         }
         if (fill.type === "pattern" && hasPatternSource(fill)) {
-            return renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` });
+            return <React.Fragment key={key}>{renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` })}</React.Fragment>;
+        }
+        if (fill.type === "texture") {
+            // Texture fills are rendered via child image elements, not as SVG fills
+            // Skip rendering the fill entirely - the child will render on top
+            return null;
         }
         return null;
     });
@@ -810,7 +1007,8 @@ function renderAlignedPathStroke(
                     <clipPath id={`${pathId}-inside-clip`}>
                         <path d={pathD} />
                     </clipPath>
-                </defs>
+                                {renderParentClipPaths(elements, elementsById)}
+</defs>
                 <path
                     d={pathD}
                     fill="none"
@@ -849,6 +1047,589 @@ function renderAlignedPathStroke(
     );
 }
 
+// ── Parametric Effect Overlay ─────────────────────────────────────────────────
+// Hook: animated CSS style for parametric effects
+// Uses a ref to store current style so it's always up-to-date without state lag
+function useParametricCss(effects: OverlayEffect[]): React.CSSProperties {
+    const styleRef = React.useRef<React.CSSProperties>({});
+    const [, forceUpdate] = React.useState(0);
+    const rafRef = React.useRef<number | null>(null);
+    const effectsRef = React.useRef(effects);
+    effectsRef.current = effects;
+
+    React.useEffect(() => {
+        const getCssEffects = () => (effectsRef.current ?? []).filter((e: any) =>
+            e.type === "parametric" && e.enabled !== false &&
+            EFFECT_PRESETS[(e as any).preset]?.produces.includes("css")
+        ) as any[];
+
+        // Always start the loop — effects may be added after mount
+        const start = performance.now();
+        const loop = () => {
+            const active = getCssEffects();
+            if (!active.length) {
+                if (Object.keys(styleRef.current).length > 0) {
+                    styleRef.current = {};
+                    forceUpdate(n => n + 1);
+                }
+                rafRef.current = requestAnimationFrame(loop);
+                return;
+            }
+            const t = performance.now() - start;
+            let filterParts: string[] = [];
+            let combined: React.CSSProperties = {};
+            for (const e of active) {
+                const params = e.keyframes?.length
+                    ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000)
+                    : e.params;
+                const css = renderParametricEffectCSS(e.preset, params, t);
+                const _effOpacity = Number(params.opacity ?? 1);
+                if (css.filter) filterParts.push(css.filter as string);
+                const { filter: _f, opacity: _op, ...rest } = css as any;
+                if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
+                else if (_op !== undefined) (rest as any).opacity = _op;
+                Object.assign(combined, rest);
+            }
+            if (filterParts.length) combined.filter = filterParts.join(" ");
+            styleRef.current = combined;
+            forceUpdate(n => n + 1);
+            rafRef.current = requestAnimationFrame(loop);
+        };
+        rafRef.current = requestAnimationFrame(loop);
+        return () => { if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; } styleRef.current = {}; };
+    }, []); // Run once, reads effects via ref
+
+    return styleRef.current;
+}
+
+// Drives re-renders of ElementRenderer every frame when svgFilter/svgOverlay effects are active
+function useParametricRafTick(effects: OverlayEffect[]): number {
+    const [tick, setTick] = React.useState(0);
+    const effectsRef = React.useRef(effects);
+    effectsRef.current = effects;
+    React.useEffect(() => {
+        let raf: number;
+        const loop = () => {
+            const active = (effectsRef.current ?? []).filter((e: any) =>
+                e.type === "parametric" && e.enabled !== false &&
+                (EFFECT_PRESETS[e.preset]?.produces.includes("svgFilter") ||
+                 EFFECT_PRESETS[e.preset]?.produces.includes("svgOverlay"))
+            );
+            if (active.length) setTick(t => t + 1);
+            raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+    return tick;
+}
+
+
+
+// ── Text-to-SVG-path via canvas alpha trace ───────────────────────────────────
+const _textPathCache = new Map<string, string>();
+
+function traceTextToSvgPath(
+    text: string,
+    fontStack: string,
+    fontSize: number,
+    fontWeight: number,
+    width: number,
+    height: number,
+    align: string
+): string {
+    const key = `v2|${text}|${fontStack}|${fontSize}|${fontWeight}|${width}|${height}|${align}`;
+    if (_textPathCache.has(key)) return _textPathCache.get(key)!;
+
+    const fallback = `M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z`;
+
+    try {
+        // Render at 2x for better edge quality, then scale back
+        const scale = 2;
+        const cw = Math.round(width * scale);
+        const ch = Math.round(height * scale);
+        const fs = fontSize * scale;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = cw;
+        canvas.height = ch;
+        const ctx = canvas.getContext("2d")!;
+        ctx.font = `${fontWeight} ${fs}px ${fontStack}`;
+        ctx.fillStyle = "#fff";
+        ctx.textBaseline = "middle";
+        if (align === "center") { ctx.textAlign = "center"; ctx.fillText(text, cw / 2, ch / 2, cw - 16 * scale); }
+        else if (align === "right") { ctx.textAlign = "right"; ctx.fillText(text, cw - 8 * scale, ch / 2, cw - 16 * scale); }
+        else { ctx.textAlign = "left"; ctx.fillText(text, 8 * scale, ch / 2, cw - 16 * scale); }
+
+        const raw = ctx.getImageData(0, 0, cw, ch).data;
+
+        // Build binary alpha grid
+        const grid = new Uint8Array(cw * ch);
+        for (let i = 0; i < cw * ch; i++) grid[i] = raw[i * 4 + 3] > 32 ? 1 : 0;
+
+        // Morphological dilation — expand by ~1.5px to merge nearby glyphs into one blob
+        // Keep small so the path stays close to the actual text boundary
+        const dilateR = Math.round(1.5 * scale);
+        const dilated = new Uint8Array(cw * ch);
+        for (let y = 0; y < ch; y++) {
+            for (let x = 0; x < cw; x++) {
+                if (grid[y * cw + x]) { dilated[y * cw + x] = 1; continue; }
+                outer: for (let dy = -dilateR; dy <= dilateR; dy++) {
+                    for (let dx = -dilateR; dx <= dilateR; dx++) {
+                        if (dx * dx + dy * dy > dilateR * dilateR) continue;
+                        const nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < cw && ny >= 0 && ny < ch && grid[ny * cw + nx]) {
+                            dilated[y * cw + x] = 1; break outer;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Moore neighborhood contour tracing (single outer boundary)
+        // Find topmost-leftmost foreground pixel as start
+        let startX = -1, startY = -1;
+        outer2: for (let y = 0; y < ch; y++) {
+            for (let x = 0; x < cw; x++) {
+                if (dilated[y * cw + x]) { startX = x; startY = y; break outer2; }
+            }
+        }
+        if (startX === -1) { _textPathCache.set(key, fallback); return fallback; }
+
+        // 8-directional Moore tracing
+        const dx8 = [-1, -1, 0, 1, 1, 1, 0, -1];
+        const dy8 = [0, -1, -1, -1, 0, 1, 1, 1];
+        const contour: [number, number][] = [];
+        let cx2 = startX, cy2 = startY;
+        // Entry direction: came from left (dir=0 means we check from left)
+        let dir = 6; // start checking from bottom-left
+        const maxSteps = cw * ch;
+        let steps = 0;
+
+        do {
+            contour.push([cx2, cy2]);
+            // Find next boundary pixel by rotating clockwise from backtrack direction
+            const backDir = (dir + 4) % 8;
+            let found = false;
+            for (let i = 1; i <= 8; i++) {
+                const checkDir = (backDir + i) % 8;
+                const nx = cx2 + dx8[checkDir];
+                const ny = cy2 + dy8[checkDir];
+                if (nx >= 0 && nx < cw && ny >= 0 && ny < ch && dilated[ny * cw + nx]) {
+                    dir = checkDir;
+                    cx2 = nx; cy2 = ny;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) break;
+            steps++;
+        } while ((cx2 !== startX || cy2 !== startY) && steps < maxSteps);
+
+        if (contour.length < 4) { _textPathCache.set(key, fallback); return fallback; }
+
+        // Simplify contour using Ramer-Douglas-Peucker
+        function rdp(pts: [number, number][], eps: number): [number, number][] {
+            if (pts.length <= 2) return pts;
+            let maxD = 0, maxI = 0;
+            const [x1, y1] = pts[0], [x2, y2] = pts[pts.length - 1];
+            const len = Math.hypot(x2 - x1, y2 - y1);
+            for (let i = 1; i < pts.length - 1; i++) {
+                const d = len < 0.001
+                    ? Math.hypot(pts[i][0] - x1, pts[i][1] - y1)
+                    : Math.abs((y2 - y1) * pts[i][0] - (x2 - x1) * pts[i][1] + x2 * y1 - y2 * x1) / len;
+                if (d > maxD) { maxD = d; maxI = i; }
+            }
+            if (maxD > eps) {
+                const l = rdp(pts.slice(0, maxI + 1), eps);
+                const r = rdp(pts.slice(maxI), eps);
+                return [...l.slice(0, -1), ...r];
+            }
+            return [pts[0], pts[pts.length - 1]];
+        }
+
+        const simplified = rdp(contour, 1.2 * scale);
+
+        // Scale back to element coordinates and build SVG path
+        const inv = 1 / scale;
+        let d = `M ${(simplified[0][0] * inv).toFixed(1)} ${(simplified[0][1] * inv).toFixed(1)}`;
+        for (let i = 1; i < simplified.length; i++) {
+            d += ` L ${(simplified[i][0] * inv).toFixed(1)} ${(simplified[i][1] * inv).toFixed(1)}`;
+        }
+        d += " Z";
+
+        _textPathCache.set(key, d);
+        return d;
+    } catch (e) {
+        _textPathCache.set(key, fallback);
+        return fallback;
+    }
+}
+
+function useTextShapePath(
+    text: string,
+    fontStack: string,
+    fontSize: number,
+    fontWeight: number,
+    width: number,
+    height: number,
+    align: string,
+    hasPathEffects: boolean
+): string {
+    const [path, setPath] = React.useState("");
+    React.useEffect(() => {
+        if (!hasPathEffects || !text || typeof document === "undefined") return;
+        // Wait for font to be ready
+        const compute = () => {
+            const p = traceTextToSvgPath(text, fontStack, fontSize, fontWeight, width, height, align);
+            setPath(p);
+        };
+        if ((document as any).fonts?.ready) {
+            (document as any).fonts.ready.then(compute);
+        } else {
+            setTimeout(compute, 300);
+        }
+    }, [text, fontStack, fontSize, fontWeight, width, height, align, hasPathEffects]);
+    return path;
+}
+
+function ParametricEffectOverlay({
+    effects, width, height, elementId, borderRadius = 0, shapePath = "",
+}: {
+    effects: OverlayEffect[]; width: number; height: number;
+    elementId: string; borderRadius?: number; shapePath?: string;
+}) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+    const rafRef = useRef<number | null>(null);
+    const [tick, setTick] = useState(0);
+
+    const parametric = effects.filter(e => e.type === "parametric" && e.enabled !== false) as any[];
+    const canvasEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("canvas"));
+    const svgEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("svgOverlay"));
+    const cssEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("css"));
+    const svgEffectsRef = useRef(svgEffects);
+    svgEffectsRef.current = svgEffects;
+
+    // CSS effects: animate via React state, rendered as overlay
+    const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
+    useEffect(() => {
+        if (!cssEffects.length) { setCssOverlayStyle({}); return; }
+        let raf: number;
+        const start = performance.now();
+        const loop = () => {
+            const t = performance.now() - start;
+            let filterParts: string[] = [];
+            let combined: React.CSSProperties = {};
+            for (const e of cssEffects) {
+                const params = e.keyframes?.length
+                    ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000)
+                    : e.params;
+                const css = renderParametricEffectCSS(e.preset, params, t);
+                const _effOpacity = Number(params.opacity ?? 1);
+                if (css.filter) filterParts.push(css.filter as string);
+                const { filter: _f, opacity: _op, ...rest } = css as any;
+                if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
+                else if (_op !== undefined) (rest as any).opacity = _op;
+                Object.assign(combined, rest);
+            }
+            if (filterParts.length) combined.filter = filterParts.join(" ");
+            setCssOverlayStyle(combined);
+            raf = requestAnimationFrame(loop);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => { cancelAnimationFrame(raf); setCssOverlayStyle({}); };
+    }, [cssEffects.map((e: any) => e.id ?? e.preset).join(",")]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !canvasEffects.length) return;
+        const startTime = performance.now();
+        const loop = () => {
+            const t = performance.now() - startTime;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { rafRef.current = requestAnimationFrame(loop); return; }
+
+            // Clear the full canvas BEFORE any clipping — clearRect ignores clip regions
+            ctx.clearRect(0, 0, width, height);
+
+            for (const e of canvasEffects) {
+                const params = e.keyframes?.length ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000) : e.params;
+                const clipMode = String(params.clipMode ?? "none");
+                ctx.save();
+                if (shapePath && clipMode !== "none") {
+                    try {
+                        if (clipMode === "surface") {
+                            // Clip to the filled material of the shape, excluding boolean voids.
+                            // evenodd correctly handles boolean subtract/intersect holes.
+                            const p2d = new Path2D(shapePath);
+                            ctx.clip(p2d, "evenodd");
+                        } else if (clipMode === "space") {
+                            // Clip to interior voids only (holes cut by boolean operations).
+                            // bbox + shape with evenodd makes the shape area the "hole".
+                            const p2d = new Path2D(`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${shapePath}`);
+                            ctx.clip(p2d, "evenodd");
+                        }
+                    } catch (_) { /* ignore invalid path */ }
+                }
+                if (e.preset === "particleEmitter") renderParticleEmitter(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "lightningArc") renderLightningArc(ctx, width, height, params, t);
+                else if (e.preset === "snowfall") renderSnowfall(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "rain") renderRain(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "fireEmitter") renderFireEmitter(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "motionTrail") renderMotionTrail(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "filmGrain") renderFilmGrain(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "tapeNoise") renderTapeNoise(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                ctx.restore();
+            }
+            rafRef.current = requestAnimationFrame(loop);
+        };
+        rafRef.current = requestAnimationFrame(loop);
+        return () => {
+            if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+            cleanupParticleState(elementId);
+            cleanupSnowState(elementId);
+            cleanupRainState(elementId);
+            cleanupFireState(elementId);
+            cleanupTrailState(elementId);
+            cleanupGrainState(elementId);
+        };
+    }, [canvasEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId]);
+
+    useEffect(() => {
+        // Always run — svgEffects may be added after mount
+        let raf: number;
+        const loop = () => { if (svgEffectsRef.current.length) setTick(t => t + 1); raf = requestAnimationFrame(loop); };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, []);
+
+    if (!canvasEffects.length && !svgEffects.length && !cssEffects.length) return null;
+    const now = performance.now();
+    // Build overlay-only style: backgroundImage for scanline, nothing for filter-based effects
+    const overlayOnlyStyle: React.CSSProperties = {};
+    if ((cssOverlayStyle as any).backgroundImage) {
+        (overlayOnlyStyle as any).backgroundImage = (cssOverlayStyle as any).backgroundImage;
+        (overlayOnlyStyle as any).backgroundPosition = (cssOverlayStyle as any).backgroundPosition;
+        (overlayOnlyStyle as any).backgroundSize = (cssOverlayStyle as any).backgroundSize;
+        if ((cssOverlayStyle as any).mixBlendMode) {
+            (overlayOnlyStyle as any).mixBlendMode = (cssOverlayStyle as any).mixBlendMode;
+        }
+    }
+    return (
+        <div ref={wrapperRef} style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible" }}>
+
+            {canvasEffects.length > 0 && (() => {
+                // Determine clip mode from first canvas effect that has clipMode set
+                const canvasClipMode = canvasEffects.find((e: any) => e.params?.clipMode)?.params?.clipMode ?? "space";
+                const canvasClipPath = (canvasClipMode === "surface" && shapePath)
+                    ? `path('${shapePath.replace(/'/g, "\'")}')`
+                    : undefined;
+                return (
+                    <canvas ref={canvasRef} width={width} height={height}
+                        style={{
+                            position: "absolute", inset: 0, width: "100%", height: "100%",
+                            ...(canvasClipPath ? { clipPath: canvasClipPath } : {}),
+                        }} />
+                );
+            })()}
+            {svgEffects.length > 0 && (
+                <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`}
+                    style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+                    <defs>
+                        {shapePath && (
+                            <>
+                                {/* Surface clip: effect on solid material only (evenodd excludes holes) */}
+                                <clipPath id={`peo-clip-${elementId}`} clipPathUnits="userSpaceOnUse">
+                                    <path d={shapePath} clipRule="evenodd" fillRule="evenodd" />
+                                </clipPath>
+                                {/* Space clip: effect in voids/holes only (bbox minus shape) */}
+                                <clipPath id={`peo-space-${elementId}`} clipPathUnits="userSpaceOnUse">
+                                    <path
+                                        d={`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${shapePath}`}
+                                        clipRule="evenodd" fillRule="evenodd"
+                                    />
+                                </clipPath>
+                            </>
+                        )}
+                        <clipPath id={`peo-bbox-${elementId}`}><rect x="0" y="0" width={width} height={height} /></clipPath>
+                    </defs>
+                    {svgEffects.map((e: any, i: number) => {
+                        const params = e.keyframes?.length ? interpolateParams(e.params, e.keyframes, now, e.duration ?? 1000) : e.params;
+                        // clipMode: "surface" = clip to shape path (positive material only)
+                        //           "space"   = clip to bounding box (fills holes too)
+                        const clipMode = String(params.clipMode ?? "surface");
+                        const clipId = !shapePath
+                            ? `peo-bbox-${elementId}`
+                            : clipMode === "space"
+                                ? `peo-space-${elementId}`
+                                : `peo-clip-${elementId}`;
+                        const clipAttr = `clip-path="url(#${clipId})"`;
+
+                        if (e.preset === "lightsaberBorder") {
+                            const { svgContent } = renderLightsaberBorderSVG(width, height, params, now, borderRadius, shapePath || undefined);
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${svgContent}</g>` }} />;
+                        }
+                        if (e.preset === "hologramFlicker") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderHologramScanlinesSVG(width, height, params, now)}</g>` }} />;
+                        }
+                        if (e.preset === "ripple") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderRippleSVG(width, height, params, now)}</g>` }} />;
+                        }
+                        if (e.preset === "electricBorder") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderElectricBorderSVG(width, height, params, now, shapePath || undefined)}</g>` }} />;
+                        }
+                        if (e.preset === "lensFlare") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderLensFlareSVG(width, height, params, now)}</g>` }} />;
+                        }
+                        if (e.preset === "strokePulse") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderStrokePulseSVG(width, height, params, now, shapePath || undefined)}</g>` }} />;
+                        }
+                        if (e.preset === "cornerBrackets") {
+                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderCornerBracketsSVG(width, height, params, now)}</g>` }} />;
+                        }
+                        return null;
+                    })}
+                </svg>
+            )}
+            {Object.keys(overlayOnlyStyle).length > 0 && (
+                <div style={{ position: "absolute", inset: 0, ...overlayOnlyStyle }} />
+            )}
+        </div>
+    );
+}
+
+
+
+// Helper: Render SVG clipPath for parent clipping
+function renderParentClipPaths(elements: OverlayElement[], elementsById: Record<string, OverlayElement>): JSX.Element[] {
+    const clipPaths: JSX.Element[] = [];
+    
+    elements.forEach(el => {
+        if (el.clip && (el.clip as any).type === "parent") {
+            const parentEl = (el as any).parentId ? elementsById[(el as any).parentId] : null;
+            if (parentEl && parentEl.type === "path") {
+                const clipPathId = `clip-${el.id}`;
+                const pathData = (parentEl as any).path;
+                // Calculate the transform to position the clipPath
+                // The clipPath needs to be at the parent's position
+                const parentX = parentEl.x ?? 0;
+                const parentY = parentEl.y ?? 0;
+                const childX = (el as any).x ?? 0;
+                const childY = (el as any).y ?? 0;
+                
+                // The offset is the difference between parent and child positions
+                const offsetX = parentX - childX;
+                const offsetY = parentY - childY;
+                
+                clipPaths.push(
+                    <clipPath key={clipPathId} id={clipPathId} clipPathUnits="userSpaceOnUse">
+                        <path d={pathData} transform={`translate(${offsetX}, ${offsetY})`} />
+                    </clipPath>
+                );
+            }
+        }
+    });
+    
+    return clipPaths;
+}
+
+/** Editor widget preview node - uses registered React renderer */
+/**
+ * WidgetRuntimeNode — handles both unified-state and IIFE-state widgets in runtime mode.
+ * - Unified path: renders directly from widgetStates prop (no event listening needed)
+ * - IIFE path: listens for scraplet:widget:state events, dispatches scraplet:widget:ready
+ */
+function WidgetRuntimeNode({ baseStyle, w, h, has3D, widgetId, instanceId, Renderer, unifiedState }: {
+    baseStyle: React.CSSProperties;
+    w: number; h: number; has3D: boolean;
+    widgetId: string; instanceId: string;
+    Renderer: any;
+    unifiedState?: Record<string, any>;
+}) {
+    const [iifeState, setIifeState] = useState<Record<string, any>>({});
+
+    // Dispatch ready synchronously before paint so IIFE scripts that load fast can respond
+    useLayoutEffect(() => {
+        window.dispatchEvent(new CustomEvent('scraplet:widget:ready', {
+            detail: { widgetId, instanceId }
+        }));
+    }, [widgetId, instanceId]);
+
+    useEffect(() => {
+        function handleState(e: Event) {
+            const detail = (e as CustomEvent).detail;
+            if (detail?.widgetId === widgetId || detail?.instanceId === instanceId) {
+                setIifeState(detail.state || {});
+            }
+        }
+        // Add listener FIRST, then dispatch ready — ticker re-emits synchronously on ready
+        window.addEventListener('scraplet:widget:state', handleState);
+
+        // Dispatch ready again now that listener is attached
+        const dispatchReady = () => window.dispatchEvent(new CustomEvent('scraplet:widget:ready', {
+            detail: { widgetId, instanceId }
+        }));
+        dispatchReady();
+        const t1 = window.setTimeout(dispatchReady, 200);
+        const t2 = window.setTimeout(dispatchReady, 800);
+
+        return () => {
+            window.removeEventListener('scraplet:widget:state', handleState);
+            window.clearTimeout(t1);
+            window.clearTimeout(t2);
+        };
+    }, [widgetId, instanceId]);
+
+    const state = unifiedState && Object.keys(unifiedState).length > 0 ? unifiedState : iifeState;
+
+    return (
+        <div
+            style={{ ...baseStyle, width: w, height: h, overflow: has3D ? 'visible' : 'hidden', pointerEvents: 'none', position: 'absolute' }}
+            data-element-id={instanceId}
+            data-widget-id={widgetId}
+        >
+            {Renderer && Object.keys(state).length > 0 && (
+                <Renderer state={state} config={{ instanceId }} width={w} height={h} />
+            )}
+        </div>
+    );
+}
+
+function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initialState, Renderer }: {
+    baseStyle: React.CSSProperties;
+    w: number; h: number; has3D: boolean;
+    widgetId: string; instanceId: string;
+    initialState: Record<string, any>;
+    Renderer: any;
+}) {
+    const [widgetState, setWidgetState] = useState<Record<string, any>>(initialState);
+
+    useEffect(() => {
+        function handleState(e: Event) {
+            const detail = (e as CustomEvent).detail;
+            if (detail?.widgetId === widgetId) {
+                setWidgetState(detail.state);
+            }
+        }
+        window.addEventListener('scraplet:widget:state', handleState);
+        window.dispatchEvent(new CustomEvent('scraplet:widget:ready', {
+            detail: { widgetId, instanceId }
+        }));
+        return () => window.removeEventListener('scraplet:widget:state', handleState);
+    }, [widgetId, instanceId]);
+
+    return (
+        <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}
+             data-widget-editor-preview={widgetId}
+             data-widget-instance-id={instanceId}>
+            {Object.keys(widgetState).length > 0 && (
+                <Renderer state={widgetState} config={{ instanceId }} width={w} height={h} />
+            )}
+        </div>
+    );
+}
+
 export function ElementRenderer({
     element,
     elementsById,
@@ -859,6 +1640,9 @@ export function ElementRenderer({
     yOffset = 0,
     layout = "absolute",
     visited,
+    overlayPublicId,
+    elementIndex,
+    widgetStates,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -869,6 +1653,9 @@ export function ElementRenderer({
     yOffset?: number;
     layout?: "absolute" | "fill";
     visited?: Set<string>;
+    overlayPublicId?: string;
+    elementIndex?: number;
+    widgetStates?: Record<string, any>;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
@@ -907,24 +1694,94 @@ export function ElementRenderer({
                 top: el.y + yOffset,
                 width: el.width,
                 height: el.height,
+                zIndex: elementIndex ?? undefined,
                 transition: getAnimationTransition(el.animation, effectiveAnimationPhase),
             };
 
     Object.assign(baseStyle, getAnimationStyle(el.animation, effectiveAnimationPhase));
 
-    const transformStyle: React.CSSProperties = {};
-    const scaleX = typeof (el as any).scaleX === "number" ? (el as any).scaleX : 1;
-    const scaleY = typeof (el as any).scaleY === "number" ? (el as any).scaleY : 1;
-    const transformParts: string[] = [];
-    if (el.rotationDeg) {
-        transformParts.push(`rotate(${el.rotationDeg}deg)`);
+
+
+
+    // Apply parametric CSS effects directly to the element's baseStyle
+    const _legacyEffects: OverlayEffect[] = Array.isArray(el.effects) ? el.effects : [];
+    const _parametricAsEffects: OverlayEffect[] = Array.isArray((el as any).parametricEffects)
+      ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric' } as any))
+      : [];
+    const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects];
+    const _paramCss = useParametricCss(_elEffects);
+    useParametricRafTick(_elEffects); // drives re-renders for svgFilter/svgOverlay effects
+    if (Object.keys(_paramCss).length > 0) {
+        // Only apply safe properties that won't break layout
+        // transform: combine additively (never override with "none")
+        const paramTransform = (_paramCss as any).transform;
+        if (paramTransform && paramTransform !== "none") {
+            const existingTransform = (baseStyle as any).transform;
+            (baseStyle as any).transform = existingTransform
+                ? `${existingTransform} ${paramTransform}`
+                : paramTransform;
+            (baseStyle as any).transformOrigin = "center center";
+        }
+        // filter: append to existing
+        if (_paramCss.filter) {
+            const existing = (baseStyle as any).filter;
+            (baseStyle as any).filter = existing ? `${existing} ${_paramCss.filter}` : _paramCss.filter;
+        }
+        // opacity: multiply
+        if (_paramCss.opacity !== undefined) {
+            const existing = typeof (baseStyle as any).opacity === "number" ? (baseStyle as any).opacity : 1;
+            (baseStyle as any).opacity = existing * Number(_paramCss.opacity);
+        }
+        // clipPath: apply directly (text reveal)
+        if ((_paramCss as any).clipPath) {
+            (baseStyle as any).clipPath = (_paramCss as any).clipPath;
+        }
+        // boxShadow: apply directly (neon pulse)
+        if ((_paramCss as any).boxShadow) {
+            (baseStyle as any).boxShadow = (_paramCss as any).boxShadow;
+        }
+        // backdropFilter: apply directly (blur pulse)
+        if ((_paramCss as any).backdropFilter) {
+            (baseStyle as any).backdropFilter = (_paramCss as any).backdropFilter;
+        }
+        // outline: apply directly (glitch color shift)
+        if ((_paramCss as any).outline) {
+            (baseStyle as any).outline = (_paramCss as any).outline;
+            (baseStyle as any).outlineOffset = (_paramCss as any).outlineOffset;
+        }
+        // backgroundImage/Position/Size: apply directly (scanlineStatic)
+        if ((_paramCss as any).backgroundImage) {
+            (baseStyle as any).backgroundImage = (_paramCss as any).backgroundImage;
+            (baseStyle as any).backgroundPosition = (_paramCss as any).backgroundPosition;
+            (baseStyle as any).backgroundSize = (_paramCss as any).backgroundSize;
+        }
     }
-    if (scaleX !== 1 || scaleY !== 1) {
-        transformParts.push(`scale(${scaleX}, ${scaleY})`);
-    }
-    if (transformParts.length > 0) {
-        transformStyle.transform = transformParts.join(" ");
-        transformStyle.transformOrigin = "center center";
+
+    // Use canonical transform resolver for 1:1 parity with runtime
+    const _tiltX = (el as any).tiltX ?? 0;
+    const _tiltY = (el as any).tiltY ?? 0;
+    const _skewX = (el as any).skewX ?? 0;
+    const _skewY = (el as any).skewY ?? 0;
+    const has3D = _tiltX !== 0 || _tiltY !== 0 || _skewX !== 0 || _skewY !== 0;
+    
+    const canonicalTransform = resolveElementTransform({
+        x: (el as any).x ?? 0,
+        y: (el as any).y ?? 0,
+        width: el.width ?? 0,
+        height: el.height ?? 0,
+        rotationDeg: el.rotationDeg,
+        scaleX: (el as any).scaleX,
+        scaleY: (el as any).scaleY,
+        tiltX: _tiltX,
+        tiltY: _tiltY,
+        skewX: _skewX,
+        skewY: _skewY,
+        perspective: (el as any).perspective
+    });
+    
+    if (canonicalTransform !== 'none') {
+        (baseStyle as any).transform = canonicalTransform;
+        (baseStyle as any).transformOrigin = 'center center';
     }
 
     const effects = getElementEffects(el);
@@ -938,6 +1795,31 @@ export function ElementRenderer({
             if (typeof el.clip.radius === "number") {
                 clipStyle.borderRadius = el.clip.radius;
             }
+        } else if (el.clip.type === "parent") {
+            // Parent clipping: use CSS clip-path: path() with path translated to child's local space
+            const parentEl = (el as any).parentId ? elementsById[(el as any).parentId] : null;
+            if (parentEl && parentEl.type === "path") {
+                const parentPath = elementToOverlayPath(parentEl as any);
+                if (parentPath) {
+                    // Parent path is in 0..parentW, 0..parentH local space.
+                    // Child element is at (childX, childY) in canvas space.
+                    // Parent element is at (parentX, parentY) in canvas space.
+                    // CSS clip-path: path() is in element-local space (0,0 = top-left of element).
+                    // So translate by (parentX - childX, parentY - childY).
+                    const parentX = (parentEl as any).x ?? 0;
+                    const parentY = (parentEl as any).y ?? 0;
+                    const childX = (el as any).x ?? 0;
+                    const childY = (el as any).y ?? 0;
+                    const dx = parentX - childX;
+                    const dy = parentY - childY;
+                    const translatedPath = dx !== 0 || dy !== 0
+                        ? translateOverlayPath(parentPath, dx, dy)
+                        : parentPath;
+                    const clipD = svgPathFromCommands(translatedPath);
+                    clipStyle.clipPath = `path('${clipD}')`;
+                    clipStyle.overflow = undefined;
+                }
+            }
         }
     }
 
@@ -945,7 +1827,6 @@ export function ElementRenderer({
         width: "100%",
         height: "100%",
         opacity: typeof el.opacity === "number" ? el.opacity : 1,
-        ...transformStyle,
         ...clipStyle,
         transition: "inherit",
     };
@@ -971,7 +1852,7 @@ export function ElementRenderer({
         const def = overlayComponents?.find((c) => c.id === inst.componentId);
         if (!def) {
             return (
-                <div style={baseStyle}>
+                <div data-element-id={el.id} style={baseStyle}>
                     <div
                         style={{
                             ...innerStyle,
@@ -1003,7 +1884,7 @@ export function ElementRenderer({
         const roots = def.elements.filter((e) => !childIds.has(e.id));
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
                     {roots.map((child) => (
                         <ElementRenderer
@@ -1081,7 +1962,7 @@ export function ElementRenderer({
         const groupH = el.height ?? 0;
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative", overflow: "hidden" }}>
                     <svg
                         width="100%"
@@ -1156,11 +2037,12 @@ export function ElementRenderer({
                 ? `${group.borderWidth}px solid ${group.borderColor}`
                 : undefined,
             position: "relative",
-            overflow: el.type === "frame" && (group as OverlayFrameElement).clipContent !== false ? "hidden" : undefined,
+            overflow: el.type === "frame" && (group as OverlayFrameElement).clipContent !== false && !has3D ? "hidden" : undefined,
+            mixBlendMode: (group as any).blendMode && (group as any).blendMode !== "normal" ? (group as any).blendMode as any : undefined,
         };
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div style={groupStyle}>
                     {group.childIds?.map((childId) => {
                         const child = elementsById?.[childId];
@@ -1209,16 +2091,17 @@ export function ElementRenderer({
         const strokeAlign = box.strokeAlign ?? "center";
 
         return (
-            <div style={baseStyle}>
-                <div style={{ ...innerStyle, position: "relative", overflow: "visible" }}>
+            <div data-element-id={el.id} style={baseStyle}>
+                <div style={{ ...innerStyle, opacity: undefined, position: "relative", overflow: "visible" }}>
+                    <div style={{ position: 'absolute', inset: 0, opacity: typeof el.opacity === 'number' ? el.opacity : 1, overflow: 'visible' }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId)}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
                         </defs>
-                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
-                            {box.strokeSides && strokeWidth > 0
+                            {box.strokeSides && strokeWidth > 0 && Object.values(box.strokeSides).some(v => v === false)
                                 ? renderRectPerSideStroke(
                                       w,
                                       h,
@@ -1245,6 +2128,15 @@ export function ElementRenderer({
                                   )}
                         </g>
                     </svg>
+                    </div>
+                    <ParametricEffectOverlay
+                        effects={effects}
+                        width={w}
+                        height={h}
+                        elementId={box.id}
+                        borderRadius={box.borderRadiusPx ?? (box as any).borderRadius ?? 0}
+                        shapePath={pathD}
+                    />
                 </div>
             </div>
         );
@@ -1262,14 +2154,15 @@ export function ElementRenderer({
         const effectFilterId = sanitizeSvgId(`path-effect-${patternScopeId}-${pathEl.id}`);
 
         return (
-            <div style={baseStyle}>
-                <div style={innerStyle}>
-                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+            <div data-element-id={el.id} style={baseStyle}>
+                <div style={{ ...innerStyle, opacity: undefined, position: "relative" }}>
+                    <div style={{ position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1 }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId)}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
                         </defs>
-                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
                             {renderAlignedPathStroke(
                                 pathD,
@@ -1287,6 +2180,14 @@ export function ElementRenderer({
                             )}
                         </g>
                     </svg>
+                    </div>
+                    <ParametricEffectOverlay
+                        effects={effects}
+                        width={w}
+                        height={h}
+                        elementId={pathEl.id}
+                        shapePath={pathD}
+                    />
                 </div>
             </div>
         );
@@ -1305,8 +2206,23 @@ export function ElementRenderer({
         const strokeColor = textEl.strokeColor;
         const content = resolveText(textEl.text, data);
 
+        const _textW = textEl.width ?? 100;
+        const _textH = textEl.height ?? 40;
+        const _fontWeight = textEl.fontWeight === "bold" ? 700 : 400;
+        const _fontStack = getFontStack(textEl.fontFamily);
+        const _textAlign = textEl.textAlign ?? "left";
+        // Determine if any active effect needs a shape path (svgOverlay or svgFilter)
+        const _needsPath = effects.some((e: any) =>
+            e.type === "parametric" && e.enabled !== false &&
+            (EFFECT_PRESETS[e.preset]?.produces.includes("svgOverlay") ||
+             EFFECT_PRESETS[e.preset]?.produces.includes("svgFilter"))
+        );
+        const _textShapePath = useTextShapePath(
+            content, _fontStack, fontSize, _fontWeight,
+            _textW, _textH, _textAlign, _needsPath
+        );
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div
                     style={{
                         ...innerStyle,
@@ -1317,8 +2233,8 @@ export function ElementRenderer({
                         padding: "0 8px",
                         color: textEl.color ?? "#e5e7eb",
                         fontSize,
-                        fontWeight: textEl.fontWeight === "bold" ? 700 : 400,
-                        fontFamily: getFontStack(textEl.fontFamily),
+                        fontWeight: _fontWeight,
+                        fontFamily: _fontStack,
                         lineHeight: 1.1,
                         boxSizing: "border-box",
                         whiteSpace: "pre-wrap",
@@ -1335,6 +2251,13 @@ export function ElementRenderer({
                 >
                     {content}
                 </div>
+                <ParametricEffectOverlay
+                    effects={effects}
+                    width={_textW}
+                    height={_textH}
+                    elementId={textEl.id}
+                    shapePath={_textShapePath || undefined}
+                />
             </div>
         );
     }
@@ -1351,14 +2274,15 @@ export function ElementRenderer({
         const effectFilterId = sanitizeSvgId(`boolean-effect-${patternScopeId}-${booleanEl.id}`);
 
         return (
-            <div style={baseStyle}>
-                <div style={innerStyle}>
-                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+            <div data-element-id={el.id} style={baseStyle}>
+                <div style={{ ...innerStyle, opacity: undefined, position: "relative" }}>
+                    <div style={{ position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1 }}>
+                    <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId)}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
                         </defs>
-                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
                             {renderAlignedPathStroke(
                                 pathD,
@@ -1376,6 +2300,14 @@ export function ElementRenderer({
                             )}
                         </g>
                     </svg>
+                    </div>
+                    <ParametricEffectOverlay
+                        effects={effects}
+                        width={w}
+                        height={h}
+                        elementId={booleanEl.id}
+                        shapePath={pathD}
+                    />
                 </div>
             </div>
         );
@@ -1411,23 +2343,31 @@ export function ElementRenderer({
             strokeDasharray: dash ? dash.join(" ") : undefined,
         } as any;
 
+        // Hide the shape SVG when only canvas-based parametric effects are present
+        const _parametricEffects = effects.filter(e => (e as any).type === 'parametric' && e.enabled !== false);
+        const _hasOnlyCanvasEffects = _parametricEffects.length > 0
+            && _parametricEffects.every(e => EFFECT_PRESETS[(e as any).preset]?.produces.every((p: string) => p === 'canvas'))
+            && effects.filter(e => (e as any).type !== 'parametric').length === 0;
+
         return (
-            <div style={baseStyle}>
-                <div style={innerStyle}>
-                    <svg
+            <div data-element-id={el.id} style={baseStyle}>
+                <div style={{ ...innerStyle, opacity: undefined, position: 'relative' }}>
+                    <div style={{ position: 'absolute', inset: 0, opacity: typeof el.opacity === 'number' ? el.opacity : 1 }}>
+                    {!_hasOnlyCanvasEffects && <svg
                         width="100%"
                         height="100%"
                         viewBox={`0 0 ${w} ${h}`}
                         preserveAspectRatio="none"
+                        style={(_paramCss as any).filter ? { filter: (_paramCss as any).filter } : undefined}
                     >
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId)}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
                         </defs>
-                        <g filter={effects.length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
 
-                            {s.shape === "rect" && s.strokeSides && strokeWidth > 0
+                            {s.shape === "rect" && s.strokeSides && strokeWidth > 0 && Object.values(s.strokeSides).some(v => v === false)
                                 ? renderRectPerSideStroke(
                                       w,
                                       h,
@@ -1453,7 +2393,15 @@ export function ElementRenderer({
                                       Boolean(shapePath && isClosedPath(shapePath))
                                   )}
                         </g>
-                    </svg>
+                    </svg>}
+                    </div>
+                    <ParametricEffectOverlay
+                        effects={effects}
+                        width={w}
+                        height={h}
+                        elementId={s.id}
+                        shapePath={pathD}
+                    />
                 </div>
             </div>
         );
@@ -1472,14 +2420,34 @@ export function ElementRenderer({
         const src = img.src || "";
         const mixBlendMode = toCssBlendMode(img.blendMode);
         const imageStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
+        // Build CSS filter from adjustments
+        const adj = (img as any).adjustments ?? {};
+        const adjFilter = [
+          adj.brightness !== undefined && adj.brightness !== 1 ? `brightness(${adj.brightness})` : "",
+          adj.contrast !== undefined && adj.contrast !== 1 ? `contrast(${adj.contrast})` : "",
+          adj.saturate !== undefined && adj.saturate !== 1 ? `saturate(${adj.saturate})` : "",
+          adj.hueRotate !== undefined && adj.hueRotate !== 0 ? `hue-rotate(${adj.hueRotate}deg)` : "",
+          adj.blur !== undefined && adj.blur !== 0 ? `blur(${adj.blur}px)` : "",
+          adj.opacity !== undefined && adj.opacity !== 1 ? `opacity(${adj.opacity})` : "",
+        ].filter(Boolean).join(" ");
+        // Build CSS filter from adjustments
 
+        // For parent clipping, don't use overflow:hidden (conflicts with clipPath)
+        const useClipPath = el.clip && (el.clip as any).type === "parent";
+        
         return (
-            <div style={imageStyle}>
-                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
+            <div data-element-id={el.id} style={imageStyle}>
+                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: adjFilter || undefined }}>
                     {src && (
                         <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
                 </div>
+                <ParametricEffectOverlay
+                    effects={effects}
+                    width={img.width ?? 100}
+                    height={img.height ?? 100}
+                    elementId={img.id}
+                />
             </div>
         );
     }
@@ -1499,7 +2467,7 @@ export function ElementRenderer({
         const videoStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div style={videoStyle}>
+            <div data-element-id={el.id} style={videoStyle}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {src && (
                         <KeyedMedia
@@ -1515,6 +2483,12 @@ export function ElementRenderer({
                         />
                     )}
                 </div>
+                <ParametricEffectOverlay
+                    effects={effects}
+                    width={vid.width ?? 100}
+                    height={vid.height ?? 100}
+                    elementId={vid.id}
+                />
             </div>
         );
     }
@@ -1541,7 +2515,7 @@ export function ElementRenderer({
         }
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div
                     style={{
                         ...innerStyle,
@@ -1571,7 +2545,7 @@ export function ElementRenderer({
         const startAngle = ring.startAngleDeg ?? -90;
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div style={innerStyle}>
                     <svg
                         width="100%"
@@ -1769,7 +2743,7 @@ export function ElementRenderer({
         }
 
         return (
-            <div style={baseStyle}>
+            <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ width: "100%", height: "100%", ...combinedAnimStyle }}>
                     <div style={innerStyle}>
                         <div style={containerStyle}>{contentNode}</div>
@@ -1778,6 +2752,116 @@ export function ElementRenderer({
             </div>
         );
     }
+
+    if ((el as any).type === "widget") {
+        const widgetEl = el as any;
+        const widgetId = widgetEl.widgetId;
+        const propOverrides = widgetEl.propOverrides || {};
+        const w = widgetEl.visible === false ? 0 : (baseStyle.width || 0);
+        const h = widgetEl.visible === false ? 0 : (baseStyle.height || 0);
+
+        // Editor preview: inject widget script directly, render into scoped div
+        if (overlayPublicId) {
+            const WIDGET_SCRIPTS: Record<string, string> = {
+                'chat-overlay': '/widgets/chat-overlay.js',
+                'alert-box-widget': '/widgets/alert-box-widget.js',
+                'sub-counter': '/widgets/sub-counter.js',
+                'event-console-widget': '/widgets/event-console-widget.js',
+                'tts-player': '/widgets/tts-player.js',
+                'stake-monitor': '/widgets/stake-monitor.js',
+                'raffle': '/widgets/raffle.js',
+                'subathon-timer': '/widgets/subathon-timer.js',
+                'random-number': '/widgets/random-number.js',
+                'emote-wall': '/widgets/emote-wall.js',
+                'emote-counter': '/widgets/emote-counter.js',
+                'top-donators': '/widgets/top-donators.js',
+                'sound-visualizer': '/widgets/sound-visualizer.js',
+                'ticker': '/widgets/ticker.js',
+                'hype-train': '/widgets/hype-train.js',
+            };
+            const scriptSrc = WIDGET_SCRIPTS[widgetId];
+            const scriptId = `widget-script-editor-${widgetId}`;
+            const containerId = `widget-preview-${el.id}`;
+            if (scriptSrc && typeof document !== 'undefined') {
+                // Per-instance config key scoped to el.id so multiple instances don't clobber each other
+                const configKey = `__WIDGET_CONFIG_${el.id.replace(/-/g, '_').toUpperCase()}__`;
+                // Also set the shared widgetId-keyed config for widgets that read it directly
+                const sharedConfigKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
+                const newCfg = { ...propOverrides, editorPreview: true, _instanceId: el.id };
+                (window as any)[sharedConfigKey] = newCfg;
+                (window as any)[configKey] = newCfg;
+                if (!document.getElementById(scriptId)) {
+                    const s = document.createElement('script');
+                    s.id = scriptId;
+                    s.src = scriptSrc + '?v=' + Date.now();
+                    document.head.appendChild(s);
+                } else {
+                    // Script already loaded — dispatch config update event so widget can hot-reload
+                    window.dispatchEvent(new CustomEvent('scraplet:widget:config-update', {
+                        detail: { widgetId, instanceId: el.id, config: newCfg }
+                    }));
+                }
+            }
+            // Use React renderer if registered, otherwise fall back to DOM container
+            const EditorWidgetRenderer = getWidgetRenderer(widgetId);
+            if (EditorWidgetRenderer) {
+                return (
+                    <WidgetEditorNode
+                        baseStyle={baseStyle}
+                        w={w} h={h} has3D={has3D}
+                        widgetId={widgetId}
+                        instanceId={el.id}
+                        initialState={{ ...propOverrides }}
+                        Renderer={EditorWidgetRenderer}
+                    />
+                );
+            }
+            return (
+                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}>
+                    <div
+                        id={containerId}
+                        style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', pointerEvents: 'none' }}
+                        data-widget-editor-preview={widgetId}
+                        data-widget-instance-id={el.id}
+                    />
+                </div>
+            );
+        }
+
+        // Runtime mode (OBS): use WidgetRuntimeNode for all widgets with a registered renderer.
+        // - Unified-state widgets: state comes from widgetStates prop
+        // - IIFE widgets: state comes from scraplet:widget:state events
+        const RuntimeWidgetRenderer = getWidgetRenderer(widgetId);
+        if (RuntimeWidgetRenderer) {
+            return (
+                <WidgetRuntimeNode
+                    baseStyle={baseStyle}
+                    w={w as number}
+                    h={h as number}
+                    has3D={has3D}
+                    widgetId={widgetId}
+                    instanceId={el.id}
+                    Renderer={RuntimeWidgetRenderer}
+                    unifiedState={widgetStates?.[el.id]}
+                />
+            );
+        }
+
+        // No renderer registered — render empty container (IIFE script injects into it)
+        const rp = new URLSearchParams();
+        Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
+        return (
+            <div
+                style={{ ...baseStyle, width: w, height: h, overflow: has3D ? 'visible' : 'hidden', pointerEvents: 'none', position: 'absolute' }}
+                data-element-id={el.id}
+                data-widget-id={widgetId}
+                data-widget-params={rp.toString()}
+            />
+        );
+    }
+
+
+
 
     return null;
 }

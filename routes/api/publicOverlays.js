@@ -7,9 +7,23 @@ const router = express.Router();
 router.get('/:publicId', async (req, res) => {
     const publicId = req.params.publicId;
     try {
-        const result = await db.query('SELECT config_json FROM overlays WHERE public_id = $1 LIMIT 1', [publicId]);
+        const result = await db.query('SELECT config_json, user_id FROM overlays WHERE public_id = $1 LIMIT 1', [publicId]);
         if (result.rows.length === 0) return res.status(404).send('Overlay not found');
-        res.json(result.rows[0].config_json || {});
+
+        const { config_json, user_id } = result.rows[0];
+
+        // Include overlay components so componentInstances render in OBS
+        const compResult = await db.query(
+            'SELECT public_id as id, name, component_json FROM overlay_components WHERE user_id = $1',
+            [user_id]
+        );
+        const components = compResult.rows.map(r => ({
+            id: r.id,
+            name: r.name,
+            ...(r.component_json || {}),
+        }));
+
+        res.json({ ...(config_json || {}), components });
     } catch (err) {
         console.error('[PublicOverlayConfig] Error:', err);
         res.status(500).send('Internal Server Error');

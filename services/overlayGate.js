@@ -1,10 +1,31 @@
 import Redis from "ioredis";
+import { recordStage } from "../src/services/pipelineHealth.js";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://127.0.0.1:6379";
 
 const pub = new Redis(REDIS_URL);
 
 const HEARTBEAT_INTERVAL_MS = 20000;
+
+// In-memory event buffer for replay on reconnect
+// Stores last 100 events per overlay channel, keyed by channelKey
+const EVENT_BUFFER_MAX = 100;
+const eventBuffers = new Map(); // channelKey -> [{id, data}]
+
+function bufferEvent(channel, id, data) {
+    if (!eventBuffers.has(channel)) eventBuffers.set(channel, []);
+    const buf = eventBuffers.get(channel);
+    buf.push({ id, data });
+    if (buf.length > EVENT_BUFFER_MAX) buf.shift();
+}
+
+function getReplayEvents(channel, lastEventId) {
+    if (!lastEventId || !eventBuffers.has(channel)) return [];
+    const buf = eventBuffers.get(channel);
+    const idx = buf.findIndex(e => e.id === lastEventId);
+    if (idx === -1) return buf; // unknown ID — replay all buffered
+    return buf.slice(idx + 1); // replay everything after last seen
+}
 
 // Strict Packet Validator (same as before)
 function validatePacket(packet) {
@@ -33,7 +54,7 @@ function channelKey(tenantId, publicId) {
 }
 
 export const overlayGate = {
-  async subscribe(tenantId, publicId, res, _lastEventId) {
+  async subscribe(tenantId, publicId, res, lastEventId) {
     const channel = channelKey(tenantId, publicId);
 
     // IMPORTANT: dedicated Redis subscriber per SSE connection
@@ -47,6 +68,17 @@ export const overlayGate = {
       throw err;
     }
 
+    // Replay any missed events since last-event-id
+    if (lastEventId) {
+      const missed = getReplayEvents(channel, lastEventId);
+      for (const ev of missed) {
+        res.write(`id: ${ev.id}\n`);
+        res.write("event: message\n");
+        res.write(`data: ${ev.data}\n\n`);
+      }
+      if (missed.length > 0 && res.flush) res.flush();
+    }
+
     const onMessage = (_channel, message) => {
       if (_channel !== channel) return;
 
@@ -58,7 +90,11 @@ export const overlayGate = {
         return;
       }
 
-      res.write(`id: ${packet.header?.id ?? ""}\n`);
+      const eventId = packet.header?.id ?? String(Date.now());
+      // Buffer for replay
+      bufferEvent(channel, eventId, JSON.stringify(packet));
+
+      res.write(`id: ${eventId}\n`);
       res.write("event: message\n");
       res.write(`data: ${JSON.stringify(packet)}\n\n`);
 
@@ -88,6 +124,8 @@ export const overlayGate = {
 
   async publish(tenantId, publicId, packet) {
     const channel = channelKey(tenantId, publicId);
+    recordStage('messages', 5, publicId);
+    console.log("[CHAIN-5] overlayGate.publish called", { tenantId, publicId, type: packet?.header?.type });
 
     try {
       validatePacket(packet);

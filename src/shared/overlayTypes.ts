@@ -14,7 +14,11 @@ export type OverlayElementType =
   | "progressRing"
   | "lower_third"
   | "mask"
-  | "componentInstance";
+  | "componentInstance"
+  | "widget"
+  | "countdown"
+  | "clock"
+  | "audioVisualiser";
 
 /**
  * V1 uses normalized coords (0..1) relative to the browser source viewport.
@@ -31,7 +35,7 @@ export interface OverlayEditorFields {
   locked?: boolean;  // default false
 }
 
-export type OverlayClipType = "none" | "roundRect" | "circle";
+export type OverlayClipType = "none" | "roundRect" | "circle" | "parent";
 
 export interface OverlayElementBase extends OverlayEditorFields {
   id: string;
@@ -46,6 +50,11 @@ export interface OverlayElementBase extends OverlayEditorFields {
   rotationDeg?: number;
   scaleX?: number;
   scaleY?: number;
+  tiltX?: number;
+  tiltY?: number;
+  skewX?: number;
+  skewY?: number;
+  perspective?: number;
   constraints?: OverlayConstraints;
   shadow?: {
     enabled: boolean;
@@ -60,6 +69,7 @@ export interface OverlayElementBase extends OverlayEditorFields {
     type: OverlayClipType;
     radius?: number;
   };
+  parentId?: string;  // set on texture child elements
   bindings?: Record<string, DynamicBinding>;
   animation?: OverlayAnimation;
 }
@@ -124,6 +134,7 @@ export interface SourceDef {
    GROUPING
 ========================= */
 export interface OverlayGroupElement extends OverlayElementBase {
+  blendMode?: OverlayBlendMode;
   type: "group";
   childIds: string[]; // Order matters (z-index within group)
 
@@ -185,7 +196,15 @@ export type OverlayMotionPreset =
   | "slideUp"
   | "slideDown"
   | "slideLeft"
-  | "slideRight";
+  | "slideRight"
+  | "scaleIn"
+  | "scaleOut"
+  | "zoomIn"
+  | "zoomOut"
+  | "blurIn"
+  | "blurOut"
+  | "rotateIn"
+  | "rotateOut";
 
 export type OverlayAnimationPhase =
   | "hidden"
@@ -199,6 +218,10 @@ export interface OverlayAnimation {
   durationMs?: number;
   delayMs?: number;
   easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+  distance?: number;   // slide distance in px (default 32)
+  scale?: number;      // scale factor for scaleIn/Out (default 0.8)
+  rotation?: number;   // rotation degrees for rotateIn/Out (default 90)
+  blur?: number;       // blur px for blurIn/Out (default 12)
 }
 
 /* =========================
@@ -206,7 +229,7 @@ export interface OverlayAnimation {
 ========================= */
 
 export type OverlayPatternFit = "tile" | "cover" | "contain" | "stretch";
-export type OverlayFillType = "solid" | "linear" | "radial" | "conic" | "pattern";
+export type OverlayFillType = "solid" | "linear" | "radial" | "conic" | "pattern" | "texture";
 
 export interface OverlayFillStop {
   color: string;
@@ -242,7 +265,20 @@ export interface OverlayPatternFill extends OverlayFillBase {
   rotationDeg?: number;
 }
 
-export type OverlayFill = OverlaySolidFill | OverlayGradientFill | OverlayPatternFill;
+export interface OverlayTextureFill extends OverlayFillBase {
+  type: "texture";
+  src: string;           // upload path or URL
+  fit?: "tile" | "stretch" | "fit";
+  scaleX?: number;       // 1.0 = natural size
+  scaleY?: number;
+  offsetX?: number;
+  offsetY?: number;
+  blendMode?: OverlayBlendMode;
+  /** id of the child image element that renders this texture */
+  childElementId?: string;
+}
+
+export type OverlayFill = OverlaySolidFill | OverlayGradientFill | OverlayPatternFill | OverlayTextureFill;
 
 /* =========================
    EFFECTS
@@ -254,7 +290,11 @@ export type OverlayEffectType =
   | "outerGlow"
   | "innerGlow"
   | "layerBlur"
-  | "noise";
+  | "backdropBlur"
+  | "noise"
+  | "chromaticAberration"
+  | "colorGrade"
+  | "parametric";
 
 export interface OverlayEffectBase {
   id?: string;
@@ -290,11 +330,44 @@ export interface OverlayNoiseEffect extends OverlayEffectBase {
   scale?: number;
 }
 
+export interface OverlayBackdropBlurEffect extends OverlayEffectBase {
+  type: "backdropBlur";
+  blur: number;
+}
+
+export interface OverlayChromaticAberrationEffect extends OverlayEffectBase {
+  type: "chromaticAberration";
+  offsetX: number;  // px red/blue channel offset
+  offsetY: number;
+  strength?: number; // 0..1
+}
+
+export interface OverlayColorGradeEffect extends OverlayEffectBase {
+  type: "colorGrade";
+  hue?: number;        // degrees -180..180
+  saturation?: number; // -1..1
+  brightness?: number; // -1..1
+  contrast?: number;   // -1..1
+}
+
+export interface OverlayParametricEffect extends OverlayEffectBase {
+  type: "parametric";
+  preset: string;
+  params: Record<string, number | string | boolean>;
+  keyframes?: Array<{ t: number; params: Record<string, number | string | boolean> }>;
+  duration?: number; // loop duration ms
+}
+
 export type OverlayEffect =
+
   | OverlayShadowEffect
   | OverlayGlowEffect
   | OverlayLayerBlurEffect
-  | OverlayNoiseEffect;
+  | OverlayNoiseEffect
+  | OverlayBackdropBlurEffect
+  | OverlayChromaticAberrationEffect
+  | OverlayColorGradeEffect
+  | OverlayParametricEffect;
 
 /* =========================
    TIMELINE
@@ -308,7 +381,13 @@ export type OverlayTimelineProperty =
   | "opacity"
   | "rotationDeg"
   | "scaleX"
-  | "scaleY";
+  | "scaleY"
+  // Pseudo-3D transforms
+  | "tiltX"
+  | "tiltY"
+  | "skewX"
+  | "skewY"
+  | "perspective";
 
 export type OverlayTimelineEasing =
   | "linear"
@@ -334,6 +413,7 @@ export interface OverlayTimelineTrack {
   elementId: string;
   property: OverlayTimelineProperty;
   keyframes: OverlayTimelineKeyframe[];
+  enabled?: boolean;
 }
 
 export interface OverlayTimeline {
@@ -370,6 +450,12 @@ export interface OverlayTextElement extends OverlayElementBase {
   strokeColor?: string;
   strokeWidthPx?: number;
   strokeOpacity?: number;
+
+  // Ticker / scroll mode (REQ-6)
+  tickerMode?: boolean;
+  tickerSpeed?: number;    // px/s, default 60
+  tickerDirection?: "left" | "right";
+  tickerGap?: number;      // px gap between repeats, default 40
 }
 
 /* =========================
@@ -524,7 +610,11 @@ export interface OverlayBooleanElement extends OverlayElementBase {
 ========================= */
 
 export type OverlayMediaFit = "contain" | "cover" | "fill";
-export type OverlayBlendMode = "normal" | "screen" | "multiply";
+export type OverlayBlendMode =
+  | "normal" | "screen" | "multiply"
+  | "overlay" | "hard-light" | "soft-light"
+  | "difference" | "exclusion"
+  | "color-dodge" | "color-burn";
 export type OverlayKeyMode = "none" | "alphaBlack" | "alphaWhite" | "chromaKey";
 
 export interface OverlayKeying {
@@ -668,6 +758,132 @@ export interface OverlayComponentDef {
   metadata: Record<string, any>; // Hooks e.g., durationMs, animationIn
   variantGroupId?: string;
   variantName?: string;
+  widgetManifest?: WidgetManifest;
+}
+
+// ── Widget System ─────────────────────────────────────────────────────────────
+
+export type WidgetCategory = "data" | "display" | "hybrid" | "utility";
+
+export interface WidgetDataContract {
+  /** SSE event type this widget subscribes to at runtime, e.g. "stake.update" */
+  sseEventType: string | null;
+  /** Fields this widget exposes to the binding engine */
+  fields: Array<{
+    key: string;
+    label: string;
+    type: "string" | "number" | "boolean";
+    fallback: string | number | boolean | null;
+  }>;
+}
+
+export interface WidgetLiveDataSource {
+  /** Matches WidgetDataContract.sseEventType */
+  sseEventType: string | null;
+  /** Optional: override beacon endpoint per-instance */
+  beaconEndpoint?: string;
+}
+
+export interface WidgetManifest {
+  widgetId: string;
+  category: WidgetCategory;
+  version: string;
+  displayName: string;
+  description: string;
+  icon: string;
+  dataContract: WidgetDataContract;
+  beaconEndpoint: string | null;
+  /** If true, renders as zero-footprint placeholder in editor and is invisible at runtime */
+  invisible?: boolean;
+  /** Path to the runtime script injected into OBS browser source */
+  runtimeScript?: string;
+  configSchema: Array<{
+    key: string;
+    type: "text" | "number" | "boolean" | "select" | "color";
+    label: string;
+    default: any;
+    options?: string[];
+  }>;
+  defaultProps: Record<string, unknown>;
+  previewImageUrl: string | null;
+}
+
+export interface OverlayWidgetElement extends OverlayElementBase {
+  type: "widget";
+  widgetId: string;
+  propOverrides: Record<string, any>;
+  liveDataSource: WidgetLiveDataSource;
+  keying?: OverlayKeying;
+}
+
+/* =========================
+   COUNTDOWN TIMER
+========================= */
+
+export interface OverlayCountdownElement extends OverlayElementBase {
+  type: "countdown";
+  mode: "duration" | "target";
+  durationMs: number;
+  targetDatetime?: string;
+  endBehaviour: "hold" | "hide" | "loop";
+  format: string; // "HH:MM:SS" | "MM:SS" | "SS" | custom e.g. "{m}m {s}s"
+  color: string;
+  fontFamily?: string;
+  fontSizePx: number;
+  fontWeight?: "normal" | "bold";
+  textAlign?: "left" | "center" | "right";
+}
+
+
+/* =========================
+   CLOCK
+========================= */
+
+export interface OverlayClockElement extends OverlayElementBase {
+  type: "clock";
+  clockMode: "wall" | "elapsed" | "stopwatch";
+  startDatetime?: string;   // ISO string for elapsed mode
+  timezone?: string;        // IANA timezone for wall clock e.g. "Europe/London"
+  format: string;           // e.g. "HH:mm:ss", "mm:ss", "h:mm a"
+  use12h: boolean;
+  color: string;
+  fontFamily?: string;
+  fontSizePx: number;
+  fontWeight?: "normal" | "bold";
+  textAlign?: "left" | "center" | "right";
+}
+
+export function isClockElement(el: OverlayElement): el is OverlayClockElement {
+  return el.type === "clock";
+}
+
+/* =========================
+   CUSTOM VARIABLES (REQ-5)
+========================= */
+
+export interface OverlayVariable {
+  id: string;
+  name: string;
+  type: "text" | "number" | "boolean";
+  value: string | number | boolean;
+  defaultValue: string | number | boolean;
+}
+
+/* =========================
+   AUDIO VISUALISER (REQ-8)
+========================= */
+
+export interface OverlayAudioVisualiserElement extends OverlayElementBase {
+  type: "audioVisualiser";
+  sourceId: string;           // "default" or OBS audio source ID
+  barCount: number;           // default 32
+  barColor: string;           // default "#6366f1"
+  barGap: number;             // px gap between bars, default 2
+  style: "bars" | "wave" | "circle" | "pips";
+  // Pips style colours (thresholds: 0-60% low, 60-85% med, 85-100% high)
+  pipsColorLow?: string;      // default "#22c55e" (green)
+  pipsColorMid?: string;      // default "#f97316" (orange)
+  pipsColorHigh?: string;     // default "#ef4444" (red)
 }
 
 /* =========================
@@ -688,7 +904,11 @@ export type OverlayElement =
   | OverlayProgressRingElement
   | OverlayLowerThirdElement
   | OverlayMaskElement
-  | OverlayComponentInstanceElement;
+  | OverlayComponentInstanceElement
+  | OverlayWidgetElement
+  | OverlayCountdownElement
+  | OverlayClockElement
+  | OverlayAudioVisualiserElement;
 
 /* =========================
    CONFIGS
@@ -705,6 +925,8 @@ export interface OverlayConfigV0 {
   // IMPORTANT: make this optional to allow transparent default
   backgroundColor?: string;
   timeline?: OverlayTimeline;
+  /** Named event timelines — keyed by event name e.g. "raid", "sub", "follow" */
+  eventTimelines?: Record<string, OverlayTimeline>;
 
   elements: Array<
     | (Omit<OverlayTextElement, "fontSizePx" | "fontSizeRel" | "unit"> & {
@@ -735,6 +957,7 @@ export interface OverlayConfigV0 {
     | OverlayLowerThirdElement
     | OverlayMaskElement
     | OverlayComponentInstanceElement
+    | OverlayWidgetElement
   >;
 }
 
@@ -745,6 +968,8 @@ export interface OverlayConfigV1 {
   version: 1;
   backgroundColor?: string; // optional => transparent default
   timeline?: OverlayTimeline;
+  eventTimelines?: Record<string, OverlayTimeline>;
+  variables?: OverlayVariable[];
   elements: OverlayElement[];
 }
 

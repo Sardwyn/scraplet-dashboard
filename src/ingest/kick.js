@@ -6,6 +6,7 @@
 //
 
 import db from "../../db.js";
+import { updateChannelGame } from "../../services/gameContext.js";
 import fetch from "node-fetch";
 import crypto from "crypto";
 
@@ -14,6 +15,8 @@ import { enqueueAlertForUserEvent } from "../alerts/engine.js";
 
 import { getOrCreateUserChatOverlay } from "../widgets/chat-overlay/service.js";
 import { push as pushRing } from "../runtime/ringBuffer.js";
+import { overlayGate } from "../../services/overlayGate.js";
+import { recordStage } from "../services/pipelineHealth.js";
 
 import { rouletteSpin } from "../domains/casino/roulette/service.js";
 import { plinkoDrop } from "../domains/casino/plinko/service.js";
@@ -459,6 +462,9 @@ async function pushChatToOverlay({ ownerUserId, msg }) {
 
   if (!lean.text) return;
   await pushRing(w.public_id, lean, max);
+
+  // NOTE: overlayGate publish is handled by fanOutAfterModeration (chat-outbox-worker)
+  // Do NOT publish here — that causes double delivery to the overlay SSE stream.
 }
 
 function verifySignature(req) {
@@ -523,7 +529,7 @@ export async function kickWebhookHandler(req, res) {
     const ownerRow = await resolveOwnerRow({ channelSlug, broadcasterUserId });
 
     if (!ownerRow) {
-      console.warn("[kickWebhook] no dashboard user mapped for event", {
+      console.warn("[kickWebhook] DROPPED - no dashboard user mapped for event", {
         eventType,
         broadcasterUserId,
         channelSlug,
@@ -665,6 +671,30 @@ export async function kickWebhookHandler(req, res) {
             ["kick", actualChannelSlug]
           );
           console.log("[kickWebhook] stream session marked ENDED", { channelSlug: actualChannelSlug });
+
+          // Fire stream debrief (non-blocking)
+          try {
+            const { rows: endedSession } = await db.query(
+              `SELECT session_id FROM stream_sessions WHERE channel_slug = $1 AND status = 'ended' ORDER BY ended_at DESC LIMIT 1`,
+              [actualChannelSlug]
+            );
+            if (endedSession[0]?.session_id) {
+              const { computeSessionStats } = await import('../../services/sessionStats.js');
+              await computeSessionStats(endedSession[0].session_id).catch(e => console.error('[kick] session stats error:', e.message));
+              const { sendStreamDebrief } = await import('../../services/streamDebrief.js');
+              sendStreamDebrief(endedSession[0].session_id, actualChannelSlug).catch(e => console.error('[kick] debrief error:', e.message));
+              // Generate content pack (non-blocking)
+              import('../../src/contentRepurposing/index.js').then(({ generateContentPack, deliverContentPack: _ }) =>
+                import('../../src/contentRepurposing/delivery.js').then(({ deliverContentPack }) =>
+                  generateContentPack(endedSession[0].session_id).then(pack => {
+                    if (pack) deliverContentPack(pack.packId, pack.input.userId).catch(e => console.error('[kick] content pack delivery error:', e.message));
+                  })
+                )
+              ).catch(e => console.error('[kick] content pack error:', e.message));
+            }
+          } catch (e) {
+            console.error('[kick] post-session hooks error:', e.message);
+          }
         } catch (err) {
           console.error("[kickWebhook] DB stream session go-offline failed", err);
         }
@@ -948,6 +978,9 @@ export async function kickWebhookHandler(req, res) {
 
     // Chat
     if (eventType === "chat.message.sent") {
+      const chain1Id = (req.get("Kick-Event-Id") || req.get("kick-event-id") || Math.random().toString(36).slice(2));
+      console.log('[CHAIN-1] chat.message.sent received', chain1Id);
+      recordStage('messages', 1, chain1Id);
       // Kick webhook payload may be wrapped as { data: {...} }
       // Normalize once, then read authoritative Kick fields from `k`.
       const k =
@@ -1225,30 +1258,19 @@ export async function kickWebhookHandler(req, res) {
           VALUES ($1, $2)
           ON CONFLICT (event_id) DO NOTHING
         `, [eventId, { chat_v1 }]);
+        console.log('[CHAIN-2] Inserted into chat_outbox', eventId);
+        recordStage('messages', 2, eventId);
+        console.log('[CHAIN-2] Inserted into chat_outbox', eventId);
+        recordStage('messages', 2, eventId);
 
-        if (VERBOSE_KICK_WEBHOOK) {
-          console.log("[kickWebhook] Enqueued to chat_outbox", eventId);
-        }
+        console.log("[CHAIN-2] Inserted into chat_outbox", eventId, "text:", chat_v1?.message?.text?.slice(0,30));
 
       } catch (err) {
         console.error("[kickWebhook] error enqueuing to Outbox", err);
       }
 
-      // Phase 3: Centralized fan-out with moderation gating
-      const chatOverlay = await getOrCreateUserChatOverlay(ownerRow.user_id);
-      if (chatOverlay?.public_id) {
-        const fanOutResult = fanOutAfterModeration({
-          chat_v1,
-          decision: scrapbotDecision,
-          publicId: chatOverlay.public_id,
-          ownerUserId: ownerRow.user_id,
-        });
-
-        if (VERBOSE_KICK_WEBHOOK && fanOutResult) {
-          console.log("[kickWebhook] Fan-out result:", fanOutResult);
-        }
-      }
-
+      // Phase 3: Fan-out is handled by chat-outbox-worker after moderation
+      // Do NOT fan-out here to avoid double delivery
       return res.json({ ok: true });
     }
 
@@ -1271,6 +1293,14 @@ export async function kickWebhookHandler(req, res) {
           if (data.livestream.viewer_count !== undefined) {
             telemetryPayload.viewers = data.livestream.viewer_count;
           }
+        }
+
+        // Capture game/category from metadata.updated
+        if (eventType === "livestream.metadata.updated") {
+          updateChannelGame(
+            ownerRow.channel_slug || channelSlug,
+            data
+          ).catch(e => console.warn("[kick] gameContext update failed:", e.message));
         }
 
         // Forward to Scrapbot's inboundKick endpoint

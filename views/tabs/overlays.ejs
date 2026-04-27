@@ -1,7 +1,30 @@
 <%
   const overlayItems = overlays || [];
   const templateItems = locals.templates || templates || [];
-  const totalItems = overlayItems.length + templateItems.length;
+
+  // Static asset types (non-OBS)
+  const STATIC_ASSET_TYPES = [
+    { key: 'kick_panel',     label: 'Kick Panel',             sub: '320×160px',   icon: 'K' },
+    { key: 'twitch_panel',   label: 'Twitch Panel',           sub: '320×160px',   icon: 'T' },
+    { key: 'kick_offline',   label: 'Kick Offline Banner',    sub: '1920×1080px', icon: 'K' },
+    { key: 'twitch_offline', label: 'Twitch Offline Banner',  sub: '1920×1080px', icon: 'T' },
+    { key: 'yt_channel_art', label: 'YouTube Channel Art',    sub: '2560×1440px', icon: 'Y' },
+    { key: 'yt_thumbnail',   label: 'YouTube Thumbnail',      sub: '1280×720px',  icon: 'Y' },
+  ];
+  const STATIC_KEYS = new Set(STATIC_ASSET_TYPES.map(a => a.key));
+
+  // Split overlays into OBS overlays vs static assets
+  const staticItems  = overlayItems.filter(o => STATIC_KEYS.has(o.asset_type));
+  const obsItems     = overlayItems.filter(o => !STATIC_KEYS.has(o.asset_type));
+
+  const sceneTypes = {
+    overlay:       obsItems.filter(o => !o.scene_type || o.scene_type === 'overlay'),
+    starting_soon: overlayItems.filter(o => o.scene_type === 'starting_soon'),
+    brb:           overlayItems.filter(o => o.scene_type === 'brb'),
+    stream_ending: overlayItems.filter(o => o.scene_type === 'stream_ending'),
+  };
+  const totalItems = obsItems.length + templateItems.length;
+  const SCENE_LABELS = { overlay: 'Overlay', starting_soon: 'Starting Soon', brb: 'BRB', stream_ending: 'Stream Ending' };
 %>
 
 <div class="overlay-library" id="overlayLibrary" data-active-filter="all" data-view-mode="grid" data-empty-state="false">
@@ -17,8 +40,36 @@
 
           <div class="mt-4 flex flex-col gap-2">
             <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary justify-center">
-              Create overlay
+              + New overlay
             </a>
+            <a href="/dashboard/overlays/new?scene_type=starting_soon" class="pc-btn pc-btn--ghost justify-center">
+              + Starting Soon
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=brb" class="pc-btn pc-btn--ghost justify-center">
+              + BRB screen
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=stream_ending" class="pc-btn pc-btn--ghost justify-center">
+              + Stream Ending
+            </a>
+
+            <!-- Static asset builder dropdown -->
+            <div class="relative" id="assetBuilderWrap">
+              <button type="button" onclick="toggleAssetBuilder()"
+                class="pc-btn pc-btn--ghost justify-between w-full">
+                <span>+ Static Asset</span>
+                <span id="assetBuilderArrow" class="text-xs opacity-60">▼</span>
+              </button>
+              <div id="assetBuilderMenu" class="hidden flex-col gap-1 mt-1 pl-2 border-l-2 border-white/10">
+                <% STATIC_ASSET_TYPES.forEach(function(at) { %>
+                  <a href="/dashboard/overlays/new?asset_type=<%= at.key %>"
+                    class="flex items-center justify-between px-3 py-2 rounded-md text-xs hover:bg-white/5 transition-colors">
+                    <span class="font-medium"><%= at.label %></span>
+                    <span class="text-gray-500 font-mono"><%= at.sub %></span>
+                  </a>
+                <% }); %>
+              </div>
+            </div>
+
             <a href="/dashboard" class="pc-btn pc-btn--ghost justify-center">
               Back to dashboard
             </a>
@@ -42,7 +93,7 @@
                 <span class="overlay-library__nav-title">Overlays</span>
                 <span class="overlay-library__nav-sub">Browser-source compositions</span>
               </span>
-              <span class="overlay-library__count"><%= overlayItems.length %></span>
+              <span class="overlay-library__count"><%= obsItems.length %></span>
             </button>
             <button type="button" class="overlay-library__nav-btn" data-library-filter="template">
               <span class="overlay-library__nav-label">
@@ -50,6 +101,35 @@
                 <span class="overlay-library__nav-sub">Saved broadcast templates</span>
               </span>
               <span class="overlay-library__count"><%= templateItems.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="static">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Static Assets</span>
+                <span class="overlay-library__nav-sub">Panels, banners, thumbnails</span>
+              </span>
+              <span class="overlay-library__count"><%= staticItems.length %></span>
+            </button>
+            <div class="overlay-library__eyebrow mt-4 mb-1">Scenes</div>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-starting_soon">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Starting Soon</span>
+                <span class="overlay-library__nav-sub">Pre-stream holding screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.starting_soon.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-brb">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">BRB</span>
+                <span class="overlay-library__nav-sub">Be right back screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.brb.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-stream_ending">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Stream Ending</span>
+                <span class="overlay-library__nav-sub">Outro / end screen</span>
+              </span>
+              <span class="overlay-library__count"><%= sceneTypes.stream_ending.length %></span>
             </button>
           </div>
         </div>
@@ -151,12 +231,12 @@
             <div class="overlay-library__section-title">Overlays</div>
             <div class="overlay-library__section-sub">Browser-source compositions you can edit, preview, and wire into OBS.</div>
           </div>
-          <div class="overlay-library__section-meta"><%= overlayItems.length %> item<%= overlayItems.length === 1 ? '' : 's' %></div>
+          <div class="overlay-library__section-meta"><%= obsItems.length %> item<%= obsItems.length === 1 ? '' : 's' %></div>
         </div>
 
-        <% if (overlayItems.length > 0) { %>
+        <% if (obsItems.length > 0) { %>
           <div class="overlay-library__grid" data-library-grid>
-            <% overlayItems.forEach(function(ov, index) {
+            <% obsItems.forEach(function(ov, index) {
                  const createdLabel = new Date(ov.created_at).toLocaleDateString();
                  const hue = (Number(ov.id) * 37 + index * 23) % 360;
             %>
@@ -164,22 +244,31 @@
                 class="overlay-card"
                 data-library-item
                 data-kind="overlay"
-                data-search="<%= [ov.name, ov.slug, ov.public_id].join(' ').toLowerCase() %>"
+                data-scene-type="<%= ov.scene_type || 'overlay' %>"
+                data-search="<%= [ov.name, ov.slug, ov.public_id, ov.scene_type || 'overlay'].join(' ').toLowerCase() %>"
                 style="--card-hue: <%= hue %>;"
               >
                 <div class="overlay-card__preview">
+                  <% if (ov.thumbnail_url) { %>
+                    <img src="<%= ov.thumbnail_url %>?t=<%= new Date(ov.updated_at).getTime() %>"
+                         alt="<%= ov.name %> preview"
+                         class="overlay-card__thumb"
+                         loading="lazy" />
+                  <% } %>
                   <div class="overlay-card__chrome">
-                    <span class="overlay-card__chip">Overlay</span>
+                    <span class="overlay-card__chip"><%= SCENE_LABELS[ov.scene_type] || 'Overlay' %></span>
+                    <% if (!ov.thumbnail_url) { %>
                     <div class="overlay-card__stage-line overlay-card__stage-line--a"></div>
                     <div class="overlay-card__stage-line overlay-card__stage-line--b"></div>
                     <div class="overlay-card__stage-line overlay-card__stage-line--c"></div>
                     <div class="overlay-card__stage-block overlay-card__stage-block--panel"></div>
                     <div class="overlay-card__stage-block overlay-card__stage-block--caption"></div>
+                    <% } %>
                   </div>
                 </div>
                 <div class="overlay-card__body">
                   <div class="overlay-card__meta">
-                    <span class="overlay-card__kind">Overlay</span>
+                    <span class="overlay-card__kind"><%= SCENE_LABELS[ov.scene_type] || 'Overlay' %></span>
                     <span class="overlay-card__stamp">Created <%= createdLabel %></span>
                   </div>
                   <div>
@@ -261,6 +350,74 @@
           </div>
         <% } %>
       </section>
+
+      <!-- ── Static Assets section ─────────────────────────────────────── -->
+      <section class="overlay-library__section" data-library-section data-kind="static">
+        <div class="overlay-library__section-head">
+          <div>
+            <div class="overlay-library__section-title">Static Assets</div>
+            <div class="overlay-library__section-sub">Channel panels, offline banners, thumbnails — platform-sized canvases with safe area guides.</div>
+          </div>
+          <div class="overlay-library__section-meta"><%= staticItems.length %> item<%= staticItems.length === 1 ? '' : 's' %></div>
+        </div>
+
+        <% if (staticItems.length > 0) { %>
+          <div class="overlay-library__grid" data-library-grid>
+            <% staticItems.forEach(function(ov, index) {
+                 const createdLabel = new Date(ov.created_at).toLocaleDateString();
+                 const hue = (Number(ov.id) * 37 + index * 23) % 360;
+                 const assetDef = {
+                   kick_panel:     { label: 'Kick Panel',            sub: '320×160', icon: 'K' },
+                   twitch_panel:   { label: 'Twitch Panel',          sub: '320×160', icon: 'T' },
+                   kick_offline:   { label: 'Kick Offline',          sub: '1920×1080', icon: 'K' },
+                   twitch_offline: { label: 'Twitch Offline',        sub: '1920×1080', icon: 'T' },
+                   yt_channel_art: { label: 'YT Channel Art',        sub: '2560×1440', icon: 'Y' },
+                   yt_thumbnail:   { label: 'YT Thumbnail',          sub: '1280×720', icon: 'Y' },
+                 }[ov.asset_type] || { label: ov.asset_type, sub: '', icon: '?' };
+            %>
+              <article
+                class="overlay-card"
+                data-library-item
+                data-kind="static"
+                data-asset-type="<%= ov.asset_type %>"
+                data-search="<%= [ov.name, ov.asset_type, ov.public_id].join(' ').toLowerCase() %>"
+                style="--card-hue: <%= hue %>;"
+              >
+                <div class="overlay-card__preview">
+                  <% if (ov.thumbnail_url) { %>
+                    <img src="<%= ov.thumbnail_url %>?t=<%= new Date(ov.updated_at).getTime() %>"
+                         alt="<%= ov.name %> preview"
+                         class="overlay-card__thumb"
+                         loading="lazy" />
+                  <% } %>
+                  <div class="overlay-card__chrome">
+                    <span class="overlay-card__chip"><%= assetDef.label %></span>
+                  </div>
+                </div>
+                <div class="overlay-card__body">
+                  <div class="overlay-card__meta">
+                    <span class="overlay-card__kind"><%= assetDef.sub %></span>
+                    <span class="overlay-card__stamp">Created <%= createdLabel %></span>
+                  </div>
+                  <div>
+                    <div class="overlay-card__name"><%= ov.name %></div>
+                    <div class="overlay-card__sub"><%= ov.slug %></div>
+                  </div>
+                  <div class="overlay-card__footer">
+                    <a href="/dashboard/overlays/<%= ov.id %>/edit" class="pc-btn pc-btn--primary">Open editor</a>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="overlay-library__empty">
+            <div class="overlay-library__empty-title">No static assets yet</div>
+            <div class="overlay-library__empty-copy">Use the "+ Static Asset" dropdown in the sidebar to create a Kick panel, Twitch panel, YouTube channel art, or thumbnail — each opens in the editor with the correct canvas size and safe area guide.</div>
+          </div>
+        <% } %>
+      </section>
+
     </section>
   </div>
 </div>
@@ -305,15 +462,35 @@
 
         sectionItems.forEach((item) => {
           const itemKind = item.dataset.kind || "";
+          const itemSceneType = item.dataset.sceneType || "overlay";
+          const itemAssetType = item.dataset.assetType || "";
           const haystack = item.dataset.search || "";
-          const matchesFilter = activeFilter === "all" || itemKind === activeFilter;
+          let matchesFilter;
+          if (activeFilter === "all") {
+            matchesFilter = true;
+          } else if (activeFilter.startsWith("scene-")) {
+            const sceneType = activeFilter.replace("scene-", "");
+            matchesFilter = itemKind === "overlay" && itemSceneType === sceneType;
+          } else if (activeFilter === "overlay") {
+            matchesFilter = itemKind === "overlay" && itemSceneType === "overlay";
+          } else if (activeFilter === "static") {
+            matchesFilter = itemKind === "static";
+          } else {
+            matchesFilter = itemKind === activeFilter;
+          }
           const matchesQuery = !activeQuery || haystack.includes(activeQuery);
           const visible = matchesFilter && matchesQuery;
           item.style.display = visible ? "" : "none";
           if (visible) visibleInSection += 1;
         });
 
-        const showSection = visibleInSection > 0 && (activeFilter === "all" || sectionKind === activeFilter);
+        const showSection = visibleInSection > 0 && (
+          activeFilter === "all" ||
+          sectionKind === activeFilter ||
+          (activeFilter.startsWith("scene-") && sectionKind === "overlay") ||
+          (activeFilter === "overlay" && sectionKind === "overlay") ||
+          (activeFilter === "static" && sectionKind === "static")
+        );
         section.dataset.hidden = showSection ? "false" : "true";
         if (showSection) anyVisible = true;
       });
@@ -397,4 +574,25 @@
     syncActiveButtons();
     applyLibraryFilters();
   })();
+</script>
+
+<script>
+  function toggleAssetBuilder() {
+    const menu = document.getElementById('assetBuilderMenu');
+    const arrow = document.getElementById('assetBuilderArrow');
+    if (!menu) return;
+    const open = menu.classList.toggle('hidden');
+    menu.style.display = open ? 'none' : 'flex';
+    if (arrow) arrow.textContent = open ? '▼' : '▲';
+  }
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('assetBuilderWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      const menu = document.getElementById('assetBuilderMenu');
+      const arrow = document.getElementById('assetBuilderArrow');
+      if (menu) { menu.classList.add('hidden'); menu.style.display = 'none'; }
+      if (arrow) arrow.textContent = '▼';
+    }
+  });
 </script>

@@ -17,6 +17,7 @@ import fetch from "node-fetch";
 import db from "../../db.js";
 import { getOrCreateUserChatOverlay } from "../widgets/chat-overlay/service.js";
 import { fanOutAfterModeration } from "../ingest/fanOutAfterModeration.js";
+import { recordStage } from "../services/pipelineHealth.js";
 
 const WORKER_ID = process.env.CHAT_OUTBOX_WORKER_ID || `dash-${process.pid}`;
 
@@ -220,6 +221,11 @@ async function processOne(meta, row) {
   }
 
   const ownerUserId = Number(chat_v1.scraplet_user_id || 0) || null;
+  console.log('[CHAIN-3] Processing outbox row', row.event_id, 'ownerUserId:', ownerUserId);
+  recordStage('messages', 3, row.event_id);
+  console.log('[CHAIN-3] Processing outbox row', row.event_id, 'ownerUserId:', ownerUserId);
+  recordStage('messages', 3, row.event_id);
+  console.log("[CHAIN-3] Processing outbox row", row.event_id, "ownerUserId:", ownerUserId, "text:", chat_v1?.message?.text?.slice(0,30));
   if (!ownerUserId) {
     await markFailure(meta, row.event_id, "missing_owner_user");
     return { ok: false, reason: "missing_owner_user" };
@@ -248,11 +254,12 @@ async function processOne(meta, row) {
 
     scrapbotData = safeJsonParse(rawText) || { raw: rawText };
   } catch (err) {
-    await markFailure(meta, row.event_id, `scrapbot_error:${err?.message || String(err)}`);
-    return { ok: false, reason: "scrapbot_error", error: err?.message || String(err) };
+    // Scrapbot unreachable — fail-open: fan-out with no decision (allows message through)
+    console.warn("[chat-outbox-worker] Scrapbot unreachable, failing open:", err?.message || String(err));
+    scrapbotData = null;
   }
 
-  const extracted = extractDecisionFromScrapbotResponse(scrapbotData);
+  const extracted = scrapbotData ? extractDecisionFromScrapbotResponse(scrapbotData) : { decision: null };
   const decision = extracted.decision;
 
   // 2) Fan-out ONLY after decision

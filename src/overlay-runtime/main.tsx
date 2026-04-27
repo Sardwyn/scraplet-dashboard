@@ -4,11 +4,18 @@ import {
   OverlayElement,
   OverlayConfigV0,
   OverlayTimelineProperty,
+  OverlayVariable,
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { FontLoader } from "../shared/FontManager";
 import { useElementAnimationPhases } from "./useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
+import { widgetRegistry } from './widgetRegistry';
+import { getWidgetRenderer } from '../shared/overlayRenderer/widgetContract';
+import { useUnifiedOverlayState } from './useUnifiedOverlayState';
+import type { OverlayConfigV0 as DerivedOverlayConfigV0 } from './DerivedStateEngine';
+import './widgetRenderers'; // Register unified-state widget renderers
+
 
 
 declare global {
@@ -80,6 +87,162 @@ function applyTimelineOverrides(
 }
 
 
+
+/* -----------------------------
+   Countdown Timer Runtime
+------------------------------*/
+
+function formatCountdownMs(ms: number, format: string): string {
+  const totalMs = Math.max(0, ms);
+  const totalSec = Math.floor(totalMs / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const msRem = Math.floor(totalMs % 1000);
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+
+  if (format === "HH:MM:SS") return `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+  if (format === "MM:SS") return `${pad2(m + h * 60)}:${pad2(s)}`;
+  if (format === "SS") return String(totalSec);
+
+  return format
+    .replace(/\{h\}/g, String(h))
+    .replace(/\{m\}/g, String(m))
+    .replace(/\{s\}/g, String(s))
+    .replace(/\{ms\}/g, String(msRem));
+}
+
+// Map of elementId -> start timestamp (ms)
+const countdownStartTimes = new Map<string, number>();
+
+// Map of elementId -> stopwatch start timestamp (ms)
+const clockStopwatchStartTimes = new Map<string, number>();
+
+function formatWallClockRuntime(date: Date, format: string, timezone?: string): string {
+  try {
+    const tz = timezone || "UTC";
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const parts: Record<string, string> = {};
+    dtf.formatToParts(date).forEach(({ type, value }) => {
+      parts[type] = value;
+    });
+    const h24 = parseInt(parts.hour ?? "0", 10) % 24;
+    const h12 = h24 % 12 || 12;
+    const ampm = h24 < 12 ? "AM" : "PM";
+    const mm = parts.minute ?? "00";
+    const ss = parts.second ?? "00";
+    const HH = String(h24).padStart(2, "0");
+    const hh = String(h12).padStart(2, "0");
+    return format
+      .replace(/HH/g, HH)
+      .replace(/mm/g, mm)
+      .replace(/ss/g, ss)
+      .replace(/hh/g, hh)
+      .replace(/h/g, String(h12))
+      .replace(/a/g, ampm.toLowerCase())
+      .replace(/A/g, ampm);
+  } catch {
+    return format;
+  }
+}
+
+function formatDurationRuntime(ms: number, format: string): string {
+  const totalMs = Math.max(0, ms);
+  const totalSec = Math.floor(totalMs / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  return format
+    .replace(/HH/g, pad2(h))
+    .replace(/mm/g, pad2(m))
+    .replace(/ss/g, pad2(s))
+    .replace(/h/g, String(h))
+    .replace(/m/g, String(m))
+    .replace(/s/g, String(s));
+}
+
+function tickClocks(elements: OverlayElement[]) {
+  const now = Date.now();
+  const nowDate = new Date(now);
+  const ckEls = elements.filter((el) => el.type === "clock") as any[];
+
+  for (const el of ckEls) {
+    const domEl = document.querySelector(`[data-clock-id="${el.id}"]`) as HTMLElement | null;
+    if (!domEl) continue;
+
+    const mode = el.clockMode ?? "wall";
+    const format = el.format ?? "HH:mm:ss";
+    let text = "";
+
+    if (mode === "wall") {
+      text = formatWallClockRuntime(nowDate, format, el.timezone);
+    } else if (mode === "elapsed" && el.startDatetime) {
+      const startMs = new Date(el.startDatetime).getTime();
+      const elapsedMs = Math.max(0, now - startMs);
+      text = formatDurationRuntime(elapsedMs, format);
+    } else if (mode === "stopwatch") {
+      if (!clockStopwatchStartTimes.has(el.id)) {
+        clockStopwatchStartTimes.set(el.id, now);
+      }
+      const elapsed = now - clockStopwatchStartTimes.get(el.id)!;
+      text = formatDurationRuntime(elapsed, format);
+    } else {
+      text = formatWallClockRuntime(nowDate, format, el.timezone);
+    }
+
+    domEl.textContent = text;
+  }
+}
+
+
+function tickCountdowns(elements: OverlayElement[]) {
+  const now = Date.now();
+  const cdEls = elements.filter((el) => el.type === "countdown") as any[];
+
+  for (const el of cdEls) {
+    const domEl = document.querySelector(`[data-countdown-id="${el.id}"]`) as HTMLElement | null;
+    if (!domEl) continue;
+
+    let remainingMs: number;
+
+    if (el.mode === "target" && el.targetDatetime) {
+      const target = new Date(el.targetDatetime).getTime();
+      remainingMs = target - now;
+    } else {
+      // duration mode
+      if (!countdownStartTimes.has(el.id)) {
+        countdownStartTimes.set(el.id, now);
+      }
+      const elapsed = now - countdownStartTimes.get(el.id)!;
+      remainingMs = (el.durationMs ?? 300000) - elapsed;
+    }
+
+    const endBehaviour = el.endBehaviour ?? "hold";
+
+    if (remainingMs <= 0) {
+      if (endBehaviour === "hide") {
+        domEl.style.display = "none";
+        continue;
+      } else if (endBehaviour === "loop") {
+        countdownStartTimes.set(el.id, now);
+        remainingMs = el.durationMs ?? 300000;
+      } else {
+        // hold
+        remainingMs = 0;
+      }
+    }
+
+    domEl.style.display = "";
+    domEl.textContent = formatCountdownMs(remainingMs, el.format ?? "MM:SS");
+  }
+}
 
 /* -----------------------------
    Small debug HUD (optional)
@@ -180,6 +343,7 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [data, setData] = useState<Record<string, string>>({});
   const [flash, setFlash] = useState(false);
+  const [variables, setVariables] = useState<OverlayVariable[]>([]);
   const lastIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -207,6 +371,12 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
         const { header, payload } = packet || {};
 
         console.log("[OverlayEvents] Packet:", header?.type, payload);
+        // Multiplex to widgets via window event (avoids per-widget SSE connections)
+        if (header?.type) {
+          window.dispatchEvent(new CustomEvent('scraplet:overlay:event', {
+            detail: packet
+          }));
+        }
         // Producer → Overlay events
         if (header?.type === "overlay.lower_third.show") {
           // 1. Resolve payload
@@ -302,6 +472,13 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
           });
         }
 
+        if (header?.type === "variables.update") {
+          const vars = payload?.variables;
+          if (Array.isArray(vars)) {
+            setVariables(vars);
+          }
+        }
+
         lastIdRef.current = header?.id;
 
         // Universal Packet Handler (Phase 12)
@@ -363,19 +540,133 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
     };
   }, [publicId, elements]); // Re-bind if elements list changes drastically? Ideally stable.
 
-  return { overrides, data, flash };
+  return { overrides, data, flash, variables };
 }
 
 /* -----------------------------
    Overlay runtime root
 ------------------------------*/
+
+// ── Widget Runtime Loader ─────────────────────────────────────────────────────
+// Checks registry first — registered widgets use unified state path.
+// Unregistered widgets use widgetRegistry (sets __WIDGET_CONFIG_* globals, fetches tokens, loads IIFE scripts).
+
+// Shared SSE multiplexer — one connection for all IIFE widgets
+let sharedWidgetSse: EventSource | null = null;
+let sharedWidgetToken: string | null = null;
+
+const WIDGET_SSE_EVENT_TYPES = [
+  'subs.update','chat_message','follow','sub','raid','tip','redemption',
+  'channel.subscription.new','channel.subscription.renewal','channel.subscription.gifts',
+  'channel.followed','channel.reward.redemption.updated',
+  'kicks.gifted','donation','chat.message.sent',
+  'subscribe','gift_sub','subscription','resub','raffle_update','tts.ready','tts_ready',
+  'stake.update','alert','event_console','hello','ping',
+];
+
+function startSharedWidgetSse(token: string) {
+  if (sharedWidgetSse && sharedWidgetToken === token) return;
+  if (sharedWidgetSse) { sharedWidgetSse.close(); sharedWidgetSse = null; }
+  sharedWidgetToken = token;
+  const url = '/w/' + encodeURIComponent(token) + '/stream';
+  const es = new EventSource(url);
+  sharedWidgetSse = es;
+  const dispatchNamed = (type: string, data: string) => {
+    window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data }));
+  };
+  const dispatchGeneric = (data: string) => {
+    window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data }));
+  };
+  es.onmessage = (ev) => dispatchGeneric(ev.data);
+  WIDGET_SSE_EVENT_TYPES.forEach(type => {
+    es.addEventListener(type, (ev: MessageEvent) => dispatchNamed(type, ev.data));
+  });
+  es.onerror = () => {
+    es.close();
+    sharedWidgetSse = null;
+    setTimeout(() => { if (sharedWidgetToken) startSharedWidgetSse(sharedWidgetToken); }, 5000);
+  };
+}
+
+function registerWidgets(elements: any[], channelSlug: string) {
+  const WIDGET_SCRIPTS: Record<string, string> = {
+    'stake-monitor':        '/widgets/stake-monitor.js',
+    'tts-player':           '/widgets/tts-player.js',
+    'chat-overlay':         '/widgets/chat-overlay.js',
+    'alert-box-widget':     '/widgets/alert-box-widget.js',
+    'sub-counter':          '/widgets/sub-counter.js',
+    'event-console-widget': '/widgets/event-console-widget.js',
+    'raffle':               '/widgets/raffle.js',
+    'subathon-timer':       '/widgets/subathon-timer.js',
+    'random-number':        '/widgets/random-number.js',
+    'emote-wall':           '/widgets/emote-wall.js',
+    'emote-counter':        '/widgets/emote-counter.js',
+    'top-donators':         '/widgets/top-donators.js',
+    'sound-visualizer':     '/widgets/sound-visualizer.js',
+    'ticker':               '/widgets/ticker.js',
+    'hype-train':           '/widgets/hype-train.js',
+  };
+
+  const TOKEN_WIDGETS = new Set(['chat-overlay', 'alert-box-widget', 'sub-counter', 'event-console-widget', 'raffle', 'tts-player']);
+
+  for (const el of elements) {
+    if (el.type !== 'widget') continue;
+
+    const widgetId = el.widgetId;
+
+    // Unified state path — React renderer registered, skip IIFE script.
+    // But still start the shared widget SSE for token widgets (chat bridge needs it).
+    if (getWidgetRenderer(widgetId)) {
+      console.log(`[overlay-runtime] ${widgetId} using unified state path`);
+      const propOverrides = el.propOverrides || {};
+      if (TOKEN_WIDGETS.has(widgetId) && propOverrides.token && !sharedWidgetSse) {
+        startSharedWidgetSse(propOverrides.token);
+      }
+      continue;
+    }
+
+    const scriptSrc = WIDGET_SCRIPTS[widgetId];
+    if (!scriptSrc) continue;
+
+    const propOverrides = el.propOverrides || {};
+    const requiresToken = TOKEN_WIDGETS.has(widgetId);
+    const params = new URLSearchParams({ channel: channelSlug, v: Date.now().toString() });
+    const scriptUrl = scriptSrc + '?' + params.toString();
+
+    // Use widgetRegistry — sets __WIDGET_CONFIG_* globals, fetches tokens, loads script
+    widgetRegistry.register({
+      widgetId,
+      elementId: el.id,
+      config: { channel: channelSlug, ...propOverrides },
+      scriptUrl,
+      requiresToken,
+    });
+
+    if (requiresToken && propOverrides.token) {
+      if (!sharedWidgetSse) {
+        startSharedWidgetSse(propOverrides.token);
+      }
+    }
+  }
+}
+
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
+  const [configVariables, setConfigVariables] = useState<OverlayVariable[]>([]);
   const [state, setState] = useState<OverlayStateV0 | null>(null);
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const playbackStartRef = useRef<number | null>(null);
   const overlayConfigHashRef = useRef<string>("");
+
+  // OBS detection — disable debug HUD when running inside OBS CEF
+  const isOBS = navigator.userAgent.includes("OBS");
+
+  // Unified overlay state — owns all SSE connections and widget state derivation
+  const overlayConfigForState: DerivedOverlayConfigV0 = overlay ? (overlay as any) : { elements: [] };
+  const unifiedState = useUnifiedOverlayState(publicId, overlayConfigForState);
+
+  // Chat messages now flow through overlayGate SSE (chat.message packets) — no widget SSE bridge needed.
 
   // ... (existing refs/state) ...
   const pinnedMeasureRef = useRef<HTMLDivElement>(null);
@@ -388,17 +679,70 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // Enable Event System
   // We need the elements list to find targets
   const baseElements = overlay?.elements ?? [];
-  const { overrides, data: eventData, flash } = useOverlayEvents(publicId, baseElements);
-  const timelineValues = useMemo(
-    () => evaluateTimeline(overlay?.timeline, playheadMs),
-    [overlay?.timeline, playheadMs]
-  );
+  const { overrides, data: eventData, flash, variables: sseVariables } = useOverlayEvents(publicId, baseElements);
+  // SSE-updated variables override config-loaded ones
+  const overlayVariables = sseVariables.length > 0 ? sseVariables : configVariables;
+  // Active event timeline state: { name, startedAt }
+  const [activeEventTl, setActiveEventTl] = React.useState<{ name: string; startedAt: number } | null>(null);
+
+  // Listen for overlay SSE events to trigger event timelines
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const type: string = detail?.header?.type ?? "";
+      // Map event types to timeline names
+      const eventMap: Record<string, string> = {
+        "channel.subscription.new": "sub",
+        "channel.subscription.renewal": "sub",
+        "subscribe": "sub",
+        "channel.followed": "follow",
+        "follow": "follow",
+        "raid": "raid",
+        "donation": "donation",
+        "cheer": "cheer",
+        "host": "host",
+      };
+      const tlName = eventMap[type];
+      if (tlName && (overlay as any)?.eventTimelines?.[tlName]) {
+        setActiveEventTl({ name: tlName, startedAt: performance.now() });
+      }
+    };
+    window.addEventListener("scraplet:overlay:event", handler);
+    return () => window.removeEventListener("scraplet:overlay:event", handler);
+  }, [overlay]);
+
+  // Event timeline playhead
+  const eventTlElapsed = activeEventTl ? performance.now() - activeEventTl.startedAt : 0;
+  const eventTl = activeEventTl ? (overlay as any)?.eventTimelines?.[activeEventTl.name] : null;
+
+  // Clear event timeline when it finishes
+  React.useEffect(() => {
+    if (!activeEventTl || !eventTl) return;
+    const remaining = (eventTl.durationMs ?? 3000) - eventTlElapsed;
+    if (remaining <= 0) { setActiveEventTl(null); return; }
+    const timer = window.setTimeout(() => setActiveEventTl(null), remaining);
+    return () => window.clearTimeout(timer);
+  }, [activeEventTl?.name, activeEventTl?.startedAt]);
+
+  const timelineValues = useMemo(() => {
+    const base = evaluateTimeline(overlay?.timeline, playheadMs);
+    if (!eventTl || !activeEventTl) return base;
+    // Event timeline values override base
+    const eventValues = evaluateTimeline(eventTl, eventTlElapsed);
+    const merged: typeof base = { ...base };
+    for (const [elId, props] of Object.entries(eventValues)) {
+      merged[elId] = { ...(merged[elId] ?? {}), ...props };
+    }
+    return merged;
+  }, [overlay?.timeline, playheadMs, eventTl, eventTlElapsed]);
 
   // Apply Overrides Merge
   const elements = React.useMemo(() => {
     return baseElements.map(el => {
       const ov = overrides[el.id];
       const merged = ov ? ({ ...el, ...ov } as OverlayElement) : el;
+      // Don't apply timeline position overrides to widget elements - they should stay fixed
+      if ((merged as any).type === 'widget') return merged;
       return applyTimelineOverrides(merged, timelineValues[el.id]);
     });
   }, [baseElements, overrides, timelineValues]);
@@ -423,22 +767,31 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       const data = (await res.json()) as OverlayConfigV0;
       const nextHash = JSON.stringify(data);
       if (cancelled) return;
+
+      // Always register widgets (idempotent - safe to call multiple times)
+      const channelSlug = (window as any).__OVERLAY_CHANNEL_SLUG__ || '';
+      console.log('[OverlayRuntime] Calling registerWidgets, elements:', (data.elements || []).length);
+      registerWidgets(data.elements || [], channelSlug);
+
       if (nextHash === overlayConfigHashRef.current) return;
 
       overlayConfigHashRef.current = nextHash;
       setOverlay(data);
+      if (Array.isArray((data as any).variables)) {
+        setConfigVariables((data as any).variables);
+      }
     };
 
     loadConfig().catch((e) => console.error("Failed to load overlay config", e));
-    timer = window.setInterval(() => {
-      loadConfig().catch((e) => console.error("Failed to refresh overlay config", e));
-    }, 2000);
+    // No polling — load once. Config only changes when user saves in editor.
 
     return () => {
       cancelled = true;
       if (timer) window.clearInterval(timer);
     };
   }, [publicId]);
+
+  // Widget loading: unified state path handles all SSE via useUnifiedOverlayState
 
   useEffect(() => {
     const durationMs = overlay?.timeline?.durationMs ?? 0;
@@ -459,17 +812,19 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     const reverse = overlay?.timeline?.playback?.reverse === true;
     const loop = overlay?.timeline?.playback?.loop === true;
     let frameId = 0;
-    const startOffset = reverse ? durationMs - playheadMs : playheadMs;
-    playbackStartRef.current = performance.now() - startOffset;
+    // Use a ref to track playhead without triggering re-renders on every frame
+    const playheadRef = { current: reverse ? durationMs : 0 };
+    playbackStartRef.current = performance.now();
 
     const tick = (now: number) => {
       const startedAt = playbackStartRef.current ?? now;
       const elapsed = Math.max(0, now - startedAt);
       const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
       const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
-      setPlayheadMs(next);
+      playheadRef.current = next;
 
       if (!loop && elapsed >= durationMs) {
+        // Timeline finished — update React state once
         setPlayheadMs(reverse ? 0 : durationMs);
         setIsTimelinePlaying(false);
         playbackStartRef.current = null;
@@ -478,69 +833,30 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       }
     };
 
+    // Update React state at ~10fps for smooth-enough position updates
+    const stateInterval = window.setInterval(() => {
+      setPlayheadMs(playheadRef.current);
+    }, 100);
+
     frameId = window.requestAnimationFrame(tick);
     return () => {
       window.cancelAnimationFrame(frameId);
+      window.clearInterval(stateInterval);
       playbackStartRef.current = null;
     };
-  }, [isTimelinePlaying, overlay?.timeline?.durationMs, overlay?.timeline?.playback?.loop, overlay?.timeline?.playback?.reverse, playheadMs]);
+  }, [isTimelinePlaying, overlay?.timeline?.durationMs, overlay?.timeline?.playback?.loop, overlay?.timeline?.playback?.reverse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Poll state (dynamic, contract peg)
   useEffect(() => {
     let stopped = false;
     let timer: number | null = null;
 
-    const pollMs = 1000; // V0: simple + low load
-    let lastWarnAt = 0;
-
-    const tick = async () => {
-      if (stopped) return;
-
-      try {
-        const res = await fetch(
-          `/api/overlays/public/${encodeURIComponent(publicId)}/state`,
-          { cache: "no-store" }
-        );
-
-        if (!res.ok) {
-          const now = Date.now();
-          if (now - lastWarnAt > 10_000) {
-            console.warn("Overlay state fetch failed", res.status);
-            lastWarnAt = now;
-          }
-          return;
-        }
-
-        const next = (await res.json()) as OverlayStateV0;
-
-        setState((prev) => {
-          if (!prev) return next;
-          if (prev.rev !== next.rev) return next;
-          if (prev.ts !== next.ts) return next;
-          return prev;
-        });
-      } catch (e) {
-        const now = Date.now();
-        if (now - lastWarnAt > 10_000) {
-          console.warn("Overlay state fetch error", e);
-          lastWarnAt = now;
-        }
-      }
-    };
-
-    tick();
-    timer = window.setInterval(tick, pollMs);
-
-    const onVis = () => {
-      if (document.visibilityState === "hidden") return;
-      tick();
-    };
-    document.addEventListener("visibilitychange", onVis);
+    // State polling disabled - state is delivered via SSE events instead
+    // const pollMs = 1000;
 
     return () => {
       stopped = true;
       if (timer) window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", onVis);
     };
   }, [publicId]);
 
@@ -551,9 +867,87 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // Countdown tick loop
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      tickCountdowns(elements);
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [elements]);
+
+  // Clock tick loop
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      tickClocks(elements);
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, [elements]);
+
+  // Audio Visualiser runtime — Web Audio API
+  useEffect(() => {
+    const avEls = elements.filter((el) => el.type === "audioVisualiser") as any[];
+    if (avEls.length === 0) return;
+
+    if (!window.__AUDIO_ANALYSERS__) {
+      window.__AUDIO_ANALYSERS__ = new Map();
+    }
+
+    let audioCtx: AudioContext | null = null;
+    let source: MediaStreamAudioSourceNode | null = null;
+
+    const init = async () => {
+      try {
+        audioCtx = new AudioContext();
+        let stream: MediaStream;
+
+        // OBS browser source: try obsstudio.getAudioSources() first
+        if ((window as any).obsstudio?.getAudioSources) {
+          try {
+            const sources = await (window as any).obsstudio.getAudioSources();
+            const srcId = avEls[0]?.sourceId ?? "default";
+            const obsSource = sources.find((s: any) => s.id === srcId) ?? sources[0];
+            if (obsSource) {
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: obsSource.deviceId ?? undefined },
+              });
+            } else {
+              stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+          } catch {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          }
+        } else {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+
+        source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        // Share one analyser for all AV elements (they all get the same audio)
+        avEls.forEach((el) => {
+          window.__AUDIO_ANALYSERS__!.set(el.id, analyser);
+        });
+      } catch (err) {
+        console.warn("[AudioVisualiser] Could not initialise Web Audio:", err);
+        // Demo animation continues in ElementRenderer — no action needed
+      }
+    };
+
+    init();
+
+    return () => {
+      avEls.forEach((el) => window.__AUDIO_ANALYSERS__?.delete(el.id));
+      source?.disconnect();
+      audioCtx?.close().catch(() => {});
+    };
+  }, [elements]);
+
   // Safe defaults before overlay loads (keeps hooks order stable)
-  const baseW = overlay?.baseResolution?.width ?? 1920;
-  const baseH = overlay?.baseResolution?.height ?? 1080;
+  // Use server-injected base resolution if available (avoids layout shift before config loads)
+  const baseW = overlay?.baseResolution?.width ?? (window as any).__OVERLAY_BASE_W__ ?? 1920;
+  const baseH = overlay?.baseResolution?.height ?? (window as any).__OVERLAY_BASE_H__ ?? 1080;
 
   // IMPORTANT: Filter out children of container elements so they don't double-render at root
   const allChildIds = React.useMemo(() => {
@@ -571,8 +965,30 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
   const normalElements = rootElements.filter((el: any) => el.pinned !== true);
 
-  // IMPORTANT: COVER scale (fills viewport; crops overflow) — NO GAPS
-  const scale = Math.max(viewport.w / baseW, viewport.h / baseH);
+  // Rendering layers — stacking order (bottom to top):
+  // z=1: flatElements    — 2D elements, no transforms
+  // z=2: elements3D      — non-widget elements with 3D transforms (preserve-3d isolated)
+  // z=3: widgetElements  — widgets without 3D transforms
+  // z=4: widgets3D       — widgets with 3D transforms (highest priority)
+  const flatElements = normalElements.filter((el: any) =>
+    el.type !== 'widget' &&
+    !el.tiltX && !el.tiltY && !el.skewX && !el.skewY
+  );
+  const elements3D = normalElements.filter((el: any) =>
+    el.type !== 'widget' &&
+    (el.tiltX || el.tiltY || el.skewX || el.skewY)
+  );
+  const widgetElements = normalElements.filter((el: any) =>
+    el.type === 'widget' &&
+    !el.tiltX && !el.tiltY && !el.skewX && !el.skewY
+  );
+  const widgets3D = normalElements.filter((el: any) =>
+    el.type === 'widget' &&
+    (el.tiltX || el.tiltY || el.skewX || el.skewY)
+  );
+
+  // CONTAIN scale: fits entire canvas in viewport — coordinates are 1:1 with OBS
+  const scale = Math.min(viewport.w / baseW, viewport.h / baseH);
 
   const elementsById = React.useMemo(() => {
     const map: Record<string, OverlayElement> = {};
@@ -618,8 +1034,19 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     };
   }, [pinnedElements.length, scale]);
 
+  // Sync scale transform to pre-rendered widget containers
+  useEffect(() => {
+    const widgetWrapper = document.getElementById('widget-containers-prerender');
+    if (widgetWrapper) {
+      widgetWrapper.style.transform = `scale(${scale})`;
+    }
+  }, [scale]);
+
+  // Transforms are applied by ElementRenderer directly in baseStyle - no DOM manipulation needed
+
   return (
     <>
+      <FontLoader fonts={usedFonts} />
       <div
         style={{
           width: "100vw",
@@ -628,21 +1055,18 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             overlay?.backgroundColor && overlay.backgroundColor !== "transparent"
               ? overlay.backgroundColor
               : "transparent",
-
-          overflow: "hidden", // crops when using COVER scaling
+          overflow: elements.some((el: any) => (el.tiltX ?? 0) !== 0 || (el.tiltY ?? 0) !== 0 || (el.skewX ?? 0) !== 0 || (el.skewY ?? 0) !== 0) ? "visible" : "hidden",
           position: "relative",
         }}
       >
-        {/* Stage is centered and scaled to COVER the viewport */}
+        {/* Stage: top-left anchored scale */}
         <div
           style={{
             position: "absolute",
-            left: "50%",
-            top: "50%",
+            left: 0,
+            top: 0,
             width: baseW,
             height: baseH,
-            transformOrigin: "top left",
-            transform: `translate(-50%, -50%) scale(${scale})`,
           }}
         >
           {/* PINNED LAYER */}
@@ -667,6 +1091,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                     y: 0,
                   }}
                   elementsById={elementsById}
+                  overlayComponents={(overlay as any).components || []}
                   animationPhase={animationPhases[el.id]?.phase}
                   animationPhases={animationPhases}
                   data={{}} // Test data placeholder
@@ -676,24 +1101,35 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             </div>
           )}
 
-          {/* NORMAL ELEMENTS — JS OFFSET, NOT CSS */}
-          {overlay &&
-            normalElements.map((el: any) => (
-              <ElementRenderer
-                key={el.id}
-                element={el}
-                yOffset={pinnedHeight}
-                elementsById={elementsById}
-                animationPhase={animationPhases[el.id]?.phase}
-                animationPhases={animationPhases}
-                data={eventData}
-                visited={new Set()}
-              />
-            ))}
+          {/* SINGLE RENDER LAYER — all elements in one preserve-3d context.
+               zIndex on each element (from elementIndex = config order) handles stacking.
+               No separate layer containers — they caused z-order bugs in OBS CEF. */}
+          {overlay && normalElements.length > 0 && (
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              {normalElements.map((el: any) => (
+                <ElementRenderer
+                  key={el.id}
+                  element={el}
+                  yOffset={pinnedHeight}
+                  elementsById={elementsById}
+                  overlayComponents={(overlay as any).components || []}
+                  animationPhase={animationPhases[el.id]?.phase}
+                  animationPhases={animationPhases}
+                  data={eventData}
+                  overlayVariables={overlayVariables}
+                  visited={new Set()}
+                  elementIndex={elements.indexOf(el) + 1}
+                  widgetStates={unifiedState.widgetStates}
+                />
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
 
-      <DebugHud state={state} data={eventData} />
+      {!isOBS && <DebugHud state={state} data={eventData} />}
+
     </>
   );
 }

@@ -1,9 +1,22 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'write-build-stamp',
+      closeBundle() {
+        const stamp = { buildTime: Date.now(), built: new Date().toISOString() };
+        fs.writeFileSync(
+          path.resolve(__dirname, 'public/static/overlays/build-stamp.json'),
+          JSON.stringify(stamp)
+        );
+      }
+    }
+  ],
 
   // CRITICAL: prevent Vite from copying /public into outDir
   // because outDir is inside /public (otherwise infinite recursion)

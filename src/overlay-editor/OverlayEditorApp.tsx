@@ -51,9 +51,16 @@ import { FontPicker } from "./FontPicker";
 import { useElementAnimationPhases } from "../overlay-runtime/useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { TimelinePanel } from "./components/TimelinePanel";
+import { AssetsPanel } from "./components/AssetsPanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
+import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
+import { getAllWidgets, getWidgetDef } from "../shared/widgetRegistry";
+import "../stakeMonitor/stakeMonitorWidget";
+import "../ttsWidget/ttsWidget";
+import "../widgets/allWidgets";
 import { formatShortcutTooltip, shortcutMatchesEvent } from "./shortcutRegistry";
 import { uiClasses } from "./uiTokens";
+import { deriveStyleProfile } from "./panelStyleEngine";
 import { expandStrokePath, offsetOverlayPath } from "../shared/geometry/pathBoolean";
 import {
   booleanContainerBounds,
@@ -67,6 +74,8 @@ import {
   translateOverlayPath,
 } from "../shared/geometry/pathUtils";
 import { resolveElementGeometry } from "../shared/geometry/resolveGeometry";
+import { ParametricCurvePanel } from "./components/ParametricCurvePanel";
+import { EFFECT_PRESETS } from "../shared/effects/parametricEffects";
 
 
 interface ServerOverlay {
@@ -911,6 +920,69 @@ async function uploadAssetFile(file: File, scope: AssetScope, kind: AssetKind): 
   return { url: data.url };
 }
 
+function DraggableFlyout({ children, initialRight }: { children: React.ReactNode; initialRight: number }) {
+  const [pos, setPos] = React.useState<{ x: number; y: number } | null>(null);
+  const dragRef = React.useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const elRef = React.useRef<HTMLDivElement>(null);
+
+  // Init position: to the left of the inspector, vertically centered
+  React.useEffect(() => {
+    if (!elRef.current) return;
+    const h = elRef.current.offsetHeight || 500;
+    setPos({
+      x: window.innerWidth - initialRight - (elRef.current.offsetWidth || 480),
+      y: Math.max(8, (window.innerHeight - h) / 2),
+    });
+  }, [initialRight]);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('input,select,button,svg')) return;
+    e.preventDefault();
+    const rect = elRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: rect.left, origY: rect.top };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      setPos({
+        x: Math.max(0, Math.min(window.innerWidth - (elRef.current?.offsetWidth ?? 480), dragRef.current.origX + ev.clientX - dragRef.current.startX)),
+        y: Math.max(0, Math.min(window.innerHeight - (elRef.current?.offsetHeight ?? 400), dragRef.current.origY + ev.clientY - dragRef.current.startY)),
+      });
+    };
+    const onUp = () => { dragRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  return (
+    <div
+      ref={elRef}
+      onMouseDown={onMouseDown}
+      style={{
+        position: 'fixed',
+        left: pos?.x ?? -9999,
+        top: pos?.y ?? -9999,
+        zIndex: 200,
+        cursor: 'default',
+        userSelect: 'none',
+      }}
+    >
+      {/* Drag handle bar */}
+      <div style={{
+        height: 6,
+        background: 'rgba(255,255,255,0.06)',
+        borderRadius: '10px 10px 0 0',
+        cursor: 'grab',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <div style={{ width: 32, height: 2, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export function OverlayEditorApp({ initialOverlay }: Props) {
   const [name, setName] = useState(initialOverlay.name || "Untitled Overlay");
   const [slug, setSlug] = useState(initialOverlay.slug || "");
@@ -941,6 +1013,14 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [draftRects, setDraftRects] = useState<Record<string, { x: number; y: number; width: number; height: number }>>({});
 
   const [saving, setSaving] = useState(false);
+  // Event timeline mode: null = base timeline, string = event name
+  const [activeEventTimeline, setActiveEventTimeline] = useState<string | null>(null);
+  const [curveEditorEffect, setCurveEditorEffect] = useState<string | null>(null);
+  React.useEffect(() => {
+    const handler = (e: Event) => setCurveEditorEffect((e as CustomEvent).detail);
+    window.addEventListener('scraplet:open-curve-editor', handler);
+    return () => window.removeEventListener('scraplet:open-curve-editor', handler);
+  }, []);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
 
@@ -948,6 +1028,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [snapEnabled, setSnapEnabled] = useState(true);
   const [gridSize, setGridSize] = useState(16);
   const [showGrid, setShowGrid] = useState(true);
+  const [obsPreviewEnabled, setObsPreviewEnabled] = useState(false);
+  const [obsPreviewUrl, setObsPreviewUrl] = useState<string | null>(null);
+  const [obsCanvasSize, setObsCanvasSize] = useState<{ w: number; h: number } | null>(null);
+  const obsWsRef = React.useRef<WebSocket | null>(null);
+  const obsPreviewIntervalRef = React.useRef<number | null>(null);
 
   const [guideSnapEnabled, setGuideSnapEnabled] = useState(true);
   const [guides, setGuides] = useState<GuideState>({ show: false, v: [], h: [] });
@@ -1032,7 +1117,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   // Template Picker State
   // (templates state removed)
-  const [leftTab, setLeftTab] = useState<"layers" | "components">("layers");
+  const [leftTab, setLeftTab] = useState<"layers" | "components" | "assets" | "widgets">("layers");
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [editorStatus, setEditorStatus] = useState<{ title: string; detail?: string } | null>(null);
   const [timelinePlayheadMs, setTimelinePlayheadMs] = useState(0);
@@ -1131,7 +1216,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   const { baseResolution } = config;
-  const timeline = useMemo(() => ensureTimeline(config.timeline), [config.timeline]);
+  const timeline = useMemo(() => {
+    if (activeEventTimeline) {
+      const et = (config as any).eventTimelines?.[activeEventTimeline];
+      return ensureTimeline(et);
+    }
+    return ensureTimeline(config.timeline);
+  }, [config.timeline, (config as any).eventTimelines, activeEventTimeline]);
   const timelineValues = useMemo(
     () => evaluateTimeline(timeline, timelinePlayheadMs),
     [timeline, timelinePlayheadMs]
@@ -1335,6 +1426,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return (elementsAny.find((el) => el.id === primarySelectedId) ?? null) as AnyEl | null;
   }, [elementsAny, primarySelectedId]);
 
+
   useEffect(() => {
     if (!selectedPathAnchor) return;
     if (primarySelectedEl?.type !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
@@ -1402,6 +1494,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     return els.reverse();
   }, [elementsAny]);
 
+  const panelStyleProfile = useMemo(
+    () => deriveStyleProfile(metadata, config.elements),
+    [metadata, config.elements]
+  );
+
   const usedFonts = useMemo(() => {
     const set = new Set<string>();
     for (const el of config.elements) {
@@ -1409,8 +1506,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         set.add((el as OverlayTextElement).fontFamily!);
       }
     }
+    if (panelStyleProfile.fontFamily) {
+      set.add(panelStyleProfile.fontFamily);
+    }
     return Array.from(set);
-  }, [config.elements]);
+  }, [config.elements, panelStyleProfile.fontFamily]);
+
 
   const allChildIds = useMemo(() => {
     const s = new Set<string>();
@@ -1424,6 +1525,20 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   function setTimeline(nextTimelineOrUpdater: OverlayTimeline | ((current: OverlayTimeline) => OverlayTimeline)) {
     setConfig((prev) => {
+      if (activeEventTimeline) {
+        const currentTimeline = ensureTimeline((prev as any).eventTimelines?.[activeEventTimeline]);
+        const nextTimeline =
+          typeof nextTimelineOrUpdater === "function"
+            ? nextTimelineOrUpdater(currentTimeline)
+            : nextTimelineOrUpdater;
+        return {
+          ...prev,
+          eventTimelines: {
+            ...((prev as any).eventTimelines ?? {}),
+            [activeEventTimeline]: nextTimeline,
+          },
+        };
+      }
       const currentTimeline = ensureTimeline(prev.timeline);
       const nextTimeline =
         typeof nextTimelineOrUpdater === "function"
@@ -1508,7 +1623,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (!element) return;
 
     setConfig((prev) => {
-      const ensured = ensureTimeline(prev.timeline);
+      // Use event timeline if active, otherwise base timeline
+      const currentEventTl = activeEventTimeline
+        ? (prev as any).eventTimelines?.[activeEventTimeline]
+        : null;
+      const ensured = ensureTimeline(currentEventTl ?? prev.timeline);
       if (ensured.tracks.some((track) => track.elementId === elementId && track.property === property)) {
         return prev;
       }
@@ -1537,6 +1656,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       setSelectedTimelineTrackId(nextTimeline.tracks[nextTimeline.tracks.length - 1].id);
       setSelectedTimelineKeyframeId(keyframe.id);
+      if (activeEventTimeline) {
+        return {
+          ...prev,
+          eventTimelines: {
+            ...((prev as any).eventTimelines ?? {}),
+            [activeEventTimeline]: nextTimeline,
+          },
+        };
+      }
       return { ...prev, timeline: nextTimeline };
     });
   }
@@ -4729,6 +4857,65 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     });
   }, []);
 
+  // ── OBS Preview ────────────────────────────────────────────────────────────
+  function connectObsPreview() {
+    const stored = localStorage.getItem('obs_ws_url') || 'ws://localhost:4455';
+    const storedPwd = localStorage.getItem('obs_ws_password') || '';
+    const url = window.prompt('OBS WebSocket URL:', stored) || stored;
+    const pwd = window.prompt('OBS WebSocket Password (leave blank if none):', storedPwd) ?? storedPwd;
+    localStorage.setItem('obs_ws_url', url);
+    localStorage.setItem('obs_ws_password', pwd);
+    try {
+      const ws = new WebSocket(url);
+      (obsWsRef as any).current = ws;
+      ws.onopen = () => console.log('[OBS Preview] connected');
+      ws.onclose = () => { setObsPreviewEnabled(false); setObsPreviewUrl(null); };
+      ws.onerror = () => { ws.close(); alert('Could not connect to OBS WebSocket. Enable it in OBS: Tools → WebSocket Server Settings.'); };
+      ws.onmessage = (ev: MessageEvent) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.op === 0) ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
+          if (msg.op === 2) {
+            setObsPreviewEnabled(true);
+            // Get canvas size and current scene
+            ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetVideoSettings', requestId: 'getVideoSettings', requestData: {} } }));
+            ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetCurrentProgramScene', requestId: 'getScene', requestData: {} } }));
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'getVideoSettings') {
+            const d = msg.d?.responseData;
+            if (d?.baseWidth && d?.baseHeight) {
+              setObsCanvasSize({ w: d.baseWidth, h: d.baseHeight });
+            }
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'getScene') {
+            const sceneName = msg.d?.responseData?.currentProgramSceneName || msg.d?.responseData?.sceneName;
+            if (sceneName) {
+              (obsWsRef as any)._sceneName = sceneName;
+              const poll = () => {
+                if (!ws || ws.readyState !== WebSocket.OPEN) return;
+                ws.send(JSON.stringify({ op: 6, d: { requestType: 'GetSourceScreenshot', requestId: 'preview', requestData: { sourceName: (obsWsRef as any)._sceneName, imageFormat: 'jpg', imageWidth: 1920, imageHeight: 1080, imageCompressionQuality: 55 } } }));
+              };
+              poll();
+              (obsPreviewIntervalRef as any).current = window.setInterval(poll, 800);
+            }
+          }
+          if (msg.op === 7 && msg.d?.requestId === 'preview') {
+            const img = msg.d?.responseData?.imageData;
+            if (img) setObsPreviewUrl(img);
+          }
+        } catch { /* ignore */ }
+      };
+    } catch { alert('Invalid WebSocket URL.'); }
+  }
+
+  function disconnectObsPreview() {
+    if ((obsPreviewIntervalRef as any).current) { clearInterval((obsPreviewIntervalRef as any).current); (obsPreviewIntervalRef as any).current = null; }
+    if ((obsWsRef as any).current) { (obsWsRef as any).current.close(); (obsWsRef as any).current = null; }
+    setObsPreviewEnabled(false);
+    setObsPreviewUrl(null);
+    setObsCanvasSize(null);
+  }
+
   return (
     <div className="flex h-[calc(100vh-2rem)] w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
       {/* Asset Picker Modal */}
@@ -4760,10 +4947,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onChange={(e) => setName(e.target.value)}
             placeholder="Untitled Overlay"
           />
-          <div className="flex gap-2 pl-1 font-mono text-[11px] leading-[1.4] text-slate-500">
-            <span>{baseResolution.width} x {baseResolution.height}</span>
-            <span className="text-slate-700">|</span>
-            <span className="truncate max-w-[120px]" title={slug}>/o/{slug}</span>
+          <div className="flex items-center gap-2 pl-1 font-mono text-[11px] leading-[1.4] text-slate-500">
+            <span className="flex-none">{baseResolution.width} x {baseResolution.height}</span>
+            <span className="text-slate-700 flex-none">|</span>
+            <button
+              className="flex items-center gap-1 truncate text-slate-500 hover:text-slate-300 transition-colors min-w-0"
+              title={`Copy overlay URL: /o/${slug}`}
+              onClick={() => {
+                const url = `${window.location.origin}/o/${slug}`;
+                navigator.clipboard.writeText(url).then(() => {
+                  const btn = document.getElementById('copy-url-btn');
+                  if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = `/o/${slug}`; }, 1500); }
+                });
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-none opacity-60"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span id="copy-url-btn" className="truncate">/o/{slug}</span>
+            </button>
           </div>
         </div>
 
@@ -4820,24 +5020,28 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               alert("Failed to send test event (Network)");
             }
           }}
+          overlayId={initialOverlay?.id ?? null}
+          overlayName={initialOverlay?.name ?? ''}
+          editingMasterId={editingMasterId ?? null}
         />
 
         {/* Sidebar Tabs */}
         <div className="mt-2 flex border-b border-t border-[rgba(255,255,255,0.08)] bg-[#111113]">
-          <button
-            onClick={() => setLeftTab("layers")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "layers" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
-          >
-            <svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-            <span>Layers</span>
-          </button>
-          <button
-            onClick={() => setLeftTab("components")}
-            className={`flex-1 flex flex-col items-center gap-1 px-3 py-2 text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em] transition-all ${leftTab === "components" ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
-          >
-            <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-            <span>Components</span>
-          </button>
+          {([
+            { id: "layers",     label: "Layers",  icon: <svg {...TOOL_ICON_PROPS}><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg> },
+            { id: "components", label: "Com",     icon: <svg {...TOOL_ICON_PROPS}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg> },
+            { id: "assets",     label: "Assets",  icon: <svg {...TOOL_ICON_PROPS}><rect x="3" y="3" width="18" height="12" rx="1"/><path d="M3 9l4-4 4 4 3-3 5 5"/><circle cx="8" cy="6.5" r="1.5"/></svg> },
+            { id: "widgets",    label: "Widget",  icon: <svg {...TOOL_ICON_PROPS}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="17" cy="8" r="2"/></svg> },
+          ] as const).map(({ id, label, icon }) => (
+            <button
+              key={id}
+              onClick={() => setLeftTab(id as any)}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 px-1 py-2 text-[9px] leading-[1.2] font-semibold uppercase tracking-[0.06em] transition-all ${leftTab === id ? "border-b-2 border-indigo-500 bg-[rgba(255,255,255,0.05)] text-indigo-400" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
 
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -4908,6 +5112,93 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               />
             </div>
           )}
+          {leftTab === "assets" && (
+            <div className="flex-1 min-h-0 flex flex-col">
+              <AssetsPanel
+                onAddToCanvas={(url, mimeType) => {
+                  const isVideo = mimeType.startsWith("video/");
+                  const id = genId(isVideo ? "video" : "image");
+                  const newEl = isVideo
+                    ? { id, type: "video" as const, x: 100, y: 100, width: 400, height: 225, src: url, loop: true, muted: true, autoplay: true }
+                    : { id, type: "image" as const, x: 100, y: 100, width: 300, height: 200, src: url };
+                  setConfig(prev => ({ ...prev, elements: [...prev.elements, newEl as any] }));
+                  setSelectedIds([id]);
+                }}
+              />
+            </div>
+          )}
+          {leftTab === "widgets" && (
+            <div className="flex-1 min-h-0 flex flex-col pt-1 px-2 gap-2 overflow-y-auto">
+              <p className="text-[11px] text-slate-500 px-1 pt-2">
+                Drag or click a widget to add it to the canvas. Widgets connect live data sources to your overlay.
+              </p>
+              {/* Category filter */}
+              {(() => {
+                const categories = [...new Set(getAllWidgets().map(w => w.widgetManifest.category))];
+                return categories.length > 1 ? (
+                  <div className="flex gap-1 px-1 flex-wrap">
+                    {categories.map(cat => (
+                      <span key={cat} className="text-[10px] text-indigo-400 bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-500/20 capitalize">{cat}</span>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+              {getAllWidgets().map((widgetDef) => {
+                const m = widgetDef.widgetManifest;
+                return (
+                  <button
+                    key={m.widgetId}
+                    onClick={() => {
+                      const wId = genId("widget");
+                      const widgetEl: AnyEl = {
+                        id: wId,
+                        type: "widget" as any,
+                        name: m.displayName,
+                        x: 50,
+                        y: 50,
+                        width: m.invisible ? 0 : 200,
+                        height: m.invisible ? 0 : 100,
+                        visible: !m.invisible,
+                        locked: false,
+                        opacity: 1,
+                        widgetId: m.widgetId,
+                        propOverrides: { ...m.defaultProps },
+                        liveDataSource: {
+                          sseEventType: m.dataContract?.sseEventType ?? null,
+                          beaconEndpoint: m.beaconEndpoint ?? undefined,
+                        },
+                      } as any;
+                      setConfig(prev => ({ ...prev, elements: [...prev.elements, widgetEl] }));
+                      setSelectedIds([wId]);
+                    }}
+                    className="flex items-start gap-3 p-3 rounded-lg bg-[#1a1a1f] border border-[rgba(255,255,255,0.07)] hover:border-indigo-500/50 hover:bg-[#1e1e2a] transition-all text-left"
+                  >
+                    <div className="mt-0.5 w-8 h-8 rounded-md bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center flex-shrink-0">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-400">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-slate-200 flex items-center gap-2">
+                        {m.displayName}
+                        {m.invisible && (
+                          <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">invisible</span>
+                        )}
+                        <span className="text-[10px] text-indigo-400 bg-indigo-900/30 px-1.5 py-0.5 rounded ml-auto">{m.category}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 leading-snug">{m.description}</div>
+                      {m.dataContract?.sseEventType && (
+                        <div className="text-[10px] text-emerald-500/70 mt-1">● {m.dataContract.sseEventType}</div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+              {getAllWidgets().length === 0 && (
+                <p className="text-[11px] text-slate-600 px-1 text-center mt-4">No widgets registered yet.</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer / Shortcuts */}
@@ -4948,6 +5239,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             </div>
 
             <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
+            {/* OBS Preview toggle */}
+            <button
+              onClick={() => obsPreviewEnabled ? disconnectObsPreview() : connectObsPreview()}
+              className={`flex items-center gap-1.5 rounded px-2 py-0.5 text-[12px] leading-[1.4] transition-colors ${obsPreviewEnabled ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200 hover:bg-[rgba(255,255,255,0.05)]'}`}
+              title="Toggle OBS live preview behind canvas"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              OBS Preview
+            </button>
+
+            {/* OBS Canvas Sync */}
+            {obsCanvasSize && (obsCanvasSize.w !== baseResolution.width || obsCanvasSize.h !== baseResolution.height) && (
+              <button
+                onClick={() => {
+                  setConfig(prev => ({ ...prev, baseResolution: { width: obsCanvasSize.w, height: obsCanvasSize.h } }));
+                  setTimeout(() => handleSave(), 300);
+                }}
+                className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[12px] leading-[1.4] bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+                title={`OBS canvas is ${obsCanvasSize.w}×${obsCanvasSize.h} but editor is ${baseResolution.width}×${baseResolution.height}. Click to sync.`}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4v5h5"/><path d="M20 20v-5h-5"/><path d="M4 9a9 9 0 0 1 15-3.4"/><path d="M20 15a9 9 0 0 1-15 3.4"/></svg>
+                Sync {obsCanvasSize.w}×{obsCanvasSize.h}
+              </button>
+            )}
 
             {/* Alignment Tools */}
             <div className="flex items-center gap-1">
@@ -5118,6 +5433,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
                 transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
+                backgroundImage: obsPreviewUrl ? `url(${obsPreviewUrl})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
               onMouseDown={(e) => {
                 if (spaceDown || (e as any).button === 1) return;
@@ -5168,9 +5486,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 />
               )}
 
-              {/* Safe area */}
+              {/* Safe area — generic inset for OBS overlays, or platform-specific for static assets */}
               <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-8 border border-white/10 rounded-sm" />
+                {(() => {
+                  const sa = (config as any).safeArea;
+                  if (sa) {
+                    // Platform-specific safe area (e.g. YouTube channel art)
+                    const bw = baseResolution.width;
+                    const bh = baseResolution.height;
+                    return (
+                      <>
+                        {/* Dimmed outside region */}
+                        <div className="absolute inset-0 bg-black/30" style={{ clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${sa.x/bw*100}% ${sa.y/bh*100}%, ${sa.x/bw*100}% ${(sa.y+sa.height)/bh*100}%, ${(sa.x+sa.width)/bw*100}% ${(sa.y+sa.height)/bh*100}%, ${(sa.x+sa.width)/bw*100}% ${sa.y/bh*100}%, ${sa.x/bw*100}% ${sa.y/bh*100}%)` }} />
+                        {/* Safe area border */}
+                        <div className="absolute border-2 border-cyan-400/70 rounded-sm" style={{ left: `${sa.x/bw*100}%`, top: `${sa.y/bh*100}%`, width: `${sa.width/bw*100}%`, height: `${sa.height/bh*100}%` }} />
+                        {/* Label */}
+                        <div className="absolute text-[10px] font-mono text-cyan-300/80 bg-black/50 px-1.5 py-0.5 rounded" style={{ left: `${sa.x/bw*100}%`, top: `calc(${sa.y/bh*100}% - 20px)` }}>
+                          SAFE AREA — {sa.width}×{sa.height}
+                        </div>
+                      </>
+                    );
+                  }
+                  // Default: subtle inset guide for OBS overlays
+                  return <div className="absolute inset-8 border border-white/10 rounded-sm" />;
+                })()}
               </div>
 
               {/* Guides */}
@@ -5338,7 +5677,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
                 const isLocked = el.locked === true;
                 const isSelected = selectedIds.includes(el.id);
-                const isPrimary = selectedIds[0] === el.id;
+                const isPrimary = primarySelectedId === el.id;
                 const animationPhase = previewAnimationPhases[el.id]?.phase;
                 if (animationPhase === "hidden" && !isSelected) return null;
 
@@ -5390,6 +5729,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       animationPhases={previewAnimationPhases}
                       data={renderData}
                       visited={new Set()}
+                      overlayPublicId={initialOverlay.public_id}
                     />
 
                     {isPrimary && !resizeStatus && (
@@ -5843,8 +6183,34 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }
           }}
         />
+
       </div>
       </div>
+
+      {/* Parametric Curve Editor Flyout - draggable */}
+      {curveEditorEffect !== null && (() => {
+        const editingEffectIdx = parseInt(curveEditorEffect);
+        const editingEl = selectedIds[0] ? (previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as any : null;
+        const peList = editingEl?.parametricEffects;
+        if (!Array.isArray(peList) || editingEffectIdx >= peList.length) return null;
+        const editingEffect = peList[editingEffectIdx];
+        if (!editingEffect) return null;
+        const editingPreset = EFFECT_PRESETS[editingEffect.preset];
+        if (!editingPreset) return null;
+        return (
+          <DraggableFlyout initialRight={328}>
+            <ParametricCurvePanel
+              effect={editingEffect}
+              presetDef={editingPreset}
+              onUpdate={(updated: any) => {
+                const next = peList.map((ef: any, i: number) => i === editingEffectIdx ? updated : ef);
+                updateElement(selectedIds[0], { parametricEffects: next } as any);
+              }}
+              onClose={() => setCurveEditorEffect(null)}
+            />
+          </DraggableFlyout>
+        );
+      })()}
 
       <TimelinePanel
         timeline={timeline}
@@ -5898,6 +6264,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onMoveKeyframe={moveTimelineKeyframe}
         onDuplicateKeyframe={duplicateTimelineKeyframe}
         onAddKeyframeAtTime={addTimelineKeyframeAtTime}
+        activeEventTimeline={activeEventTimeline}
+        eventTimelines={(config as any).eventTimelines}
+        onSetActiveEventTimeline={(name) => {
+          setActiveEventTimeline(name);
+          setTimelinePlayheadMs(0);
+          setIsTimelinePlaying(false);
+        }}
       />
       <ShortcutCheatsheetModal open={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
       </div>
@@ -6011,16 +6384,49 @@ function TimelineFieldLabel({
   );
 }
 
-function ColorSwatch({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+function parseRgba(v: string): { hex: string; alpha: number } {
+  if (!v || v === 'transparent') return { hex: '#000000', alpha: 0 };
+  const rgba = v.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?/);
+  if (rgba) {
+    const r = parseInt(rgba[1]).toString(16).padStart(2,'0');
+    const g = parseInt(rgba[2]).toString(16).padStart(2,'0');
+    const b = parseInt(rgba[3]).toString(16).padStart(2,'0');
+    return { hex: `#${r}${g}${b}`, alpha: rgba[4] !== undefined ? parseFloat(rgba[4]) : 1 };
+  }
+  if (v.startsWith('#')) return { hex: v.slice(0,7), alpha: 1 };
+  return { hex: '#000000', alpha: 1 };
+}
+
+function hexAlphaToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return alpha >= 1 ? hex : `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
+}
+
+function ColorSwatch({ value, onChange, className, showAlpha }: { value: string; onChange: (v: string) => void; className?: string; showAlpha?: boolean }) {
+  const { hex, alpha } = parseRgba(value || '#000000');
+  const hasAlpha = showAlpha || (value && value.startsWith('rgba'));
   return (
-    <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
-      <div className="absolute inset-0" style={{ background: value }} />
-      <input
-        type="color"
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        value={value && value.startsWith("#") ? value : "#000000"}
-        onChange={(e) => onChange(e.target.value)}
-      />
+    <div className="flex items-center gap-1 flex-1">
+      <div className={`relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`}>
+        <div className="absolute inset-0" style={{ background: value }} />
+        <input
+          type="color"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          value={hex}
+          onChange={(e) => onChange(hexAlphaToRgba(e.target.value, alpha))}
+        />
+      </div>
+      {hasAlpha && (
+        <input
+          type="range" min="0" max="1" step="0.05"
+          className="flex-1 h-1 accent-indigo-500"
+          value={alpha}
+          title={`Opacity: ${Math.round(alpha * 100)}%`}
+          onChange={(e) => onChange(hexAlphaToRgba(hex, parseFloat(e.target.value)))}
+        />
+      )}
     </div>
   );
 }
@@ -6176,6 +6582,14 @@ const GENERIC_MOTION_OPTIONS: Array<{ value: OverlayMotionPreset; label: string 
   { value: "slideDown", label: "Slide Down" },
   { value: "slideLeft", label: "Slide Left" },
   { value: "slideRight", label: "Slide Right" },
+  { value: "scaleIn", label: "Scale In" },
+  { value: "scaleOut", label: "Scale Out" },
+  { value: "zoomIn", label: "Zoom In" },
+  { value: "zoomOut", label: "Zoom Out" },
+  { value: "blurIn", label: "Blur In" },
+  { value: "blurOut", label: "Blur Out" },
+  { value: "rotateIn", label: "Rotate In" },
+  { value: "rotateOut", label: "Rotate Out" },
 ];
 
 const GENERIC_EASING_OPTIONS: Array<NonNullable<OverlayAnimation["easing"]>> = [
@@ -6880,9 +7294,11 @@ function FillStackControls({
 function EffectsStackControls({
   element,
   onChange,
+  onOpenCurveEditor,
 }: {
   element: AnyEl;
   onChange: (patch: Partial<AnyEl>) => void;
+  onOpenCurveEditor?: (index: string) => void;
 }) {
   const effects = getElementEffects(element);
 
@@ -7199,6 +7615,190 @@ function EffectsStackControls({
       >
         Add Effect
       </button>
+
+      {/* ── Parametric Effects ─────────────────────────────────────────── */}
+      <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+      <label className={uiClasses.label}>Parametric Effects</label>
+
+      {(element as any).parametricEffects?.map((pe: any, index: number) => {
+        const presetDef = EFFECT_PRESETS[pe.preset];
+        const animatableParams = (presetDef?.params ?? []).filter((p: any) => p.animatable && p.type === 'number');
+        const staticParams = (presetDef?.params ?? []).filter((p: any) => !p.animatable || p.type !== 'number');
+        const MINI_COLORS = ['#818cf8','#34d399','#fbbf24','#f87171','#c084fc','#22d3ee'];
+        const miniW = 276, miniH = 72, mPL = 6, mPR = 6, mPT = 6, mPB = 14;
+        const mIW = miniW - mPL - mPR, mIH = miniH - mPT - mPB;
+        const effDur = pe.duration > 0 ? pe.duration : 4000;
+        const mToX = (t: number) => mPL + (t / effDur) * mIW;
+        const mToY = (v: number, p: any) => mPT + mIH - ((v - (p.min ?? 0)) / ((p.max ?? 1) - (p.min ?? 0))) * mIH;
+        const getNodes = (key: string) => (pe.keyframes ?? [])
+          .filter((kf: any) => kf.params && key in kf.params)
+          .map((kf: any) => ({ t: kf.t, value: kf.params[key] as number }))
+          .sort((a: any, b: any) => a.t - b.t);
+        const buildMiniPath = (nodes: any[], fallback: number, toX: (t:number)=>number, toY: (v:number)=>number) => {
+          const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback }, { t: effDur, value: fallback }];
+          const sorted = [...pts].sort((a: any, b: any) => a.t - b.t);
+          const full: any[] = [];
+          if (sorted[0].t > 0) full.push({ t: 0, value: sorted[0].value });
+          full.push(...sorted);
+          if (sorted[sorted.length-1].t < effDur) full.push({ t: effDur, value: sorted[sorted.length-1].value });
+          return full.map((n, i) => `${i===0?'M':'L'} ${toX(n.t).toFixed(1)} ${toY(n.value).toFixed(1)}`).join(' ');
+        };
+
+        return (
+          <div key={index} className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3 space-y-2">
+            {/* Header row: preset select + delete */}
+            <div className="flex items-center gap-2">
+              <select
+                className={`flex-1 ${uiClasses.field} text-[11px]`}
+                value={pe.preset}
+                onChange={(e) => {
+                  const newPreset = e.target.value;
+                  const def = EFFECT_PRESETS[newPreset];
+                  const defaultParams: Record<string, any> = {};
+                  if (def) def.params.forEach((p: any) => { defaultParams[p.key] = p.default; });
+                  const next = (element as any).parametricEffects.map((ef: any, i: number) =>
+                    i === index ? { ...ef, preset: newPreset, params: defaultParams } : ef
+                  );
+                  onChange({ parametricEffects: next } as any);
+                }}
+              >
+                {Object.values(EFFECT_PRESETS).map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+              <button type="button" className={uiClasses.iconButton}
+                onClick={() => {
+                  const next = (element as any).parametricEffects.filter((_: any, i: number) => i !== index);
+                  onChange({ parametricEffects: next } as any);
+                }}>✕</button>
+            </div>
+
+            {presetDef && <div className="text-[10px] text-slate-500 italic">{presetDef.description}</div>}
+
+            {/* Mini graph — click to open curve editor */}
+            {animatableParams.length > 0 && (
+              <div
+                onClick={() => onOpenCurveEditor?.(String(index))}
+                title="Click to open curve editor"
+                style={{ cursor: 'pointer', borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
+              >
+                <svg width={miniW} height={miniH} style={{ display: 'block', background: '#07070f', width: '100%' }}>
+                  {/* Subtle grid */}
+                  {[0.25, 0.5, 0.75].map((f: number) => (
+                    <line key={f} x1={mToX(f*effDur)} y1={mPT} x2={mToX(f*effDur)} y2={mPT+mIH}
+                      stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                  ))}
+                  <line x1={mPL} y1={mPT+mIH*0.5} x2={mPL+mIW} y2={mPT+mIH*0.5}
+                    stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                  {/* Curves with area fill */}
+                  {animatableParams.map((param: any, idx: number) => {
+                    const color = MINI_COLORS[idx % MINI_COLORS.length];
+                    const nodes = getNodes(param.key);
+                    const fallback = Number(pe.params[param.key] ?? param.default);
+                    const d = buildMiniPath(nodes, fallback, mToX, (v) => mToY(v, param));
+                    const areaD = d + ` L ${mToX(effDur)} ${mPT+mIH} L ${mPL} ${mPT+mIH} Z`;
+                    return (
+                      <g key={param.key}>
+                        <path d={areaD} fill={color} fillOpacity={0.06} />
+                        <path d={d} fill="none" stroke={color} strokeWidth={2}
+                          strokeDasharray={nodes.length === 0 ? '4 3' : undefined} />
+                        {nodes.map((n: any, ni: number) => (
+                          <g key={ni}>
+                            <circle cx={mToX(n.t)} cy={mToY(n.value, param)} r={4.5}
+                              fill={`${color}30`} stroke={color} strokeWidth={1.5} />
+                            <circle cx={mToX(n.t)} cy={mToY(n.value, param)} r={2}
+                              fill={color} />
+                          </g>
+                        ))}
+                      </g>
+                    );
+                  })}
+                  {/* Param color legend bottom-left */}
+                  {animatableParams.map((param: any, idx: number) => (
+                    <g key={param.key}>
+                      <circle cx={mPL + idx * 36 + 4} cy={miniH - 5} r={2.5} fill={MINI_COLORS[idx % MINI_COLORS.length]} />
+                      <text x={mPL + idx * 36 + 10} y={miniH - 2} fontSize={7.5}
+                        fill={MINI_COLORS[idx % MINI_COLORS.length]} fillOpacity={0.7}>{param.label}</text>
+                    </g>
+                  ))}
+                  {/* Edit hint */}
+                  <text x={miniW - 5} y={miniH - 2} fontSize={7.5} fill="rgba(255,255,255,0.25)" textAnchor="end">↗ edit</text>
+                </svg>
+              </div>
+            )}
+
+            {/* Static params — consistent uiClasses styling */}
+            {staticParams.map((param: any) => (
+              <div key={param.key} className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-16 flex-none truncate`}>{param.label}</label>
+                {param.type === 'color' ? (
+                  <input type="color" value={String(pe.params[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).parametricEffects.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.value}} : ef
+                      );
+                      onChange({ parametricEffects: next } as any);
+                    }}
+                    className="w-8 h-6 rounded cursor-pointer border border-[rgba(255,255,255,0.08)] bg-transparent" />
+                ) : param.type === 'boolean' ? (
+                  <input type="checkbox" checked={Boolean(pe.params[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).parametricEffects.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.checked}} : ef
+                      );
+                      onChange({ parametricEffects: next } as any);
+                    }}
+                    className="accent-indigo-500" />
+                ) : param.type === 'select' ? (
+                  <select className={`flex-1 ${uiClasses.field} text-[11px]`}
+                    value={String(pe.params[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).parametricEffects.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.value}} : ef
+                      );
+                      onChange({ parametricEffects: next } as any);
+                    }}>
+                    {(param.options ?? []).map((o: string) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <>
+                    <input type="range"
+                      min={param.min ?? 0} max={param.max ?? 10} step={param.step ?? 0.1}
+                      value={Number(pe.params[param.key] ?? param.default)}
+                      onChange={e => {
+                        const next = (element as any).parametricEffects.map((ef: any, i: number) =>
+                          i === index ? {...ef, params: {...ef.params, [param.key]: Number(e.target.value)}} : ef
+                        );
+                        onChange({ parametricEffects: next } as any);
+                      }}
+                      className="flex-1 accent-indigo-500" />
+                    <span className={`${uiClasses.fieldLabel} w-8 text-right tabular-nums`}>
+                      {Number(pe.params[param.key] ?? param.default).toFixed(
+                        param.step && param.step < 1 ? 1 : 0
+                      )}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => {
+          const firstPreset = Object.keys(EFFECT_PRESETS)[0];
+          const def = EFFECT_PRESETS[firstPreset];
+          const defaultParams: Record<string, any> = {};
+          def.params.forEach((p: any) => { defaultParams[p.key] = p.default; });
+          const existing = (element as any).parametricEffects ?? [];
+          onChange({ parametricEffects: [...existing, { preset: firstPreset, params: defaultParams, enabled: true, id: `pe-${Date.now()}` }] } as any);
+        }}
+      >
+        Add Parametric Effect
+      </button>
     </div>
   );
 }
@@ -7416,6 +8016,41 @@ function InspectorPanel({
               </div>
             </div>
           </div>
+
+          {/* 3D Transform */}
+          <div className="border-t border-[rgba(255,255,255,0.06)] pt-2 space-y-2">
+            <label className={`${fieldLabelClass} text-slate-500`}>3D Transform</label>
+            {([
+              { label: 'Tilt X', key: 'tiltX', min: -45, max: 45 },
+              { label: 'Tilt Y', key: 'tiltY', min: -45, max: 45 },
+              { label: 'Skew X', key: 'skewX', min: -45, max: 45 },
+              { label: 'Skew Y', key: 'skewY', min: -45, max: 45 },
+            ] as const).map(({ label, key, min, max }) => {
+              const val = (element as any)[key] ?? 0;
+              return (
+                <div key={key} className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>{label}</label>
+                  <input
+                    type="range" min={min} max={max} step={1}
+                    className="flex-1 h-1 accent-indigo-500"
+                    value={val}
+                    onChange={(e) => onChange({ [key]: Number(e.target.value) } as any)}
+                  />
+                  <span className="w-8 text-right text-[11px] text-slate-400">{val}°</span>
+                </div>
+              );
+            })}
+            <div className="flex items-center gap-2">
+              <label className={`${fieldLabelClass} w-12 flex-none`}>Persp</label>
+              <input
+                type="range" min={200} max={2000} step={50}
+                className="flex-1 h-1 accent-indigo-500"
+                value={(element as any).perspective ?? 800}
+                onChange={(e) => onChange({ perspective: Number(e.target.value) } as any)}
+              />
+              <span className="w-12 text-right text-[11px] text-slate-400">{(element as any).perspective ?? 800}px</span>
+            </div>
+          </div>
         </div>
       </AccordionSection>
 
@@ -7446,6 +8081,430 @@ function InspectorPanel({
           </div>
 
           <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+
+          {/* WIDGET INSTANCE */}
+          {(element as any).type === "widget" && (() => {
+            const widgetId = (element as any).widgetId;
+            const widgetDef = getWidgetDef(widgetId);
+            const manifest = widgetDef?.widgetManifest;
+            const schema = manifest?.configSchema || [];
+            const overrides = (element as any).propOverrides || {};
+
+            // After any config change, update global config and re-inject script so
+            // all const config vars are re-read from scratch
+            const EDITOR_WIDGET_SCRIPTS: Record<string, string> = {
+              'chat-overlay': '/widgets/chat-overlay.js',
+              'alert-box-widget': '/widgets/alert-box-widget.js',
+              'sub-counter': '/widgets/sub-counter.js',
+              'event-console-widget': '/widgets/event-console-widget.js',
+              'tts-player': '/widgets/tts-player.js',
+              'stake-monitor': '/widgets/stake-monitor.js',
+              'raffle': '/widgets/raffle.js',
+              'subathon-timer': '/widgets/subathon-timer.js',
+            };
+            const triggerWidgetReinit = (newOverrides: any) => {
+              const configKey = `__WIDGET_CONFIG_${widgetId.replace(/-/g, '_').toUpperCase()}__`;
+              (window as any)[configKey] = { ...newOverrides, editorPreview: true };
+              // Clear the container
+              const container = document.querySelector(`[data-widget-editor-preview="${widgetId}"]`);
+              if (container) container.innerHTML = '';
+              // Remove old script tag and re-inject after short delay so React settles
+              const scriptId = `widget-script-editor-${widgetId}`;
+              const oldScript = document.getElementById(scriptId);
+              if (oldScript) oldScript.remove();
+              const scriptSrc = EDITOR_WIDGET_SCRIPTS[widgetId];
+              if (scriptSrc) {
+                setTimeout(() => {
+                  const s = document.createElement('script');
+                  s.id = scriptId;
+                  s.src = scriptSrc + '?v=' + Date.now();
+                  document.head.appendChild(s);
+                }, 150);
+              }
+            };
+
+            if (!manifest) return <div className="text-[12px] leading-[1.4] text-red-400 px-1">Widget definition not found: {widgetId}</div>;
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1">
+                  <span className="text-[11px] font-semibold text-indigo-400">{manifest.displayName}</span>
+                  {manifest.invisible && <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">invisible</span>}
+                </div>
+                <div className="text-[11px] text-slate-500 px-1 leading-snug">{manifest.description}</div>
+
+                    <label className={uiClasses.label}>Widget Settings</label>
+                    {schema.map((field: any) => {
+                      // Conditional visibility
+                      if (field.showWhen) {
+                        const condVal = overrides[field.showWhen.key] !== undefined ? overrides[field.showWhen.key] : (schema.find((f: any) => f.key === field.showWhen.key)?.default);
+                        if (condVal !== field.showWhen.value) return null;
+                      }
+                      const val = overrides[field.key] !== undefined ? overrides[field.key] : field.default;
+
+                      // alertConfig type — full per-event accordion
+                      if (field.type === "alertConfig") {
+                        const ALERT_EVENTS = [
+                          { key: 'follow',       label: 'Follow',        color: '#53fc18' },
+                          { key: 'subscription', label: 'Subscription',  color: '#9146ff' },
+                          { key: 'resub',        label: 'Resub',         color: '#9146ff' },
+                          { key: 'gift_sub',     label: 'Gift Sub',      color: '#ff6b6b' },
+                          { key: 'raid',         label: 'Raid',          color: '#f59e0b' },
+                          { key: 'tip',          label: 'Tip / Donation',color: '#fbbf24' },
+                          { key: 'redemption',   label: 'Redemption',    color: '#a78bfa' },
+                        ];
+                        const ANIM_OPTIONS = ['slide-down','bounce','scale-pop','shake','fade'];
+                        const SOUND_OPTIONS = ['none','pop','chime','horn','coins','custom'];
+                        const alertTypes = (val && typeof val === 'object') ? val : {};
+                        const EVENT_DEFAULTS: Record<string, any> = {
+                          follow:       { enabled: true,  template: '🎉 {username} just followed!',               color: '#53fc18', bg: 'rgba(0,0,0,0.85)', duration: 5000, animation: 'bounce',    sound: 'pop',   soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          subscription: { enabled: true,  template: '⭐ {username} subscribed!',                   color: '#9146ff', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'scale-pop', sound: 'chime', soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          resub:        { enabled: true,  template: '🔄 {username} resubbed for {months} months!', color: '#9146ff', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'scale-pop', sound: 'chime', soundVol: 0.8, image: '', minAmount: 0, tts: true  },
+                          gift_sub:     { enabled: true,  template: '🎁 {username} gifted {count} sub(s)!',        color: '#ff6b6b', bg: 'rgba(0,0,0,0.85)', duration: 6000, animation: 'shake',     sound: 'horn',  soundVol: 0.8, image: '', minAmount: 0, tts: false },
+                          raid:         { enabled: true,  template: '⚔️ {username} raided with {count} viewers!',  color: '#f59e0b', bg: 'rgba(0,0,0,0.85)', duration: 8000, animation: 'slide-down', sound: 'horn',  soundVol: 1.0, image: '', minAmount: 0, tts: false },
+                          tip:          { enabled: true,  template: '💰 {username} tipped {amount}!',              color: '#fbbf24', bg: 'rgba(0,0,0,0.85)', duration: 7000, animation: 'bounce',    sound: 'coins', soundVol: 0.8, image: '', minAmount: 1, tts: true  },
+                          redemption:   { enabled: false, template: '✨ {username} redeemed {reward}!',            color: '#a78bfa', bg: 'rgba(0,0,0,0.85)', duration: 5000, animation: 'fade',      sound: 'pop',   soundVol: 0.6, image: '', minAmount: 0, tts: false },
+                        };
+                        const updateEvent = (evKey: string, patch: any) => {
+                          const current = alertTypes[evKey] || EVENT_DEFAULTS[evKey] || {};
+                          const next = { ...overrides, alertTypes: { ...alertTypes, [evKey]: { ...current, ...patch } } };
+                          triggerWidgetReinit(next);
+                          onChange({ propOverrides: next } as any);
+                        };
+                        return (
+                          <div key={field.key} className="space-y-1">
+                            <label className={uiClasses.label}>Alert Events</label>
+                            {ALERT_EVENTS.map(({ key: evKey, label: evLabel, color: evDefaultColor }) => {
+                              const ec = { ...(EVENT_DEFAULTS[evKey] || {}), ...(alertTypes[evKey] || {}) };
+                              return (
+                                <AccordionSection key={evKey} title={
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: ec.color || evDefaultColor }} />
+                                    <span>{evLabel}</span>
+                                    {!ec.enabled && <span className="text-[10px] text-slate-600 ml-auto">off</span>}
+                                  </span>
+                                } defaultOpen={false}>
+                                  <div className="space-y-2">
+                                    {/* Enable toggle */}
+                                    <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                                      <input type="checkbox" checked={!!ec.enabled} onChange={e => updateEvent(evKey, { enabled: e.target.checked })} className="accent-indigo-500" />
+                                      Enabled
+                                    </label>
+                                    {/* Platform filters */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Platforms</label>
+                                      <div className="flex gap-1">
+                                        {([['kick','#53fc18'],['youtube','#ff0000'],['twitch','#9146ff']] as const).map(([plat, col]) => {
+                                          const key = `platform_${plat}` as const;
+                                          const active = ec[key] !== false;
+                                          return (
+                                            <button key={plat} type="button"
+                                              onClick={() => updateEvent(evKey, { [key]: !active })}
+                                              className={`text-[10px] px-2 py-0.5 rounded border capitalize ${active ? 'border-transparent text-black font-semibold' : 'border-[rgba(255,255,255,0.1)] text-slate-500'}`}
+                                              style={active ? { background: col } : {}}
+                                            >{plat}</button>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+                                    {/* Template */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Template</label>
+                                      <input className={`flex-1 ${fieldClass} text-[11px]`} value={ec.template || ''} onChange={e => updateEvent(evKey, { template: e.target.value })} placeholder="{username} just followed!" />
+                                    </div>
+                                    {/* Colours */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Accent</label>
+                                        <ColorSwatch value={ec.color || evDefaultColor} onChange={v => updateEvent(evKey, { color: v })} />
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>BG</label>
+                                        <ColorSwatch value={ec.bg || 'rgba(0,0,0,0.85)'} onChange={v => updateEvent(evKey, { bg: v })} showAlpha />
+                                      </div>
+                                    </div>
+                                    {/* Animation + Duration */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Anim</label>
+                                        <select className={`flex-1 ${fieldClass} text-[11px]`} value={ec.animation || 'fade'} onChange={e => updateEvent(evKey, { animation: e.target.value })}>
+                                          {ANIM_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Dur ms</label>
+                                        <input type="number" className={`flex-1 ${fieldClass} text-[11px]`} value={ec.duration || 5000} min={1000} max={30000} step={500} onChange={e => updateEvent(evKey, { duration: Number(e.target.value) })} />
+                                      </div>
+                                    </div>
+                                    {/* Sound */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Sound</label>
+                                        <select className={`flex-1 ${fieldClass} text-[11px]`} value={ec.sound || 'none'} onChange={e => updateEvent(evKey, { sound: e.target.value })}>
+                                          {SOUND_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Vol</label>
+                                        <input type="range" min="0" max="1" step="0.1" className="flex-1 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
+                                      </div>
+                                    </div>
+                                    {ec.sound === 'custom' && (
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Sound file</label>
+                                        <div className="flex-1 flex gap-1 items-center">
+                                          {ec.soundUrl && <span className="text-[10px] text-emerald-400 truncate max-w-[80px]">✓ uploaded</span>}
+                                          <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                            {ec.soundUrl ? 'Change' : 'Upload audio'}
+                                            <input type="file" accept="audio/*" className="hidden" onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (!file) return;
+                                              const fd = new FormData();
+                                              fd.append('file', file);
+                                              fd.append('scope', 'overlays');
+                                              fd.append('kind', 'images');
+                                              try {
+                                                const r = await fetch('/dashboard/api/uploads/overlay/image', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                                if (r.ok) { const d = await r.json(); updateEvent(evKey, { soundUrl: d.url }); }
+                                              } catch { /* ignore */ }
+                                              e.target.value = '';
+                                            }} />
+                                          </label>
+                                          {ec.soundUrl && <button type="button" onClick={() => updateEvent(evKey, { soundUrl: '' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                        </div>
+                                      </div>
+                                    )}
+                                    {/* Image/GIF upload */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Image/GIF</label>
+                                      <div className="flex-1 flex gap-1 items-center">
+                                        {ec.image && <img src={ec.image} alt="" className="h-8 w-8 object-cover rounded border border-[rgba(255,255,255,0.08)] flex-shrink-0" />}
+                                        <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                          {ec.image ? 'Change' : 'Upload image / GIF'}
+                                          <input type="file" accept="image/*,image/gif" className="hidden" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const fd = new FormData();
+                                            fd.append('file', file);
+                                            fd.append('scope', 'overlays');
+                                            fd.append('kind', 'images');
+                                            try {
+                                              const r = await fetch('/dashboard/api/uploads/overlay/image', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                              if (r.ok) { const d = await r.json(); updateEvent(evKey, { image: d.url }); }
+                                            } catch { /* ignore */ }
+                                            e.target.value = '';
+                                          }} />
+                                        </label>
+                                        {ec.image && <button type="button" onClick={() => updateEvent(evKey, { image: '' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                      </div>
+                                    </div>
+                                    {/* Custom sound upload */}
+                                    <div className="flex items-center gap-2">
+                                      <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Custom sound</label>
+                                      <div className="flex-1 flex gap-1 items-center">
+                                        {ec.soundUrl && <span className="text-[10px] text-emerald-400 truncate max-w-[80px]">✓ uploaded</span>}
+                                        <label className="flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400">
+                                          {ec.soundUrl ? 'Replace' : 'Upload MP3/WAV'}
+                                          <input type="file" accept="audio/*" className="hidden" onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const fd = new FormData();
+                                            fd.append('file', file);
+                                            try {
+                                              const r = await fetch('/dashboard/api/uploads/overlay/audio', { method: 'POST', body: fd, credentials: 'same-origin' });
+                                              if (r.ok) { const d = await r.json(); updateEvent(evKey, { soundUrl: d.url, sound: 'custom' }); }
+                                            } catch { /* ignore */ }
+                                            e.target.value = '';
+                                          }} />
+                                        </label>
+                                        {ec.soundUrl && <button type="button" onClick={() => updateEvent(evKey, { soundUrl: '', sound: 'pop' })} className="text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400">✕</button>}
+                                      </div>
+                                    </div>
+                                    {/* Min amount (for tip/gift) */}
+                                    {(evKey === 'tip' || evKey === 'gift_sub') && (
+                                      <div className="flex items-center gap-2">
+                                        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Min amount</label>
+                                        <input type="number" className={`flex-1 ${fieldClass} text-[11px]`} value={ec.minAmount ?? 0} min={0} step={1} onChange={e => updateEvent(evKey, { minAmount: Number(e.target.value) })} />
+                                      </div>
+                                    )}
+                                    {/* TTS toggle */}
+                                    <label className="flex items-center gap-2 text-[11px] text-slate-300">
+                                      <input type="checkbox" checked={!!ec.tts} onChange={e => updateEvent(evKey, { tts: e.target.checked })} className="accent-indigo-500" />
+                                      Read user message via TTS
+                                    </label>
+                                    {/* Test fire */}
+                                    <button
+                                      onClick={async () => {
+                                        // Try direct window call first (editor preview)
+                                        const fn = (window as any).__alertBoxTestFire;
+                                        if (typeof fn === 'function') { fn(evKey); return; }
+                                        // Fall back to API injection (fires into OBS via SSE)
+                                        const ec = (propOverrides as any)?.alertTypes?.[evKey] || {};
+                                        await fetch('/dashboard/api/widget-test-fire', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          credentials: 'include',
+                                          body: JSON.stringify({
+                                            widgetId: 'alert-box-widget',
+                                            eventType: evKey,
+                                            payload: { actor_username: 'TestUser', amount: '5.00', count: '42', months: '3', reward: 'Test Reward' }
+                                          })
+                                        });
+                                      }}
+                                      className="w-full text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                                    >
+                                      Test {evLabel}
+                                    </button>
+                                  </div>
+                                </AccordionSection>
+                              );
+                            })}
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={field.key} className="flex items-center gap-2">
+                          <label className="w-24 truncate text-[11px] leading-[1.4] text-slate-500 flex-shrink-0" title={field.label}>{field.label}</label>
+                          {field.type === "boolean" ? (
+                            <input
+                              type="checkbox"
+                              checked={!!val}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.checked }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                              className="w-4 h-4 accent-indigo-500"
+                            />
+                          ) : field.type === "select" ? (
+                            <select
+                              className={`flex-1 ${fieldClass} text-[11px]`}
+                              value={val}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.value }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                            >
+                              {(field.options || []).map((opt: string) => (
+                                <option key={opt} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          ) : field.type === "number" ? (
+                            <input
+                              type="number"
+                              className={`flex-1 ${fieldClass}`}
+                              value={val}
+                              min={0}
+                              max={field.key === "volume" ? 100 : undefined}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: Number(e.target.value) }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                            />
+                          ) : field.type === "color" ? (
+                            <ColorSwatch
+                              value={val || '#ffffff'}
+                              onChange={(v) => { const n = { ...overrides, [field.key]: v }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                            />
+                          ) : (
+                            <input
+                              className={`flex-1 ${fieldClass}`}
+                              value={val}
+                              onChange={(e) => { const n = { ...overrides, [field.key]: e.target.value }; triggerWidgetReinit(n); onChange({ propOverrides: n } as any); }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                {manifest.dataContract?.sseEventType && (
+                  <div className="text-[10px] text-emerald-500/70 px-1 pt-1">● Live: {manifest.dataContract.sseEventType}</div>
+                )}
+
+                {/* Test Fire section */}
+                <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] mt-2">
+                  <label className={uiClasses.label}>Test Fire</label>
+                  <div className="space-y-2">
+                    {widgetId === 'chat-overlay' && (
+                      <div className="space-y-1">
+                        <input
+                          id={`test-fire-text-${widgetId}`}
+                          className={`w-full ${fieldClass} text-[11px]`}
+                          placeholder="Test message text..."
+                          defaultValue="This is a test chat message!"
+                        />
+                        <div className="flex gap-1">
+                          {['kick','youtube','twitch'].map(platform => (
+                            <button
+                              key={platform}
+                              onClick={() => {
+                                const textEl = document.getElementById(`test-fire-text-${widgetId}`) as HTMLInputElement;
+                                const text = textEl?.value || 'Test message!';
+                                const fn = (window as any).__chatOverlayTest;
+                                if (typeof fn === 'function') {
+                                  fn('TestUser', text, platform);
+                                }
+                              }}
+                              className="flex-1 text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 capitalize"
+                            >
+                              {platform}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {widgetId === 'raffle' && (
+                      <button
+                        onClick={() => { const fn = (window as any).__raffleTestFire; if (typeof fn === 'function') fn(); }}
+                        className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                      >Cycle Raffle State</button>
+                    )}
+                    {widgetId === 'sub-counter' && (
+                      <button
+                        onClick={() => { const fn = (window as any).__subCounterAddSub; if (typeof fn === 'function') fn(1); }}
+                        className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                      >+ Add 1 Sub</button>
+                    )}
+                    {widgetId !== 'chat-overlay' && widgetId !== 'sub-counter' && widgetId !== 'raffle' && (
+                      <button
+                        onClick={async () => {
+                          if (widgetId === 'tts-player') {
+                            // TTS test: synthesize a real audio job
+                            await fetch('/dashboard/api/tts/alert', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ text: 'This is a test TTS message from the overlay editor.' })
+                            });
+                            return;
+                          }
+                          // Map widget to a sensible default test event type
+                          const TEST_EVENT_MAP: Record<string, string> = {
+                            'alert-box-widget': 'follow',
+                            'event-console-widget': 'follow',
+                          };
+                          const eventType = TEST_EVENT_MAP[widgetId] || 'follow';
+                          await fetch('/dashboard/api/widget-test-fire', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({
+                              widgetId,
+                              eventType,
+                              payload: { actor_username: 'TestUser', amount: '5.00', count: '42', months: '3', reward: 'Test Reward' }
+                            })
+                          });
+                        }}
+                        className="w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50"
+                      >
+                        Send Test Event
+                      </button>
+                    )}
+                    {widgetId === 'tts-player' && (
+                      <a
+                        href="/dashboard/scrapbot/commands#tts"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 w-full text-[11px] py-1.5 px-3 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Advanced TTS settings in Scrapbot
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* COMPONENT INSTANCE */}
           {element.type === "componentInstance" && (
@@ -8712,7 +9771,9 @@ function InspectorPanel({
       {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
         <div className="space-y-4">
-          <EffectsStackControls element={element} onChange={onChange} />
+          <EffectsStackControls element={element} onChange={onChange}
+              onOpenCurveEditor={(idx) => window.dispatchEvent(new CustomEvent('scraplet:open-curve-editor', { detail: idx }))}
+            />
 
           <div className="h-px bg-[rgba(255,255,255,0.06)]" />
 
@@ -9067,7 +10128,7 @@ function SaveTemplateModal({ onClose, onSave }: { onClose: () => void; onSave: (
   );
 }
 
-function AccordionSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function AccordionSection({ title, children, defaultOpen = true }: { title: string | React.ReactNode; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="border-b border-[rgba(255,255,255,0.06)] last:border-0 border-t first:border-t-0">
@@ -9155,7 +10216,10 @@ function CreationToolbar({
   saving,
   saveOk,
   saveError,
-  onTestEvent
+  onTestEvent,
+  overlayId,
+  overlayName,
+  editingMasterId
 }: {
   onAddText: () => void;
   onAddBox: () => void;
@@ -9234,14 +10298,6 @@ function CreationToolbar({
 
       <div className="mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3">
         <button
-          onClick={onTestEvent}
-          className={`${uiClasses.button} w-8 flex-none px-0`}
-          title="Send Test Event"
-        >
-          <BoltIcon />
-        </button>
-
-        <button
           onClick={onSave}
           disabled={saving}
           className={`flex h-8 flex-1 items-center justify-center gap-2 rounded-md border text-[12px] leading-[1.4] tracking-[-0.02em] font-semibold transition-all ${saveOk ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" :
@@ -9262,6 +10318,51 @@ function CreationToolbar({
 
           {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
         </button>
+
+        {/* Publish to Marketplace */}
+        {overlayId && !editingMasterId && (
+          <button
+            onClick={async () => {
+              const title = window.prompt('Listing title:', overlayName || 'My Overlay');
+              if (!title) return;
+              const priceStr = window.prompt('Price in USD (0 for free):', '0');
+              const priceCents = Math.round(parseFloat(priceStr || '0') * 100);
+              const description = window.prompt('Short description (optional):', '') || '';
+
+              // Scan assets first
+              const scanRes = await fetch('/dashboard/api/marketplace/publish', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ overlayId, title, description, priceCents })
+              });
+              const scan = await scanRes.json();
+              if (!scan.ok) { alert('Error: ' + scan.error); return; }
+
+              if (scan.assetPaths.length > 0) {
+                const confirmed = window.confirm(
+                  `This overlay uses ${scan.assetPaths.length} uploaded asset(s).\n\nBy publishing, you confirm you own the rights to these assets and they may be used by buyers.\n\nContinue?`
+                );
+                if (!confirmed) return;
+              }
+
+              const pubRes = await fetch('/dashboard/api/marketplace/publish/confirm', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ overlayId, title, description, priceCents })
+              });
+              const pub = await pubRes.json();
+              if (pub.ok) {
+                alert('✓ Published to marketplace! View it in Earnings → Marketplace Listings.');
+              } else {
+                alert('Error publishing: ' + pub.error);
+              }
+            }}
+            className="flex h-8 items-center justify-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 text-[11px] leading-[1.4] font-semibold text-amber-200 hover:bg-amber-500/20 transition-colors whitespace-nowrap"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Publish
+          </button>
+        )}
       </div>
     </div>
   );

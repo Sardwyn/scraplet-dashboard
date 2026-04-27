@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Listing — Scraplet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{background:#0a0a0f;color:#e2e8f0;font-family:system-ui,sans-serif;}</style>
+</head>
+<body class="min-h-screen">
+  <nav class="border-b border-white/5 px-6 py-4 flex items-center justify-between sticky top-0 bg-[#0a0a0f]/95 backdrop-blur-sm z-10">
+    <a href="/dashboard/earnings" class="text-sm text-gray-400 hover:text-white">← My Listings</a>
+    <span class="text-white font-semibold">Edit Listing</span>
+    <a href="/marketplace/<%= listing.id %>" target="_blank" class="text-sm text-indigo-400 hover:text-indigo-300">View public page ↗</a>
+  </nav>
+
+  <div class="max-w-3xl mx-auto px-4 py-10 space-y-8">
+
+    <!-- Hero / Thumbnail -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+      <div class="relative" style="max-height:280px;overflow:hidden;">
+        <% const heroSrc = listing.hero_image_path || (listing.gallery_images && listing.gallery_images[0]) || listing.thumbnail_path; %>
+        <% if (heroSrc) { %>
+          <img id="heroPreview" src="<%= heroSrc %>" class="w-full object-cover" style="max-height:280px;" />
+        <% } else { %>
+          <div id="heroPreview" class="w-full flex items-center justify-center bg-gray-950" style="height:200px;">
+            <p class="text-gray-600 text-sm">No hero image yet</p>
+          </div>
+        <% } %>
+      </div>
+      <div class="p-4 flex flex-wrap gap-3">
+        <button onclick="retakeScreenshot()" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm transition-colors">Retake screenshot</button>
+        <label class="px-4 py-2 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-sm cursor-pointer hover:bg-indigo-600/30 transition-colors">
+          Upload hero image
+          <input type="file" accept="image/*" class="hidden" onchange="uploadHero(this)" />
+        </label>
+        <a href="/o/<%= listing.overlay_public_id %>" target="_blank" class="px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-sm transition-colors">Preview overlay ↗</a>
+      </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-sm font-semibold text-white">Gallery</div>
+          <div class="text-xs text-gray-500 mt-0.5">Up to 6 promo images shown on your listing page</div>
+        </div>
+        <label class="px-3 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs cursor-pointer hover:bg-indigo-600/30 transition-colors">
+          + Add image
+          <input type="file" accept="image/*" class="hidden" onchange="uploadGalleryImage(this)" />
+        </label>
+      </div>
+      <div id="galleryGrid" class="grid grid-cols-3 gap-3">
+        <% const gallery = listing.gallery_images || []; %>
+        <% gallery.forEach(function(img, i) { %>
+          <div class="relative group rounded-xl overflow-hidden aspect-video bg-gray-800" data-idx="<%= i %>">
+            <img src="<%= img %>" class="w-full h-full object-cover" />
+            <button onclick="removeGalleryImage(<%= i %>)"
+                    class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">✕</button>
+          </div>
+        <% }) %>
+        <% if (gallery.length === 0) { %>
+          <div class="col-span-3 text-center py-8 text-gray-600 text-sm">No gallery images yet</div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Edit form -->
+    <form id="editForm" class="space-y-6">
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Title</label>
+        <input name="title" value="<%= listing.title %>" required
+               class="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Short description <span class="text-gray-500">(browse page)</span></label>
+        <input name="description" value="<%= listing.description || '' %>"
+               class="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Full description <span class="text-gray-500">(listing page)</span></label>
+        <textarea name="long_description" rows="6"
+                  class="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm resize-y"><%= listing.long_description || '' %></textarea>
+      </div>
+
+      <!-- Feature highlights -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-300">Feature highlights</label>
+            <p class="text-xs text-gray-500 mt-0.5">Short callouts shown as cards on the listing page</p>
+          </div>
+          <button type="button" onclick="addHighlight()" class="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white text-xs transition-colors">+ Add</button>
+        </div>
+        <div id="highlightsList" class="space-y-2">
+          <% const highlights = listing.feature_highlights || []; %>
+          <% highlights.forEach(function(h, i) { %>
+            <div class="flex gap-2 items-center" data-highlight="<%= i %>">
+              <input type="text" placeholder="✦" value="<%= h.icon || '' %>"
+                     class="w-12 px-2 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-center text-sm focus:border-indigo-500 focus:outline-none highlight-icon" />
+              <input type="text" placeholder="e.g. Stream-ready alerts" value="<%= h.text || '' %>"
+                     class="flex-1 px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-sm focus:border-indigo-500 focus:outline-none highlight-text" />
+              <button type="button" onclick="removeHighlight(this)" class="text-gray-500 hover:text-red-400 text-sm px-2">✕</button>
+            </div>
+          <% }) %>
+          <% if (highlights.length === 0) { %>
+            <p class="text-xs text-gray-600 py-2">No highlights yet — add some to make your listing stand out</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Tags <span class="text-gray-500">(comma separated)</span></label>
+        <input name="tags" value="<%= (listing.tags || []).join(', ') %>"
+               class="w-full px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm"
+               placeholder="alerts, tts, dark, minimal" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-1">Price</label>
+        <div class="flex items-center gap-3">
+          <select name="price_type" onchange="togglePrice(this.value)"
+                  class="px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm">
+            <option value="free" <%= listing.price_cents === 0 ? 'selected' : '' %>>Free</option>
+            <option value="paid" <%= listing.price_cents > 0 ? 'selected' : '' %>>Paid</option>
+          </select>
+          <input name="price_dollars" type="number" min="0.99" step="0.01"
+                 value="<%= listing.price_cents > 0 ? (listing.price_cents/100).toFixed(2) : '' %>"
+                 placeholder="4.99" id="priceInput"
+                 class="px-4 py-2.5 rounded-xl bg-gray-900 border border-gray-700 text-white focus:border-indigo-500 focus:outline-none text-sm w-32 <%= listing.price_cents === 0 ? 'hidden' : '' %>" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Visibility</label>
+        <div class="flex gap-4">
+          <% ['draft','published','unlisted'].forEach(function(s) { %>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="status" value="<%= s %>" <%= listing.status === s ? 'checked' : '' %> class="accent-indigo-500" />
+              <span class="text-sm text-gray-300 capitalize"><%= s %></span>
+            </label>
+          <% }) %>
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Draft = not visible. Unlisted = link only.</p>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-colors">Save changes</button>
+        <span id="saveStatus" class="text-sm text-gray-400 self-center"></span>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+  const listingId = <%= listing.id %>;
+  let galleryImages = <%- JSON.stringify(listing.gallery_images || []) %>;
+  let heroImagePath = <%= listing.hero_image_path ? JSON.stringify(listing.hero_image_path) : 'null' %>;
+
+  function togglePrice(val) {
+    document.getElementById('priceInput').classList.toggle('hidden', val === 'free');
+  }
+
+  function addHighlight() {
+    const list = document.getElementById('highlightsList');
+    const empty = list.querySelector('p');
+    if (empty) empty.remove();
+    const idx = list.children.length;
+    const div = document.createElement('div');
+    div.className = 'flex gap-2 items-center';
+    div.dataset.highlight = idx;
+    div.innerHTML = `
+      <input type="text" placeholder="✦" class="w-12 px-2 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-center text-sm focus:border-indigo-500 focus:outline-none highlight-icon" />
+      <input type="text" placeholder="e.g. Stream-ready alerts" class="flex-1 px-3 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white text-sm focus:border-indigo-500 focus:outline-none highlight-text" />
+      <button type="button" onclick="removeHighlight(this)" class="text-gray-500 hover:text-red-400 text-sm px-2">✕</button>
+    `;
+    list.appendChild(div);
+  }
+
+  function removeHighlight(btn) {
+    btn.closest('[data-highlight]').remove();
+  }
+
+  function getHighlights() {
+    return [...document.querySelectorAll('[data-highlight]')].map(row => ({
+      icon: row.querySelector('.highlight-icon').value.trim() || '✦',
+      text: row.querySelector('.highlight-text').value.trim(),
+    })).filter(h => h.text);
+  }
+
+  async function uploadHero(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/dashboard/api/uploads/marketplace/image', { method: 'POST', credentials: 'include', body: fd });
+    const d = await r.json();
+    if (d.ok && d.url) {
+      heroImagePath = d.url;
+      const preview = document.getElementById('heroPreview');
+      if (preview.tagName === 'IMG') preview.src = d.url;
+      else { const img = document.createElement('img'); img.id='heroPreview'; img.src=d.url; img.className='w-full object-cover'; img.style.maxHeight='280px'; preview.replaceWith(img); }
+      await patchListing({ hero_image_path: d.url });
+    }
+  }
+
+  async function uploadGalleryImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (galleryImages.length >= 6) { alert('Maximum 6 gallery images'); return; }
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/dashboard/api/uploads/marketplace/image', { method: 'POST', credentials: 'include', body: fd });
+    const d = await r.json();
+    if (d.ok && d.url) {
+      galleryImages.push(d.url);
+      renderGallery();
+      await patchListing({ gallery_images: galleryImages });
+    }
+  }
+
+  function removeGalleryImage(idx) {
+    galleryImages.splice(idx, 1);
+    renderGallery();
+    patchListing({ gallery_images: galleryImages });
+  }
+
+  function renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    if (galleryImages.length === 0) {
+      grid.innerHTML = '<div class="col-span-3 text-center py-8 text-gray-600 text-sm">No gallery images yet</div>';
+      return;
+    }
+    grid.innerHTML = galleryImages.map((img, i) => `
+      <div class="relative group rounded-xl overflow-hidden aspect-video bg-gray-800" data-idx="${i}">
+        <img src="${img}" class="w-full h-full object-cover" />
+        <button onclick="removeGalleryImage(${i})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">✕</button>
+      </div>
+    `).join('');
+  }
+
+  async function patchListing(data) {
+    await fetch('/dashboard/api/marketplace/' + listingId, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  }
+
+  document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const priceType = fd.get('price_type');
+    const tags = (fd.get('tags') || '').split(',').map(t => t.trim()).filter(Boolean);
+    const body = {
+      title: fd.get('title'),
+      description: fd.get('description'),
+      long_description: fd.get('long_description'),
+      tags,
+      feature_highlights: getHighlights(),
+      price_cents: priceType === 'free' ? 0 : Math.round(parseFloat(fd.get('price_dollars') || '0') * 100),
+      status: fd.get('status'),
+    };
+    const status = document.getElementById('saveStatus');
+    status.textContent = 'Saving...';
+    try {
+      const r = await fetch('/dashboard/api/marketplace/' + listingId, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      status.textContent = d.ok ? '✓ Saved' : 'Error: ' + d.error;
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    } catch(e) { status.textContent = 'Failed'; }
+  });
+
+  async function retakeScreenshot() {
+    const btn = event.target;
+    btn.textContent = 'Taking screenshot...'; btn.disabled = true;
+    const r = await fetch('/dashboard/api/marketplace/' + listingId + '/retake-screenshot', { method: 'POST', credentials: 'include' });
+    const d = await r.json();
+    btn.textContent = d.ok ? 'Screenshot queued — refresh in ~10s' : 'Failed';
+    setTimeout(() => { btn.textContent = 'Retake screenshot'; btn.disabled = false; }, 12000);
+  }
+  </script>
+</body>
+</html>

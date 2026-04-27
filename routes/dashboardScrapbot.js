@@ -752,6 +752,7 @@ router.get("/dashboard/scrapbot", requireAuth, async (req, res, next) => {
       await ensureKickScrapbotAccountForUser(sessionUser.id);
 
     return res.render("dashboard-scrapbot", {
+      currentPage: "scrapbot",
       user: sessionUser,
       scrapbotStatus,
       scrapbotAccount,
@@ -845,6 +846,7 @@ router.get("/dashboard/scrapbot/commands", requireAuth, async (req, res, next) =
     const discordConnected = !!discordIntegration?.guild_id;
 
     return res.render("dashboard-scrapbot-commands", {
+      currentPage: "scrapbot",
       user: sessionUser,
       scrapbotAccount: viewAccount,
       commands,
@@ -875,6 +877,7 @@ router.get("/dashboard/scrapbot/disco", requireAuth, async (req, res, next) => {
     }
 
     return res.render("dashboard-scrapbot-disco", {
+      currentPage: "scrapbot",
       user: sessionUser,
       discordConnected,
       guildId: discordIntegration.guild_id,
@@ -1138,6 +1141,19 @@ router.post("/dashboard/scrapbot/commands/delete", requireAuth, async (req, res)
 // ─────────────────────────────────────────────
 // Disco Scrapbot (UI tab view)
 // ─────────────────────────────────────────────
+router.get("/dashboard/scrapbot/3000", requireAuth, async (req, res, next) => {
+  try {
+    return res.render("layout", {
+      tabView: "tabs/scrapbot-3000",
+      currentPage: "scrapbot",
+      user: req.session.user,
+      isPro: req.session.user?.is_pro || false,
+    });
+  } catch (e) {
+    return next(e);
+  }
+});
+
 router.get("/dashboard/scrapbot/disco-ui", requireAuth, async (req, res) => {
   try {
     const sessionUser = req.session.user;
@@ -1208,6 +1224,8 @@ router.get("/dashboard/scrapbot/disco-ui", requireAuth, async (req, res) => {
 
     return res.render("layout", {
       tabView: "tabs/scrapbot-disco",
+    currentPage: "scrapbot",
+    currentPage: "scrapbot",
       user: sessionUser,
       isPro: false,
       discord,
@@ -1219,6 +1237,87 @@ router.get("/dashboard/scrapbot/disco-ui", requireAuth, async (req, res) => {
   } catch (e) {
     console.error("[disco-ui] failed:", e?.message || e);
     return res.status(500).send("Disco Scrapbot error");
+  }
+});
+
+
+// ── GET /dashboard/api/scrapbot/status ───────────────────────────────────────
+// Used by the showrunner controller to get live Scrapbot + streamer metrics
+router.get('/dashboard/api/scrapbot/status', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+
+    // Fetch streamer context (session stats, platform stats)
+    // channel_slug and platform can be passed to scope results to a specific channel
+    const channelSlug = req.query.channel_slug || null;
+    const platform    = req.query.platform || null;
+    const base = process.env.DASHBOARD_INTERNAL_URL || 'http://127.0.0.1:3000';
+    const ctxResp = await fetch(
+      `${base}/dashboard/api/streamer/context?days=7&_internal_user_id=${userId}`,
+      { signal: AbortSignal.timeout(3000) }
+    ).catch(() => null);
+    let ctx = ctxResp?.ok ? await ctxResp.json() : null;
+
+    // Scope platform_stats to the requested platform/channel if specified
+    if (ctx?.ok && platform) {
+      ctx = {
+        ...ctx,
+        platform_stats: (ctx.platform_stats || []).filter(
+          s => s.platform?.toLowerCase() === platform.toLowerCase()
+        ),
+      };
+    }
+
+    // Fetch scrapbot service health
+    const scrapbotBase = process.env.SCRAPBOT_INTERNAL_URL || 'http://127.0.0.1:3030';
+    const healthResp = await fetch(`${scrapbotBase}/health`, {
+      signal: AbortSignal.timeout(2000)
+    }).catch(() => null);
+    const health = healthResp?.ok ? await healthResp.json() : null;
+
+    // Recent room intel snapshot (last known MPM, engagement)
+    // Scope to specific channel if provided
+    const intelQuery = channelSlug
+      ? `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
+         FROM public.roomintel_snapshots
+         WHERE user_id = $1 AND channel_slug = $2
+         ORDER BY updated_at DESC LIMIT 3`
+      : `SELECT platform, channel_slug, mpm, engagement_index, viewer_count, updated_at
+         FROM public.roomintel_snapshots
+         WHERE user_id = $1
+         ORDER BY updated_at DESC LIMIT 5`;
+    const intelParams = channelSlug ? [userId, channelSlug] : [userId];
+    const { rows: intelRows } = await db.query(intelQuery, intelParams)
+      .catch(() => ({ rows: [] }));
+
+    // Recent generation jobs
+    const { rows: genRows } = await db.query(
+      `SELECT job_type, status, created_at
+       FROM public.generation_jobs
+       WHERE owner_user_id = $1
+       ORDER BY created_at DESC LIMIT 5`,
+      [userId]
+    ).catch(() => ({ rows: [] }));
+
+    return res.json({
+      ok: true,
+      scrapbot: {
+        online: !!health?.ok,
+        raffle: health?.orchestration?.raffle || 'unknown',
+        mod_probe: health?.orchestration?.mod_probe || 'unknown',
+      },
+      streamer: ctx?.ok ? {
+        platform_stats: ctx.platform_stats || [],
+        session_averages: ctx.session_averages || null,
+        recent_sessions: (ctx.recent_sessions || []).slice(0, 3),
+        top_chatters: (ctx.top_chatters || []).slice(0, 5),
+      } : null,
+      room_intel: intelRows,
+      recent_generations: genRows,
+    });
+  } catch (err) {
+    console.error('[scrapbot/status]', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 });
 

@@ -5,6 +5,9 @@
 //
 
 import { push as pushRing } from "../runtime/ringBuffer.js";
+import { overlayGate } from "../../services/overlayGate.js";
+import { recordStage } from "../services/pipelineHealth.js";
+import db from "../../db.js";
 
 // Phase 3: Feature flag for centralized fan-out (default: true)
 const CENTRALIZED_FANOUT =
@@ -22,10 +25,15 @@ const CENTRALIZED_FANOUT =
  * @returns {Object} { pushed: boolean, reason: string }
  */
 export function fanOutAfterModeration({ chat_v1, decision, publicId, ownerUserId, forcePush = false }) {
+    recordStage('messages', 4, chat_v1?.message?.text?.slice(0,30));
+    console.log("[CHAIN-4] fanOutAfterModeration called", { ownerUserId, decision: decision?.action });
     // If centralized fan-out is disabled (rollback mode), allow all pushes
     if (!CENTRALIZED_FANOUT || forcePush) {
         const leanMessage = buildLeanMessage(chat_v1, "unknown");
         pushRing(publicId, leanMessage);
+        publishChatToOverlayGate(ownerUserId, leanMessage).catch(e =>
+            console.warn("[fanOutAfterModeration] overlayGate publish failed:", e.message)
+        );
         return { pushed: true, reason: "centralized_fanout_disabled" };
     }
 
@@ -52,6 +60,13 @@ export function fanOutAfterModeration({ chat_v1, decision, publicId, ownerUserId
 
     try {
         pushRing(publicId, leanMessage);
+
+        // Publish chat.message packet to overlayGate so unified overlay runtime
+        // receives it via SSE — no CEF polling, no widget SSE needed.
+        publishChatToOverlayGate(ownerUserId, leanMessage).catch(e =>
+            console.warn("[fanOutAfterModeration] overlayGate publish failed:", e.message)
+        );
+
         return { pushed: true, reason: `moderation_${moderationStatus}` };
     } catch (err) {
         console.error("[fanOutAfterModeration] Failed to push to ring buffer", err);
@@ -116,4 +131,46 @@ function buildLeanMessage(chat_v1, moderationStatus) {
         emotes: message.emotes || null,
         moderation: moderationStatus,
     };
+}
+
+/**
+ * Publish a lean chat message as a chat.message packet to all overlays for this user.
+ * This feeds the unified overlay runtime SSE without any CEF-side polling.
+ */
+async function publishChatToOverlayGate(ownerUserId, leanMessage) {
+    console.log('[overlayGate] publishChatToOverlayGate called', { ownerUserId, text: leanMessage?.text?.slice(0, 30) });
+    if (!ownerUserId) return;
+    const { rows } = await db.query(
+        `SELECT public_id FROM overlays WHERE user_id = $1`,
+        [String(ownerUserId)]
+    );
+    for (const row of rows) {
+        const packet = {
+            header: {
+                id: String(leanMessage.id || Date.now()),
+                type: "chat.message",
+                ts: typeof leanMessage.ts === "number" ? leanMessage.ts : Date.now(),
+                producer: "dashboard",
+                platform: leanMessage.platform || "kick",
+                scope: {
+                    tenantId: String(ownerUserId),
+                    overlayPublicId: row.public_id,
+                },
+            },
+            payload: {
+                author: {
+                    display: leanMessage.display_name || leanMessage.username || "Unknown",
+                    color: leanMessage.color || "",
+                    avatar: leanMessage.avatar_url || "",
+                    badges: leanMessage.badges || [],
+                },
+                message: {
+                    text: leanMessage.text || "",
+                    emotes: leanMessage.emotes || [],
+                },
+                platform: leanMessage.platform || "kick",
+            },
+        };
+        overlayGate.publish(String(ownerUserId), row.public_id, packet);
+    }
 }

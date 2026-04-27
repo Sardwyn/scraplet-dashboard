@@ -58,8 +58,28 @@ import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
 import statusProxyRoutes from './routes/statusProxy.js';
+import highlightsApiRouter from './routes/highlightsApi.js';
+import insightsApiRouter from './routes/insightsApi.js';
+import contentPacksApiRouter from './routes/contentPacksApi.js';
+import profileAnalyticsApiRouter from './routes/profileAnalyticsApi.js';
+import trainingApiRouter from './routes/trainingApi.js';
+import stakeMonitorRouter from './routes/api/stakeMonitor.js';
+import ttsPanelRouter from './routes/api/ttsPanel.js';
+import widgetTokenRouter from './routes/api/widgetToken.js';
+import subathonRouter from './routes/api/subathon.js';
+import ttsAlertRouter from './routes/api/ttsAlert.js';
+import earningsRouter from './routes/earnings.js';
+import marketplaceRouter from './routes/api/marketplace.js';
+import marketplacePageRouter from './routes/marketplace.js';
+import widgetTestFireRouter from './routes/api/widgetTestFire.js';
+import streamerContextRouter from './routes/streamerContext.js';
+import generationApiRouter from './routes/generationApi.js';
 import intelApiRouter from './routes/intelApi.js';
+import mediaRequestsRouter from './routes/mediaRequestsApi.js';
+import pollsRouter from './routes/pollsApi.js';
+import hypeTrainRouter from './routes/hypeTrainApi.js';
 import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
+import { scheduleInsightEngine } from './services/insightEngine.js';
 
 
 global.studioEventBus = new EventBus();
@@ -85,7 +105,11 @@ app.use(
   "/widgets",
   express.static(path.join(__dirname, "public", "widgets"), {
     fallthrough: true,
-    maxAge: "1h",
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
   })
 );
 
@@ -156,8 +180,22 @@ app.use(crashRoutes);
 app.use("/dashboard/api/raffle", raffleEventsIngestRoutes);
 //sub counter widget
 app.use("/dashboard/api/subs", subsEventsIngestRoutes);
+// media request queue
+app.use("/dashboard/api/media-requests", mediaRequestsRouter);
+// polls
+app.use("/dashboard/api/polls", pollsRouter);
+// hype train
+app.use("/dashboard/api/hype-train", hypeTrainRouter);
 
 // Static assets for the dashboard app
+// Overlay bundles: no-store so OBS and browsers always get fresh builds
+app.use('/static/overlays', express.static(path.join(__dirname, 'public', 'static', 'overlays'), {
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 // Static assets under /dashboard/* (so Nginx proxy paths can load JS/CSS)
 app.use('/dashboard', express.static(path.join(__dirname, 'public')));
@@ -308,12 +346,29 @@ app.use('/dashboard/api/email', emailApiRoutes);
 
 // Status Proxy Routes
 app.use('/api/status', statusProxyRoutes);
+app.use(highlightsApiRouter);
+app.use(insightsApiRouter);
+app.use(contentPacksApiRouter);
+app.use(profileAnalyticsApiRouter);
+// Schedule nightly insight engine
+scheduleInsightEngine();
+app.use(trainingApiRouter);
+app.use(stakeMonitorRouter);
+app.use(ttsPanelRouter);
+app.use(widgetTokenRouter);
+app.use(subathonRouter);
+app.use(ttsAlertRouter);
+app.use(earningsRouter);
+app.use(marketplaceRouter);
+app.use(marketplacePageRouter);
+app.use(widgetTestFireRouter);
 
 // 🎛 Studio Controller — auth-gated React build
 const studioDistPath = process.env.STUDIO_DIST_PATH || '/var/www/studio-controller/dist';
 
 app.use('/studio', requireAuth, express.static(studioDistPath));
 app.get(/^\/studio(\/.*)?$/, requireAuth, (req, res) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(studioDistPath, 'index.html'));
 });
 
@@ -340,6 +395,8 @@ app.use('/', publicRoutes);
 app.use('/profile', profileRoutes);
 app.use('/admin', adminRoutes);
 app.use(dashboardScrapbotRoutes);
+app.use('/dashboard', streamerContextRouter);
+app.use(generationApiRouter);
 
 // 🧱 404
 app.use((req, res) => {

@@ -59,6 +59,7 @@ router.get('/editor', requireAuth, async (req, res) => {
 
     return res.render('layout', {
       tabView: 'profile-editor',
+    currentPage: "profile",
       user: sessionUser,
 
       profile,
@@ -280,6 +281,7 @@ router.get('/email', requireAuth, async (req, res) => {
 
     return res.render('layout', {
       tabView: 'tabs/email',
+    currentPage: "email",
       user: sessionUser,
 
       isPro: isProUser(sessionUser),

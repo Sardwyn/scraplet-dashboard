@@ -1,3 +1,10 @@
+.pc-card-root {
+  --card-opacity: 1;
+  --card-blur: 12px;
+}
+.pc-card-root:not(.pc-card-glass) {
+  opacity: var(--card-opacity, 1);
+}
 /* ===========================
  * Canonical Profile Card (pc-)
  * Used by BOTH public + editor
@@ -425,7 +432,8 @@
 /* Shape variants */
 .pc-button--shape-pill { border-radius: 999px; }
 .pc-button--shape-rounded { border-radius: 1rem; }
-.pc-button--shape-square { border-radius: 0.75rem; }
+.pc-button--shape-soft { border-radius: 0.5rem; }
+.pc-button--shape-square { border-radius: 0.25rem; }
 
 /* Size variants */
 .pc-button--size-sm { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
@@ -473,6 +481,7 @@
 
 /* Shape variants */
 .pc-button--shape-pill    { border-radius: 999px; }
+.pc-button--shape-soft    { border-radius: 0.5rem; }
 .pc-button--shape-rounded { border-radius: 1rem; }
 .pc-button--shape-square  { border-radius: 0.75rem; }
 
@@ -628,8 +637,9 @@
 
 /* Glass */
 .pc-card-glass.pc-card-root {
-  backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(var(--card-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--card-blur, 12px));
+  background: rgba(255,255,255,calc(0.02 * var(--card-opacity, 1)));
 }
 
 /* Chroma */

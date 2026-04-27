@@ -741,11 +741,43 @@ sections.forEach((section) => {
 /**
  * Mount into #preview-root
  */
+// Debounce timer for server-render calls
+let _renderDebounceTimer = null;
+
 export function renderPreview() {
   const root = document.getElementById("preview-root");
   if (!root) return;
 
-  root.innerHTML = buildPublicCardHTML(rendererState);
+  // Debounce rapid calls (e.g. while typing)
+  clearTimeout(_renderDebounceTimer);
+  _renderDebounceTimer = setTimeout(() => _doServerRender(root), 120);
+}
+
+async function _doServerRender(root) {
+  try {
+    const resp = await fetch("/dashboard/api/profile/preview-render", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(rendererState),
+    });
+
+    if (!resp.ok) {
+      console.warn("[profile-preview-renderer] server render failed:", resp.status);
+      // Fallback to client-side render
+      root.innerHTML = buildPublicCardHTML(rendererState);
+    } else {
+      const data = await resp.json();
+      if (data.ok && data.html) {
+        root.innerHTML = data.html;
+      } else {
+        root.innerHTML = buildPublicCardHTML(rendererState);
+      }
+    }
+  } catch (err) {
+    console.warn("[profile-preview-renderer] fetch error, falling back:", err.message);
+    root.innerHTML = buildPublicCardHTML(rendererState);
+  }
 
   // Wire the "+" tile on the card to the sidebar "Add button" control
   const addTile = root.querySelector("#pc-add-button-card");
@@ -761,15 +793,25 @@ export function renderPreview() {
     });
   }
 
+  // Load bio font if set
+  const bioFont = rendererState?.appearance?.bioFont;
+  if (bioFont) {
+    const linkId = 'gf-preview-' + bioFont.replace(/\s+/g, '-');
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(bioFont).replace(/%20/g, '+') + ':wght@400;500&display=swap';
+      document.head.appendChild(link);
+    }
+  }
+
   // Let card DnD module hook into .pc-buttons / [data-button-id]
   if (typeof window.onProfilePreviewRendered === "function") {
     try {
       window.onProfilePreviewRendered();
     } catch (err) {
-      console.error(
-        "[profile-preview-renderer] onProfilePreviewRendered error",
-        err
-      );
+      console.error("[profile-preview-renderer] onProfilePreviewRendered error", err);
     }
   }
 }

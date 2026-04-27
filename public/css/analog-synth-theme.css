@@ -1,0 +1,1234 @@
+/* ═══════════════════════════════════════════════════════════════
+   ANALOG SYNTH THEME
+   Vintage studio equipment aesthetic with warm, tactile controls
+   ═══════════════════════════════════════════════════════════════ */
+
+html[data-theme="analog-synth"] {
+  /* ── Core Palette ── */
+  --as-teal: #4a6b7c;           /* Main background teal */
+  --as-teal-dark: #3d5a6b;      /* Darker teal for depth */
+  --as-teal-light: #5a7b8c;     /* Lighter teal for highlights */
+  
+  --as-cream: #e8d5b7;          /* Panel faces */
+  --as-cream-light: #f5e6d3;    /* Highlights */
+  --as-cream-dark: #d4c4a8;     /* Shadows */
+  
+  --as-coral: #ff5757;          /* Primary accent */
+  --as-coral-bright: #ff6b4a;   /* Bright coral */
+  --as-orange: #ff8a5b;         /* Secondary accent */
+  
+  --as-charcoal: #2b3540;       /* Deep shadows */
+  --as-charcoal-dark: #1a1f28;  /* Darkest */
+  --as-off-white: #f8f4ed;      /* Labels, text */
+  
+  /* ── Mapped to pc-* variables ── */
+  --pc-bg: var(--as-teal);
+  --pc-panel: var(--as-cream);
+  --pc-text: var(--as-charcoal);
+  --pc-muted: rgba(43, 53, 64, 0.65);
+  
+  --pc-accent: var(--as-coral);
+  --pc-accent-2: var(--as-orange);
+  --pc-warn: #ffb84d;
+  --pc-err: var(--as-coral);
+  
+  /* ── Geometry ── */
+  --pc-r-md: 12px;
+  --pc-r-sm: 8px;
+  --pc-gap: 20px;
+  --pc-pad: 18px;
+  
+  /* ── Effects ── */
+  --pc-border-a: 0.15;
+  --pc-shadow: rgba(26, 31, 40, 0.35);
+  
+  /* ── Synth-specific ── */
+  --as-bezel-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
+  --as-raised-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --as-panel-texture: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.02) 2px,
+    rgba(0, 0, 0, 0.02) 4px
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL BACKGROUND
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="analog-synth"] body.np {
+  background: var(--as-teal);
+  color: var(--pc-text);
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANELS: Modular Synth Units
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="analog-synth"] .pc-panel {
+  background: 
+    var(--as-panel-texture),
+    linear-gradient(180deg, var(--as-cream-light), var(--as-cream) 50%, var(--as-cream-dark));
+  
+  border: 3px solid var(--as-charcoal);
+  border-radius: var(--pc-r-md);
+  
+  /* Raised panel effect */
+  box-shadow:
+    0 4px 0 var(--as-charcoal-dark),
+    0 8px 16px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  
+  position: relative;
+  margin-bottom: 24px;
+}
+
+/* Corner screws */
+html[data-theme="analog-synth"] .pc-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  
+  background-image:
+    /* Top-left screw */
+    radial-gradient(circle at 14px 14px,
+      #8a8a8a 0px,
+      #666 2px,
+      #444 3px,
+      rgba(0,0,0,0.3) 4px,
+      transparent 5px),
+    /* Top-right screw */
+    radial-gradient(circle at calc(100% - 14px) 14px,
+      #8a8a8a 0px,
+      #666 2px,
+      #444 3px,
+      rgba(0,0,0,0.3) 4px,
+      transparent 5px),
+    /* Bottom-left screw */
+    radial-gradient(circle at 14px calc(100% - 14px),
+      #8a8a8a 0px,
+      #666 2px,
+      #444 3px,
+      rgba(0,0,0,0.3) 4px,
+      transparent 5px),
+    /* Bottom-right screw */
+    radial-gradient(circle at calc(100% - 14px) calc(100% - 14px),
+      #8a8a8a 0px,
+      #666 2px,
+      #444 3px,
+      rgba(0,0,0,0.3) 4px,
+      transparent 5px);
+}
+
+/* Panel Header: Label strip */
+html[data-theme="analog-synth"] .pc-panel-hd {
+  background: linear-gradient(180deg, var(--as-charcoal), var(--as-charcoal-dark));
+  color: var(--as-off-white);
+  padding: 12px 20px;
+  border-radius: calc(var(--pc-r-md) - 3px) calc(var(--pc-r-md) - 3px) 0 0;
+  
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  
+  border-bottom: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Panel Body */
+html[data-theme="analog-synth"] .pc-panel-bd {
+  padding: var(--pc-pad);
+  position: relative;
+  z-index: 1;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   READOUTS: VU Meters & Displays
+   ───────────────────────────────────────────────────────────── */
+
+/* Scanline animation */
+@keyframes scanlines {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 4px;
+  }
+}
+
+/* Distortion wave animation */
+@keyframes distortion-wave {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  5% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.08;
+  }
+  95% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+html[data-theme="analog-synth"] .pc-oled.pc-readout {
+  /* Background set above with scanlines */
+  
+  border: 4px solid var(--as-charcoal);
+  border-radius: 6px;
+  
+  padding: 18px;
+  
+  /* Deep recessed display with inner bezel */
+  box-shadow:
+    /* Outer shadow */
+    0 2px 0 rgba(0, 0, 0, 0.3),
+    /* Deep inset */
+    inset 0 4px 12px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.5),
+    /* Inner bezel highlight */
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  
+  color: var(--as-coral-bright);
+  font-family: 'Share Tech Mono', monospace;
+  
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glass reflection effect - big OLEDs only, not mini */
+html[data-theme="analog-synth"] .pc-oled.pc-readout:not(.pc-mini-oled)::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: 35%;
+  
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 100%
+  );
+  
+  border-radius: 3px 3px 50% 50% / 3px 3px 20% 20%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Explicitly no ::after on mini OLEDs */
+html[data-theme="analog-synth"] .pc-mini-oled::after {
+  display: none;
+}
+
+/* Animated scanlines - big OLEDs get the radial gradient glow */
+html[data-theme="analog-synth"] .pc-oled.pc-readout {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.2) 2px,
+      rgba(0, 0, 0, 0.2) 4px
+    ),
+    radial-gradient(ellipse at 50% 30%, #1a1f28 0%, #0d1015 100%);
+  background-size: 100% 4px, 100% 100%;
+  animation: scanlines 0.3s linear infinite;
+}
+
+/* Mini OLEDs get a flat dark background - no glow, no blur */
+html[data-theme="analog-synth"] .pc-mini-oled.pc-readout {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.2) 2px,
+      rgba(0, 0, 0, 0.2) 4px
+    ),
+    linear-gradient(180deg, #0d1015 0%, #080a0d 100%);
+  background-size: 100% 4px, 100% 100%;
+  animation: scanlines 0.3s linear infinite;
+}
+
+/* Children sit above the wave layer */
+html[data-theme="analog-synth"] .pc-oled.pc-readout > *,
+html[data-theme="analog-synth"] .pc-mini-oled.pc-readout > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* Traveling distortion wave on both oled types */
+html[data-theme="analog-synth"] .pc-readout::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100px;
+  
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 20%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 80%,
+    transparent 100%
+  );
+  
+  box-shadow: 
+    0 0 30px rgba(255, 87, 87, 0.15),
+    inset 0 0 30px rgba(255, 255, 255, 0.08);
+  
+  animation: distortion-wave 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+  mix-blend-mode: screen;
+}
+
+/* Main readout numbers - bright cyan/green for high contrast */
+html[data-theme="analog-synth"] .pc-readout .text-2xl,
+html[data-theme="analog-synth"] .pc-readout .pc-text-main {
+  color: #00ff9f;
+  text-shadow: 
+    0 0 10px #00ff9f,
+    0 0 20px rgba(0, 255, 159, 0.6),
+    0 0 30px rgba(0, 255, 159, 0.3);
+  font-weight: 700;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Labels and secondary text - bright amber, no glow on small text */
+html[data-theme="analog-synth"] .pc-readout .text-xs {
+  color: #ffd080;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+/* Muted text in readouts - dimmer amber, no glow */
+html[data-theme="analog-synth"] .pc-readout .pc-text-muted,
+html[data-theme="analog-synth"] .pc-readout .text-gray-500 {
+  color: #c8a060;
+  text-shadow: none;
+}
+
+/* All body/paragraph text inside screens - bright enough to read, no glow */
+html[data-theme="analog-synth"] .pc-readout p,
+html[data-theme="analog-synth"] .pc-readout div,
+html[data-theme="analog-synth"] .pc-readout span {
+  text-shadow: none;
+  color: #d4c090;
+}
+
+/* Only these specific elements get the glow treatment */
+html[data-theme="analog-synth"] .pc-readout .text-2xl,
+html[data-theme="analog-synth"] .pc-readout .pc-text-main,
+html[data-theme="analog-synth"] .pc-readout .font-mono.text-sm,
+html[data-theme="analog-synth"] .pc-readout .font-mono.text-lg {
+  text-shadow: 
+    0 0 10px #00ff9f,
+    0 0 20px rgba(0, 255, 159, 0.6),
+    0 0 30px rgba(0, 255, 159, 0.3);
+}
+
+/* Mini OLED displays (smaller nested displays) - sharp, no blur */
+html[data-theme="analog-synth"] .pc-mini-oled {
+  background: #080a0d !important;
+  border: 2px solid rgba(0, 0, 0, 0.8) !important;
+  border-radius: 4px;
+  
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Integration card icon box - fixed square, consistent across all cards */
+html[data-theme="analog-synth"] .pc-int-ico {
+  width: 64px !important;
+  height: 64px !important;
+  min-width: 64px !important;
+  min-height: 64px !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: flex-start;
+  overflow: hidden;
+}
+
+html[data-theme="analog-synth"] .pc-int-ico svg {
+  width: 38px !important;
+  height: 38px !important;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Inner layout: icon always top-aligned so Discord's tall content doesn't push it */
+html[data-theme="analog-synth"] .pc-int-inner {
+  align-items: flex-start !important;
+}
+
+/* State-based icon glow colours */
+html[data-theme="analog-synth"] .pc-int-ico--ok {
+  color: #00ff9f;
+  border-color: rgba(0, 255, 159, 0.5);
+  box-shadow:
+    0 0 8px rgba(0, 255, 159, 0.3),
+    inset 0 0 12px rgba(0, 255, 159, 0.1);
+}
+
+html[data-theme="analog-synth"] .pc-int-ico--reauth,
+html[data-theme="analog-synth"] .pc-int-ico--disconnected {
+  color: #ffb84d;
+  border-color: rgba(255, 184, 77, 0.5);
+  box-shadow:
+    0 0 8px rgba(255, 184, 77, 0.3),
+    inset 0 0 12px rgba(255, 184, 77, 0.1);
+}
+
+html[data-theme="analog-synth"] .pc-int-ico--not_linked {
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="analog-synth"] .pc-int-ico--soon {
+  color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+  position: relative;
+  overflow: hidden;
+  color: var(--as-coral-bright);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Children above the wave */
+html[data-theme="analog-synth"] .pc-mini-oled.pc-readout > * {
+  position: relative;
+  z-index: 3;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BUTTONS: Chunky Synth Keys
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="analog-synth"] .pc-btn {
+  background: linear-gradient(180deg, #f0f0f0, #d0d0d0);
+  color: var(--as-charcoal);
+  
+  border: 2px solid var(--as-charcoal);
+  border-radius: 6px;
+  
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  
+  /* Raised button */
+  box-shadow:
+    0 3px 0 var(--as-charcoal-dark),
+    0 6px 12px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+html[data-theme="analog-synth"] .pc-btn:hover {
+  background: linear-gradient(180deg, #fafafa, #e0e0e0);
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 var(--as-charcoal-dark),
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme="analog-synth"] .pc-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 var(--as-charcoal-dark),
+    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Primary Button: Red Alert */
+html[data-theme="analog-synth"] .pc-btn--primary,
+html[data-theme="analog-synth"] .pc-btn-primary {
+  background: linear-gradient(180deg, var(--as-coral-bright), var(--as-coral));
+  color: white;
+  
+  box-shadow:
+    0 3px 0 #cc3030,
+    0 6px 12px rgba(255, 87, 87, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="analog-synth"] .pc-btn--primary:hover {
+  background: linear-gradient(180deg, #ff7a7a, #ff6060);
+  transform: translateY(1px);
+  box-shadow:
+    0 2px 0 #cc3030,
+    0 4px 8px rgba(255, 87, 87, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+html[data-theme="analog-synth"] .pc-btn--primary:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 #cc3030,
+    inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Ghost Button: Subtle */
+html[data-theme="analog-synth"] .pc-btn--ghost {
+  background: transparent;
+  color: var(--as-charcoal);
+  border: 2px solid rgba(43, 53, 64, 0.3);
+  box-shadow: none;
+}
+
+html[data-theme="analog-synth"] .pc-btn--ghost:hover {
+  background: rgba(43, 53, 64, 0.05);
+  border-color: rgba(43, 53, 64, 0.5);
+  transform: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INPUTS: Recessed Wells
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="analog-synth"] input[type="text"],
+html[data-theme="analog-synth"] input[type="number"],
+html[data-theme="analog-synth"] input[type="email"],
+html[data-theme="analog-synth"] select,
+html[data-theme="analog-synth"] textarea {
+  background: #fafaf8;
+  color: var(--as-charcoal);
+  
+  border: 2px solid var(--as-charcoal);
+  border-radius: 4px;
+  
+  padding: 10px 14px;
+  font-size: 14px;
+  
+  /* Recessed input */
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+html[data-theme="analog-synth"] input:focus,
+html[data-theme="analog-synth"] select:focus,
+html[data-theme="analog-synth"] textarea:focus {
+  outline: none;
+  border-color: var(--as-coral);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 0 0 3px rgba(255, 87, 87, 0.2);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL TEXT OVERRIDES
+   Override Tailwind grey classes to be readable on cream panels
+   ───────────────────────────────────────────────────────────── */
+
+/* Panel section labels (e.g. "SYSTEM", "OVERVIEW") */
+html[data-theme="analog-synth"] .text-gray-500 {
+  color: #7a6a55 !important;
+}
+
+/* Secondary text, sub-labels */
+html[data-theme="analog-synth"] .text-gray-400 {
+  color: #8a7a65 !important;
+}
+
+/* Primary text, names, values */
+html[data-theme="analog-synth"] .text-gray-300 {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .text-gray-200 {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .text-gray-100 {
+  color: var(--as-charcoal-dark) !important;
+}
+
+/* White text on cream panels needs to be dark */
+html[data-theme="analog-synth"] body.np {
+  color: var(--as-charcoal);
+}
+
+/* pc-* semantic text tokens */
+html[data-theme="analog-synth"] .pc-text-main {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .pc-text-muted {
+  color: #7a6a55 !important;
+}
+
+html[data-theme="analog-synth"] .pc-text-dim {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .pc-text-accent {
+  color: var(--as-coral) !important;
+}
+
+html[data-theme="analog-synth"] .pc-text-warn {
+  color: #c47a00 !important;
+}
+
+html[data-theme="analog-synth"] .pc-text-err {
+  color: var(--as-coral) !important;
+}
+
+/* Inside readout screens — override back to bright display colours, no glow on body text */
+html[data-theme="analog-synth"] .pc-readout .text-gray-500,
+html[data-theme="analog-synth"] .pc-readout .text-gray-400 {
+  color: #c8a060 !important;
+  text-shadow: none;
+}
+
+html[data-theme="analog-synth"] .pc-readout .text-gray-300,
+html[data-theme="analog-synth"] .pc-readout .text-gray-200 {
+  color: #e8d090 !important;
+  text-shadow: none;
+}
+
+html[data-theme="analog-synth"] .pc-mini-oled .text-gray-400,
+html[data-theme="analog-synth"] .pc-mini-oled .text-gray-500 {
+  color: #c8a060 !important;
+  text-shadow: none;
+}
+
+html[data-theme="analog-synth"] .pc-mini-oled .text-gray-300,
+html[data-theme="analog-synth"] .pc-mini-oled .text-gray-200 {
+  color: #e8d090 !important;
+  text-shadow: none;
+}
+html[data-theme="analog-synth"] .pc-chip {
+  background: var(--as-charcoal);
+  color: var(--as-off-white);
+  
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SLIDERS: Faders
+   ───────────────────────────────────────────────────────────── */
+html[data-theme="analog-synth"] input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  margin: 12px 0;
+}
+
+/* Track */
+html[data-theme="analog-synth"] input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(180deg, #c0c0c0, #e0e0e0);
+  border: 2px solid var(--as-charcoal);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+html[data-theme="analog-synth"] input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(180deg, #c0c0c0, #e0e0e0);
+  border: 2px solid var(--as-charcoal);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Thumb */
+html[data-theme="analog-synth"] input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 24px;
+  width: 12px;
+  margin-top: -10px;
+  background: linear-gradient(90deg, #f0f0f0, #d0d0d0);
+  border: 2px solid var(--as-charcoal);
+  border-radius: 3px;
+  cursor: grab;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme="analog-synth"] input[type="range"]::-moz-range-thumb {
+  height: 24px;
+  width: 12px;
+  background: linear-gradient(90deg, #f0f0f0, #d0d0d0);
+  border: 2px solid var(--as-charcoal);
+  border-radius: 3px;
+  cursor: grab;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme="analog-synth"] input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  background: linear-gradient(90deg, #e0e0e0, #c0c0c0);
+}
+
+html[data-theme="analog-synth"] input[type="range"]:active::-moz-range-thumb {
+  cursor: grabbing;
+  background: linear-gradient(90deg, #e0e0e0, #c0c0c0);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   END ANALOG SYNTH THEME
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   ROCKER SWITCHES: Integration Cards
+   ───────────────────────────────────────────────────────────── */
+
+html[data-theme="analog-synth"] .pc-rocker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+html[data-theme="analog-synth"] .pc-rocker-form {
+  display: contents;
+}
+
+/* The rocker switch body */
+html[data-theme="analog-synth"] .pc-rocker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 36px;
+  height: 64px;
+  background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
+  border: 2px solid #111;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5);
+  transition: box-shadow 0.1s ease;
+  overflow: hidden;
+}
+
+html[data-theme="analog-synth"] .pc-rocker--disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* The paddle that rocks */
+html[data-theme="analog-synth"] .pc-rocker-paddle {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  height: 50%;
+  border-radius: 3px;
+  transition: top 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.15s ease,
+              box-shadow 0.15s ease;
+}
+
+/* ON state — paddle at top, green body glow */
+html[data-theme="analog-synth"] .pc-rocker--on {
+  border-color: #005a30;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5),
+    0 0 10px rgba(0, 255, 159, 0.4);
+}
+
+html[data-theme="analog-synth"] .pc-rocker--on .pc-rocker-paddle {
+  top: 3px;
+  background: linear-gradient(180deg, #00ff9f 0%, #00cc7a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 0 8px rgba(0, 255, 159, 0.6),
+    0 0 16px rgba(0, 255, 159, 0.3);
+}
+
+/* OFF state — paddle at bottom, red body glow */
+html[data-theme="analog-synth"] .pc-rocker--off {
+  border-color: #5a0000;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5),
+    0 0 8px rgba(255, 40, 40, 0.3);
+}
+
+html[data-theme="analog-synth"] .pc-rocker--off .pc-rocker-paddle {
+  top: 50%;
+  background: linear-gradient(180deg, #c8c0b0 0%, #a09888 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Press effect */
+html[data-theme="analog-synth"] .pc-rocker:not(.pc-rocker--disabled):active {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 1px 0 #0a0a0a,
+    0 2px 4px rgba(0,0,0,0.5);
+  transform: translateY(2px);
+}
+
+
+
+/* ─────────────────────────────────────────────────────────────
+   SCRAPBOT PAGE: Override white-on-dark text for cream panels
+   ───────────────────────────────────────────────────────────── */
+
+/* All white text → dark charcoal on cream */
+html[data-theme="analog-synth"] .text-white {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .text-white\/90,
+html[data-theme="analog-synth"] .text-white\/80 {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .text-white\/70,
+html[data-theme="analog-synth"] .text-white\/60 {
+  color: rgba(43, 53, 64, 0.75) !important;
+}
+
+html[data-theme="analog-synth"] .text-white\/50,
+html[data-theme="analog-synth"] .text-white\/40 {
+  color: rgba(43, 53, 64, 0.55) !important;
+}
+
+html[data-theme="analog-synth"] .text-white\/30,
+html[data-theme="analog-synth"] .text-white\/20 {
+  color: rgba(43, 53, 64, 0.4) !important;
+}
+
+/* Border whites → dark */
+html[data-theme="analog-synth"] .border-white\/5,
+html[data-theme="analog-synth"] .border-white\/10 {
+  border-color: rgba(43, 53, 64, 0.15) !important;
+}
+
+html[data-theme="analog-synth"] .border-white\/20 {
+  border-color: rgba(43, 53, 64, 0.25) !important;
+}
+
+/* Exceptions — keep neon colours as-is inside readout screens */
+html[data-theme="analog-synth"] .pc-readout .text-white,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white {
+  color: #e8d090 !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .text-white\/90,
+html[data-theme="analog-synth"] .pc-readout .text-white\/80,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/90,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/80 {
+  color: #d4c090 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SCRAPBOT: Card separation & background overrides
+   bg-white/* transparent classes become visible on cream
+   ───────────────────────────────────────────────────────────── */
+
+/* Subtle card backgrounds */
+html[data-theme="analog-synth"] .bg-white\/5 {
+  background-color: rgba(43, 53, 64, 0.06) !important;
+}
+
+html[data-theme="analog-synth"] .bg-white\/10 {
+  background-color: rgba(43, 53, 64, 0.1) !important;
+}
+
+html[data-theme="analog-synth"] .bg-white\/20 {
+  background-color: rgba(43, 53, 64, 0.15) !important;
+}
+
+/* Hover states */
+html[data-theme="analog-synth"] .hover\:bg-white\/5:hover {
+  background-color: rgba(43, 53, 64, 0.08) !important;
+}
+
+html[data-theme="analog-synth"] .hover\:bg-white\/10:hover {
+  background-color: rgba(43, 53, 64, 0.12) !important;
+}
+
+/* Card/row borders */
+html[data-theme="analog-synth"] .border-white\/5 {
+  border-color: rgba(43, 53, 64, 0.18) !important;
+}
+
+html[data-theme="analog-synth"] .border-white\/10 {
+  border-color: rgba(43, 53, 64, 0.22) !important;
+}
+
+html[data-theme="analog-synth"] .border-white\/20 {
+  border-color: rgba(43, 53, 64, 0.28) !important;
+}
+
+html[data-theme="analog-synth"] .hover\:border-white\/5:hover {
+  border-color: rgba(43, 53, 64, 0.2) !important;
+}
+
+/* Dark overlays (tooltips, modals) stay dark */
+html[data-theme="analog-synth"] .bg-black\/90 {
+  background-color: rgba(26, 31, 40, 0.95) !important;
+}
+
+html[data-theme="analog-synth"] .bg-black\/20 {
+  background-color: rgba(26, 31, 40, 0.2) !important;
+}
+
+/* Avatar/icon circles */
+html[data-theme="analog-synth"] .bg-white\/10.rounded-full,
+html[data-theme="analog-synth"] .rounded-full.bg-white\/10 {
+  background-color: rgba(43, 53, 64, 0.15) !important;
+}
+
+html[data-theme="analog-synth"] .group-hover\:bg-white\/20:hover,
+html[data-theme="analog-synth"] .group:hover .group-hover\:bg-white\/20 {
+  background-color: rgba(43, 53, 64, 0.2) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   OVERLAY LIBRARY: Full control-unit design language override
+   ───────────────────────────────────────────────────────────── */
+
+html[data-theme="analog-synth"] .overlay-library {
+  --ol-surface:       var(--as-cream);
+  --ol-surface-2:     var(--as-cream-dark);
+  --ol-surface-3:     rgba(43, 53, 64, 0.05);
+  --ol-border:        rgba(43, 53, 64, 0.25);
+  --ol-border-strong: rgba(43, 53, 64, 0.4);
+  --ol-text-soft:     rgba(43, 53, 64, 0.7);
+  --ol-accent:        var(--as-coral);
+  --ol-accent-soft:   rgba(255, 87, 87, 0.12);
+  --ol-success:       #00cc7a;
+}
+
+/* ── Panels: control unit style ── */
+html[data-theme="analog-synth"] .overlay-library__panel {
+  border-radius: var(--pc-r-md) !important;
+  border: 3px solid var(--as-charcoal) !important;
+  background:
+    var(--as-panel-texture),
+    linear-gradient(180deg, var(--as-cream-light), var(--as-cream) 50%, var(--as-cream-dark)) !important;
+  box-shadow:
+    0 4px 0 var(--as-charcoal-dark),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1) !important;
+  position: relative;
+}
+
+/* Corner screws on panels */
+html[data-theme="analog-synth"] .overlay-library__panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background-image:
+    radial-gradient(circle at 12px 12px, #8a8a8a 0px, #666 2px, #444 3px, rgba(0,0,0,0.3) 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 12px) 12px, #8a8a8a 0px, #666 2px, #444 3px, rgba(0,0,0,0.3) 4px, transparent 5px),
+    radial-gradient(circle at 12px calc(100% - 12px), #8a8a8a 0px, #666 2px, #444 3px, rgba(0,0,0,0.3) 4px, transparent 5px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), #8a8a8a 0px, #666 2px, #444 3px, rgba(0,0,0,0.3) 4px, transparent 5px);
+}
+
+/* ── Text ── */
+html[data-theme="analog-synth"] .overlay-library__eyebrow {
+  color: rgba(43, 53, 64, 0.5);
+  letter-spacing: 0.15em;
+}
+
+html[data-theme="analog-synth"] .overlay-library__title {
+  color: var(--as-charcoal);
+}
+
+html[data-theme="analog-synth"] .overlay-library__sidebar-copy,
+html[data-theme="analog-synth"] .overlay-library__helper-text {
+  color: rgba(43, 53, 64, 0.7);
+}
+
+html[data-theme="analog-synth"] .overlay-library__nav-title {
+  color: var(--as-charcoal);
+}
+
+html[data-theme="analog-synth"] .overlay-library__nav-sub {
+  color: rgba(43, 53, 64, 0.55);
+}
+
+html[data-theme="analog-synth"] .overlay-library__section-title {
+  color: var(--as-charcoal);
+}
+
+html[data-theme="analog-synth"] .overlay-library__section-sub,
+html[data-theme="analog-synth"] .overlay-library__section-meta {
+  color: rgba(43, 53, 64, 0.55);
+}
+
+/* ── Count badges ── */
+html[data-theme="analog-synth"] .overlay-library__count {
+  color: rgba(43, 53, 64, 0.6);
+  background: rgba(43, 53, 64, 0.1);
+  border-color: rgba(43, 53, 64, 0.2);
+  border-radius: 4px !important;
+}
+
+/* ── Nav buttons ── */
+html[data-theme="analog-synth"] .overlay-library__nav-btn {
+  color: var(--as-charcoal);
+  border-radius: 6px !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__nav-btn:hover {
+  background: rgba(43, 53, 64, 0.07);
+  border-color: rgba(43, 53, 64, 0.2);
+}
+
+html[data-theme="analog-synth"] .overlay-library__nav-btn.is-active {
+  background: rgba(255, 87, 87, 0.1);
+  border-color: rgba(255, 87, 87, 0.35);
+  color: var(--as-coral);
+}
+
+html[data-theme="analog-synth"] .overlay-library__nav-btn.is-active .overlay-library__count {
+  background: rgba(255, 87, 87, 0.15);
+  color: var(--as-coral);
+  border-color: rgba(255, 87, 87, 0.3);
+}
+
+/* ── Hero: teal control panel header ── */
+html[data-theme="analog-synth"] .overlay-library__hero {
+  border-radius: var(--pc-r-md) !important;
+  border: 3px solid var(--as-charcoal) !important;
+  background:
+    linear-gradient(135deg, var(--as-teal-dark) 0%, var(--as-teal) 100%) !important;
+  box-shadow:
+    0 4px 0 var(--as-charcoal-dark),
+    0 8px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__hero-kicker {
+  color: rgba(248, 244, 237, 0.85);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__hero-title,
+html[data-theme="analog-synth"] .overlay-library__hero-copy {
+  color: var(--as-off-white);
+}
+
+/* Stats inside hero */
+html[data-theme="analog-synth"] .overlay-library__stat {
+  border-radius: 6px !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(0, 0, 0, 0.15) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__stat-value {
+  color: var(--as-off-white);
+}
+
+html[data-theme="analog-synth"] .overlay-library__stat-label {
+  color: rgba(248, 244, 237, 0.6);
+}
+
+/* ── Toolbar & search ── */
+html[data-theme="analog-synth"] .overlay-library__search input {
+  border-radius: 6px !important;
+  border: 2px solid var(--as-charcoal) !important;
+  background: #fafaf8 !important;
+  color: var(--as-charcoal) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.08) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__search input:focus {
+  border-color: var(--as-coral) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.08), 0 0 0 3px rgba(255,87,87,0.15) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__search input::placeholder {
+  color: rgba(43, 53, 64, 0.4) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__search svg {
+  color: rgba(43, 53, 64, 0.45) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__segmented {
+  border-radius: 6px !important;
+  border: 2px solid var(--as-charcoal) !important;
+  background: var(--as-cream-dark) !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__segmented button {
+  border-radius: 4px !important;
+  color: rgba(43, 53, 64, 0.6);
+}
+
+html[data-theme="analog-synth"] .overlay-library__segmented button.is-active {
+  background: linear-gradient(180deg, var(--as-cream-light), var(--as-cream)) !important;
+  color: var(--as-charcoal) !important;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6) !important;
+}
+
+/* ── Overlay cards: control unit style ── */
+html[data-theme="analog-synth"] .overlay-card {
+  border-radius: var(--pc-r-md) !important;
+  border: 3px solid var(--as-charcoal) !important;
+  background:
+    var(--as-panel-texture),
+    linear-gradient(180deg, var(--as-cream-light), var(--as-cream) 50%, var(--as-cream-dark)) !important;
+  box-shadow:
+    0 4px 0 var(--as-charcoal-dark),
+    0 6px 12px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+html[data-theme="analog-synth"] .overlay-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 6px 0 var(--as-charcoal-dark),
+    0 12px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Card preview area: dark screen */
+html[data-theme="analog-synth"] .overlay-card__preview {
+  border-bottom: 3px solid var(--as-charcoal) !important;
+  background:
+    radial-gradient(ellipse at 50% 30%, #1a1f28 0%, #0d1015 100%) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-card__preview::before {
+  border-radius: 6px !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0) 45%),
+    rgba(6, 9, 15, 0.3) !important;
+}
+
+/* Card chip (scene type label) */
+html[data-theme="analog-synth"] .overlay-card__chip {
+  border-radius: 4px !important;
+  background: rgba(0,0,0,0.5) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+  color: rgba(248, 244, 237, 0.9) !important;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* Card body text */
+html[data-theme="analog-synth"] .overlay-card__name {
+  color: var(--as-charcoal) !important;
+  font-weight: 700;
+}
+
+html[data-theme="analog-synth"] .overlay-card__sub,
+html[data-theme="analog-synth"] .overlay-card__ghost,
+html[data-theme="analog-synth"] .overlay-card__stamp {
+  color: rgba(43, 53, 64, 0.6) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-card__kind {
+  border-radius: 4px !important;
+  background: rgba(43, 53, 64, 0.08) !important;
+  border-color: rgba(43, 53, 64, 0.2) !important;
+  color: rgba(43, 53, 64, 0.6) !important;
+  letter-spacing: 0.08em;
+}
+
+/* ── Empty state ── */
+html[data-theme="analog-synth"] .overlay-library__empty {
+  border-radius: var(--pc-r-md) !important;
+  border: 2px dashed rgba(43, 53, 64, 0.3) !important;
+  background: rgba(43, 53, 64, 0.03) !important;
+  color: rgba(43, 53, 64, 0.5) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__empty-title {
+  color: var(--as-charcoal) !important;
+}
+
+html[data-theme="analog-synth"] .overlay-library__empty-copy {
+  color: rgba(43, 53, 64, 0.6) !important;
+}
+
+/* ── Overlay card thumbnail image ── */
+.overlay-card__thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  z-index: 1;
+}
+
+/* Chip sits above the thumbnail */
+html[data-theme="analog-synth"] .overlay-card__chrome {
+  z-index: 2;
+}

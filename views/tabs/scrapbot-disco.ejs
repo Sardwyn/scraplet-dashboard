@@ -124,6 +124,34 @@
     </div>
   </div>
 
+
+      <!-- AI TOGGLE PANEL -->
+      <div class="pc-panel pc-panel--premium-studio" style="margin-top: 14px;">
+        <div class="pc-panel-hd">
+          <div>
+            <div class="pc-panel-title">Scrapbot AI</div>
+            <div class="pc-panel-sub">Allow admins and authorised roles to chat with Scrapbot AI in Discord.</div>
+          </div>
+          <span id="aiBadge" class="pc-int-badge pc-int-badge--muted">LOADING</span>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="pc-row" style="justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:13px; font-weight:600;">Enable Scrapbot AI</div>
+              <div class="pc-muted" style="font-size:12px;">When enabled, @Scrapbot in Discord will respond using the AI model.</div>
+            </div>
+            <label class="pc-toggle" style="cursor:pointer;">
+              <input type="checkbox" id="aiToggle" style="display:none;" />
+              <span class="pc-toggle-track" id="aiToggleTrack"></span>
+            </label>
+          </div>
+          <div class="pc-divider"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div id="aiSaveStatus" class="pc-muted" style="font-size:12px;">Loading?</div>
+            <button id="btnSaveAi" class="pc-btn pc-btn-primary" type="button">Save</button>
+          </div>
+        </div>
+      </div>
   <script>
     (() => {
       const $ = (id) => document.getElementById(id);
@@ -563,3 +591,193 @@
       boot();
     })();
   </script>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+
+      async function loadAiConfig() {
+        try {
+          const r = await fetch("/dashboard/api/discord/ai-config", { credentials: "same-origin" });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j?.ok) { setAiBadge("ERROR", "warn"); return; }
+          $("aiToggle").checked = Boolean(j.ai_enabled);
+          updateAiTrack();
+          setAiBadge(j.ai_enabled ? "ENABLED" : "DISABLED", j.ai_enabled ? "good" : "muted");
+          $("aiSaveStatus").textContent = "Loaded.";
+        } catch (e) {
+          setAiBadge("ERROR", "warn");
+          $("aiSaveStatus").textContent = "Failed to load AI config.";
+        }
+      }
+
+      function setAiBadge(text, tone) {
+        const el = $("aiBadge");
+        el.textContent = text;
+        el.className = "pc-int-badge";
+        if (tone === "good") el.classList.add("pc-int-badge--good");
+        else if (tone === "warn") el.classList.add("pc-int-badge--warn");
+        else el.classList.add("pc-int-badge--muted");
+      }
+
+      function updateAiTrack() {
+        const track = $("aiToggleTrack");
+        if (!track) return;
+        track.style.background = $("aiToggle").checked ? "rgba(52,211,153,0.85)" : "rgba(100,116,139,0.4)";
+        track.style.display = "inline-block";
+        track.style.width = "40px";
+        track.style.height = "22px";
+        track.style.borderRadius = "11px";
+        track.style.transition = "background 0.2s";
+        track.style.position = "relative";
+        track.innerHTML = `<span style="position:absolute; top:3px; left:${$("aiToggle").checked ? "21px" : "3px"}; width:16px; height:16px; border-radius:50%; background:#fff; transition:left 0.2s;"></span>`;
+      }
+
+      $("aiToggle").addEventListener("change", () => {
+        updateAiTrack();
+        $("aiSaveStatus").textContent = "Unsaved changes.";
+      });
+
+      $("btnSaveAi").addEventListener("click", async () => {
+        $("aiSaveStatus").textContent = "Saving?";
+        try {
+          const r = await fetch("/dashboard/api/discord/ai-config", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "same-origin",
+            body: JSON.stringify({ ai_enabled: $("aiToggle").checked }),
+          });
+          const j = await r.json().catch(() => null);
+          if (!r.ok || !j?.ok) { $("aiSaveStatus").textContent = "Save failed."; return; }
+          setAiBadge(j.ai_enabled ? "ENABLED" : "DISABLED", j.ai_enabled ? "good" : "muted");
+          $("aiSaveStatus").textContent = "\u2713 Saved.";
+        } catch {
+          $("aiSaveStatus").textContent = "Save failed.";
+        }
+      });
+
+      loadAiConfig();
+    })();
+  </script>
+
+<!-- ── Training Pipeline ──────────────────────────────────────────────── -->
+<div class="pc-section" style="margin-top:24px;">
+  <div class="pc-section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+    <h3 class="pc-section-title" style="margin:0;">Training Pipeline</h3>
+    <div style="display:flex;gap:8px;">
+      <button id="btnCollect" class="pc-btn pc-btn--secondary" style="font-size:12px;padding:6px 12px;">
+        Collect Now
+      </button>
+      <a id="btnExport" href="/dashboard/api/training/export" class="pc-btn pc-btn--primary" style="font-size:12px;padding:6px 12px;text-decoration:none;">
+        Export Gold JSONL
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+    <div class="pc-stat-card">
+      <div class="pc-stat-value" id="trainPending">—</div>
+      <div class="pc-stat-label">Pending Review</div>
+    </div>
+    <div class="pc-stat-card">
+      <div class="pc-stat-value" id="trainGoldPos" style="color:#4ade80;">—</div>
+      <div class="pc-stat-label">Gold 👍</div>
+    </div>
+    <div class="pc-stat-card">
+      <div class="pc-stat-value" id="trainGoldNeg" style="color:#f87171;">—</div>
+      <div class="pc-stat-label">Rejected 👎</div>
+    </div>
+    <div class="pc-stat-card">
+      <div class="pc-stat-value" id="trainLast7" style="color:#818cf8;">—</div>
+      <div class="pc-stat-label">Last 7 Days</div>
+    </div>
+  </div>
+
+  <!-- Candidate review feed -->
+  <div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:13px;color:#94a3b8;font-weight:600;">PENDING REVIEW</span>
+    <span id="trainCollectStatus" style="font-size:12px;color:#64748b;"></span>
+  </div>
+  <div id="trainCandidates" style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto;">
+    <div style="color:#475569;font-size:13px;padding:12px;">Loading candidates...</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  async function loadTrainingStats() {
+    try {
+      const r = await fetch('/dashboard/api/training/stats', { credentials: 'same-origin' });
+      const j = await r.json();
+      if (!j.ok) return;
+      document.getElementById('trainPending').textContent = j.candidates.pending || '0';
+      document.getElementById('trainGoldPos').textContent = j.gold.gold_positive || '0';
+      document.getElementById('trainGoldNeg').textContent = j.gold.gold_negative || '0';
+      document.getElementById('trainLast7').textContent = j.candidates.last_7_days || '0';
+    } catch(e) {}
+  }
+
+  async function loadCandidates() {
+    try {
+      const r = await fetch('/dashboard/api/training/candidates?status=pending&limit=20', { credentials: 'same-origin' });
+      const j = await r.json();
+      const container = document.getElementById('trainCandidates');
+      if (!j.ok || !j.candidates.length) {
+        container.innerHTML = '<div style="color:#475569;font-size:13px;padding:12px;">No pending candidates. Click Collect Now to harvest recent exchanges.</div>';
+        return;
+      }
+      container.innerHTML = j.candidates.map(c => `
+        <div class="train-card" data-id="${c.id}" style="background:#0f172a;border:1px solid #1e293b;border-radius:8px;padding:12px;font-size:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <span style="color:#64748b;font-size:11px;text-transform:uppercase;">${c.platform} · score ${(c.quality_score*100).toFixed(0)}%</span>
+            <div style="display:flex;gap:6px;">
+              <button onclick="approveCandidate(${c.id})" style="background:#166534;color:#4ade80;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;">👍 Approve</button>
+              <button onclick="rejectCandidate(${c.id})" style="background:#7f1d1d;color:#f87171;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:11px;">👎 Reject</button>
+            </div>
+          </div>
+          <div style="color:#94a3b8;margin-bottom:4px;"><span style="color:#64748b;">User:</span> ${escHtml(c.user_message.slice(0,120))}</div>
+          <div style="color:#e2e8f0;"><span style="color:#64748b;">Bot:</span> ${escHtml(c.bot_response.slice(0,200))}</div>
+        </div>
+      `).join('');
+    } catch(e) {}
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  window.approveCandidate = async function(id) {
+    await fetch(`/dashboard/api/training/candidates/${id}/approve`, { method:'POST', credentials:'same-origin' });
+    document.querySelector(`.train-card[data-id="${id}"]`)?.remove();
+    loadTrainingStats();
+  };
+
+  window.rejectCandidate = async function(id) {
+    await fetch(`/dashboard/api/training/candidates/${id}/reject`, { method:'POST', credentials:'same-origin' });
+    document.querySelector(`.train-card[data-id="${id}"]`)?.remove();
+    loadTrainingStats();
+  };
+
+  document.getElementById('btnCollect').addEventListener('click', async () => {
+    const btn = document.getElementById('btnCollect');
+    const status = document.getElementById('trainCollectStatus');
+    btn.disabled = true;
+    status.textContent = 'Collecting...';
+    try {
+      const r = await fetch('/dashboard/api/training/collect', { method:'POST', credentials:'same-origin' });
+      const j = await r.json();
+      status.textContent = j.ok ? `Collected ${j.collected.total} new candidates.` : 'Collection failed.';
+      loadCandidates();
+      loadTrainingStats();
+    } catch(e) {
+      status.textContent = 'Error.';
+    }
+    btn.disabled = false;
+  });
+
+  loadTrainingStats();
+  loadCandidates();
+})();
+</script>
+

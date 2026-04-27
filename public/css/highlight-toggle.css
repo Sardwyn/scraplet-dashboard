@@ -1,0 +1,40 @@
+/* Highlight Detection Toggle Styles */
+
+.highlight-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.highlight-toggle span.w-2 {
+  transition: background-color 0.2s ease;
+}
+
+.highlight-toggle--on {
+  color: rgba(251, 191, 36, 0.8) !important; /* amber-400/80 */
+}
+
+.highlight-toggle--on span.w-2 {
+  background-color: rgb(251, 191, 36); /* amber-400 */
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.highlight-toggle--off {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.highlight-toggle--off span.w-2 {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.highlight-toggle:hover {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

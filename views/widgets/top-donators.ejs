@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Top Donators</title>
+  <style>
+    html, body { margin:0; padding:0; background:rgba(0,0,0,0.01); overflow:hidden; width:100vw; height:100vh; }
+  </style>
+</head>
+<body>
+  <script>
+    window.__WIDGET_TOKEN__ = "<%- token %>";
+    window.__WIDGET_CONFIG_TOP_DONATORS__ = <%- JSON.stringify({...(config || {}), token: token, channel: channelSlug || ''}) %>;
+    window.__OVERLAY_PUBLIC_ID__ = "<%- overlayPublicId || '' %>";
+  </script>
+
+  <script>
+    // Start widget SSE connection for this standalone page
+    (function() {
+      var token = window.__WIDGET_TOKEN__;
+      if (!token) return;
+      var url = '/w/' + encodeURIComponent(token) + '/stream';
+      var es = new EventSource(url);
+      var EVENT_TYPES = ['chat_message','chat.message.sent','follow','sub','raid','tip','donation',
+        'redemption','subscribe','gift_sub','resub','raffle_update','tts.ready','alert','go.live'];
+      function dispatch(type, data) {
+        window.dispatchEvent(new MessageEvent('scraplet:widget:event:' + type, { data: data }));
+      }
+      function dispatchGeneric(data) {
+        window.dispatchEvent(new MessageEvent('scraplet:widget:sse', { data: data }));
+      }
+      es.onmessage = function(ev) { dispatchGeneric(ev.data); };
+      EVENT_TYPES.forEach(function(type) {
+        es.addEventListener(type, function(ev) { dispatch(type, ev.data); });
+      });
+      es.onerror = function() {
+        es.close();
+        setTimeout(function() {
+          var es2 = new EventSource(url);
+          es2.onmessage = function(ev) { dispatchGeneric(ev.data); };
+          EVENT_TYPES.forEach(function(type) {
+            es2.addEventListener(type, function(ev) { dispatch(type, ev.data); });
+          });
+        }, 3000);
+      };
+      console.log('[widget-standalone] SSE started for token', token.slice(0,10) + '...');
+    })();
+  </script>
+
+  <script src="/widgets/top-donators.js?v=<%= Date.now() %>"></script>
+</body>
+</html>

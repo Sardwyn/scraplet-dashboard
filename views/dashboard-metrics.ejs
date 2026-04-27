@@ -1,14 +1,3 @@
-<!doctype html>
-<html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Scrapbot Metrics</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-
-<body class="bg-gray-950 text-white font-sans">
   <% const formatTimestamp=(ts)=> {
     try {
     if (!ts) return "—";
@@ -93,11 +82,11 @@
     const secBuffer = get(sbSecurity, "buffer", {});
     %>
 
-    <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="pc-page">
       <!-- Header -->
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Scrapbot Metrics</h1>
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight">System Health</h1>
           <p class="text-gray-400 mt-2">
             Signal first. Debug later. This page is built to answer: “is it alive?”, “what channel is hot?”, “which
             guard fired?”, “did we act?”
@@ -117,9 +106,136 @@
         </div>
       </div>
 
+
+      
+
+
+      
+
+
+      <!-- Tab Navigation -->
+      <div class="mt-6 flex gap-1 border-b border-[rgba(255,255,255,0.08)] pb-0">
+        <button onclick="showTab('overview')" id="tab-btn-overview"
+          class="metrics-tab-btn px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-all border-b-2 border-transparent text-gray-400 hover:text-white">
+          Overview
+        </button>
+        <button onclick="showTab('pipelines')" id="tab-btn-pipelines"
+          class="metrics-tab-btn px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-all border-b-2 border-transparent text-gray-400 hover:text-white">
+          Pipelines
+        </button>
+        <button onclick="showTab('bot')" id="tab-btn-bot"
+          class="metrics-tab-btn px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-all border-b-2 border-transparent text-gray-400 hover:text-white">
+          Bot Health
+        </button>
+        <button onclick="showTab('moderation')" id="tab-btn-moderation"
+          class="metrics-tab-btn px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-all border-b-2 border-transparent text-gray-400 hover:text-white">
+          Moderation
+        </button>
+        <button onclick="showTab('labs')" id="tab-btn-labs"
+          class="metrics-tab-btn px-4 py-2.5 text-sm font-semibold rounded-t-lg transition-all border-b-2 border-transparent text-gray-400 hover:text-white">
+          Test Labs
+        </button>
+      </div>
+      <script>
+        function showTab(name) {
+          document.querySelectorAll('.metrics-tab-panel').forEach(function(p) { p.style.display = 'none'; });
+          document.querySelectorAll('.metrics-tab-btn').forEach(function(b) {
+            b.classList.remove('border-indigo-500', 'text-white', 'bg-[rgba(255,255,255,0.04)]');
+            b.classList.add('border-transparent', 'text-gray-400');
+          });
+          var panel = document.getElementById('tab-' + name);
+          if (panel) panel.style.display = 'block';
+          var btn = document.getElementById('tab-btn-' + name);
+          if (btn) {
+            btn.classList.remove('border-transparent', 'text-gray-400');
+            btn.classList.add('border-indigo-500', 'text-white', 'bg-[rgba(255,255,255,0.04)]');
+          }
+          localStorage.setItem('metrics-tab', name);
+        }
+        // Restore last tab or default to overview
+        var lastTab = localStorage.getItem('metrics-tab') || 'overview';
+        document.addEventListener('DOMContentLoaded', function() { showTab(lastTab); });
+      </script>
+
+      <!-- TAB: Pipelines -->
+      <div id="tab-pipelines" class="metrics-tab-panel" style="display:none">
       <!-- =========================================================
          1) OVERVIEW
     ========================================================== -->
+      <!-- PIPELINES HEALTH -->
+      <section class="mt-6" id="pipelines-health">
+        <div class="bg-[#0e0e16] border border-[rgba(255,255,255,0.07)] rounded-xl p-5">
+          <h2 class="text-lg font-semibold text-white tracking-wide mb-5">Pipelines</h2>
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-indigo-400 uppercase tracking-widest">Messages</span>
+              <span class="text-xs text-gray-500" id="pipeline-msg-updated">polling...</span>
+            </div>
+            <div class="grid grid-cols-5 gap-2">
+              <% [1,2,3,4,5].forEach(function(i) { %>
+              <div class="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[#13131f] border border-[rgba(255,255,255,0.06)]">
+                <div class="w-2.5 h-2.5 rounded-full bg-gray-600 transition-all duration-500" id="msg-dot-<%= i %>"></div>
+                <span class="text-[10px] text-gray-400 text-center leading-tight" id="msg-label-<%= i %>">Stage <%= i %></span>
+                <span class="text-[9px] text-gray-600" id="msg-age-<%= i %>">—</span>
+              </div>
+              <% }); %>
+            </div>
+            <div class="mt-2 text-[10px] text-gray-600 truncate" id="pipeline-msg-last">—</div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-semibold text-purple-400 uppercase tracking-widest">Render</span>
+              <span class="text-xs text-gray-500" id="pipeline-render-updated">polling...</span>
+            </div>
+            <div class="grid grid-cols-5 gap-2">
+              <% [1,2,3,4,5].forEach(function(i) { %>
+              <div class="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[#13131f] border border-[rgba(255,255,255,0.06)]">
+                <div class="w-2.5 h-2.5 rounded-full bg-gray-600 transition-all duration-500" id="render-dot-<%= i %>"></div>
+                <span class="text-[10px] text-gray-400 text-center leading-tight" id="render-label-<%= i %>">Stage <%= i %></span>
+                <span class="text-[9px] text-gray-600" id="render-age-<%= i %>">—</span>
+              </div>
+              <% }); %>
+            </div>
+            <div class="mt-2 text-[10px] text-gray-600 truncate" id="pipeline-render-last">—</div>
+          </div>
+        </div>
+      </section>
+      <script>
+        (function(){
+          function age(ms){if(ms===null||ms===undefined)return'never';if(ms<60000)return Math.round(ms/1000)+'s ago';if(ms<3600000)return Math.round(ms/60000)+'m ago';return Math.round(ms/3600000)+'h ago';}
+          function color(s){return s==='ok'?'#22c55e':s==='warn'?'#f59e0b':s==='error'?'#ef4444':'#4b5563';}
+          function update(prefix,p){
+            if(!p)return;
+            var now=Date.now();
+            p.steps.forEach(function(s){
+              var dot=document.getElementById(prefix+'-dot-'+s.step);
+              var lbl=document.getElementById(prefix+'-label-'+s.step);
+              var a=document.getElementById(prefix+'-age-'+s.step);
+              if(dot){dot.style.background=color(s.status);dot.style.boxShadow=s.status==='ok'?'0 0 8px '+color(s.status):'none';}
+              if(lbl)lbl.textContent=s.name;
+              if(a)a.textContent=s.count?age(s.ageMs)+' ('+s.count+')':'never';
+            });
+            var upd=document.getElementById('pipeline-'+prefix+'-updated');
+            if(upd)upd.textContent=p.lastUpdated?'Updated '+age(now-p.lastUpdated):'—';
+            var last=document.getElementById('pipeline-'+prefix+'-last');
+            if(last&&p.lastMessage)last.textContent='Last: '+p.lastMessage;
+          }
+          function poll(){
+            fetch('/dashboard/api/pipeline-health').then(function(r){return r.json();}).then(function(d){
+              update('msg',d.messages);
+              update('render',d.render);
+            }).catch(function(){});
+          }
+          poll();setInterval(poll,5000);
+        })();
+      </script>
+
+      
+
+      </div><!-- end tab-pipelines -->
+
+      <!-- TAB: Overview -->
+      <div id="tab-overview" class="metrics-tab-panel" style="display:none">
       <section class="mt-8">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">1) Overview</h2>
@@ -305,11 +421,194 @@
       </section>
 
       <!-- =========================================================
-         2) OPERATIONS
+         2) BOT HEALTH
+      ========================================================== -->
+
+      </div><!-- end tab-overview -->
+
+      <!-- TAB: Bot Health -->
+      <div id="tab-bot" class="metrics-tab-panel" style="display:none">
+      <section class="mt-10" id="section-bot-health">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold">2) Bot Health</h2>
+          <button id="btnRefreshBotHealth"
+            class="text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-lg transition">
+            Refresh
+          </button>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          <!-- Kick Bot Token -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-200">Kick Bot Token</div>
+                <div class="text-xs text-gray-500 mt-0.5">Used by Scrapbot for moderation + chat</div>
+              </div>
+              <span id="kickHealthBadge"
+                class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-700 text-gray-300">
+                LOADING
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs mt-3">
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3">
+                <div class="text-gray-500">Expires</div>
+                <div id="kickExpiry" class="text-gray-200 font-mono mt-0.5">?</div>
+              </div>
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3">
+                <div class="text-gray-500">Last Refreshed</div>
+                <div id="kickUpdated" class="text-gray-200 font-mono mt-0.5">?</div>
+              </div>
+              <div class="bg-gray-950/50 border border-gray-800 rounded-xl p-3 col-span-2">
+                <div class="text-gray-500">Scope</div>
+                <div id="kickScope" class="text-gray-200 font-mono mt-0.5 break-all">?</div>
+              </div>
+            </div>
+
+            <div class="mt-4 flex gap-2">
+              <a id="kickReAuthBtn" href="https://scrapbot.scraplet.store/admin/bot/kick/start"
+                target="_blank"
+                class="inline-flex items-center gap-1.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                Re-authorize Kick Bot
+              </a>
+            </div>
+          </div>
+
+          <!-- Discord Bot + Alert -->
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-5 shadow">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <div class="text-sm font-semibold text-gray-200">Discord Bot</div>
+                <div class="text-xs text-gray-500 mt-0.5">Disco Scrapbot worker status</div>
+              </div>
+              <span id="discordHealthBadge"
+                class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-gray-700 text-gray-300">
+                LOADING
+              </span>
+            </div>
+
+            <div class="mt-4 border-t border-gray-800 pt-4">
+              <div class="text-xs font-semibold text-gray-400 mb-2">Send Discord Alert</div>
+              <div class="text-xs text-gray-500 mb-3">
+                Fires a message to your configured alert webhook. Useful for testing notifications or manual ops alerts.
+              </div>
+              <textarea id="alertMessage" rows="2"
+                class="w-full bg-gray-950/60 border border-gray-700 rounded-lg text-xs text-gray-200 p-2 resize-none focus:outline-none focus:border-blue-600"
+                placeholder="Alert message?">?? Manual ops alert from Scraplet Dashboard</textarea>
+              <div class="flex items-center gap-3 mt-2">
+                <button id="btnSendAlert"
+                  class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">
+                  Send Alert
+                </button>
+                <span id="alertStatus" class="text-xs text-gray-500"></span>
+              </div>
+              <div class="mt-3 text-xs text-gray-600">
+                Requires <code class="text-gray-400">DISCORD_ALERT_WEBHOOK_URL</code> in .env
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <script>
+        (() => {
+          const $ = (id) => document.getElementById(id);
+
+          function fmtTs(ts) {
+            try {
+              if (!ts) return "?";
+              const d = new Date(ts);
+              if (isNaN(d.getTime())) return "?";
+              const diff = d.getTime() - Date.now();
+              const abs = Math.abs(diff);
+              const h = Math.floor(abs / 3600000);
+              const m = Math.floor((abs % 3600000) / 60000);
+              const suffix = diff < 0 ? " ago" : " left";
+              const rel = h > 0 ? `${h}h ${m}m${suffix}` : `${m}m${suffix}`;
+              return `${d.toISOString().slice(0,16).replace("T"," ")} (${rel})`;
+            } catch { return "?"; }
+          }
+
+          function setBadge(id, text, tone) {
+            const el = $(id);
+            if (!el) return;
+            el.textContent = text;
+            el.className = "inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold";
+            if (tone === "ok")   el.classList.add("bg-green-700/70", "border", "border-green-600", "text-green-200");
+            else if (tone === "warn") el.classList.add("bg-yellow-700/70", "border", "border-yellow-600", "text-yellow-200");
+            else if (tone === "bad")  el.classList.add("bg-red-700/70", "border", "border-red-600", "text-red-200");
+            else el.classList.add("bg-gray-700", "text-gray-300");
+          }
+
+          async function loadBotHealth() {
+            try {
+              const r = await fetch("/dashboard/metrics/bot-health", { credentials: "same-origin" });
+              const j = await r.json().catch(() => null);
+              if (!r.ok || !j?.ok) { setBadge("kickHealthBadge", "ERROR", "bad"); return; }
+
+              // Kick
+              const h = j.kick.health;
+              const toneMap = { ok: "ok", expiring_soon: "warn", expired: "bad", no_tokens: "bad", unknown: "muted" };
+              const labelMap = { ok: "HEALTHY", expiring_soon: "EXPIRING", expired: "EXPIRED", no_tokens: "NO TOKENS", unknown: "UNKNOWN" };
+              setBadge("kickHealthBadge", labelMap[h] || h.toUpperCase(), toneMap[h] || "muted");
+              $("kickExpiry").textContent  = fmtTs(j.kick.expires_at);
+              $("kickUpdated").textContent = fmtTs(j.kick.updated_at);
+              $("kickScope").textContent   = j.kick.scope || "?";
+
+              // Discord
+              setBadge("discordHealthBadge", j.discord.online ? "ONLINE" : "OFFLINE", j.discord.online ? "ok" : "bad");
+
+            } catch (e) {
+              setBadge("kickHealthBadge", "ERROR", "bad");
+              setBadge("discordHealthBadge", "ERROR", "bad");
+            }
+          }
+
+          $("btnRefreshBotHealth")?.addEventListener("click", loadBotHealth);
+
+          $("btnSendAlert")?.addEventListener("click", async () => {
+            const msg = $("alertMessage")?.value?.trim() || "";
+            if (!msg) { $("alertStatus").textContent = "Enter a message first."; return; }
+            $("alertStatus").textContent = "Sending?";
+            try {
+              const r = await fetch("/dashboard/metrics/bot-health/alert", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                credentials: "same-origin",
+                body: JSON.stringify({ message: msg }),
+              });
+              const j = await r.json().catch(() => null);
+              if (!r.ok || !j?.ok) {
+                $("alertStatus").textContent = j?.error || "Failed.";
+                $("alertStatus").style.color = "rgb(248,113,113)";
+              } else {
+                $("alertStatus").textContent = "? Sent.";
+                $("alertStatus").style.color = "rgb(52,211,153)";
+              }
+            } catch {
+              $("alertStatus").textContent = "Request failed.";
+              $("alertStatus").style.color = "rgb(248,113,113)";
+            }
+          });
+
+          loadBotHealth();
+        })();
+      </script>
+
+      <!-- =========================================================
+         3) OPERATIONS
     ========================================================== -->
+
+      </div><!-- end tab-bot -->
+
+      <!-- TAB: Moderation -->
+      <div id="tab-moderation" class="metrics-tab-panel" style="display:none">
       <section class="mt-10">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold">2) Operations</h2>
+          <h2 class="text-xl font-semibold">3) Operations</h2>
           <div class="text-xs text-gray-500">
             ring window:
             <span id="ringSize" class="text-gray-300 font-mono">
@@ -1034,6 +1333,11 @@
       <!-- =========================================================
          4) MODERATION TEST LAB
     ========================================================== -->
+
+      </div><!-- end tab-moderation -->
+
+      <!-- TAB: Test Labs -->
+      <div id="tab-labs" class="metrics-tab-panel" style="display:none">
       <section class="mt-10">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-semibold">4) Moderation Test Lab</h2>
@@ -1694,7 +1998,7 @@
             const cls = kind === "flood" ? "bg-red-900/50 border-red-800" :
               kind === "swarm" ? "bg-purple-900/50 border-purple-800" : kind === "moderation" ? "bg-orange-900/50 border-orange-800" : kind === "error" ? "bg-red-900/50 border-red-800" : "bg-gray-800 border-gray-700";
 
-            return `<span class="px-2 py-1 rounded border ${cls} text-xs">$ {
+            return `<span class="px-2 py-1 rounded border ${cls} text-xs">${
             escapeHtml(label)
           }
 
@@ -1707,21 +2011,21 @@
             if (it.flood) {
               const a = it.flood.action || "action";
 
-              const d = it.flood.duration_seconds != null ? `$ {
+              const d = it.flood.duration_seconds != null ? `${
               it.flood.duration_seconds
             }
 
             s` : "";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("flood", "flood")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(a)
               }
 
-              $ {
+              ${
                 escapeHtml(d)
               }
 
@@ -1731,11 +2035,11 @@
             if (it.swarm) {
               const acts = Array.isArray(it.swarm.actions) ? it.swarm.actions.join(", ") : "";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("swarm", "swarm")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(acts || "actions")
               }
 
@@ -1745,11 +2049,11 @@
             if (it.moderation) {
               const a = it.moderation.action || "action";
 
-              parts.push(`$ {
+              parts.push(`${
                 pill("moderation", "moderation")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(a)
               }
 
@@ -1757,11 +2061,11 @@
             }
 
             if (it.error) {
-              parts.push(`$ {
+              parts.push(`${
                 pill("error", "error")
               }
 
-              <span class="text-gray-300" >$ {
+              <span class="text-gray-300" >${
                 escapeHtml(String(it.error).slice(0, 200))
               }
 
@@ -1770,7 +2074,7 @@
 
             if (!parts.length) return `<span class="text-gray-500">—</span>`;
 
-            return `<div class="flex flex-wrap gap-2">$ {
+            return `<div class="flex flex-wrap gap-2">${
             parts.join("")
           }
 
@@ -1802,7 +2106,7 @@
           function itemKey(it) {
             const mid = String(it?.message_id || "").trim();
 
-            if (mid) return `m:$ {
+            if (mid) return `m:${
             mid
           }
 
@@ -1814,23 +2118,23 @@
             const uid = String(it?.senderUserId || it?.senderUsername || "");
             const ev = String(it?.eventType || "");
 
-            return `x:$ {
+            return `x:${
             ts
           }
 
-          |$ {
+          |${
             tenant
           }
 
-          |$ {
+          |${
             ch
           }
 
-          |$ {
+          |${
             uid
           }
 
-          |$ {
+          |${
             ev
           }
 
@@ -1866,7 +2170,7 @@
 
             const current = sel.value;
 
-            const opts = ['<option value="">All channels</option>'].concat(channels.map(ch => `<option value="${escapeHtml(ch)}" >$ {
+            const opts = ['<option value="">All channels</option>'].concat(channels.map(ch => `<option value="${escapeHtml(ch)}" >${
                 escapeHtml(ch)
               }
 
@@ -1888,39 +2192,39 @@
               return;
             }
 
-            host.innerHTML = channels.slice(0, 20).map((ch) => ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 font-semibold text-gray-200" >$ {
+            host.innerHTML = channels.slice(0, 20).map((ch) => ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 font-semibold text-gray-200" >${
               escapeHtml(ch.channelSlug || "?")
             }
 
-            </td> <td class="py-2 pr-4 text-gray-300" >$ {
+            </td> <td class="py-2 pr-4 text-gray-300" >${
               escapeHtml(String(ch.scraplet_user_id ?? 0))
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.messages)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.commands)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.flood)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.swarm)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.moderation)
             }
 
-            </td> <td class="py-2 px-2 text-right tabular-nums" >$ {
+            </td> <td class="py-2 px-2 text-right tabular-nums" >${
               fmt(ch.errors)
             }
 
-            </td> <td class="py-2 pl-2 text-right text-gray-400 tabular-nums" >$ {
+            </td> <td class="py-2 pl-2 text-right text-gray-400 tabular-nums" >${
               fmtTs(ch.last_ts)
             }
 
@@ -1938,11 +2242,11 @@
               return;
             }
 
-            host.innerHTML = arr.slice(0, 10).map((x) => ` <div class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2" > <div class="text-xs text-gray-300 ${hostId === " secTopUas" ? " " : " font-mono"} truncate pr-3" >$ {
+            host.innerHTML = arr.slice(0, 10).map((x) => ` <div class="flex items-center justify-between bg-black/20 border border-gray-800 rounded-xl px-3 py-2" > <div class="text-xs text-gray-300 ${hostId === " secTopUas" ? " " : " font-mono"} truncate pr-3" >${
               escapeHtml(x.key || "")
             }
 
-            </div> <div class="text-xs text-gray-400 tabular-nums" >$ {
+            </div> <div class="text-xs text-gray-400 tabular-nums" >${
               fmt(x.count)
             }
 
@@ -1976,15 +2280,15 @@
             const m = Math.floor((upSec % 3600) / 60);
             const s = upSec % 60;
 
-            if ($("uptime")) $("uptime").textContent = `$ {
+            if ($("uptime")) $("uptime").textContent = `${
             h
           }
 
-          h $ {
+          h ${
             m
           }
 
-          m $ {
+          m ${
             s
           }
 
@@ -2059,7 +2363,7 @@
               const tenant = it.scraplet_user_id ?? 0;
               const user = it.senderUsername || "—";
 
-              const userId = it.senderUserId ? ` ($ {
+              const userId = it.senderUserId ? ` (${
                   it.senderUserId
                 })` : "";
               const role = it.userRole || "—";
@@ -2074,45 +2378,45 @@
               if (it.pulse_active) has.push(pill("pulse", "other"));
               if (it.tripwire) has.push(pill("tripwire", "other"));
 
-              const summary = has.length ? `<div class="flex flex-wrap gap-2" >$ {
+              const summary = has.length ? `<div class="flex flex-wrap gap-2" >${
                 has.join("")
               }
 
               </div>` : `<span class="text-gray-500" >—</span>`;
               const raw = escapeHtml(JSON.stringify(it, null, 2));
 
-              const detailId = `detail_$ {
+              const detailId = `detail_${
                 key.replaceAll(":", "_").replaceAll("|", "_")
               }
 
               `;
               const open = isExpanded(key);
 
-              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 ts
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >${
                 escapeHtml(channel)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(String(tenant))
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(user)
               }
 
-              <span class="text-gray-500" >$ {
+              <span class="text-gray-500" >${
                 escapeHtml(userId)
               }
 
-              </span></td> <td class="py-2 pr-4 text-gray-300" >$ {
+              </span></td> <td class="py-2 pr-4 text-gray-300" >${
                 escapeHtml(role)
               }
 
-              </td> <td class="py-2 pr-4" >$ {
+              </td> <td class="py-2 pr-4" >${
                 summary
               }
 
@@ -2120,11 +2424,11 @@
               data-key="${escapeHtml(key)}"
               class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700"
 
-              >details</button> </td> </tr> <tr id="${escapeHtml(detailId)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <div class="text-xs text-gray-500 mb-2" >Summary</div> $ {
+              >details</button> </td> </tr> <tr id="${escapeHtml(detailId)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <div class="text-xs text-gray-500 mb-2" >Summary</div> ${
                 rowDetails(it)
               }
 
-              <div class="mt-3 text-xs text-gray-500 mb-2" >Raw</div> <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+              <div class="mt-3 text-xs text-gray-500 mb-2" >Raw</div> <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >${
                 raw
               }
 
@@ -2286,7 +2590,7 @@
           async function ptRun() {
             const out = $("pt_out");
 
-            if (out) out.textContent = `[$ {
+            if (out) out.textContent = `[${
             new Date().toISOString()
           }
 
@@ -2330,7 +2634,7 @@
             }
 
             catch (e) {
-              if (out) out.textContent = `ERROR: $ {
+              if (out) out.textContent = `ERROR: ${
             String(e?.message || e)
           }
 
@@ -2369,33 +2673,33 @@
 
               const raw = escapeHtml(JSON.stringify(x, null, 2));
 
-              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              return ` <tr class="border-t border-gray-900 bg-gray-950/30" > <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(ts)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200 font-semibold" >${
                 escapeHtml(type)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(ch)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300 tabular-nums" >${
                 escapeHtml(String(tenant))
               }
 
-              </td> <td class="py-2 pr-4 text-gray-200" >$ {
+              </td> <td class="py-2 pr-4 text-gray-200" >${
                 escapeHtml(user)
               }
 
-              </td> <td class="py-2 pr-4 text-gray-300" >$ {
+              </td> <td class="py-2 pr-4 text-gray-300" >${
                 escapeHtml(String(summary).slice(0, 120))
               }
 
               </td> <td class="py-2 pr-4" > <button data-inc-toggle="${escapeHtml(id)}" data-inc-key="${escapeHtml(key)}"
 
-              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700" >details</button> </td> </tr> <tr id="${escapeHtml(id)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >$ {
+              class="text-xs px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-700" >details</button> </td> </tr> <tr id="${escapeHtml(id)}" class="${open ? " " : " hidden"} border-t border-gray-900" > <td colspan="7" class="py-3" > <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-3" > <pre class="text-xs text-gray-300 overflow-x-auto whitespace-pre bg-black/30 p-3 rounded-lg border border-gray-800" >${
                 raw
               }
 
@@ -2493,11 +2797,11 @@
                 const bar = $("tc_progressBar");
                 const txt = $("tc_progressText");
 
-                if (txt) txt.textContent = `$ {
+                if (txt) txt.textContent = `${
                 done
               }
 
-              / $ {
+              / ${
                 total
               }
 
@@ -2508,7 +2812,7 @@
                   bar.style.width = "0%"; return;
                 }
 
-                bar.style.width = `$ {
+                bar.style.width = `${
                 Math.max(0, Math.min(100, Math.round((done / total) * 100)))
               }
 
@@ -2531,11 +2835,11 @@
               function log(msg) {
                 if (!logEl) return;
 
-                const line = `[$ {
+                const line = `[${
                 new Date().toISOString()
               }
 
-              ] $ {
+              ] ${
                 msg
               }
 
@@ -2590,11 +2894,11 @@
 
                 const text = await r.text();
 
-                if (!r.ok) throw new Error(`HTTP $ {
+                if (!r.ok) throw new Error(`HTTP ${
                 r.status
               }
 
-              : $ {
+              : ${
                 text
               }
 
@@ -2651,19 +2955,19 @@
                 ];
                 const tail = pick(["", "!!!", " 🔥", " ✅", " (real)", " (working)", " rn"]);
 
-                return `$ {
+                return `${
             pick(leadIns)
           }
 
-          $ {
+          ${
             obfuscateUrl(url)
           }
 
-          $ {
+          ${
             baseText
           }
 
-          $ {
+          ${
             tail
           }
 
@@ -2676,15 +2980,15 @@
                 let blob = "";
                 for (let i = 0; i < count; i++) blob += pick(emojis);
 
-                if (maybe(35)) return `$ {
+                if (maybe(35)) return `${
             blob
           }
 
-          $ {
+          ${
             baseText
           }
 
-          $ {
+          ${
             blob
           }
 
@@ -2698,32 +3002,32 @@
                   baseText.toUpperCase(),
                   baseText.replace(/\bfree\b/i, "FREE"),
                   baseText.replace(/\bfollowers\b/i, "followers rn"),
-                  `yo $ {
+                  `yo ${
             baseText
           }
 
           `,
-                  `$ {
+                  `${
             baseText
           }
 
           (no cap)`,
-                  `$ {
+                  `${
             baseText
           }
 
           ✅`,
-                  `$ {
+                  `${
             baseText
           }
 
           right now`,
-                  `$ {
+                  `${
             baseText
           }
 
           legit`,
-                  `$ {
+                  `${
             baseText
           }
 
@@ -2778,27 +3082,27 @@
                 let done = 0;
                 setProgress(0, total);
 
-                log(`$ {
+                log(`${
               label
             }
 
-            starting: users=$ {
+            starting: users=${
               users
             }
 
-            repeats=$ {
+            repeats=${
               repeats
             }
 
-            interval=$ {
+            interval=${
               intervalMs
             }
 
-            ms concurrency=$ {
+            ms concurrency=${
               concurrency
             }
 
-            stagger=$ {
+            stagger=${
               staggerMs
             }
 
@@ -2811,11 +3115,11 @@
                     const jobs = [];
 
                     for (let i = 0; i < users; i++) {
-                      const senderUsername = `$ {
+                      const senderUsername = `${
                   senderPrefix
                 }
 
-                $ {
+                ${
                   String(i + 1).padStart(3, "0")
                 }
 
@@ -2860,15 +3164,15 @@
 
                       , () => worker()));
 
-                    log(`$ {
+                    log(`${
               label
             }
 
-            rep $ {
+            rep ${
               rep + 1
             }
 
-            /$ {
+            /${
               repeats
             }
 
@@ -2878,7 +3182,7 @@
                   }
 
                   if (stopRequested) {
-                    log(`$ {
+                    log(`${
               label
             }
 
@@ -2887,7 +3191,7 @@
                   }
 
                   else {
-                    log(`$ {
+                    log(`${
               label
             }
 
@@ -2897,11 +3201,11 @@
                 }
 
                 catch (e) {
-                  log(`$ {
+                  log(`${
               label
             }
 
-            FAILED: $ {
+            FAILED: ${
               e.message || e
             }
 
@@ -2920,7 +3224,7 @@
                 const concurrency = concurrencyOverride ?? (parseInt($("tc_concurrency")?.value, 10) || 6);
 
                 return runScenario({
-                  label: `Swarm $ {
+                  label: `Swarm ${
               users
             }
 
@@ -3027,6 +3331,5 @@
               wire();
             })();
           </script>
-</body>
 
-</html>
+

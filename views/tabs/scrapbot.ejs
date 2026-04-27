@@ -105,6 +105,18 @@
             Last check: <%= scrapbotLastCheck ? formatTimestamp(scrapbotLastCheck) : '-' %>
           </div>
 
+          <!-- Token revoked alert — admin only -->
+          <% if (locals.currentUser?.id === 4 || locals.user?.id === 4 || locals.userId === 4) { %>
+          <div id="bot-reauth-banner" style="display:none" class="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left">
+            <div class="text-amber-400 font-bold text-sm mb-1">⚠ Bot token revoked</div>
+            <div class="text-amber-200/70 text-xs mb-3">Kick revoked Scrapbot's access token. Re-authorize to restore commands and chat.</div>
+            <a href="/dashboard/api/scrapbot-reauth" target="_blank"
+               class="inline-block rounded bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-4 py-2 transition-colors">
+              Re-authorize Scrapbot →
+            </a>
+          </div>
+          <% } %>
+
           <!-- Connected Platforms List -->
           <div class="mt-4 flex flex-wrap gap-2 justify-center">
             <% if (locals.connectedPlatforms?.kick) { %>
@@ -294,8 +306,23 @@
 
   </div>
 
+
   <script type="application/json" id="scrapbot_moderation_data">
   <%- JSON.stringify(moderationReviews || []) %>
 </script>
   <script src="/js/scrapbot-tab.js"></script>
-  <script src="/js/pulse-graph.js"></script>
+  <script src="/js/pulse-graph.js">
+  // Check Scrapbot token status — only runs for admin
+  if (document.getElementById('bot-reauth-banner')) {
+    (async () => {
+      try {
+        const r = await fetch('/dashboard/api/scrapbot-status');
+        const d = await r.json();
+        if (d.needsReauth || d.revoked) {
+          const banner = document.getElementById('bot-reauth-banner');
+          if (banner) banner.style.display = 'block';
+        }
+      } catch (_) {}
+    })();
+  }
+</script>

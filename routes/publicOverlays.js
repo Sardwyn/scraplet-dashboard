@@ -9,7 +9,7 @@ router.get('/:publicId', async (req, res) => {
     const publicId = req.params.publicId;
     try {
         const result = await db.query(
-            `SELECT config_json FROM overlays WHERE public_id = $1 LIMIT 1`,
+            `SELECT o.config_json, o.user_id FROM overlays o WHERE o.public_id = $1 LIMIT 1`,
             [publicId]
         );
 
@@ -17,8 +17,20 @@ router.get('/:publicId', async (req, res) => {
             return res.status(404).send('Overlay not found');
         }
 
-        // Return the config_json content directly
-        res.json(result.rows[0].config_json || {});
+        const { config_json, user_id } = result.rows[0];
+
+        // Also fetch overlay components for this user so componentInstances render correctly
+        const compResult = await db.query(
+            `SELECT public_id as id, name, component_json FROM overlay_components WHERE user_id = $1`,
+            [user_id]
+        );
+        const components = compResult.rows.map(r => ({
+            id: r.id,
+            name: r.name,
+            ...(r.component_json || {}),
+        }));
+
+        res.json({ ...(config_json || {}), components });
     } catch (err) {
         console.error('[PublicOverlayConfig] Error:', err);
         res.status(500).send('Internal Server Error');
@@ -66,8 +78,27 @@ router.get('/:publicId/events/stream', async (req, res) => {
         res.flushHeaders();
 
         // 3. Subscribe via Gate
-        const lastEventId = req.headers['last-event-id'];
+        // Accept lastEventId from both header (native SSE) and query param
+        // (manual reconnect loses browser's built-in Last-Event-ID tracking)
+        const lastEventId = req.headers['last-event-id'] || req.query.lastEventId || null;
         overlayGate.subscribe(tenantId, publicId, res, lastEventId);
+
+        // 4. Heartbeat every 25s to prevent proxy/nginx from closing idle connections
+        // SSE comment lines (: ...) are ignored by clients but keep the connection alive
+        const heartbeat = setInterval(() => {
+            if (res.writableEnded) {
+                clearInterval(heartbeat);
+                return;
+            }
+            try {
+                res.write(': heartbeat\n\n');
+            } catch (_) {
+                clearInterval(heartbeat);
+            }
+        }, 25000);
+
+        // Clean up heartbeat when client disconnects
+        req.on('close', () => clearInterval(heartbeat));
 
     } catch (err) {
         console.error('[PublicOverlayEvents] Error:', err);

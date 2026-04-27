@@ -1,69 +1,208 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Kick Event Discovery</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
+<html lang="en">
+<head>
+  <title>Kick API Explorer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0f; }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    .event-row { transition: background 0.15s; }
+    .event-row:hover { background: rgba(255,255,255,0.03); }
+  </style>
+</head>
+<body class="text-white font-mono text-sm px-6 py-8">
 
-  <body class="bg-gray-950 text-white font-sans px-8 py-10">
-    <div class="flex items-center justify-between mb-10">
+  <div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
       <div>
-        <h1 class="text-4xl font-bold">Kick Event Discovery</h1>
-        <p class="text-gray-400 mt-2">
-          Events received from Kick that Scraplet does not explicitly handle yet.
-        </p>
+        <h1 class="text-2xl font-bold text-white">Kick API Explorer</h1>
+        <p class="text-gray-500 text-xs mt-1">Raw webhook events received from Kick — inspect payloads to understand the data structure</p>
       </div>
-
-      <a
-        href="/dashboard"
-        class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded shadow transition"
-      >
-        Back to Dashboard
-      </a>
+      <div class="flex gap-3 items-center">
+        <button id="refresh-btn" class="bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded text-xs font-sans">↻ Refresh</button>
+        <a href="/dashboard" class="text-gray-500 hover:text-white text-xs font-sans">← Dashboard</a>
+      </div>
     </div>
 
-    <% if (!events.length) { %>
-      <p class="text-gray-500">No unhandled Kick events discovered yet.</p>
-    <% } else { %>
-      <div class="space-y-4">
-        <% events.forEach(ev => { %>
-          <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-mono text-lg text-indigo-300">
-                  <%= ev.event_type %>
-                </p>
-                <p class="text-xs text-gray-400 mt-1">
-                  Version <%= ev.event_version || '—' %> · Seen <%= ev.seen_count %> times
-                </p>
-                <p class="text-xs text-gray-500 mt-1">
-                  First: <%= ev.first_seen_at.toLocaleString() %> ·
-                  Last: <%= ev.last_seen_at.toLocaleString() %>
-                </p>
+    <!-- Filters -->
+    <div class="flex gap-3 mb-4 flex-wrap">
+      <select id="type-filter" class="bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-300 font-sans">
+        <option value="">All event types</option>
+      </select>
+      <select id="channel-filter" class="bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-300 font-sans">
+        <option value="">All channels</option>
+      </select>
+      <input id="search-filter" type="text" placeholder="Search payload..." 
+        class="bg-gray-900 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-300 font-sans w-48">
+      <span id="event-count" class="text-gray-600 text-xs self-center font-sans"></span>
+    </div>
+
+    <!-- Event type summary -->
+    <div id="type-summary" class="flex flex-wrap gap-2 mb-5"></div>
+
+    <!-- Events list -->
+    <div id="events-list" class="space-y-2"></div>
+
+    <div id="empty-state" class="hidden text-center py-16 text-gray-600 font-sans">
+      No events found. Start a stream or change your category to see events appear here.
+    </div>
+  </div>
+
+  <script>
+  const RAW_EVENTS = <%- JSON.stringify(events || []) %>;
+
+  const TYPE_COLORS = {
+    'livestream.status.updated':   'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    'livestream.metadata.updated': 'text-sky-400 bg-sky-500/10 border-sky-500/20',
+    'channel.followed':            'text-violet-400 bg-violet-500/10 border-violet-500/20',
+    'channel.subscription.new':    'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    'channel.subscription.renewal':'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    'channel.subscription.gifts':  'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    'channel.reward.redemption.updated': 'text-pink-400 bg-pink-500/10 border-pink-500/20',
+  };
+
+  function typeColor(t) {
+    return TYPE_COLORS[t] || 'text-gray-400 bg-gray-500/10 border-gray-500/20';
+  }
+
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const s = Math.floor(diff / 1000);
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  }
+
+  // Extract interesting fields from payload for quick preview
+  function payloadPreview(payload) {
+    if (!payload) return '';
+    const hints = [];
+    const ls = payload.livestream;
+    if (ls) {
+      if (ls.session_title) hints.push(`"${ls.session_title.slice(0,40)}"`);
+      if (ls.categories?.length) hints.push(`📁 ${ls.categories[0].name}`);
+      if (ls.viewer_count !== undefined) hints.push(`👁 ${ls.viewer_count}`);
+      if (ls.is_live !== undefined) hints.push(ls.is_live ? '🟢 live' : '🔴 offline');
+    }
+    if (payload.follower?.username) hints.push(`👤 ${payload.follower.username}`);
+    if (payload.subscriber?.username) hints.push(`⭐ ${payload.subscriber.username}`);
+    return hints.join('  ·  ');
+  }
+
+  let expanded = new Set();
+
+  function render() {
+    const typeFilter = document.getElementById('type-filter').value;
+    const channelFilter = document.getElementById('channel-filter').value;
+    const search = document.getElementById('search-filter').value.toLowerCase();
+
+    const filtered = RAW_EVENTS.filter(ev => {
+      if (typeFilter && ev.event_type !== typeFilter) return false;
+      if (channelFilter && ev.channel_slug !== channelFilter) return false;
+      if (search && !JSON.stringify(ev.payload).toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    document.getElementById('event-count').textContent = `${filtered.length} event${filtered.length !== 1 ? 's' : ''}`;
+
+    const list = document.getElementById('events-list');
+    const empty = document.getElementById('empty-state');
+
+    if (!filtered.length) {
+      list.innerHTML = '';
+      empty.classList.remove('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+
+    list.innerHTML = filtered.map(ev => {
+      const color = typeColor(ev.event_type);
+      const preview = payloadPreview(ev.payload);
+      const isOpen = expanded.has(ev.id);
+      return `
+        <div class="event-row border border-gray-800/60 rounded-lg overflow-hidden">
+          <div class="flex items-start gap-3 px-4 py-3 cursor-pointer" onclick="toggleEvent(${ev.id})">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="inline-flex items-center px-2 py-0.5 rounded border text-[11px] font-semibold ${color}">
+                  ${ev.event_type}
+                </span>
+                <span class="text-gray-600 text-[11px]">${ev.channel_slug || '—'}</span>
+                <span class="text-gray-700 text-[11px]">${timeAgo(ev.created_at)}</span>
               </div>
-
-              <button
-                class="toggle-payload bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded text-sm"
-              >
-                View payload
-              </button>
+              ${preview ? `<div class="text-gray-400 text-[11px] mt-1 truncate">${preview}</div>` : ''}
             </div>
-
-            <pre
-              class="payload hidden mt-4 bg-black/70 border border-gray-800 rounded p-4 text-xs text-green-300 overflow-x-auto"
-            ><%= JSON.stringify(ev.payload, null, 2) %></pre>
+            <span class="text-gray-600 text-xs mt-0.5 shrink-0">${isOpen ? '▲' : '▼'}</span>
           </div>
-        <% }); %>
-      </div>
-    <% } %>
+          ${isOpen ? `
+            <div class="border-t border-gray-800/60 bg-black/40 px-4 py-3">
+              <div class="flex gap-2 mb-2">
+                <button onclick="copyPayload(${ev.id})" class="text-[10px] font-sans bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-gray-400">Copy JSON</button>
+                <span class="text-[10px] text-gray-600 self-center font-sans">${new Date(ev.created_at).toLocaleString()}</span>
+              </div>
+              <pre id="payload-${ev.id}" class="text-[11px] text-green-300 leading-relaxed max-h-96 overflow-y-auto">${JSON.stringify(ev.payload, null, 2)}</pre>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  }
 
-    <script>
-      document.querySelectorAll(".toggle-payload").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const pre = btn.closest("div").parentElement.querySelector(".payload");
-          pre.classList.toggle("hidden");
-        });
-      });
-    </script>
-  </body>
+  function toggleEvent(id) {
+    if (expanded.has(id)) expanded.delete(id);
+    else expanded.add(id);
+    render();
+  }
+
+  function copyPayload(id) {
+    const el = document.getElementById('payload-' + id);
+    if (el) navigator.clipboard.writeText(el.textContent).catch(() => {});
+  }
+
+  // Populate filters
+  function populateFilters() {
+    const types = [...new Set(RAW_EVENTS.map(e => e.event_type))].sort();
+    const channels = [...new Set(RAW_EVENTS.map(e => e.channel_slug).filter(Boolean))].sort();
+
+    const typeSelect = document.getElementById('type-filter');
+    types.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      typeSelect.appendChild(opt);
+    });
+
+    const channelSelect = document.getElementById('channel-filter');
+    channels.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      channelSelect.appendChild(opt);
+    });
+
+    // Type summary badges
+    const counts = {};
+    RAW_EVENTS.forEach(e => counts[e.event_type] = (counts[e.event_type] || 0) + 1);
+    const summary = document.getElementById('type-summary');
+    Object.entries(counts).sort((a,b) => b[1]-a[1]).forEach(([type, count]) => {
+      const color = typeColor(type);
+      const badge = document.createElement('button');
+      badge.className = `inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[11px] font-sans ${color} hover:opacity-80`;
+      badge.innerHTML = `${type} <span class="opacity-60">${count}</span>`;
+      badge.onclick = () => {
+        document.getElementById('type-filter').value = type;
+        render();
+      };
+      summary.appendChild(badge);
+    });
+  }
+
+  document.getElementById('type-filter').addEventListener('change', render);
+  document.getElementById('channel-filter').addEventListener('change', render);
+  document.getElementById('search-filter').addEventListener('input', render);
+  document.getElementById('refresh-btn').addEventListener('click', () => location.reload());
+
+  populateFilters();
+  render();
+  </script>
+</body>
 </html>

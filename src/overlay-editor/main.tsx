@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { OverlayEditorApp } from "./OverlayEditorApp";
+import "../overlay-runtime/widgetRenderers"; // registers React renderers for all widget types
 import { OverlayConfigV0 } from "../shared/overlayTypes";
 
 declare global {

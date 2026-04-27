@@ -3,6 +3,7 @@ import express from "express";
 import db from "../../db.js";
 import requireAuth from "../../utils/requireAuth.js";
 import { overlayGate } from '../../services/overlayGate.js';
+import { generateOverlayThumbnail } from '../../services/overlayScreenshotter.js';
 import crypto from 'crypto';
 
 const router = express.Router();
@@ -52,7 +53,11 @@ router.put("/overlays/:id", requireAuth, express.json(), async (req, res, next) 
 
     if (!rowCount) return res.sendStatus(404);
 
+    // Respond immediately — thumbnail generation is fire-and-forget
     res.json(rows[0]);
+
+    // Queue thumbnail screenshot in background (non-blocking)
+    generateOverlayThumbnail(id, rows[0].public_id);
   } catch (err) {
     next(err);
   }
