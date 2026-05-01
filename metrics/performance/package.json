@@ -12,7 +12,7 @@
     "install": "npm install playwright"
   },
   "dependencies": {
-    "playwright": "^1.40.0"
+    "playwright": "^1.59.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
