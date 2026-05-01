@@ -1,0 +1,28 @@
+{
+  "name": "scraplet-editor-tests",
+  "version": "1.0.0",
+  "description": "Performance and feature test suite for Scraplet Overlay Editor",
+  "type": "module",
+  "scripts": {
+    "test": "node test-runner.js",
+    "test:features": "node feature-tests.js",
+    "test:performance": "node test-runner.js",
+    "test:all": "npm run test:performance && npm run test:features",
+    "test:watch": "nodemon --watch ../../scraplet-dashboard/src --exec 'npm run test:all'",
+    "install": "npm install playwright"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "keywords": [
+    "testing",
+    "performance",
+    "overlay",
+    "editor"
+  ],
+  "author": "Scraplet Team",
+  "license": "MIT"
+}

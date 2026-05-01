@@ -1,0 +1,46 @@
+{
+  "name": "Simple Test Overlay",
+  "description": "3 elements for basic testing",
+  "baseResolution": {
+    "width": 1920,
+    "height": 1080
+  },
+  "elements": [
+    {
+      "id": "box-1",
+      "type": "box",
+      "name": "Test Box",
+      "x": 100,
+      "y": 100,
+      "width": 200,
+      "height": 150,
+      "fill": "#FF6B6B",
+      "visible": true
+    },
+    {
+      "id": "text-1",
+      "type": "text",
+      "name": "Test Text",
+      "x": 400,
+      "y": 100,
+      "width": 300,
+      "height": 80,
+      "content": "Test Text Element",
+      "fontSizePx": 32,
+      "fill": "#FFFFFF",
+      "visible": true
+    },
+    {
+      "id": "shape-1",
+      "type": "shape",
+      "name": "Test Circle",
+      "x": 800,
+      "y": 100,
+      "width": 150,
+      "height": 150,
+      "shape": "ellipse",
+      "fill": "#4ECDC4",
+      "visible": true
+    }
+  ]
+}
