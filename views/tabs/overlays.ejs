@@ -1,6 +1,7 @@
 <%
   const overlayItems = overlays || [];
   const templateItems = locals.templates || templates || [];
+  const collectionItems = locals.collections || [];
 
   // Static asset types (non-OBS)
   const STATIC_ASSET_TYPES = [
@@ -23,7 +24,7 @@
     brb:           overlayItems.filter(o => o.scene_type === 'brb'),
     stream_ending: overlayItems.filter(o => o.scene_type === 'stream_ending'),
   };
-  const totalItems = obsItems.length + templateItems.length;
+  const totalItems = obsItems.length + templateItems.length + collectionItems.length;
   const SCENE_LABELS = { overlay: 'Overlay', starting_soon: 'Starting Soon', brb: 'BRB', stream_ending: 'Stream Ending' };
 %>
 
@@ -42,6 +43,9 @@
             <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary justify-center">
               + New overlay
             </a>
+            <button type="button" onclick="showCreateCollectionModal()" class="pc-btn pc-btn--secondary justify-center">
+              + New collection
+            </button>
             <a href="/dashboard/overlays/new?scene_type=starting_soon" class="pc-btn pc-btn--ghost justify-center">
               + Starting Soon
             </a>
@@ -94,6 +98,13 @@
                 <span class="overlay-library__nav-sub">Browser-source compositions</span>
               </span>
               <span class="overlay-library__count"><%= obsItems.length %></span>
+            </button>
+            <button type="button" class="overlay-library__nav-btn" data-library-filter="collection">
+              <span class="overlay-library__nav-label">
+                <span class="overlay-library__nav-title">Collections</span>
+                <span class="overlay-library__nav-sub">Grouped overlay packages</span>
+              </span>
+              <span class="overlay-library__count"><%= collectionItems.length %></span>
             </button>
             <button type="button" class="overlay-library__nav-btn" data-library-filter="template">
               <span class="overlay-library__nav-label">
@@ -280,6 +291,7 @@
                     <a href="/dashboard/overlays/<%= ov.id %>/edit" class="pc-btn pc-btn--primary">Open editor</a>
                     <a href="/o/<%= ov.public_id %>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost">Preview</a>
                     <button type="button" class="pc-btn pc-btn--ghost" data-copy-url="/o/<%= ov.public_id %>">Copy URL</button>
+                    <button type="button" class="pc-btn pc-btn--ghost" data-duplicate-id="<%= ov.id %>" data-duplicate-name="<%= ov.name %>">Duplicate</button>
                   </div>
                 </div>
               </article>
@@ -290,6 +302,76 @@
             <div class="overlay-library__empty-title">No overlays yet</div>
             <div class="overlay-library__empty-copy">Create your first overlay to start building browser-source packages for OBS and Scraplet scenes.</div>
             <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary">Create overlay</a>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- ── Collections section ─────────────────────────────────────── -->
+      <section class="overlay-library__section" data-library-section data-kind="collection">
+        <div class="overlay-library__section-head">
+          <div>
+            <div class="overlay-library__section-title">Collections</div>
+            <div class="overlay-library__section-sub">Grouped overlay packages that can be published to the marketplace as bundles.</div>
+          </div>
+          <div class="overlay-library__section-meta"><%= collectionItems.length %> item<%= collectionItems.length === 1 ? '' : 's' %></div>
+        </div>
+
+        <% if (collectionItems.length > 0) { %>
+          <div class="overlay-library__grid" data-library-grid>
+            <% collectionItems.forEach(function(collection, index) {
+                 const createdLabel = new Date(collection.created_at).toLocaleDateString();
+                 const hue = (Number(collection.id) * 47 + index * 31) % 360;
+                 const overlayCount = collection.overlay_count || 0;
+            %>
+              <article
+                class="overlay-card overlay-card--collection"
+                data-library-item
+                data-kind="collection"
+                data-search="<%= [collection.name, collection.slug, collection.description || ''].join(' ').toLowerCase() %>"
+                style="--card-hue: <%= hue %>;"
+              >
+                <div class="overlay-card__preview overlay-card__preview--stacked">
+                  <% if (collection.thumbnail_url) { %>
+                    <img src="<%= collection.thumbnail_url %>?t=<%= new Date(collection.updated_at).getTime() %>"
+                         alt="<%= collection.name %> preview"
+                         class="overlay-card__thumb overlay-card__thumb--main"
+                         loading="lazy" />
+                  <% } %>
+                  <!-- Stacked card effect -->
+                  <div class="overlay-card__stack-layer overlay-card__stack-layer--1"></div>
+                  <div class="overlay-card__stack-layer overlay-card__stack-layer--2"></div>
+                  <div class="overlay-card__stack-layer overlay-card__stack-layer--3"></div>
+                  <div class="overlay-card__chrome">
+                    <span class="overlay-card__chip">Collection</span>
+                    <span class="overlay-card__count"><%= overlayCount %> overlay<%= overlayCount === 1 ? '' : 's' %></span>
+                  </div>
+                </div>
+                <div class="overlay-card__body">
+                  <div class="overlay-card__meta">
+                    <span class="overlay-card__kind">Collection</span>
+                    <span class="overlay-card__stamp">Created <%= createdLabel %></span>
+                  </div>
+                  <div>
+                    <div class="overlay-card__name"><%= collection.name %></div>
+                    <div class="overlay-card__sub"><%= collection.slug %></div>
+                    <% if (collection.description) { %>
+                      <div class="overlay-card__description"><%= collection.description %></div>
+                    <% } %>
+                  </div>
+                  <div class="overlay-card__footer">
+                    <button type="button" class="pc-btn pc-btn--primary" data-view-collection="<%= collection.id %>">Browse overlays</button>
+                    <button type="button" class="pc-btn pc-btn--ghost" data-edit-collection="<%= collection.id %>">Edit</button>
+                    <button type="button" class="pc-btn pc-btn--ghost" data-publish-collection="<%= collection.id %>">Publish</button>
+                  </div>
+                </div>
+              </article>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="overlay-library__empty">
+            <div class="overlay-library__empty-title">No collections yet</div>
+            <div class="overlay-library__empty-copy">Create collections to group related overlays together. Collections can be published as bundles to the marketplace.</div>
+            <button type="button" class="pc-btn pc-btn--primary" onclick="showCreateCollectionModal()">Create collection</button>
           </div>
         <% } %>
       </section>
@@ -475,6 +557,8 @@
             matchesFilter = itemKind === "overlay" && itemSceneType === "overlay";
           } else if (activeFilter === "static") {
             matchesFilter = itemKind === "static";
+          } else if (activeFilter === "collection") {
+            matchesFilter = itemKind === "collection";
           } else {
             matchesFilter = itemKind === activeFilter;
           }
@@ -489,7 +573,8 @@
           sectionKind === activeFilter ||
           (activeFilter.startsWith("scene-") && sectionKind === "overlay") ||
           (activeFilter === "overlay" && sectionKind === "overlay") ||
-          (activeFilter === "static" && sectionKind === "static")
+          (activeFilter === "static" && sectionKind === "static") ||
+          (activeFilter === "collection" && sectionKind === "collection")
         );
         section.dataset.hidden = showSection ? "false" : "true";
         if (showSection) anyVisible = true;
@@ -576,6 +661,76 @@
   })();
 </script>
 
+<!-- Duplicate overlay modal -->
+<div id="duplicateModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;">
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:400px;max-width:90vw;">
+    <h2 style="font-size:16px;font-weight:600;color:#e2e8f0;margin:0 0 8px;">Duplicate overlay</h2>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 16px;">Enter a name for the copy.</p>
+    <input id="duplicateNameInput" type="text" placeholder="Copy name"
+      style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:14px;box-sizing:border-box;margin-bottom:16px;" />
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" id="duplicateCancelBtn"
+        style="padding:8px 16px;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;">Cancel</button>
+      <button type="button" id="duplicateConfirmBtn"
+        style="padding:8px 16px;background:#6366f1;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;">Duplicate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    let pendingDuplicateId = null;
+    const modal = document.getElementById('duplicateModal');
+    const nameInput = document.getElementById('duplicateNameInput');
+    const confirmBtn = document.getElementById('duplicateConfirmBtn');
+    const cancelBtn = document.getElementById('duplicateCancelBtn');
+
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('[data-duplicate-id]');
+      if (!btn) return;
+      pendingDuplicateId = btn.dataset.duplicateId;
+      nameInput.value = (btn.dataset.duplicateName || '') + ' (copy)';
+      modal.style.display = 'flex';
+      setTimeout(() => nameInput.focus(), 50);
+    });
+
+    cancelBtn.addEventListener('click', function() {
+      modal.style.display = 'none';
+      pendingDuplicateId = null;
+    });
+
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) { modal.style.display = 'none'; pendingDuplicateId = null; }
+    });
+
+    nameInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') confirmBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    });
+
+    confirmBtn.addEventListener('click', async function() {
+      const name = nameInput.value.trim();
+      if (!name || !pendingDuplicateId) return;
+      confirmBtn.textContent = 'Duplicating…';
+      confirmBtn.disabled = true;
+      try {
+        const res = await fetch(`/dashboard/api/overlays/${pendingDuplicateId}/duplicate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (!res.ok) throw new Error('Duplicate failed');
+        const data = await res.json();
+        window.location.href = `/dashboard/overlays/${data.id}/edit`;
+      } catch (err) {
+        alert('Failed to duplicate overlay. Please try again.');
+        confirmBtn.textContent = 'Duplicate';
+        confirmBtn.disabled = false;
+      }
+    });
+  })();
+</script>
+
 <script>
   function toggleAssetBuilder() {
     const menu = document.getElementById('assetBuilderMenu');
@@ -593,6 +748,305 @@
       const arrow = document.getElementById('assetBuilderArrow');
       if (menu) { menu.classList.add('hidden'); menu.style.display = 'none'; }
       if (arrow) arrow.textContent = '▼';
+    }
+  });
+</script>
+
+<!-- Create Collection Modal -->
+<div id="createCollectionModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:500px;max-width:90vw;">
+    <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin:0 0 8px;">Create Collection</h2>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 16px;">Group related overlays together for better organization and marketplace publishing.</p>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:13px;color:#e2e8f0;margin-bottom:4px;">Collection Name</label>
+      <input id="collectionNameInput" type="text" placeholder="e.g. Gaming Overlay Pack"
+        style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:14px;box-sizing:border-box;" />
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:13px;color:#e2e8f0;margin-bottom:4px;">Description (optional)</label>
+      <textarea id="collectionDescriptionInput" placeholder="Describe what this collection contains..."
+        style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#e2e8f0;font-size:14px;box-sizing:border-box;resize:vertical;min-height:60px;"></textarea>
+    </div>
+    
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" id="createCollectionCancelBtn"
+        style="padding:8px 16px;background:transparent;border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#94a3b8;cursor:pointer;font-size:13px;">Cancel</button>
+      <button type="button" id="createCollectionConfirmBtn"
+        style="padding:8px 16px;background:#6366f1;border:none;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:600;">Create Collection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Collection Browser Modal -->
+<div id="collectionBrowserModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:800px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <h2 id="collectionBrowserTitle" style="font-size:18px;font-weight:600;color:#e2e8f0;margin:0;">Collection</h2>
+        <p id="collectionBrowserDescription" style="font-size:13px;color:#94a3b8;margin:4px 0 0;"></p>
+      </div>
+      <button type="button" id="collectionBrowserCloseBtn" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:20px;">&times;</button>
+    </div>
+    
+    <div id="collectionBrowserContent" style="flex:1;overflow-y:auto;min-height:200px;">
+      <!-- Collection overlays will be loaded here -->
+    </div>
+    
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);">
+      <button type="button" id="collectionBrowserEditBtn" class="pc-btn pc-btn--ghost">Edit Collection</button>
+      <button type="button" id="collectionBrowserPublishBtn" class="pc-btn pc-btn--primary">Publish to Marketplace</button>
+    </div>
+  </div>
+</div>
+
+<!-- Publish Collection Modal -->
+<div id="publishCollectionModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+  <div style="background:#111113;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:24px;width:500px;max-width:90vw;">
+    <h2 style="font-size:18px;font-weight:600;color:#e2e8f0;margin:0 0 8px;">Publish Collection to Marketplace</h2>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 20px;">Make this collection available for others to download and use.</p>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:#e2e8f0;margin-bottom:4px;">Title</label>
+      <input type="text" id="publishTitleInput" style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;font-size:14px;" placeholder="Collection title for marketplace">
+    </div>
+    
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:#e2e8f0;margin-bottom:4px;">Description</label>
+      <textarea id="publishDescriptionInput" rows="3" style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;font-size:14px;resize:vertical;" placeholder="Describe what's included in this collection"></textarea>
+    </div>
+    
+    <div style="margin-bottom:20px;">
+      <label style="display:block;font-size:12px;font-weight:500;color:#e2e8f0;margin-bottom:4px;">Price (USD)</label>
+      <input type="number" id="publishPriceInput" min="0" step="0.01" style="width:100%;padding:8px 12px;background:#1e1e2e;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:#e2e8f0;font-size:14px;" placeholder="0.00">
+      <p style="font-size:11px;color:#94a3b8;margin:4px 0 0;">Set to 0 for free collections</p>
+    </div>
+    
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button type="button" id="publishCollectionCancelBtn" class="pc-btn pc-btn--ghost">Cancel</button>
+      <button type="button" id="publishCollectionConfirmBtn" class="pc-btn pc-btn--primary">Publish to Marketplace</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Collection Management
+  let currentCollectionId = null;
+  
+  function showCreateCollectionModal() {
+    const modal = document.getElementById('createCollectionModal');
+    const nameInput = document.getElementById('collectionNameInput');
+    const descInput = document.getElementById('collectionDescriptionInput');
+    
+    nameInput.value = '';
+    descInput.value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => nameInput.focus(), 50);
+  }
+  
+  async function createCollection() {
+    const nameInput = document.getElementById('collectionNameInput');
+    const descInput = document.getElementById('collectionDescriptionInput');
+    const confirmBtn = document.getElementById('createCollectionConfirmBtn');
+    
+    const name = nameInput.value.trim();
+    if (!name) {
+      alert('Collection name is required');
+      return;
+    }
+    
+    confirmBtn.textContent = 'Creating...';
+    confirmBtn.disabled = true;
+    
+    try {
+      const res = await fetch('/dashboard/api/collections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          description: descInput.value.trim() || null
+        })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to create collection');
+      }
+      
+      // Reload page to show new collection
+      window.location.reload();
+    } catch (err) {
+      alert(err.message || 'Failed to create collection');
+      confirmBtn.textContent = 'Create Collection';
+      confirmBtn.disabled = false;
+    }
+  }
+  
+  async function viewCollection(collectionId) {
+    currentCollectionId = collectionId;
+    const modal = document.getElementById('collectionBrowserModal');
+    const title = document.getElementById('collectionBrowserTitle');
+    const description = document.getElementById('collectionBrowserDescription');
+    const content = document.getElementById('collectionBrowserContent');
+    
+    modal.style.display = 'flex';
+    title.textContent = 'Loading...';
+    description.textContent = '';
+    content.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">Loading collection...</div>';
+    
+    try {
+      const res = await fetch(`/dashboard/api/collections/${collectionId}`);
+      if (!res.ok) throw new Error('Failed to load collection');
+      
+      const collection = await res.json();
+      title.textContent = collection.name;
+      description.textContent = collection.description || '';
+      
+      if (collection.overlays && collection.overlays.length > 0) {
+        content.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+            ${collection.overlays.map(overlay => `
+              <div style="background:#1e1e2e;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;">
+                <div style="font-weight:600;color:#e2e8f0;margin-bottom:4px;">${overlay.name}</div>
+                <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">${overlay.slug}</div>
+                <div style="display:flex;gap:4px;">
+                  <a href="/dashboard/overlays/${overlay.id}/edit" class="pc-btn pc-btn--ghost" style="font-size:11px;padding:4px 8px;">Edit</a>
+                  <a href="/o/${overlay.public_id}" target="_blank" class="pc-btn pc-btn--ghost" style="font-size:11px;padding:4px 8px;">Preview</a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        content.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">This collection is empty. Add overlays to it from the overlay editor.</div>';
+      }
+    } catch (err) {
+      content.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Failed to load collection</div>';
+    }
+  }
+  
+  function showPublishCollectionModal(collectionId) {
+    const modal = document.getElementById('publishCollectionModal');
+    const titleInput = document.getElementById('publishTitleInput');
+    const descInput = document.getElementById('publishDescriptionInput');
+    const priceInput = document.getElementById('publishPriceInput');
+    
+    // Pre-fill with collection data
+    const collectionCard = document.querySelector(`[data-publish-collection="${collectionId}"]`).closest('.overlay-card');
+    const collectionName = collectionCard.querySelector('.overlay-card__name').textContent;
+    const collectionDesc = collectionCard.querySelector('.overlay-card__description')?.textContent || '';
+    
+    titleInput.value = collectionName;
+    descInput.value = collectionDesc;
+    priceInput.value = '0';
+    
+    modal.dataset.collectionId = collectionId;
+    modal.style.display = 'flex';
+    setTimeout(() => titleInput.focus(), 50);
+  }
+  
+  async function publishCollection() {
+    const modal = document.getElementById('publishCollectionModal');
+    const collectionId = modal.dataset.collectionId;
+    const titleInput = document.getElementById('publishTitleInput');
+    const descInput = document.getElementById('publishDescriptionInput');
+    const priceInput = document.getElementById('publishPriceInput');
+    const confirmBtn = document.getElementById('publishCollectionConfirmBtn');
+    
+    const title = titleInput.value.trim();
+    if (!title) {
+      alert('Title is required');
+      return;
+    }
+    
+    confirmBtn.textContent = 'Publishing...';
+    confirmBtn.disabled = true;
+    
+    try {
+      const res = await fetch(`/dashboard/api/marketplace/publish-collection/${collectionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title,
+          description: descInput.value.trim() || null,
+          price_cents: Math.max(0, Number(priceInput.value) * 100)
+        })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to publish collection');
+      }
+      
+      alert('Collection published to marketplace!');
+      modal.style.display = 'none';
+    } catch (err) {
+      alert(err.message || 'Failed to publish collection');
+      confirmBtn.textContent = 'Publish to Marketplace';
+      confirmBtn.disabled = false;
+    }
+  }
+  
+  // Event listeners
+  document.getElementById('createCollectionCancelBtn').addEventListener('click', () => {
+    document.getElementById('createCollectionModal').style.display = 'none';
+  });
+  
+  document.getElementById('createCollectionConfirmBtn').addEventListener('click', createCollection);
+  
+  document.getElementById('collectionBrowserCloseBtn').addEventListener('click', () => {
+    document.getElementById('collectionBrowserModal').style.display = 'none';
+  });
+  
+  // Publish collection modal event listeners
+  document.getElementById('publishCollectionCancelBtn').addEventListener('click', () => {
+    document.getElementById('publishCollectionModal').style.display = 'none';
+  });
+  
+  document.getElementById('publishCollectionConfirmBtn').addEventListener('click', publishCollection);
+  
+  // Collection action handlers
+  document.addEventListener('click', (e) => {
+    const viewBtn = e.target.closest('[data-view-collection]');
+    if (viewBtn) {
+      const collectionId = viewBtn.dataset.viewCollection;
+      viewCollection(collectionId);
+      return;
+    }
+    
+    const editBtn = e.target.closest('[data-edit-collection]');
+    if (editBtn) {
+      const collectionId = editBtn.dataset.editCollection;
+      // TODO: Implement edit collection modal
+      alert('Edit collection functionality coming soon!');
+      return;
+    }
+    
+    const publishBtn = e.target.closest('[data-publish-collection]');
+    if (publishBtn) {
+      const collectionId = publishBtn.dataset.publishCollection;
+      showPublishCollectionModal(collectionId);
+      return;
+    }
+  });
+  
+  // Close modals on outside click
+  document.getElementById('createCollectionModal').addEventListener('click', (e) => {
+    if (e.target.id === 'createCollectionModal') {
+      e.target.style.display = 'none';
+    }
+  });
+  
+  document.getElementById('collectionBrowserModal').addEventListener('click', (e) => {
+    if (e.target.id === 'collectionBrowserModal') {
+      e.target.style.display = 'none';
+    }
+  });
+  
+  document.getElementById('publishCollectionModal').addEventListener('click', (e) => {
+    if (e.target.id === 'publishCollectionModal') {
+      e.target.style.display = 'none';
     }
   });
 </script>

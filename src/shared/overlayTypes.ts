@@ -456,6 +456,10 @@ export interface OverlayTextElement extends OverlayElementBase {
   tickerSpeed?: number;    // px/s, default 60
   tickerDirection?: "left" | "right";
   tickerGap?: number;      // px gap between repeats, default 40
+
+  // Text on path
+  textOnPathId?: string;   // id of a path element to follow
+  textOnPathOffset?: number; // 0–100, start offset %
 }
 
 /* =========================
@@ -759,6 +763,19 @@ export interface OverlayComponentDef {
   variantGroupId?: string;
   variantName?: string;
   widgetManifest?: WidgetManifest;
+  // Named variants — each stores property overrides per element
+  variants?: Array<{
+    id: string;
+    name: string;
+    overrides: Record<string, Partial<OverlayElement>>; // elementId → property overrides
+  }>;
+}
+
+export interface OverlayComponentInstanceElement extends OverlayElementBase {
+  type: "componentInstance";
+  componentId: string;
+  propOverrides: Record<string, any>;
+  activeVariantId?: string; // which variant is active on this instance
 }
 
 // ── Widget System ─────────────────────────────────────────────────────────────

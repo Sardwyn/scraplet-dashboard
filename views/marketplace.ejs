@@ -27,15 +27,32 @@
     </div>
   <% } else { %>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% listings.forEach(function(l) { %>
+      <% listings.forEach(function(l) { 
+        const isCollection = l.listing_type === 'collection';
+        const previewUrl = isCollection ? (l.first_overlay_public_id ? `/o/${l.first_overlay_public_id}` : null) : `/o/${l.overlay_public_id}`;
+        const thumbnailUrl = l.thumbnail_url;
+      %>
         <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-colors group">
-          <!-- Preview placeholder -->
+          <!-- Preview -->
           <div class="aspect-video bg-gray-800 flex items-center justify-center relative overflow-hidden">
-            <a href="/o/<%= l.overlay_public_id %>" target="_blank" rel="noopener"
-               class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white text-sm font-semibold">
-              Preview ↗
-            </a>
-            <svg class="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <% if (thumbnailUrl) { %>
+              <img src="<%= thumbnailUrl %>" alt="<%= l.title %>" class="w-full h-full object-cover" />
+            <% } else { %>
+              <svg class="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <% } %>
+            
+            <% if (previewUrl) { %>
+              <a href="<%= previewUrl %>" target="_blank" rel="noopener"
+                 class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white text-sm font-semibold">
+                Preview ↗
+              </a>
+            <% } %>
+            
+            <% if (isCollection) { %>
+              <div class="absolute top-2 right-2 px-2 py-1 rounded bg-indigo-600 text-white text-xs font-semibold">
+                <%= l.overlay_count %> overlays
+              </div>
+            <% } %>
           </div>
 
           <div class="p-4">
@@ -43,6 +60,9 @@
               <div>
                 <h3 class="font-semibold text-white text-sm"><%= l.title %></h3>
                 <p class="text-xs text-gray-500 mt-0.5">by <%= l.creator_username %></p>
+                <% if (isCollection) { %>
+                  <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Collection</span>
+                <% } %>
               </div>
               <span class="text-sm font-bold <%= l.price_cents === 0 ? 'text-green-400' : 'text-white' %> shrink-0">
                 <%= l.price_cents === 0 ? 'Free' : '$' + (l.price_cents/100).toFixed(2) %>
@@ -60,7 +80,7 @@
                 </a>
               <% } else if (l.price_cents === 0) { %>
                 <button
-                  onclick="acquireOverlay(<%= l.id %>, this)"
+                  onclick="acquireItem(<%= l.id %>, '<%= isCollection ? 'collection' : 'overlay' %>', this)"
                   class="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors">
                   Get this free
                 </button>
@@ -79,11 +99,15 @@
 </div>
 
 <script>
-async function acquireOverlay(listingId, btn) {
+async function acquireItem(listingId, type, btn) {
   btn.disabled = true;
   btn.textContent = 'Adding...';
   try {
-    const r = await fetch('/dashboard/api/marketplace/acquire/' + listingId, { method: 'POST', credentials: 'include' });
+    const endpoint = type === 'collection' 
+      ? '/dashboard/api/marketplace/acquire-collection/' + listingId
+      : '/dashboard/api/marketplace/acquire/' + listingId;
+    
+    const r = await fetch(endpoint, { method: 'POST', credentials: 'include' });
     const d = await r.json();
     if (d.ok) {
       btn.textContent = '✓ Added!';

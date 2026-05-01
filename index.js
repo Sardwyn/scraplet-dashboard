@@ -22,7 +22,7 @@ import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
 import profileRoutes from './routes/profile.js';
 import adminRoutes from './routes/admin.js';
-import assetsApiRouter from "./routes/assetsApi.js";
+import assetsRouter from "./routes/assets.js";
 import requireAuth from './utils/requireAuth.js';
 import { EventBus } from './eventBus.js';
 import eventsIngestRoutes from './routes/eventsIngest.js';
@@ -33,6 +33,7 @@ import overlaysApiRouter from "./routes/api/overlays.js";
 import lowerThirdTemplatesRouter from "./routes/api/lowerThirdTemplates.js";
 import overlayComponentsRouter from "./routes/api/overlayComponents.js";
 import discordIntegrationRoutes from "./routes/integrations/discord.js";
+import obsWidgetConfigRouter from "./routes/obsWidgetConfig.js";
 // import publicOverlayRouter from "./routes/publicOverlay.js";
 import publicOverlayServing from "./routes/publicOverlayServing.js";
 import uploadsRouter from "./routes/api/uploads.js";
@@ -71,6 +72,7 @@ import ttsAlertRouter from './routes/api/ttsAlert.js';
 import earningsRouter from './routes/earnings.js';
 import marketplaceRouter from './routes/api/marketplace.js';
 import marketplacePageRouter from './routes/marketplace.js';
+import collectionsRouter from './routes/collections.js';
 import widgetTestFireRouter from './routes/api/widgetTestFire.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
@@ -217,7 +219,7 @@ app.use(
   })
 );
 
-app.use("/dashboard/api", assetsApiRouter);
+app.use("/dashboard/api", assetsRouter);
 app.use("/dashboard/api/uploads", uploadsRouter);
 app.use("/dashboard", intelApiRouter);
 
@@ -361,6 +363,7 @@ app.use(ttsAlertRouter);
 app.use(earningsRouter);
 app.use(marketplaceRouter);
 app.use(marketplacePageRouter);
+app.use(collectionsRouter);
 app.use(widgetTestFireRouter);
 
 // 🎛 Studio Controller — auth-gated React build
@@ -386,6 +389,8 @@ app.use(youtubeChatIngestRouter);
 // 🔀 Main routes
 app.use(integrationsRoutes);
 app.use('/dashboard', dashboardRoutes);
+
+app.use('/obs', obsWidgetConfigRouter);
 
 app.use('/auth', kickAuthRoutes);
 app.use('/auth', authRoutes);

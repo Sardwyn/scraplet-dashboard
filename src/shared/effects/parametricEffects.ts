@@ -43,7 +43,7 @@ export interface PresetDefinition {
   id: string;
   label: string;
   description: string;
-  category: "glow" | "motion" | "distortion" | "reveal" | "particle";
+  category: "glow" | "motion" | "distortion" | "reveal" | "particle" | "color";
   params: ParamSchema[];
   defaultDuration: number; // ms for one loop cycle
   // What the effect produces
@@ -562,6 +562,242 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "clipMode", label: "Clip Mode", type: "select", default: "none", options: ["none", "surface", "space"] },
     ],
   },
+  // ── CSS Filter Effects ────────────────────────────────────────────────────────
+  hueShift: {
+    id: "hueShift",
+    label: "Hue Shift",
+    description: "Rotate colors around the color wheel — perfect for tinting videos and images",
+    category: "color",
+    defaultDuration: 3000,
+    produces: ["css"],
+    params: [
+      { key: "rotation", label: "Rotation", type: "number", default: 0, min: 0, max: 360, step: 1, animatable: true },
+      { key: "animate", label: "Animate", type: "boolean", default: false },
+      { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  colorGrade: {
+    id: "colorGrade",
+    label: "Color Grade",
+    description: "Adjust brightness, contrast, and saturation for color correction",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "brightness", label: "Brightness", type: "number", default: 1, min: 0, max: 3, step: 0.05, animatable: true },
+      { key: "contrast", label: "Contrast", type: "number", default: 1, min: 0, max: 3, step: 0.05, animatable: true },
+      { key: "saturation", label: "Saturation", type: "number", default: 1, min: 0, max: 3, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  tint: {
+    id: "tint",
+    label: "Tint",
+    description: "Apply a color tint overlay — combine hue shift and saturation for video tinting",
+    category: "color",
+    defaultDuration: 2000,
+    produces: ["css"],
+    params: [
+      { key: "hue", label: "Hue", type: "number", default: 270, min: 0, max: 360, step: 1, animatable: true },
+      { key: "saturation", label: "Saturation", type: "number", default: 1.5, min: 0, max: 3, step: 0.05, animatable: true },
+      { key: "brightness", label: "Brightness", type: "number", default: 1, min: 0, max: 2, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  staticTint: {
+    id: "staticTint",
+    label: "Static Tint",
+    description: "Apply a fixed color tint — no animation, just a solid color overlay",
+    category: "color",
+    defaultDuration: 0,
+    produces: ["css"],
+    params: [
+      { key: "hue", label: "Hue", type: "number", default: 270, min: 0, max: 360, step: 1 },
+      { key: "saturation", label: "Saturation", type: "number", default: 2.0, min: 0, max: 3, step: 0.05 },
+      { key: "brightness", label: "Brightness", type: "number", default: 1, min: 0, max: 2, step: 0.05 },
+    ],
+  },
+  colorize: {
+    id: "colorize",
+    label: "Colorize",
+    description: "Add color to grayscale/white content — perfect for smoke, fog, and particles",
+    category: "color",
+    defaultDuration: 0,
+    produces: ["css"],
+    params: [
+      { key: "hue", label: "Hue", type: "number", default: 270, min: 0, max: 360, step: 1 },
+      { key: "intensity", label: "Intensity", type: "number", default: 1.0, min: 0, max: 2, step: 0.05 },
+      { key: "brightness", label: "Brightness", type: "number", default: 1, min: 0, max: 2, step: 0.05 },
+    ],
+  },
+  colorizeAnimated: {
+    id: "colorizeAnimated",
+    label: "Colorize (Animated)",
+    description: "Animated colorize with keyframe support — animate hue, intensity, and brightness over time",
+    category: "color",
+    defaultDuration: 3000,
+    produces: ["css"],
+    params: [
+      { key: "hue", label: "Hue", type: "number", default: 270, min: 0, max: 360, step: 1, animatable: true },
+      { key: "intensity", label: "Intensity", type: "number", default: 1.0, min: 0, max: 2, step: 0.05, animatable: true },
+      { key: "brightness", label: "Brightness", type: "number", default: 1, min: 0, max: 2, step: 0.05, animatable: true },
+    ],
+  },
+  neonGlow: {
+    id: "neonGlow",
+    label: "Neon Glow",
+    description: "Add intense neon glow — stack multiple layers for stronger effect",
+    category: "glow",
+    defaultDuration: 0,
+    produces: ["css"],
+    params: [
+      { key: "color", label: "Glow Color", type: "color", default: "#a855f7" },
+      { key: "intensity", label: "Intensity", type: "number", default: 30, min: 0, max: 80, step: 1 },
+      { key: "spread", label: "Spread", type: "number", default: 15, min: 0, max: 50, step: 1 },
+      { key: "brightness", label: "Brightness Boost", type: "number", default: 1.3, min: 1, max: 2.5, step: 0.05 },
+    ],
+  },
+  neonGlowAnimated: {
+    id: "neonGlowAnimated",
+    label: "Neon Glow (Animated)",
+    description: "Animated neon glow with pulsing intensity — perfect for breathing effects",
+    category: "glow",
+    defaultDuration: 2000,
+    produces: ["css"],
+    params: [
+      { key: "color", label: "Glow Color", type: "color", default: "#a855f7" },
+      { key: "intensity", label: "Intensity", type: "number", default: 30, min: 0, max: 80, step: 1, animatable: true },
+      { key: "spread", label: "Spread", type: "number", default: 15, min: 0, max: 50, step: 1, animatable: true },
+      { key: "brightness", label: "Brightness Boost", type: "number", default: 1.3, min: 1, max: 2.5, step: 0.05, animatable: true },
+    ],
+  },
+  desaturate: {
+    id: "desaturate",
+    label: "Desaturate",
+    description: "Remove color saturation — grayscale effect",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "amount", label: "Amount", type: "number", default: 1, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  sepiaTone: {
+    id: "sepiaTone",
+    label: "Sepia Tone",
+    description: "Vintage sepia/brown tone effect",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "amount", label: "Amount", type: "number", default: 1, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  invert: {
+    id: "invert",
+    label: "Invert",
+    description: "Invert colors — negative effect",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "amount", label: "Amount", type: "number", default: 1, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  exposure: {
+    id: "exposure",
+    label: "Exposure",
+    description: "Adjust exposure with brightness and contrast together",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "exposure", label: "Exposure", type: "number", default: 0, min: -1, max: 1, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  vibrance: {
+    id: "vibrance",
+    label: "Vibrance",
+    description: "Boost color intensity without oversaturating",
+    category: "color",
+    defaultDuration: 1000,
+    produces: ["css"],
+    params: [
+      { key: "amount", label: "Amount", type: "number", default: 1.3, min: 0, max: 3, step: 0.05, animatable: true },
+      { key: "contrast", label: "Contrast", type: "number", default: 1.1, min: 0.5, max: 2, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  // ── Smoke / Volumetric / Edge effects ────────────────────────────────────────
+  smokeBloom: {
+    id: "smokeBloom",
+    label: "Smoke Bloom",
+    description: "Soft volumetric glow that bleeds outward with a natural, irregular falloff — like light through fog. Stack with Neon Glow for the OWN3D look.",
+    category: "glow",
+    defaultDuration: 3000,
+    produces: ["svgFilter"],
+    params: [
+      { key: "color", label: "Color", type: "color", default: "#a855f7", animatable: true },
+      { key: "radius", label: "Bloom Radius", type: "number", default: 60, min: 5, max: 200, step: 5, animatable: true },
+      { key: "intensity", label: "Intensity", type: "number", default: 1.8, min: 0.1, max: 6, step: 0.1, animatable: true },
+      { key: "turbulence", label: "Smoke Turbulence", type: "number", default: 0.04, min: 0, max: 0.2, step: 0.005, animatable: true },
+      { key: "speed", label: "Anim Speed", type: "number", default: 0.5, min: 0, max: 3, step: 0.1 },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  volumetricLight: {
+    id: "volumetricLight",
+    label: "Volumetric Light",
+    description: "Backlit haze — light appears to emanate from behind the shape, scattering outward. The signature effect on OWN3D overlays.",
+    category: "glow",
+    defaultDuration: 4000,
+    produces: ["svgFilter"],
+    params: [
+      { key: "color", label: "Light Color", type: "color", default: "#c084fc", animatable: true },
+      { key: "spread", label: "Spread", type: "number", default: 30, min: 5, max: 80, step: 1, animatable: true },
+      { key: "intensity", label: "Intensity", type: "number", default: 1.5, min: 0.1, max: 5, step: 0.1, animatable: true },
+      { key: "pulse", label: "Pulse", type: "boolean", default: true },
+      { key: "speed", label: "Speed", type: "number", default: 0.8, min: 0.1, max: 3, step: 0.1 },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  edgeFog: {
+    id: "edgeFog",
+    label: "Edge Fog",
+    description: "Turbulent smoke distortion on the edges — creates wispy, irregular borders like smoke or energy dissipating at the edges.",
+    category: "distortion",
+    defaultDuration: 5000,
+    produces: ["svgFilter"],
+    params: [
+      { key: "scale", label: "Fog Scale", type: "number", default: 40, min: 5, max: 120, step: 5, animatable: true },
+      { key: "displacement", label: "Displacement", type: "number", default: 12, min: 0, max: 40, step: 1, animatable: true },
+      { key: "octaves", label: "Octaves", type: "number", default: 3, min: 1, max: 5, step: 1 },
+      { key: "speed", label: "Anim Speed", type: "number", default: 0.3, min: 0, max: 2, step: 0.05 },
+      { key: "blur", label: "Edge Blur", type: "number", default: 4, min: 0, max: 20, step: 0.5, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
+  innerGlow: {
+    id: "innerGlow",
+    label: "Inner Glow",
+    description: "Soft luminosity from within the shape — the eyes in the OWN3D Raven overlay use this. Diffuse light that fills the interior.",
+    category: "glow",
+    defaultDuration: 3000,
+    produces: ["svgFilter"],
+    params: [
+      { key: "color", label: "Color", type: "color", default: "#e9d5ff", animatable: true },
+      { key: "radius", label: "Glow Radius", type: "number", default: 8, min: 1, max: 30, step: 1, animatable: true },
+      { key: "intensity", label: "Intensity", type: "number", default: 1.8, min: 0.1, max: 5, step: 0.1, animatable: true },
+      { key: "pulse", label: "Pulse", type: "boolean", default: false },
+      { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
+    ],
+  },
 };
 
 // ── Param interpolation ───────────────────────────────────────────────────────
@@ -572,6 +808,11 @@ export function interpolateParams(
   duration: number
 ): EffectParams {
   if (!keyframes || keyframes.length === 0) return baseParams;
+
+  // Single keyframe: hold that value indefinitely (no interpolation)
+  if (keyframes.length === 1) {
+    return { ...baseParams, ...keyframes[0].params };
+  }
 
   // Normalize t to loop duration
   const loopT = duration > 0 ? t % duration : t;
@@ -850,6 +1091,122 @@ export function renderParametricEffectCSS(
         ...(borderRadius ? { borderRadius, overflow: 'hidden' } : {}),
       } as any;
     }
+    // ── CSS Filter Effects ────────────────────────────────────────────────────
+    case "hueShift": {
+      const rotation = Number(p.rotation ?? 0);
+      const animate = p.animate === true;  // Only animate if explicitly enabled
+      const speed = Number(p.speed ?? 1);
+      const hue = animate ? (t / 1000 * 360 * speed) % 360 : rotation;
+      return { filter: `hue-rotate(${hue.toFixed(1)}deg)` };
+    }
+    case "colorGrade": {
+      const brightness = Number(p.brightness ?? 1);
+      const contrast = Number(p.contrast ?? 1);
+      const saturation = Number(p.saturation ?? 1);
+      return { 
+        filter: `brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)}) saturate(${saturation.toFixed(2)})` 
+      };
+    }
+    case "tint": {
+      const hue = Number(p.hue ?? 270);
+      const saturation = Number(p.saturation ?? 1.5);
+      const brightness = Number(p.brightness ?? 1);
+      return { 
+        filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "staticTint": {
+      const hue = Number(p.hue ?? 270);
+      const saturation = Number(p.saturation ?? 2.0);
+      const brightness = Number(p.brightness ?? 1);
+      return { 
+        filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "colorize": {
+      // Colorize grayscale content by: sepia (adds brown base) → hue-rotate (shift to target color) → saturate (boost intensity)
+      const hue = Number(p.hue ?? 270);
+      const intensity = Number(p.intensity ?? 1.0);
+      const brightness = Number(p.brightness ?? 1);
+      // Sepia creates a brown base, then hue-rotate shifts it to the target color
+      // For purple (270°), we need to rotate from sepia's ~40° to 270° = 230° rotation
+      const rotation = hue - 40; // Sepia is roughly 40° on the color wheel
+      return { 
+        filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "colorizeAnimated": {
+      // Same as colorize but with animatable parameters
+      const hue = Number(p.hue ?? 270);
+      const intensity = Number(p.intensity ?? 1.0);
+      const brightness = Number(p.brightness ?? 1);
+      const rotation = hue - 40;
+      return { 
+        filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "neonGlow": {
+      const color = String(p.color ?? "#a855f7");
+      const intensity = Number(p.intensity ?? 30);
+      const spread = Number(p.spread ?? 15);
+      const brightness = Number(p.brightness ?? 1.3);
+      // Create multiple drop-shadow layers for intense glow - more layers = stronger effect
+      const shadows = [
+        `drop-shadow(0 0 ${intensity}px ${color})`,
+        `drop-shadow(0 0 ${intensity * 0.8}px ${color})`,
+        `drop-shadow(0 0 ${intensity * 0.6}px ${color})`,
+        `drop-shadow(0 0 ${spread}px ${color})`,
+        `drop-shadow(0 0 ${spread * 0.7}px ${color})`,
+      ].join(' ');
+      return { 
+        filter: `${shadows} brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "neonGlowAnimated": {
+      // Same as neonGlow but with animatable parameters
+      const color = String(p.color ?? "#a855f7");
+      const intensity = Number(p.intensity ?? 30);
+      const spread = Number(p.spread ?? 15);
+      const brightness = Number(p.brightness ?? 1.3);
+      const shadows = [
+        `drop-shadow(0 0 ${intensity}px ${color})`,
+        `drop-shadow(0 0 ${intensity * 0.8}px ${color})`,
+        `drop-shadow(0 0 ${intensity * 0.6}px ${color})`,
+        `drop-shadow(0 0 ${spread}px ${color})`,
+        `drop-shadow(0 0 ${spread * 0.7}px ${color})`,
+      ].join(' ');
+      return { 
+        filter: `${shadows} brightness(${brightness.toFixed(2)})` 
+      };
+    }
+    case "desaturate": {
+      const amount = Number(p.amount ?? 1);
+      return { filter: `grayscale(${amount.toFixed(2)})` };
+    }
+    case "sepiaTone": {
+      const amount = Number(p.amount ?? 1);
+      return { filter: `sepia(${amount.toFixed(2)})` };
+    }
+    case "invert": {
+      const amount = Number(p.amount ?? 1);
+      return { filter: `invert(${amount.toFixed(2)})` };
+    }
+    case "exposure": {
+      const exposure = Number(p.exposure ?? 0);
+      // Exposure: positive = brighter + more contrast, negative = darker + less contrast
+      const brightness = 1 + exposure * 0.5;
+      const contrast = 1 + exposure * 0.3;
+      return { 
+        filter: `brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)})` 
+      };
+    }
+    case "vibrance": {
+      const amount = Number(p.amount ?? 1.3);
+      const contrast = Number(p.contrast ?? 1.1);
+      return { 
+        filter: `saturate(${amount.toFixed(2)}) contrast(${contrast.toFixed(2)})` 
+      };
+    }
     default:
       return {};
   }
@@ -862,7 +1219,209 @@ export function renderParametricEffectSVGFilter(
   filterId: string,
   t: number
 ): { filterDef: string; filterRef: string } | null {
+  const p = params;
+
   switch (preset) {
+    case "smokeBloom": {
+      const radius = Number(p.radius ?? 18);
+      const intensity = Number(p.intensity ?? 1.2);
+      const turbAmt = Number(p.turbulence ?? 0.04);
+      const speed = Number(p.speed ?? 0.5);
+      const color = String(p.color ?? "#a855f7");
+      const opacity = Number(p.opacity ?? 1);
+      // Animate turbulence seed over time for moving smoke
+      const seed = ((t / 1000) * speed * 10) % 100;
+      // Parse color to matrix values
+      const hex = color.replace('#', '');
+      const r = (parseInt(hex.substring(0,2), 16) || 168) / 255;
+      const g = (parseInt(hex.substring(2,4), 16) || 85) / 255;
+      const b = (parseInt(hex.substring(4,6), 16) || 247) / 255;
+
+      const filterDef = `
+        <filter id="${filterId}" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+          <!-- Blur the source to create bloom base -->
+          <feGaussianBlur in="SourceGraphic" stdDeviation="${radius}" result="blur1"/>
+          <!-- Second pass for wider, softer falloff -->
+          <feGaussianBlur in="SourceGraphic" stdDeviation="${radius * 2.5}" result="blur2"/>
+          <!-- Add turbulence for smoke texture -->
+          ${turbAmt > 0 ? `
+          <feTurbulence type="fractalNoise" baseFrequency="${turbAmt}" numOctaves="3" seed="${seed.toFixed(1)}" result="noise"/>
+          <feDisplacementMap in="blur1" in2="noise" scale="${radius * 0.8}" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+          ` : `<feComposite in="blur1" in2="blur1" operator="over" result="displaced"/>`}
+          <!-- Colorize the bloom -->
+          <feColorMatrix type="matrix" in="displaced"
+            values="${r * intensity} 0 0 0 0
+                    ${g * intensity} 0 0 0 0
+                    ${b * intensity} 0 0 0 0
+                    0 0 0 ${opacity} 0"
+            result="colored1"/>
+          <feColorMatrix type="matrix" in="blur2"
+            values="${r * intensity * 0.5} 0 0 0 0
+                    ${g * intensity * 0.5} 0 0 0 0
+                    ${b * intensity * 0.5} 0 0 0 0
+                    0 0 0 ${opacity * 0.6} 0"
+            result="colored2"/>
+          <!-- Merge bloom layers with original -->
+          <feMerge>
+            <feMergeNode in="colored2"/>
+            <feMergeNode in="colored1"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    case "volumetricLight": {
+      const spread = Number(p.spread ?? 30);
+      const intensity = Number(p.intensity ?? 1.5);
+      const color = String(p.color ?? "#c084fc");
+      const pulse = p.pulse !== false;
+      const speed = Number(p.speed ?? 0.8);
+      const opacity = Number(p.opacity ?? 1);
+      // Pulse the intensity
+      const pulseVal = pulse ? 0.8 + 0.2 * Math.sin((t / 1000) * Math.PI * 2 * speed) : 1;
+      const effectiveIntensity = intensity * pulseVal;
+      const hex = color.replace('#', '');
+      const r = (parseInt(hex.substring(0,2), 16) || 192) / 255;
+      const g = (parseInt(hex.substring(2,4), 16) || 132) / 255;
+      const b = (parseInt(hex.substring(4,6), 16) || 252) / 255;
+
+      const filterDef = `
+        <filter id="${filterId}" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">
+          <!-- Wide soft blur for volumetric scatter -->
+          <feGaussianBlur in="SourceAlpha" stdDeviation="${spread}" result="alphaBlur"/>
+          <!-- Dilate to push light further out -->
+          <feMorphology in="alphaBlur" operator="dilate" radius="${spread * 0.3}" result="dilated"/>
+          <feGaussianBlur in="dilated" stdDeviation="${spread * 0.5}" result="outerHaze"/>
+          <!-- Color the haze -->
+          <feColorMatrix type="matrix" in="outerHaze"
+            values="${r * effectiveIntensity} 0 0 0 ${r * 0.1}
+                    ${g * effectiveIntensity} 0 0 0 ${g * 0.05}
+                    ${b * effectiveIntensity} 0 0 0 ${b * 0.15}
+                    0 0 0 ${opacity} 0"
+            result="coloredHaze"/>
+          <!-- Inner tighter glow -->
+          <feGaussianBlur in="SourceAlpha" stdDeviation="${spread * 0.3}" result="innerBlur"/>
+          <feColorMatrix type="matrix" in="innerBlur"
+            values="${r * effectiveIntensity * 1.5} 0 0 0 0
+                    ${g * effectiveIntensity * 1.5} 0 0 0 0
+                    ${b * effectiveIntensity * 1.5} 0 0 0 0
+                    0 0 0 ${opacity} 0"
+            result="innerGlow"/>
+          <feMerge>
+            <feMergeNode in="coloredHaze"/>
+            <feMergeNode in="innerGlow"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    case "edgeFog": {
+      const scale = Number(p.scale ?? 40);
+      const displacement = Number(p.displacement ?? 12);
+      const octaves = Math.round(Number(p.octaves ?? 3));
+      const speed = Number(p.speed ?? 0.3);
+      const blur = Number(p.blur ?? 4);
+      const opacity = Number(p.opacity ?? 1);
+      // Animate the turbulence over time
+      const seed = ((t / 1000) * speed * 5) % 50;
+      const baseFreq = (1 / scale).toFixed(4);
+
+      const filterDef = `
+        <filter id="${filterId}" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+          <!-- Generate animated turbulence noise -->
+          <feTurbulence type="turbulence" baseFrequency="${baseFreq}" numOctaves="${octaves}" seed="${seed.toFixed(2)}" result="noise"/>
+          <!-- Displace the source using the noise — creates wispy edges -->
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="${displacement}" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+          <!-- Soft blur on the displaced result for smoky falloff -->
+          ${blur > 0 ? `<feGaussianBlur in="displaced" stdDeviation="${blur}" result="blurred"/>` : ''}
+          <feComposite in="${blur > 0 ? 'blurred' : 'displaced'}" in2="SourceGraphic" operator="over" result="final"/>
+          <feComponentTransfer in="final">
+            <feFuncA type="linear" slope="${opacity}"/>
+          </feComponentTransfer>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    case "innerGlow": {
+      const radius = Number(p.radius ?? 8);
+      const intensity = Number(p.intensity ?? 1.8);
+      const color = String(p.color ?? "#e9d5ff");
+      const pulse = p.pulse === true;
+      const speed = Number(p.speed ?? 1);
+      const opacity = Number(p.opacity ?? 1);
+      const pulseVal = pulse ? 0.7 + 0.3 * Math.sin((t / 1000) * Math.PI * 2 * speed) : 1;
+      const effectiveIntensity = intensity * pulseVal;
+      const hex = color.replace('#', '');
+      const r = (parseInt(hex.substring(0,2), 16) || 233) / 255;
+      const g = (parseInt(hex.substring(2,4), 16) || 213) / 255;
+      const b = (parseInt(hex.substring(4,6), 16) || 255) / 255;
+
+      const filterDef = `
+        <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+          <!-- Erode then blur to create inner glow effect -->
+          <feMorphology in="SourceAlpha" operator="erode" radius="${radius * 0.3}" result="eroded"/>
+          <feGaussianBlur in="eroded" stdDeviation="${radius}" result="innerBlur"/>
+          <!-- Color the inner glow -->
+          <feColorMatrix type="matrix" in="innerBlur"
+            values="${r * effectiveIntensity} 0 0 0 ${r * 0.2}
+                    ${g * effectiveIntensity} 0 0 0 ${g * 0.1}
+                    ${b * effectiveIntensity} 0 0 0 ${b * 0.3}
+                    0 0 0 ${opacity * 1.5} 0"
+            result="coloredInner"/>
+          <!-- Composite inner glow over source -->
+          <feComposite in="coloredInner" in2="SourceAlpha" operator="in" result="clipped"/>
+          <feMerge>
+            <feMergeNode in="SourceGraphic"/>
+            <feMergeNode in="clipped"/>
+          </feMerge>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    // Legacy SVG filter presets (previously unimplemented)
+    case "turbulence": {
+      const scale = Number(p.scale ?? 20);
+      const intensity = Number(p.intensity ?? 8);
+      const speed = Number(p.speed ?? 1);
+      const octaves = Math.round(Number(p.octaves ?? 2));
+      const seed = ((t / 1000) * speed * 3) % 30;
+      const baseFreq = (1 / scale).toFixed(4);
+      const filterDef = `
+        <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%">
+          <feTurbulence type="turbulence" baseFrequency="${baseFreq}" numOctaves="${octaves}" seed="${seed.toFixed(2)}" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="${intensity}" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    case "caFull":
+    case "rgbSplit": {
+      const amount = Number(p.amount ?? p.intensity ?? 4);
+      const angle = Number(p.angle ?? 0);
+      const rad = angle * Math.PI / 180;
+      const dx = Math.cos(rad) * amount;
+      const dy = Math.sin(rad) * amount;
+      const filterDef = `
+        <filter id="${filterId}" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feOffset in="SourceGraphic" dx="${dx.toFixed(2)}" dy="${dy.toFixed(2)}" result="shifted"/>
+          <feColorMatrix type="matrix" in="shifted"
+            values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="redCh"/>
+          <feColorMatrix type="matrix" in="SourceGraphic"
+            values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="greenCh"/>
+          <feOffset in="SourceGraphic" dx="${(-dx).toFixed(2)}" dy="${(-dy).toFixed(2)}" result="shifted2"/>
+          <feColorMatrix type="matrix" in="shifted2"
+            values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blueCh"/>
+          <feMerge>
+            <feMergeNode in="redCh"/>
+            <feMergeNode in="greenCh"/>
+            <feMergeNode in="blueCh"/>
+          </feMerge>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
     default:
       return null;
   }

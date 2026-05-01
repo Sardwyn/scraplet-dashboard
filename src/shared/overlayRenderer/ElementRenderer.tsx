@@ -3,6 +3,8 @@ import { getWidgetRenderer } from './widgetContract';
 import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS } from "../effects/parametricEffects";
 import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderMotionTrail, cleanupTrailState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
 import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
+import { globalEffectCoordinator } from "./globalEffectCoordinator";
+import { usePerformanceMode } from "./PerformanceModeContext";
 import {
     OverlayAnimation,
     OverlayAnimationPhase,
@@ -662,11 +664,206 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
                 </React.Fragment>
             );
             currentResult = `${pid}-out`;
+        } else if (e.preset === "smokeBloom") {
+            const radius = Number(params.radius ?? 60);
+            const bloomIntensity = Number(params.intensity ?? 1.8);
+            const turbAmt = Number(params.turbulence ?? 0.04);
+            const color = String(params.color ?? "#a855f7");
+            const opacity = Number(params.opacity ?? 1);
+            const hex = color.replace('#', '');
+            const r = (parseInt(hex.substring(0,2), 16) || 168) / 255;
+            const g = (parseInt(hex.substring(2,4), 16) || 85) / 255;
+            const b = (parseInt(hex.substring(4,6), 16) || 247) / 255;
+            const prevResult = currentResult;
+            const t = now2 / 1000;
+            // Temporal feedback: base noise evolves slowly, detail noise evolves faster
+            // The varying rates create the "wisps spawning wisps" feel
+            const baseSeed  = (t * speed * 0.8) % 999;   // slow base evolution
+            const detailSeed = (t * speed * 2.5) % 999;  // faster detail evolution
+            const opacitySeed = (t * speed * 0.3) % 999; // very slow opacity modulation
+            // Level 1: Base noise — low freq, stretched vertically, slow
+            const b1x = turbAmt * 0.15;
+            const b1y = turbAmt * 0.6;
+            // Level 2: Detail noise — higher freq, amplitude modulated by base
+            const b2x = turbAmt * 0.8;
+            const b2y = turbAmt * 3.0;
+            // Level 5: Opacity modulation — very slow, large scale
+            const b5x = turbAmt * 0.08;
+            const b5y = turbAmt * 0.25;
+            nodes.push(
+                <React.Fragment key={`smoke-${pi}`}>
+                    {/* LEVEL 1: Base noise — large billowing shapes, slow drift */}
+                    <feTurbulence type="fractalNoise"
+                        baseFrequency={`${b1x} ${b1y}`}
+                        numOctaves={4} seed={baseSeed}
+                        result={`${pid}-L1`}/>
+
+                    {/* LEVEL 2: Detail noise — higher freq wisps */}
+                    <feTurbulence type="fractalNoise"
+                        baseFrequency={`${b2x} ${b2y}`}
+                        numOctaves={3} seed={detailSeed}
+                        result={`${pid}-L2raw`}/>
+                    {/* L2 amplitude modulated by L1 — detail wisps only appear where base is bright */}
+                    <feBlend in={`${pid}-L2raw`} in2={`${pid}-L1`} mode="multiply" result={`${pid}-L2`}/>
+
+                    {/* LEVEL 3: Combined field — bias toward base (screen blend keeps both) */}
+                    <feBlend in={`${pid}-L1`} in2={`${pid}-L2`} mode="screen" result={`${pid}-L3`}/>
+
+                    {/* LEVEL 5: Opacity modulation — very slow large-scale breathing */}
+                    <feTurbulence type="fractalNoise"
+                        baseFrequency={`${b5x} ${b5y}`}
+                        numOctaves={2} seed={opacitySeed}
+                        result={`${pid}-L5`}/>
+
+                    {/* === BLOOM driven by L3 (combined field) ===
+                        Bloom halo masked by combined noise — bloom shape IS the smoke shape */}
+                    <feGaussianBlur in="SourceGraphic" stdDeviation={radius * 0.35} result={`${pid}-halo`}/>
+                    <feColorMatrix type="matrix" in={`${pid}-halo`}
+                        values={`${r*bloomIntensity*2.5} 0 0 0 0
+                                 ${g*bloomIntensity*2.5} 0 0 0 0
+                                 ${b*bloomIntensity*2.5} 0 0 0 0
+                                 0 0 0 ${opacity*1.8} 0`}
+                        result={`${pid}-haloC`}/>
+                    {/* L3 as bloom mask — high threshold so only bright noise lets bloom through */}
+                    <feColorMatrix in={`${pid}-L3`} type="matrix"
+                        values={`0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  3.5 0 0 0 -1.2`}
+                        result={`${pid}-bloomMask`}/>
+                    <feComposite in={`${pid}-haloC`} in2={`${pid}-bloomMask`} operator="in" result={`${pid}-noisyBloom`}/>
+
+                    {/* === DISPLACEMENT driven by L2 (detail noise) ===
+                        Scale modulated by detail — shimmer is tied to wisp detail */}
+                    <feDisplacementMap in={`${pid}-noisyBloom`} in2={`${pid}-L2`}
+                        scale={radius * 0.18}
+                        xChannelSelector="R" yChannelSelector="G"
+                        result={`${pid}-warped`}/>
+
+                    {/* === WIDE SMOKE FIELD driven by L3 ===
+                        Clipped to shape, blurred far out, opacity modulated by L5 */}
+                    <feColorMatrix in={`${pid}-L3`} type="matrix"
+                        values={`0 0 0 0 ${r}  0 0 0 0 ${g}  0 0 0 0 ${b}  5 0 0 0 -2.2`}
+                        result={`${pid}-smokeAlpha`}/>
+                    <feComposite in={`${pid}-smokeAlpha`} in2="SourceAlpha" operator="in" result={`${pid}-smokeClipped`}/>
+                    <feGaussianBlur in={`${pid}-smokeClipped`} stdDeviation={radius * 1.1} result={`${pid}-smokeBled`}/>
+                    {/* L5 modulates smoke opacity — slow breathing */}
+                    <feColorMatrix in={`${pid}-L5`} type="matrix"
+                        values={`0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  2 0 0 0 -0.3`}
+                        result={`${pid}-opacityMod`}/>
+                    <feComposite in={`${pid}-smokeBled`} in2={`${pid}-opacityMod`} operator="in" result={`${pid}-smokeModulated`}/>
+                    <feComponentTransfer in={`${pid}-smokeModulated`} result={`${pid}-smokeFinal`}>
+                        <feFuncR type="linear" slope={bloomIntensity * 1.2}/>
+                        <feFuncG type="linear" slope={bloomIntensity * 1.2}/>
+                        <feFuncB type="linear" slope={bloomIntensity * 1.2}/>
+                        <feFuncA type="linear" slope={opacity * 0.85}/>
+                    </feComponentTransfer>
+
+                    {/* Tight bright core — clean, unaffected by noise */}
+                    <feGaussianBlur in="SourceGraphic" stdDeviation={radius * 0.08} result={`${pid}-core`}/>
+                    <feColorMatrix type="matrix" in={`${pid}-core`}
+                        values={`${r*bloomIntensity*3} 0 0 0 0
+                                 ${g*bloomIntensity*3} 0 0 0 0
+                                 ${b*bloomIntensity*3} 0 0 0 0
+                                 0 0 0 ${opacity} 0`}
+                        result={`${pid}-coreC`}/>
+
+                    <feMerge result={`${pid}-merged`}>
+                        <feMergeNode in={`${pid}-smokeFinal`}/>
+                        <feMergeNode in={`${pid}-warped`}/>
+                        <feMergeNode in={`${pid}-coreC`}/>
+                        <feMergeNode in={prevResult}/>
+                    </feMerge>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-merged`;
+        } else if (e.preset === "volumetricLight") {
+            // Backlit haze — light emanates from behind the shape
+            const spread = Number(params.spread ?? 30);
+            const bloomIntensity = Number(params.intensity ?? 1.5);
+            const color = String(params.color ?? "#c084fc");
+            const pulse = params.pulse !== false;
+            const opacity = Number(params.opacity ?? 1);
+            const pulseVal = pulse ? 0.8 + 0.2 * Math.sin((now2 / 1000) * Math.PI * 2 * speed) : 1;
+            const eff = bloomIntensity * pulseVal;
+            const hex = color.replace('#', '');
+            const r = (parseInt(hex.substring(0,2), 16) || 192) / 255;
+            const g = (parseInt(hex.substring(2,4), 16) || 132) / 255;
+            const b = (parseInt(hex.substring(4,6), 16) || 252) / 255;
+            const prevResult = currentResult;
+            nodes.push(
+                <React.Fragment key={`vol-${pi}`}>
+                    {/* Wide outer haze — blur SourceGraphic (not just alpha) for visible colour */}
+                    <feGaussianBlur in="SourceGraphic" stdDeviation={spread} result={`${pid}-wideBlur`}/>
+                    <feMorphology in={`${pid}-wideBlur`} operator="dilate" radius={spread * 0.2} result={`${pid}-dilated`}/>
+                    <feGaussianBlur in={`${pid}-dilated`} stdDeviation={spread * 0.6} result={`${pid}-outerHaze`}/>
+                    {/* Colorize the haze */}
+                    <feColorMatrix type="matrix" in={`${pid}-outerHaze`}
+                        values={`${r*eff} 0 0 0 0  ${g*eff} 0 0 0 0  ${b*eff} 0 0 0 0  0 0 0 ${opacity * 0.9} 0`}
+                        result={`${pid}-coloredHaze`}/>
+                    {/* Tighter inner glow */}
+                    <feGaussianBlur in="SourceGraphic" stdDeviation={spread * 0.3} result={`${pid}-innerBlur`}/>
+                    <feColorMatrix type="matrix" in={`${pid}-innerBlur`}
+                        values={`${r*eff*1.5} 0 0 0 0  ${g*eff*1.5} 0 0 0 0  ${b*eff*1.5} 0 0 0 0  0 0 0 ${opacity} 0`}
+                        result={`${pid}-innerGlow`}/>
+                    {/* Merge: haze behind, inner glow, then previous effects, then source on top */}
+                    <feMerge result={`${pid}-merged`}>
+                        <feMergeNode in={`${pid}-coloredHaze`}/>
+                        <feMergeNode in={`${pid}-innerGlow`}/>
+                        <feMergeNode in={prevResult}/>
+                    </feMerge>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-merged`;
+        } else if (e.preset === "edgeFog") {
+            // Turbulent smoke distortion on edges
+            const scale = Number(params.scale ?? 40);
+            const displacement = Number(params.displacement ?? 12);
+            const octaves = Math.round(Number(params.octaves ?? 3));
+            const blur = Number(params.blur ?? 4);
+            const seed = ((now2 / 1000) * speed * 5) % 50;
+            const baseFreq = 1 / scale;
+            nodes.push(
+                <React.Fragment key={`fog-${pi}`}>
+                    <feTurbulence type="turbulence" baseFrequency={baseFreq} numOctaves={octaves} seed={seed} result={`${pid}-noise`}/>
+                    <feDisplacementMap in={currentResult} in2={`${pid}-noise`} scale={displacement} xChannelSelector="R" yChannelSelector="G" result={`${pid}-displaced`}/>
+                    {blur > 0
+                        ? <feGaussianBlur in={`${pid}-displaced`} stdDeviation={blur} result={`${pid}-blurred`}/>
+                        : null}
+                </React.Fragment>
+            );
+            currentResult = blur > 0 ? `${pid}-blurred` : `${pid}-displaced`;
+        } else if (e.preset === "innerGlow") {
+            // Soft luminosity from within the shape
+            const radius = Number(params.radius ?? 8);
+            const bloomIntensity = Number(params.intensity ?? 1.8);
+            const color = String(params.color ?? "#e9d5ff");
+            const pulse = params.pulse === true;
+            const opacity = Number(params.opacity ?? 1);
+            const pulseVal = pulse ? 0.7 + 0.3 * Math.sin((now2 / 1000) * Math.PI * 2 * speed) : 1;
+            const eff = bloomIntensity * pulseVal;
+            const hex = color.replace('#', '');
+            const r = (parseInt(hex.substring(0,2), 16) || 233) / 255;
+            const g = (parseInt(hex.substring(2,4), 16) || 213) / 255;
+            const b = (parseInt(hex.substring(4,6), 16) || 255) / 255;
+            const prevResult = currentResult;
+            nodes.push(
+                <React.Fragment key={`iglow-${pi}`}>
+                    <feMorphology in="SourceAlpha" operator="erode" radius={radius * 0.3} result={`${pid}-eroded`}/>
+                    <feGaussianBlur in={`${pid}-eroded`} stdDeviation={radius} result={`${pid}-innerBlur`}/>
+                    <feColorMatrix type="matrix" in={`${pid}-innerBlur`}
+                        values={`${r*eff} 0 0 0 ${r*0.2}  ${g*eff} 0 0 0 ${g*0.1}  ${b*eff} 0 0 0 ${b*0.3}  0 0 0 ${opacity*1.5} 0`}
+                        result={`${pid}-coloredInner`}/>
+                    <feComposite in={`${pid}-coloredInner`} in2="SourceAlpha" operator="in" result={`${pid}-clipped`}/>
+                    <feMerge result={`${pid}-merged`}>
+                        <feMergeNode in={prevResult}/>
+                        <feMergeNode in={`${pid}-clipped`}/>
+                    </feMerge>
+                </React.Fragment>
+            );
+            currentResult = `${pid}-merged`;
         }
     });
 
     return (
-        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%" colorInterpolationFilters="sRGB">
+        <filter id={filterId} x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
             {nodes}
         </filter>
     );
@@ -1299,10 +1496,12 @@ function ParametricEffectOverlay({
     effects: OverlayEffect[]; width: number; height: number;
     elementId: string; borderRadius?: number; shapePath?: string;
 }) {
+    const { isPerformanceMode } = usePerformanceMode();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef<number | null>(null);
     const [tick, setTick] = useState(0);
+    const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
 
     const parametric = effects.filter(e => e.type === "parametric" && e.enabled !== false) as any[];
     const canvasEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("canvas"));
@@ -1312,13 +1511,11 @@ function ParametricEffectOverlay({
     svgEffectsRef.current = svgEffects;
 
     // CSS effects: animate via React state, rendered as overlay
-    const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
     useEffect(() => {
-        if (!cssEffects.length) { setCssOverlayStyle({}); return; }
-        let raf: number;
-        const start = performance.now();
-        const loop = () => {
-            const t = performance.now() - start;
+        if (isPerformanceMode || !cssEffects.length) { setCssOverlayStyle({}); return; }
+        
+        const renderFn = () => {
+            const t = performance.now() - startTimeRef.current;
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
             for (const e of cssEffects) {
@@ -1335,20 +1532,24 @@ function ParametricEffectOverlay({
             }
             if (filterParts.length) combined.filter = filterParts.join(" ");
             setCssOverlayStyle(combined);
-            raf = requestAnimationFrame(loop);
         };
-        raf = requestAnimationFrame(loop);
-        return () => { cancelAnimationFrame(raf); setCssOverlayStyle({}); };
-    }, [cssEffects.map((e: any) => e.id ?? e.preset).join(",")]);
+        
+        const startTimeRef = { current: performance.now() };
+        const unregister = globalEffectCoordinator.register(renderFn);
+        return () => { unregister(); setCssOverlayStyle({}); };
+    }, [cssEffects.map((e: any) => e.id ?? e.preset).join(","), isPerformanceMode]);
 
     useEffect(() => {
+        if (isPerformanceMode) return;
+        
         const canvas = canvasRef.current;
         if (!canvas || !canvasEffects.length) return;
-        const startTime = performance.now();
-        const loop = () => {
-            const t = performance.now() - startTime;
+        
+        const startTimeRef = { current: performance.now() };
+        const renderFn = () => {
+            const t = performance.now() - startTimeRef.current;
             const ctx = canvas.getContext("2d");
-            if (!ctx) { rafRef.current = requestAnimationFrame(loop); return; }
+            if (!ctx) return;
 
             // Clear the full canvas BEFORE any clipping — clearRect ignores clip regions
             ctx.clearRect(0, 0, width, height);
@@ -1382,11 +1583,11 @@ function ParametricEffectOverlay({
                 else if (e.preset === "tapeNoise") renderTapeNoise(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 ctx.restore();
             }
-            rafRef.current = requestAnimationFrame(loop);
         };
-        rafRef.current = requestAnimationFrame(loop);
+        
+        const unregister = globalEffectCoordinator.register(renderFn);
         return () => {
-            if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+            unregister();
             cleanupParticleState(elementId);
             cleanupSnowState(elementId);
             cleanupRainState(elementId);
@@ -1394,15 +1595,21 @@ function ParametricEffectOverlay({
             cleanupTrailState(elementId);
             cleanupGrainState(elementId);
         };
-    }, [canvasEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId]);
+    }, [canvasEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId, isPerformanceMode]);
 
     useEffect(() => {
+        if (isPerformanceMode) return;
+        
         // Always run — svgEffects may be added after mount
-        let raf: number;
-        const loop = () => { if (svgEffectsRef.current.length) setTick(t => t + 1); raf = requestAnimationFrame(loop); };
-        raf = requestAnimationFrame(loop);
-        return () => cancelAnimationFrame(raf);
-    }, []);
+        const renderFn = () => { if (svgEffectsRef.current.length) setTick(t => t + 1); };
+        const unregister = globalEffectCoordinator.register(renderFn);
+        return () => unregister();
+    }, [isPerformanceMode]);
+
+    // Skip rendering in performance mode (after all hooks have been called)
+    if (isPerformanceMode) {
+        return null;
+    }
 
     if (!canvasEffects.length && !svgEffects.length && !cssEffects.length) return null;
     const now = performance.now();
@@ -1700,6 +1907,12 @@ export function ElementRenderer({
 
     Object.assign(baseStyle, getAnimationStyle(el.animation, effectiveAnimationPhase));
 
+    // Apply blend mode universally to all element types
+    const elBlendMode = (el as any).blendMode;
+    if (elBlendMode && elBlendMode !== "normal") {
+        (baseStyle as any).mixBlendMode = elBlendMode;
+    }
+
 
 
 
@@ -1872,7 +2085,14 @@ export function ElementRenderer({
         }
 
         const mergedData = { ...data, ...inst.propOverrides };
-        const masterElementsById = Object.fromEntries(def.elements.map((e) => [e.id, e]));
+        // Apply active variant overrides to component elements
+        const activeVariant = inst.activeVariantId
+            ? def.variants?.find(v => v.id === inst.activeVariantId)
+            : null;
+        const masterElementsById = Object.fromEntries(def.elements.map((e) => {
+            const variantOverride = activeVariant?.overrides?.[e.id];
+            return [e.id, variantOverride ? { ...e, ...variantOverride } : e];
+        }));
 
         const childIds = new Set<string>();
         def.elements.forEach((c) => {
@@ -2206,9 +2426,39 @@ export function ElementRenderer({
         const strokeColor = textEl.strokeColor;
         const content = resolveText(textEl.text, data);
 
+        // Text on path rendering
+        if (textEl.textOnPathId) {
+            const pathEl = elementsById?.[textEl.textOnPathId];
+            if (pathEl) {
+                const pathD = svgPathFromCommands(elementToOverlayPath(pathEl as any) ?? { commands: [] });
+                const pathId = `top-${el.id}`;
+                const offset = textEl.textOnPathOffset ?? 0;
+                return (
+                    <div data-element-id={el.id} style={baseStyle}>
+                        <svg width="100%" height="100%" overflow="visible" style={{ position: 'absolute', inset: 0 }}>
+                            <defs>
+                                <path id={pathId} d={pathD} />
+                            </defs>
+                            <text
+                                fontSize={fontSize}
+                                fontFamily={getFontStack(textEl.fontFamily)}
+                                fontWeight={_fontWeight}
+                                fontStyle={(textEl as any).fontStyle ?? 'normal'}
+                                fill={textEl.color ?? '#ffffff'}
+                            >
+                                <textPath href={`#${pathId}`} startOffset={`${offset}%`}>
+                                    {content}
+                                </textPath>
+                            </text>
+                        </svg>
+                    </div>
+                );
+            }
+        }
+
         const _textW = textEl.width ?? 100;
         const _textH = textEl.height ?? 40;
-        const _fontWeight = textEl.fontWeight === "bold" ? 700 : 400;
+        const _fontWeight = textEl.fontWeight === "bold" ? 700 : textEl.fontWeight ? Number(textEl.fontWeight) || 400 : 400;
         const _fontStack = getFontStack(textEl.fontFamily);
         const _textAlign = textEl.textAlign ?? "left";
         // Determine if any active effect needs a shape path (svgOverlay or svgFilter)
@@ -2234,6 +2484,7 @@ export function ElementRenderer({
                         color: textEl.color ?? "#e5e7eb",
                         fontSize,
                         fontWeight: _fontWeight,
+                        fontStyle: (textEl as any).fontStyle ?? "normal",
                         fontFamily: _fontStack,
                         lineHeight: 1.1,
                         boxSizing: "border-box",

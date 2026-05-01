@@ -1321,4 +1321,137 @@ router.get('/dashboard/api/scrapbot/status', requireAuth, async (req, res) => {
   }
 });
 
+// ===== Loyalty Points =====
+
+router.get('/scrapbot/loyalty/config', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { rows } = await scrapbotDb.query(
+      'SELECT * FROM loyalty_config WHERE channel_id = $1',
+      [channelId]
+    );
+    res.json(rows[0] || { channel_id: channelId, points_per_interval: 10, interval_minutes: 5, require_chat: true, enabled: false });
+  } catch (err) { next(err); }
+});
+
+router.put('/scrapbot/loyalty/config', requireAuth, express.json(), async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { points_per_interval, interval_minutes, require_chat, enabled } = req.body;
+    const { rows } = await scrapbotDb.query(
+      `INSERT INTO loyalty_config (channel_id, points_per_interval, interval_minutes, require_chat, enabled)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (channel_id) DO UPDATE SET
+         points_per_interval=$2, interval_minutes=$3, require_chat=$4, enabled=$5
+       RETURNING *`,
+      [channelId, Number(points_per_interval)||10, Number(interval_minutes)||5, require_chat!==false, enabled!==false]
+    );
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.get('/scrapbot/loyalty/leaderboard', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { rows } = await scrapbotDb.query(
+      'SELECT username, platform, balance, total_earned FROM loyalty_balances WHERE channel_id=$1 ORDER BY balance DESC LIMIT 50',
+      [channelId]
+    );
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
+// ===== Scheduled Messages =====
+
+router.get('/scrapbot/scheduled-messages', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { rows } = await scrapbotDb.query(
+      'SELECT * FROM scheduled_messages WHERE channel_id = $1 ORDER BY created_at ASC',
+      [channelId]
+    );
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
+router.post('/scrapbot/scheduled-messages', requireAuth, express.json(), async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { message, interval_minutes, enabled } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'message required' });
+    const { rows } = await scrapbotDb.query(
+      'INSERT INTO scheduled_messages (channel_id, message, interval_minutes, enabled) VALUES ($1,$2,$3,$4) RETURNING *',
+      [channelId, message.trim(), Number(interval_minutes) || 30, enabled !== false]
+    );
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.put('/scrapbot/scheduled-messages/:id', requireAuth, express.json(), async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { message, interval_minutes, enabled } = req.body;
+    const { rows } = await scrapbotDb.query(
+      'UPDATE scheduled_messages SET message=$1, interval_minutes=$2, enabled=$3 WHERE id=$4 AND channel_id=$5 RETURNING *',
+      [message, Number(interval_minutes) || 30, enabled !== false, req.params.id, channelId]
+    );
+    if (!rows.length) return res.sendStatus(404);
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.delete('/scrapbot/scheduled-messages/:id', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    await scrapbotDb.query('DELETE FROM scheduled_messages WHERE id=$1 AND channel_id=$2', [req.params.id, channelId]);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// ===== Custom Variables =====
+
+router.get('/scrapbot/variables', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { rows } = await scrapbotDb.query(
+      'SELECT * FROM command_variables WHERE channel_id = $1 ORDER BY name ASC',
+      [channelId]
+    );
+    res.json(rows);
+  } catch (err) { next(err); }
+});
+
+router.post('/scrapbot/variables', requireAuth, express.json(), async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { name, type, value } = req.body;
+    if (!name?.trim()) return res.status(400).json({ error: 'name required' });
+    const { rows } = await scrapbotDb.query(
+      'INSERT INTO command_variables (channel_id, name, type, value, initial_value) VALUES ($1,$2,$3,$4,$4) ON CONFLICT (channel_id, name) DO UPDATE SET value=$4 RETURNING *',
+      [channelId, name.trim().toLowerCase(), type || 'text', value || '']
+    );
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.put('/scrapbot/variables/:id/reset', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    const { rows } = await scrapbotDb.query(
+      'UPDATE command_variables SET value=initial_value WHERE id=$1 AND channel_id=$2 RETURNING *',
+      [req.params.id, channelId]
+    );
+    if (!rows.length) return res.sendStatus(404);
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
+router.delete('/scrapbot/variables/:id', requireAuth, async (req, res, next) => {
+  try {
+    const channelId = req.session.user.kick_channel_id || String(req.session.user.id);
+    await scrapbotDb.query('DELETE FROM command_variables WHERE id=$1 AND channel_id=$2', [req.params.id, channelId]);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 export default router;

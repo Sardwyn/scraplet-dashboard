@@ -17,12 +17,26 @@ const ALLOWED_MIMES = [
   "image/svg+xml",
   "video/mp4",
   "video/webm",
+  "video/quicktime",
 ];
 
-const MAX_BYTES = 50 * 1024 * 1024; // 50MB
+const MAX_BYTES = 300 * 1024 * 1024; // 300MB (support large videos)
 
 function getUserId(req) {
   return req?.session?.user?.id ?? null;
+}
+
+function pickScopeKind(req) {
+  const scope = String(req.query.scope || "overlays");
+  const kind = String(req.query.kind || "assets");
+
+  const allowedScopes = new Set(["overlays", "profiles", "widgets"]);
+  const allowedKinds = new Set(["assets", "images", "videos"]);
+
+  return {
+    scope: allowedScopes.has(scope) ? scope : "overlays",
+    kind: allowedKinds.has(kind) ? kind : "assets",
+  };
 }
 
 // POST /dashboard/api/assets/upload
@@ -30,10 +44,12 @@ router.post(
   "/assets/upload",
   requireAuth,
   (req, res, next) => {
+    const { scope, kind } = pickScopeKind(req);
+    
     const mw = makeUploadMiddleware({
       getUserId,
-      scope: "overlays",
-      kind: "assets",
+      scope,
+      kind,
       fieldName: "file",
       allowedMimes: ALLOWED_MIMES,
       maxBytes: MAX_BYTES,
@@ -52,7 +68,7 @@ router.post(
         [userId, filename, url, mimetype, bytes]
       );
 
-      return res.json({ ok: true, asset: rows[0] });
+      return res.json({ ok: true, url: rows[0].url, asset: rows[0] });
     } catch (err) {
       console.error("Asset upload DB error:", err);
       return res.status(500).json({ ok: false, error: "Failed to save asset record" });

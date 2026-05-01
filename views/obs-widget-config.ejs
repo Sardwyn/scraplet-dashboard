@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= widgetName %> — Config</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0d0f; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; font-size: 13px; padding: 16px; }
+    h1 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #f1f5f9; }
+    .field { margin-bottom: 12px; }
+    label { display: block; font-size: 11px; color: #94a3b8; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    input[type=text], input[type=number], select, textarea {
+      width: 100%; padding: 7px 10px; background: #1e1e2e; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px; color: #e2e8f0; font-size: 13px; outline: none;
+    }
+    input[type=text]:focus, input[type=number]:focus, select:focus { border-color: #6366f1; }
+    input[type=color] { width: 40px; height: 32px; padding: 2px; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: #1e1e2e; }
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    .color-row input[type=text] { flex: 1; }
+    input[type=checkbox] { accent-color: #6366f1; width: 16px; height: 16px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; }
+    button[type=submit] {
+      width: 100%; padding: 10px; background: #6366f1; border: none; border-radius: 8px;
+      color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px;
+    }
+    button[type=submit]:hover { background: #4f46e5; }
+    #saveMsg { display: none; text-align: center; color: #34d399; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1><%= widgetName %></h1>
+  <form id="configForm">
+    <% schema.forEach(function(field) { %>
+      <div class="field">
+        <label><%= field.label %></label>
+        <% const val = config[field.key] !== undefined ? config[field.key] : field.default; %>
+        <% if (field.type === 'boolean') { %>
+          <div class="checkbox-row">
+            <input type="checkbox" name="<%= field.key %>" <%= val ? 'checked' : '' %> />
+            <span><%= val ? 'Enabled' : 'Disabled' %></span>
+          </div>
+        <% } else if (field.type === 'color') { %>
+          <div class="color-row">
+            <input type="color" name="<%= field.key %>_picker" value="<%= val %>" />
+            <input type="text" name="<%= field.key %>" value="<%= val %>" />
+          </div>
+        <% } else if (field.type === 'select') { %>
+          <select name="<%= field.key %>">
+            <% (field.options || []).forEach(function(opt) { %>
+              <option value="<%= opt %>" <%= val === opt ? 'selected' : '' %>><%= opt %></option>
+            <% }); %>
+          </select>
+        <% } else if (field.type === 'number') { %>
+          <input type="number" name="<%= field.key %>" value="<%= val %>" step="1" />
+        <% } else { %>
+          <input type="text" name="<%= field.key %>" value="<%= val %>" />
+        <% } %>
+      </div>
+    <% }); %>
+    <button type="submit">Save Changes</button>
+    <div id="saveMsg">✓ Saved</div>
+  </form>
+
+  <script>
+    // Sync color pickers with text inputs
+    document.querySelectorAll('input[type=color]').forEach(picker => {
+      const name = picker.name.replace('_picker', '');
+      const text = document.querySelector(`input[name="${name}"]`);
+      if (text) {
+        picker.addEventListener('input', () => { text.value = picker.value; });
+        text.addEventListener('input', () => { picker.value = text.value; });
+      }
+    });
+
+    document.getElementById('configForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const config = {};
+      form.querySelectorAll('[name]').forEach(el => {
+        if (el.name.endsWith('_picker')) return;
+        if (el.type === 'checkbox') config[el.name] = el.checked;
+        else if (el.type === 'number') config[el.name] = Number(el.value);
+        else config[el.name] = el.value;
+      });
+      const res = await fetch(window.location.pathname + window.location.search, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config })
+      });
+      if (res.ok) {
+        const msg = document.getElementById('saveMsg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>

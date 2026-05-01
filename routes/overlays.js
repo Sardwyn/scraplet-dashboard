@@ -82,6 +82,18 @@ router.get("/overlays", requireAuth, async (req, res, next) => {
       [userId]
     );
 
+    const { rows: collections } = await db.query(
+      `SELECT 
+        c.*,
+        COUNT(oci.overlay_id) as overlay_count
+       FROM overlay_collections c
+       LEFT JOIN overlay_collection_items oci ON oci.collection_id = c.id
+       WHERE c.user_id = $1
+       GROUP BY c.id
+       ORDER BY c.updated_at DESC`,
+      [userId]
+    );
+
     res.render("layout", {
       tabView: "tabs/overlays",
     currentPage: "overlays",
@@ -89,6 +101,7 @@ router.get("/overlays", requireAuth, async (req, res, next) => {
       user: sessionUser,
       overlays: rows,
       templates,
+      collections,
     });
 
   } catch (err) {

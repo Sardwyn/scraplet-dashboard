@@ -57,7 +57,7 @@ void main() {
 }
 `;
 
-function createShader(gl: WebGLRenderingContext, type: number, source: string) {
+function createShader(gl: WebGLRenderingContext | WebGL2RenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
   if (!shader) throw new Error("Failed to create shader");
   gl.shaderSource(shader, source);
@@ -70,7 +70,7 @@ function createShader(gl: WebGLRenderingContext, type: number, source: string) {
   return shader;
 }
 
-function createProgram(gl: WebGLRenderingContext) {
+function createProgram(gl: WebGLRenderingContext | WebGL2RenderingContext) {
   const vertex = createShader(gl, gl.VERTEX_SHADER, vertexSource);
   const fragment = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
   const program = gl.createProgram();
@@ -89,93 +89,125 @@ function createProgram(gl: WebGLRenderingContext) {
 }
 
 export function createMediaKeyShader(canvas: HTMLCanvasElement, keying?: OverlayKeying): Renderer | null {
-  const gl = canvas.getContext("webgl", { premultipliedAlpha: false, alpha: true });
-  if (!gl) return null;
+  // Try WebGL2 first for better performance, fallback to WebGL1
+  let gl: WebGLRenderingContext | WebGL2RenderingContext | null = 
+    canvas.getContext("webgl2", { 
+      premultipliedAlpha: false, 
+      alpha: true,
+      antialias: false, // Disable antialiasing for better performance
+      depth: false, // We don't need depth buffer
+      stencil: false, // We don't need stencil buffer
+      powerPreference: "high-performance" // Request high-performance GPU
+    });
+  
+  if (!gl) {
+    gl = canvas.getContext("webgl", { 
+      premultipliedAlpha: false, 
+      alpha: true,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: "high-performance"
+    });
+  }
+  
+  if (!gl) {
+    console.warn("WebGL not available, falling back to CPU keying");
+    return null;
+  }
 
-  const program = createProgram(gl);
-  gl.useProgram(program);
+  try {
+    const program = createProgram(gl);
+    gl.useProgram(program);
 
-  const positionBuffer = gl.createBuffer();
-  const texCoordBuffer = gl.createBuffer();
-  const texture = gl.createTexture();
-  if (!positionBuffer || !texCoordBuffer || !texture) return null;
+    const positionBuffer = gl.createBuffer();
+    const texCoordBuffer = gl.createBuffer();
+    const texture = gl.createTexture();
+    if (!positionBuffer || !texCoordBuffer || !texture) {
+      console.warn("Failed to create WebGL buffers");
+      return null;
+    }
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1, -1,
-      1, -1,
-      -1, 1,
-      -1, 1,
-      1, -1,
-      1, 1,
-    ]),
-    gl.STATIC_DRAW
-  );
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+        -1, -1,
+        1, -1,
+        -1, 1,
+        -1, 1,
+        1, -1,
+        1, 1,
+      ]),
+      gl.STATIC_DRAW
+    );
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      0, 1,
-      1, 1,
-      0, 0,
-      0, 0,
-      1, 1,
-      1, 0,
-    ]),
-    gl.STATIC_DRAW
-  );
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+        0, 1,
+        1, 1,
+        0, 0,
+        0, 0,
+        1, 1,
+        1, 0,
+      ]),
+      gl.STATIC_DRAW
+    );
 
-  const positionLocation = gl.getAttribLocation(program, "a_position");
-  const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
-  const modeLocation = gl.getUniformLocation(program, "u_mode");
-  const thresholdLocation = gl.getUniformLocation(program, "u_threshold");
-  const softnessLocation = gl.getUniformLocation(program, "u_softness");
-  const keyColorLocation = gl.getUniformLocation(program, "u_keyColor");
-  const toleranceLocation = gl.getUniformLocation(program, "u_tolerance");
-  const spillLocation = gl.getUniformLocation(program, "u_spillReduction");
+    const positionLocation = gl.getAttribLocation(program, "a_position");
+    const texCoordLocation = gl.getAttribLocation(program, "a_texCoord");
+    const modeLocation = gl.getUniformLocation(program, "u_mode");
+    const thresholdLocation = gl.getUniformLocation(program, "u_threshold");
+    const softnessLocation = gl.getUniformLocation(program, "u_softness");
+    const keyColorLocation = gl.getUniformLocation(program, "u_keyColor");
+    const toleranceLocation = gl.getUniformLocation(program, "u_tolerance");
+    const spillLocation = gl.getUniformLocation(program, "u_spillReduction");
 
-  gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-  const cfg = normalizeKeying(keying);
-  const modeValue = cfg.mode === "alphaBlack" ? 1 : cfg.mode === "alphaWhite" ? 2 : cfg.mode === "chromaKey" ? 3 : 0;
+    const cfg = normalizeKeying(keying);
+    const modeValue = cfg.mode === "alphaBlack" ? 1 : cfg.mode === "alphaWhite" ? 2 : cfg.mode === "chromaKey" ? 3 : 0;
 
-  gl.enableVertexAttribArray(positionLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
-  gl.enableVertexAttribArray(texCoordLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(texCoordLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
 
-  gl.uniform1i(modeLocation, modeValue);
-  gl.uniform1f(thresholdLocation, cfg.threshold);
-  gl.uniform1f(softnessLocation, cfg.softness);
-  gl.uniform3f(keyColorLocation, cfg.keyColor[0], cfg.keyColor[1], cfg.keyColor[2]);
-  gl.uniform1f(toleranceLocation, cfg.tolerance);
-  gl.uniform1f(spillLocation, cfg.spillReduction);
+    gl.uniform1i(modeLocation, modeValue);
+    gl.uniform1f(thresholdLocation, cfg.threshold);
+    gl.uniform1f(softnessLocation, cfg.softness);
+    gl.uniform3f(keyColorLocation, cfg.keyColor[0], cfg.keyColor[1], cfg.keyColor[2]);
+    gl.uniform1f(toleranceLocation, cfg.tolerance);
+    gl.uniform1f(spillLocation, cfg.spillReduction);
 
-  return {
-    render(source) {
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
-    },
-    destroy() {
-      gl.deleteTexture(texture);
-      gl.deleteBuffer(positionBuffer);
-      gl.deleteBuffer(texCoordBuffer);
-      gl.deleteProgram(program);
-    },
-  };
+    return {
+      render(source) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      },
+      destroy() {
+        gl.deleteTexture(texture);
+        gl.deleteBuffer(positionBuffer);
+        gl.deleteBuffer(texCoordBuffer);
+        gl.deleteProgram(program);
+      },
+    };
+  } catch (error) {
+    console.warn("Failed to create WebGL shader, falling back to CPU:", error);
+    return null;
+  }
 }

@@ -229,13 +229,13 @@ function AssetTile({ asset, onAdd, onDelete }: AssetTileProps) {
         <img
           src={asset.url}
           alt={asset.filename}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover pointer-events-none"
           loading="lazy"
         />
       ) : isVideo(asset.mime_type) ? (
         <video
           src={asset.url}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover pointer-events-none"
           muted
           playsInline
           preload="metadata"
