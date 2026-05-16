@@ -102,6 +102,22 @@ body.np .pc-panel .text-gray-500 {
   color: var(--pc-muted) !important; 
 }
 
+/* OLED PANELS: Must be light text even if inside a light panel */
+body.np .pc-oled,
+body.np .pc-oled h1,
+body.np .pc-oled h2,
+body.np .pc-oled h3,
+body.np .pc-oled .pc-text-main {
+  color: var(--oled-accent) !important;
+}
+
+body.np .pc-oled .pc-text-muted,
+body.np .pc-oled .text-gray-400,
+body.np .pc-oled .text-gray-500 {
+  color: var(--oled-accent) !important;
+  opacity: 0.7;
+}
+
 body.np .bg-gray-100 { background-color: var(--pc-surface-2) !important; }
 body.np .bg-gray-800 { background-color: var(--pc-panel) !important; }
 body.np .bg-gray-900 { background-color: var(--pc-bg) !important; }
