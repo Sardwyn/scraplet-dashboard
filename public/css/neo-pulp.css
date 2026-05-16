@@ -1600,7 +1600,7 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
   gap: 0px; 
   position: relative;
   z-index: 10;
-  margin-bottom: -3px; /* Pull content up to join */
+  margin-bottom: -4px; /* Pull content up to join */
   padding-left: 20px;
 }
 
@@ -1633,10 +1633,31 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
 .pc-dossier-tab[data-active="true"] {
   background: var(--pc-panel) !important;
   color: var(--pc-text) !important;
-  transform: translateY(3px); /* Match container pull-up */
+  transform: translateY(4px); /* Match container pull-up for deep join */
   z-index: 15;
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   clip-path: polygon(0% 0%, 92% 0%, 100% 100%, 0% 100%); 
+}
+
+/* Dymo Labels inside Dossier Tabs */
+.pc-dossier-tab .pc-dymo {
+  transform: rotate(-0.5deg);
+  box-shadow: 1px 1px 0px rgba(0,0,0,0.3);
+  pointer-events: none; /* Let clicks pass to tab */
+  transition: all 0.2s;
+}
+
+.pc-dossier-tab[data-active="true"] .pc-dymo {
+  background: #111;
+  color: #fff !important;
+  transform: scale(1.1) rotate(0.5deg);
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.4);
+}
+
+.pc-dossier-tab:not([data-active="true"]) .pc-dymo {
+  background: #222;
+  opacity: 0.8;
+  filter: grayscale(0.5);
 }
 
 /* -- Dossier Content Wrapper -- */
