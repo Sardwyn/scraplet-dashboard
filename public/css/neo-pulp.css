@@ -1710,6 +1710,52 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
   filter: brightness(1.3);
 }
 
+/* -- Range Input (Analog Slider) -- */
+input[type="range"].pc-range {
+  -webkit-appearance: none;
+  width: 100%;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"].pc-range:focus { outline: none; }
+
+/* Track */
+input[type="range"].pc-range::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  background: var(--pc-slider-track);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+}
+
+input[type="range"].pc-range::-moz-range-track {
+  width: 100%;
+  height: 8px;
+  background: var(--pc-slider-track);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+}
+
+/* Thumb */
+input[type="range"].pc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 28px;
+  width: 14px;
+  background: var(--pc-slider-thumb);
+  border: 2px solid var(--np-border);
+  margin-top: -11px;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.4);
+  transition: transform 0.1s;
+}
+
+input[type="range"].pc-range::-moz-range-thumb {
+  height: 28px;
+  width: 14px;
+  background: var(--pc-slider-thumb);
+  border: 2px solid var(--np-border);
+}
+
 /* Range Interaction Fix */
 input[type="range"].pc-range:active::-webkit-slider-thumb {
   transform: scaleY(1.1);
