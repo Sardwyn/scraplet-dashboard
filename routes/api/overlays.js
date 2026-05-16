@@ -122,7 +122,7 @@ router.post("/overlays/:id/versions/:versionId/restore", requireAuth, async (req
       [id, `Before rollback ${ts}`, owned[0].config_json]
     );
     // Restore
-    await db.query('UPDATE overlays SET config_json = $1, updated_at = NOW() WHERE id = $2', [ver[0].config_json, id]);
+    await db.query('UPDATE overlays SET config_json = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3', [ver[0].config_json, id, userId]);
     // Enforce cap
     await db.query(
       `DELETE FROM overlay_versions WHERE overlay_id = $1 AND id NOT IN (

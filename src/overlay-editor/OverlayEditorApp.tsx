@@ -1234,6 +1234,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const penPointerSessionRef = useRef<{ start: { x: number; y: number } } | null>(null);
   const rndRefs = useRef<Record<string, any>>({});
   const resizeOriginRef = useRef<Record<string, { x: number; y: number; width: number; height: number }>>({});
+  
   const [draftRotationDegs, setDraftRotationDegs] = useState<Record<string, number>>({});
   const [draftRadiusValues, setDraftRadiusValues] = useState<Record<string, number>>({});
   const [draftElementPatches, setDraftElementPatches] = useState<Record<string, Partial<AnyEl>>>({});
@@ -1511,15 +1512,27 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     // active: removed - auto-preview based on selection
     text: "Preview Text",
     title: "Preview Title",
-    subtitle: "Preview Subtitle"
+    subtitle: "Preview Subtitle",
+    ticker: "Breaking news — ticker preview text scrolls here",
   });
+
+  // Pin lower third visible while designing — persists across selection changes
+  const [ltPinned, setLtPinned] = useState(false);
 
   // Merge preview data if active
   const renderData = useMemo(() => {
-    // Phase 1: Auto-preview if selected element is lower_third
+    // Show lower third preview when: element is selected OR pinned for design work
     const isLtSelected = primarySelectedId && config.elements.find(e => e.id === primarySelectedId)?.type === "lower_third";
+    const hasLtElement = config.elements.some(e => e.type === "lower_third");
 
-    if (!isLtSelected) return testData;
+    if (!isLtSelected && !ltPinned) return testData;
+    if (ltPinned && !hasLtElement) return testData;
+
+    // Find the lower third element to get its ticker key
+    const ltEl = isLtSelected
+      ? config.elements.find(e => e.id === primarySelectedId) as any
+      : config.elements.find(e => e.type === "lower_third") as any;
+    const tickerKey = ltEl?.ticker?.key ?? "lower_third.ticker";
 
     return {
       ...testData,
@@ -1527,8 +1540,9 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       "lower_third": ltPreview.text,
       "lower_third.title": ltPreview.title,
       "lower_third.subtitle": ltPreview.subtitle,
+      [tickerKey]: ltPreview.ticker,
     };
-  }, [testData, ltPreview, primarySelectedId, config.elements]);
+  }, [testData, ltPreview, ltPinned, primarySelectedId, config.elements]);
 
   useEffect(() => {
     if (!primarySelectedId) return;
@@ -5239,6 +5253,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     initial: Record<string, { x: number; y: number }>;
   } | null>(null);
 
+  // RAF batching for drag performance
+  const pendingDragUpdateRef = useRef<Record<string, { x: number; y: number; width: number; height: number }> | null>(null);
+  const dragRafIdRef = useRef<number | null>(null);
+
   const onGroupDragStart: RndDragCallback = (_e, d) => {
     if (!selectionBounds) return;
     const initial: Record<string, { x: number; y: number }> = {};
@@ -5312,24 +5330,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       gy = roundToGrid(gy, gridSize);
     }
 
-    // Update drafts for all selected items
-    const dx = gx - start.startX;
-    const dy = gy - start.startY;
-
-    const patches: Record<string, { x: number; y: number; width: number; height: number }> = {};
-    for (const id of selectedIds) {
-      const init = start.initial[id];
-      const el = elementsAny.find((e) => e.id === id);
-      if (init && el) {
-        patches[id] = {
-          x: Math.round(init.x + dx),
-          y: Math.round(init.y + dy),
-          width: el.width ?? 0,
-          height: el.height ?? 0,
-        };
-      }
-    }
-    setDraftRects((prev) => ({ ...prev, ...patches }));
+    // Note: Removed setDraftRects call to eliminate React re-renders during drag
+    // Elements will snap to final position on drag stop (no intermediate updates)
   };
 
   const onGroupDragStop: RndDragCallback = (_e, d) => {
@@ -5375,6 +5377,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const dx = targetX - start.startX;
     const dy = targetY - start.startY;
 
+    // Update config with final positions (single React re-render)
     setConfig((prev) => {
       const sel = new Set(selectedIds);
       const next = prev.elements.map((raw) => {
@@ -5822,6 +5825,33 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onEdit={enterIsolationMode}
                 onDelete={deleteComponent}
                 onCreateVariant={createVariantFromComponent}
+                onInsertLowerThird={(tmpl) => {
+                  const id = genId("lt");
+                  const tJson = tmpl.template_json ?? {};
+                  const newEl = {
+                    id,
+                    type: "lower_third" as const,
+                    name: tmpl.name,
+                    x: 0,
+                    y: tJson.height ? 1080 - tJson.height : 880,
+                    width: tJson.width ?? 1920,
+                    height: tJson.height ?? 150,
+                    visible: true,
+                    locked: false,
+                    opacity: 1,
+                    layout: tJson.layout,
+                    style: tJson.style,
+                    animation: tJson.animation,
+                    defaultDurationMs: tJson.defaultDurationMs,
+                    alwaysOn: tJson.alwaysOn,
+                    bind: tJson.bind,
+                    contentLines: tJson.contentLines,
+                    ticker: tJson.ticker,
+                    automations: tJson.automations,
+                  };
+                  setConfig(prev => ({ ...prev, elements: [...prev.elements, newEl as any] }));
+                  setSelectedIds([id]);
+                }}
                 onInsert={(comp) => {
                   const instId = genId("instance");
 
@@ -6905,6 +6935,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         {primarySelectedEl ? (
           <InspectorPanel
             element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
+            elements={elementsAny}
             onChange={(u) => updateElement(selectedIds[0], u)}
             onRename={(n) => updateElement(selectedIds[0], { name: n })}
             onPickImage={() => {
@@ -6943,6 +6974,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }}
             ltPreview={ltPreview}
             onLtPreviewChange={setLtPreview}
+            ltPinned={ltPinned}
+            onLtPinnedChange={setLtPinned}
             onTestLowerThird={async (action) => {
               try {
                 const body = action === "show" ? {
@@ -7149,13 +7182,16 @@ function fitToObjectFit(fit?: OverlayMediaFit) {
 
 interface InspectorProps {
   element: AnyEl;
+  elements: AnyEl[];  // Added for Text on Path feature
   onChange: (patch: Partial<AnyEl>) => void;
   onRename: (name: string) => void;
   onPickImage: () => void;
   onPickPatternImage: () => void;
   onPickVideo: () => void;
-  ltPreview: { text: string; title: string; subtitle: string };
-  onLtPreviewChange: (v: { text: string; title: string; subtitle: string }) => void;
+  ltPreview: { text: string; title: string; subtitle: string; ticker?: string };
+  onLtPreviewChange: (v: { text: string; title: string; subtitle: string; ticker?: string }) => void;
+  ltPinned?: boolean;
+  onLtPinnedChange?: (v: boolean) => void;
   onTestLowerThird: (action: "show" | "hide") => void;
   overlayComponents: OverlayComponentDef[];
   isComponentMaster?: boolean;
@@ -9507,8 +9543,9 @@ function AngleDial({
 }
 
 function InspectorPanel({
-  element, onChange, onRename, onPickImage, onPickPatternImage, onPickVideo,
+  element, elements, onChange, onRename, onPickImage, onPickPatternImage, onPickVideo,
   ltPreview, onLtPreviewChange, onTestLowerThird,
+  ltPinned, onLtPinnedChange,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
   onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
@@ -10352,6 +10389,23 @@ function InspectorPanel({
           {/* LOWER THIRD */}
           {element.type === "lower_third" && (
             <div className="space-y-4">
+
+              {/* Name — used for !lowerthird @name and library reference */}
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-12`}>Name</label>
+                <input
+                  className={`flex-1 ${fieldClass}`}
+                  value={(element as any).name ?? ""}
+                  placeholder="e.g. interview, raid, sponsor"
+                  onChange={(e) => onChange({ name: e.target.value } as any)}
+                />
+              </div>
+              <div className="text-[10px] text-slate-500 -mt-2">
+                Use this name with <code className="text-slate-400">!lowerthird @name</code> or <code className="text-slate-400">/lower-third template:name</code>
+              </div>
+
+              <div className="my-1 h-px bg-[rgba(255,255,255,0.06)]" />
+
               <div className="space-y-2">
                 <label className={uiClasses.label}>Layout</label>
                 <div className="flex items-center gap-2">
@@ -10377,6 +10431,200 @@ function InspectorPanel({
                     />
                   </div>
                 )}
+
+                {/* Extra content lines — stacked mode only */}
+                {((element as any).layout?.mode ?? "stacked") === "stacked" && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Content Lines</label>
+                      <button
+                        type="button"
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300"
+                        onClick={() => {
+                          const lines = (element as any).contentLines ?? [];
+                          const idx = lines.length + 3; // 1=title, 2=subtitle, 3+=extra
+                          onChange({ contentLines: [...lines, {
+                            key: `lower_third.line${idx}`,
+                            label: `Line ${idx}`,
+                            sizePx: 20,
+                            color: (element as any).style?.subtitleColor ?? "rgba(255,255,255,0.7)",
+                            weight: "normal",
+                            italic: false,
+                            opacity: 1,
+                          }] } as any);
+                        }}
+                      >
+                        + Add Line
+                      </button>
+                    </div>
+
+                    {/* Built-in lines (title + subtitle) — shown as reference */}
+                    <div className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-white/60 flex-none" />
+                        <span className="text-[11px] text-slate-400 flex-1">Line 1 — Title</span>
+                        <div className="flex gap-1 items-center">
+                          <NumberField label="" value={(element as any).style?.titleSizePx ?? 40} onChange={(v) => onChange({ style: { ...(element as any).style, titleSizePx: v } } as any)} noLabel className="w-14" />
+                          <ColorSwatch value={(element as any).style?.titleColor} onChange={(v) => onChange({ style: { ...(element as any).style, titleColor: v } } as any)} />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-white/40 flex-none" />
+                        <span className="text-[11px] text-slate-400 flex-1">Line 2 — Subtitle</span>
+                        <div className="flex gap-1 items-center">
+                          <NumberField label="" value={(element as any).style?.subtitleSizePx ?? 26} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleSizePx: v } } as any)} noLabel className="w-14" />
+                          <ColorSwatch value={(element as any).style?.subtitleColor} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleColor: v } } as any)} />
+                        </div>
+                      </div>
+
+                      {/* Extra lines */}
+                      {((element as any).contentLines ?? []).map((line: any, i: number) => (
+                        <div key={i} className="space-y-1 pt-1 border-t border-[rgba(255,255,255,0.04)]">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-white/20 flex-none" />
+                            <input
+                              className={`flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`}
+                              value={line.label ?? `Line ${i + 3}`}
+                              onChange={(e) => {
+                                const lines = [...((element as any).contentLines ?? [])];
+                                lines[i] = { ...lines[i], label: e.target.value };
+                                onChange({ contentLines: lines } as any);
+                              }}
+                              placeholder={`Line ${i + 3}`}
+                            />
+                            <div className="flex gap-1 items-center">
+                              <NumberField label="" value={line.sizePx ?? 20} onChange={(v) => {
+                                const lines = [...((element as any).contentLines ?? [])];
+                                lines[i] = { ...lines[i], sizePx: v };
+                                onChange({ contentLines: lines } as any);
+                              }} noLabel className="w-14" />
+                              <ColorSwatch value={line.color} onChange={(v) => {
+                                const lines = [...((element as any).contentLines ?? [])];
+                                lines[i] = { ...lines[i], color: v };
+                                onChange({ contentLines: lines } as any);
+                              }} />
+                              <button
+                                type="button"
+                                className="text-[11px] text-red-400/60 hover:text-red-400 px-1"
+                                onClick={() => {
+                                  const lines = ((element as any).contentLines ?? []).filter((_: any, j: number) => j !== i);
+                                  onChange({ contentLines: lines } as any);
+                                }}
+                              >✕</button>
+                            </div>
+                          </div>
+                          <div className="ml-4 flex gap-2">
+                            <select
+                              className={`flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] px-1 text-[11px] text-slate-300`}
+                              value={line.weight ?? "normal"}
+                              onChange={(e) => {
+                                const lines = [...((element as any).contentLines ?? [])];
+                                lines[i] = { ...lines[i], weight: e.target.value };
+                                onChange({ contentLines: lines } as any);
+                              }}
+                            >
+                              <option value="light">Light</option>
+                              <option value="normal">Normal</option>
+                              <option value="bold">Bold</option>
+                            </select>
+                            <label className="flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={line.italic ?? false}
+                                onChange={(e) => {
+                                  const lines = [...((element as any).contentLines ?? [])];
+                                  lines[i] = { ...lines[i], italic: e.target.checked };
+                                  onChange({ contentLines: lines } as any);
+                                }}
+                                className="accent-indigo-500"
+                              />
+                              Italic
+                            </label>
+                            <div className="flex items-center gap-1">
+                              <span className="text-[11px] text-slate-500">Bind key</span>
+                              <input
+                                className={`w-28 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[10px] text-slate-400 font-mono`}
+                                value={line.key}
+                                onChange={(e) => {
+                                  const lines = [...((element as any).contentLines ?? [])];
+                                  lines[i] = { ...lines[i], key: e.target.value };
+                                  onChange({ contentLines: lines } as any);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Ticker strip */}
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Ticker Strip</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const t = (element as any).ticker;
+                            onChange({ ticker: { ...(t ?? {}), enabled: !(t?.enabled ?? false), key: t?.key ?? "lower_third.ticker", speed: t?.speed ?? 80 } } as any);
+                          }}
+                          className={`relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${(element as any).ticker?.enabled ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${(element as any).ticker?.enabled ? "translate-x-3" : "translate-x-0"}`} />
+                        </button>
+                      </div>
+                      {(element as any).ticker?.enabled && (
+                        <div className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <label className={`${fieldLabelClass} w-12`}>Preview</label>
+                            <input
+                              className={`flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`}
+                              placeholder="Preview text (editor only)"
+                              value={ltPreview.ticker ?? ""}
+                              onChange={(e) => onLtPreviewChange({ ...ltPreview, ticker: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className={`${fieldLabelClass} w-12`}>Text key</label>
+                            <input
+                              className={`flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300 font-mono`}
+                              value={(element as any).ticker?.key ?? "lower_third.ticker"}
+                              onChange={(e) => onChange({ ticker: { ...(element as any).ticker, key: e.target.value } } as any)}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <label className={`${fieldLabelClass} w-12`}>Default</label>
+                            <input
+                              className={`flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`}
+                              value={(element as any).ticker?.tickerText ?? ""}
+                              onChange={(e) => onChange({ ticker: { ...(element as any).ticker, tickerText: e.target.value } } as any)}
+                              placeholder="Default ticker text (used by bot commands)"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <label className={`${fieldLabelClass} block mb-1`}>Speed (px/s)</label>
+                              <NumberField label="" value={(element as any).ticker?.speed ?? 80} onChange={(v) => onChange({ ticker: { ...(element as any).ticker, speed: v } } as any)} noLabel className="w-full" />
+                            </div>
+                            <div className="flex-1">
+                              <label className={`${fieldLabelClass} block mb-1`}>Height (px)</label>
+                              <NumberField label="" value={(element as any).ticker?.heightPx ?? 32} onChange={(v) => onChange({ ticker: { ...(element as any).ticker, heightPx: v } } as any)} noLabel className="w-full" />
+                            </div>
+                            <div className="flex-1">
+                              <label className={`${fieldLabelClass} block mb-1`}>Size (px)</label>
+                              <NumberField label="" value={(element as any).ticker?.sizePx ?? 18} onChange={(v) => onChange({ ticker: { ...(element as any).ticker, sizePx: v } } as any)} noLabel className="w-full" />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 items-center">
+                            <label className={`${fieldLabelClass} w-12`}>Bg</label>
+                            <ColorSwatch value={(element as any).ticker?.bgColor ?? (element as any).style?.accentColor} onChange={(v) => onChange({ ticker: { ...(element as any).ticker, bgColor: v } } as any)} />
+                            <label className={`${fieldLabelClass} w-12`}>Text</label>
+                            <ColorSwatch value={(element as any).ticker?.color ?? "#ffffff"} onChange={(v) => onChange({ ticker: { ...(element as any).ticker, color: v } } as any)} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -10396,30 +10644,81 @@ function InspectorPanel({
                     <option value="accent-bar">Accent Bar</option>
                   </select>
                 </div>
+                {/* Font family */}
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12`}>Font</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).style?.fontFamily ?? ""}
+                    onChange={(e) => onChange({ style: { ...(element as any).style, fontFamily: e.target.value || undefined } } as any)}
+                  >
+                    <option value="">Default (Inter)</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Roboto Condensed">Roboto Condensed</option>
+                    <option value="Oswald">Oswald</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="Bebas Neue">Bebas Neue</option>
+                    <option value="Anton">Anton</option>
+                    <option value="Barlow">Barlow</option>
+                    <option value="Barlow Condensed">Barlow Condensed</option>
+                    <option value="Source Sans Pro">Source Sans Pro</option>
+                    <option value="Noto Sans">Noto Sans</option>
+                    <option value="Open Sans">Open Sans</option>
+                    <option value="Lato">Lato</option>
+                    <option value="Raleway">Raleway</option>
+                    <option value="Exo 2">Exo 2</option>
+                    <option value="Orbitron">Orbitron</option>
+                  </select>
+                </div>
+                {/* Title weight */}
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12`}>Weight</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).style?.titleWeight ?? "bold"}
+                    onChange={(e) => onChange({ style: { ...(element as any).style, titleWeight: e.target.value } } as any)}
+                  >
+                    <option value="normal">Normal</option>
+                    <option value="bold">Bold</option>
+                  </select>
+                </div>
+                {/* Background */}
                 <div className="flex items-center gap-2">
                   <label className={`${fieldLabelClass} w-12`}>Bg</label>
-                  <div className="flex-1 flex gap-2">
+                  <div className="flex-1 flex gap-2 items-center">
                     <ColorSwatch value={(element as any).style?.bgColor} onChange={(v) => onChange({ style: { ...(element as any).style, bgColor: v } } as any)} />
                     <ColorSwatch value={(element as any).style?.accentColor} onChange={(v) => onChange({ style: { ...(element as any).style, accentColor: v } } as any)} />
+                    <input
+                      type="range" min="0" max="1" step="0.05"
+                      title={`Opacity: ${Math.round(((element as any).style?.bgOpacity ?? 0.75) * 100)}%`}
+                      className="flex-1 h-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                      value={(element as any).style?.bgOpacity ?? 0.75}
+                      onChange={(e) => onChange({ style: { ...(element as any).style, bgOpacity: parseFloat(e.target.value) } } as any)}
+                    />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className={`${fieldLabelClass} w-12`}>Title</label>
-                  <div className="flex-1 flex gap-2">
-                    <ColorSwatch value={(element as any).style?.titleColor} onChange={(v) => onChange({ style: { ...(element as any).style, titleColor: v } } as any)} />
-                  </div>
+                  <ColorSwatch value={(element as any).style?.titleColor} onChange={(v) => onChange({ style: { ...(element as any).style, titleColor: v } } as any)} />
                 </div>
                 <div className="flex items-center gap-2">
                   <label className={`${fieldLabelClass} w-12`}>Sub</label>
-                  <div className="flex-1 flex gap-2">
-                    <ColorSwatch value={(element as any).style?.subtitleColor} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleColor: v } } as any)} />
-                  </div>
+                  <ColorSwatch value={(element as any).style?.subtitleColor} onChange={(v) => onChange({ style: { ...(element as any).style, subtitleColor: v } } as any)} />
                 </div>
                 <div className="flex items-center gap-2">
                   <label className={`${fieldLabelClass} w-12`}>Pad/Rad</label>
                   <NumberField label="" value={(element as any).style?.paddingPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, paddingPx: v } } as any)} noLabel className="flex-1" />
                   <NumberField label="" value={(element as any).style?.cornerRadiusPx ?? 0} onChange={(v) => onChange({ style: { ...(element as any).style, cornerRadiusPx: v } } as any)} noLabel className="flex-1" />
                 </div>
+                {/* Split mode per-side sizes */}
+                {(element as any).layout?.mode === "split" && (
+                  <div className="flex items-center gap-2">
+                    <label className={`${fieldLabelClass} w-12`}>L/R size</label>
+                    <NumberField label="" value={(element as any).layout?.leftSizePx ?? (element as any).style?.titleSizePx ?? 40} onChange={(v) => onChange({ layout: { ...(element as any).layout, leftSizePx: v } } as any)} noLabel className="flex-1" />
+                    <NumberField label="" value={(element as any).layout?.rightSizePx ?? (element as any).style?.subtitleSizePx ?? 26} onChange={(v) => onChange({ layout: { ...(element as any).layout, rightSizePx: v } } as any)} noLabel className="flex-1" />
+                  </div>
+                )}
               </div>
 
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
@@ -10430,7 +10729,20 @@ function InspectorPanel({
                   Auto-preview active when selected.
                 </div>
 
-                {/* (Save Template button removed) */}
+                {/* Pin visible toggle — keeps lower third showing while designing with other elements */}
+                <div className="flex items-center justify-between mb-2 p-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]">
+                  <div>
+                    <div className="text-[12px] leading-[1.4] text-slate-200 font-medium">Lock visible</div>
+                    <div className="text-[10px] leading-[1.4] text-slate-500 mt-0.5">Stay visible while adding primitives</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onLtPinnedChange?.(!ltPinned)}
+                    className={`relative h-5 w-9 flex-none rounded-full transition-colors overflow-hidden ${ltPinned ? "bg-amber-500" : "bg-[rgba(255,255,255,0.1)]"}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ltPinned ? "translate-x-4" : "translate-x-0"}`} />
+                  </button>
+                </div>
 
                 <div className="flex gap-2 mb-2">
                   <button
@@ -10446,6 +10758,9 @@ function InspectorPanel({
                     Test Hide
                   </button>
                 </div>
+
+                {/* Save to Library */}
+                <SaveLowerThirdButton element={element as any} />
 
                 {(element as any).layout?.mode === "single" ? (
                   <div className="flex items-center gap-2">
@@ -10493,6 +10808,7 @@ function InspectorPanel({
                     <option value="slideUp">Slide Up</option>
                     <option value="slideRight">Slide Right</option>
                     <option value="scale">Scale</option>
+                    <option value="none">None</option>
                   </select>
                   <select
                     className={`flex-1 ${fieldClass}`}
@@ -10503,17 +10819,66 @@ function InspectorPanel({
                     <option value="slideDown">Slide Down</option>
                     <option value="slideLeft">Slide Left</option>
                     <option value="scale">Scale</option>
+                    <option value="none">None</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className={`${fieldLabelClass} w-12`}>Dur (ms)</label>
-                  <NumberField label="" value={(element as any).animation?.durationMs ?? 400} onChange={(v) => onChange({ animation: { ...(element as any).animation, durationMs: v } } as any)} noLabel className="flex-1" />
+                  <NumberField label="" value={(element as any).animation?.durationMs ?? 450} onChange={(v) => onChange({ animation: { ...(element as any).animation, durationMs: v } } as any)} noLabel className="flex-1" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12`}>Easing</label>
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).animation?.easing ?? "ease-out"}
+                    onChange={(e) => onChange({ animation: { ...(element as any).animation, easing: e.target.value } } as any)}
+                  >
+                    <option value="ease-out">Ease Out (default)</option>
+                    <option value="ease-in">Ease In</option>
+                    <option value="ease-in-out">Ease In-Out</option>
+                    <option value="linear">Linear</option>
+                    <option value="cubic-bezier(0.2, 0.9, 0.2, 1)">Broadcast (snappy)</option>
+                    <option value="cubic-bezier(0.34, 1.56, 0.64, 1)">Spring (overshoot)</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12`}>Show for</label>
+                  <NumberField label="" value={(element as any).defaultDurationMs ?? 8000} onChange={(v) => onChange({ defaultDurationMs: v } as any)} noLabel className="flex-1" />
+                  <span className="text-[11px] text-slate-500">ms</span>
+                </div>
+                {/* Always-on mode */}
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <div className="text-[12px] leading-[1.4] text-slate-300">Always visible</div>
+                    <div className="text-[10px] text-slate-500">Bypass show/hide — stays on permanently</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ alwaysOn: !((element as any).alwaysOn ?? false) } as any)}
+                    className={`relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${(element as any).alwaysOn ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${(element as any).alwaysOn ? "translate-x-3" : "translate-x-0"}`} />
+                  </button>
                 </div>
               </div>
+
+              {/* Ticker separator config */}
+              {(element as any).ticker?.enabled && (
+                <div className="flex items-center gap-2">
+                  <label className={`${fieldLabelClass} w-12`}>Separator</label>
+                  <input
+                    className={`flex-1 ${fieldClass}`}
+                    value={(element as any).ticker?.separator ?? "   •   "}
+                    onChange={(e) => onChange({ ticker: { ...(element as any).ticker, separator: e.target.value } } as any)}
+                    placeholder="   •   "
+                  />
+                </div>
+              )}
+
+              <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
+
             </div>
           )}
-
-          {/* BOX */}
           {element.type === "box" && (
             <div className="space-y-3">
               <FillStackControls element={element} onChange={onChange} onPickPatternImage={onPickPatternImage} />
@@ -11003,7 +11368,7 @@ function InspectorPanel({
 
               {/* Text on Path */}
               {(() => {
-                const pathEls = config.elements.filter(e => e.type === 'path' || e.type === 'shape');
+                const pathEls = elements.filter(e => e.type === 'path' || e.type === 'shape');
                 return (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -11604,6 +11969,13 @@ function InspectorPanel({
         </AccordionSection>
       )}
 
+      {/* Automations Section — lower third only */}
+      {element.type === "lower_third" && (
+        <AccordionSection title="Automations" defaultOpen={false}>
+          <LowerThirdAutomationsPanel element={element as any} onChange={onChange as any} />
+        </AccordionSection>
+      )}
+
       {/* Effects Section (Collapsed by default) */}
       {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
@@ -11686,6 +12058,161 @@ function resolveRelativeNumberInput(currentValue: number, raw: string) {
 
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : currentValue;
+}
+
+// ─── Lower Third Automations Panel ───────────────────────────────────────────
+
+const LT_TRIGGERS: Array<{ value: string; label: string; defaultTitle: string; defaultSubtitle: string }> = [
+  { value: "platform.kick.raid",         label: "Kick Raid",         defaultTitle: "{actor} is raiding!",    defaultSubtitle: "{viewers} viewers incoming" },
+  { value: "platform.kick.follow",       label: "Kick Follow",       defaultTitle: "{actor} just followed!", defaultSubtitle: "" },
+  { value: "platform.kick.subscription", label: "Kick Sub",          defaultTitle: "{actor} subscribed!",    defaultSubtitle: "" },
+  { value: "platform.twitch.raid",       label: "Twitch Raid",       defaultTitle: "{actor} is raiding!",    defaultSubtitle: "{viewers} viewers incoming" },
+  { value: "platform.twitch.follow",     label: "Twitch Follow",     defaultTitle: "{actor} just followed!", defaultSubtitle: "" },
+  { value: "platform.twitch.subscription", label: "Twitch Sub",      defaultTitle: "{actor} subscribed!",    defaultSubtitle: "" },
+  { value: "platform.youtube.follow",    label: "YouTube Subscribe", defaultTitle: "{actor} subscribed!",    defaultSubtitle: "" },
+];
+
+function LowerThirdAutomationsPanel({
+  element,
+  onChange,
+}: {
+  element: any;
+  onChange: (patch: any) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const automations: any[] = element.automations ?? [];
+
+  const getAuto = (trigger: string) =>
+    automations.find((a) => a.trigger === trigger);
+
+  const setAuto = (trigger: string, patch: Partial<any>) => {
+    const existing = getAuto(trigger);
+    const tpl = LT_TRIGGERS.find((t) => t.value === trigger)!;
+    const updated = existing
+      ? { ...existing, ...patch }
+      : {
+          trigger,
+          enabled: false,
+          titleTemplate: tpl.defaultTitle,
+          subtitleTemplate: tpl.defaultSubtitle,
+          durationMs: element.defaultDurationMs ?? 8000,
+          cooldownMs: 30000,
+          ...patch,
+        };
+    const next = [
+      ...automations.filter((a) => a.trigger !== trigger),
+      updated,
+    ];
+    onChange({ automations: next });
+  };
+
+  const fieldClass = "h-7 w-full rounded-md border border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] px-2 text-[12px] leading-[1.4] text-slate-200 outline-none focus:border-[rgba(255,255,255,0.2)]";
+  const labelClass = "text-[11px] leading-[1.4] text-slate-500";
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        className="flex w-full items-center justify-between"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          Automations
+        </span>
+        <span className="text-[11px] text-slate-600">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div className="space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3">
+          <p className="text-[11px] leading-[1.5] text-slate-500">
+            Automatically show this lower third when a platform event fires.
+            Use <code className="text-slate-400">{"{actor}"}</code>,{" "}
+            <code className="text-slate-400">{"{viewers}"}</code>,{" "}
+            <code className="text-slate-400">{"{amount}"}</code> in templates.
+          </p>
+
+          {LT_TRIGGERS.map((tpl) => {
+            const auto = getAuto(tpl.value);
+            const enabled = auto?.enabled ?? false;
+
+            return (
+              <div key={tpl.value} className="space-y-2">
+                {/* Toggle row */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAuto(tpl.value, { enabled: !enabled })}
+                    className={`relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${
+                      enabled ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
+                        enabled ? "translate-x-3" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span className={`flex-1 text-[12px] leading-[1.4] ${enabled ? "text-slate-200" : "text-slate-500"}`}>
+                    {tpl.label}
+                  </span>
+                </div>
+
+                {/* Expanded config when enabled */}
+                {enabled && (
+                  <div className="ml-9 space-y-2">
+                    <div>
+                      <label className={labelClass}>Title</label>
+                      <input
+                        className={fieldClass}
+                        value={auto?.titleTemplate ?? tpl.defaultTitle}
+                        onChange={(e) => setAuto(tpl.value, { titleTemplate: e.target.value })}
+                        placeholder={tpl.defaultTitle}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Subtitle</label>
+                      <input
+                        className={fieldClass}
+                        value={auto?.subtitleTemplate ?? tpl.defaultSubtitle}
+                        onChange={(e) => setAuto(tpl.value, { subtitleTemplate: e.target.value })}
+                        placeholder={tpl.defaultSubtitle || "Optional subtitle"}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className={labelClass}>Duration (ms)</label>
+                        <input
+                          type="number"
+                          className={fieldClass}
+                          value={auto?.durationMs ?? element.defaultDurationMs ?? 8000}
+                          onChange={(e) => setAuto(tpl.value, { durationMs: Number(e.target.value) })}
+                          min={1000}
+                          step={500}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className={labelClass}>Cooldown (ms)</label>
+                        <input
+                          type="number"
+                          className={fieldClass}
+                          value={auto?.cooldownMs ?? 30000}
+                          onChange={(e) => setAuto(tpl.value, { cooldownMs: Number(e.target.value) })}
+                          min={0}
+                          step={1000}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="h-px bg-[rgba(255,255,255,0.04)]" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function NumberField({ label, value, onChange, className, noLabel }: { label: string; value: number; onChange: (v: number) => void, className?: string; noLabel?: boolean }) {
@@ -12523,74 +13050,188 @@ function LayersPanel({
   );
 }
 
-function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreateVariant }: {
+// ── Save Lower Third to Library button ───────────────────────────────────────
+function SaveLowerThirdButton({ element }: { element: any }) {
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  const save = async () => {
+    const name = element.name?.trim();
+    if (!name) {
+      alert('Give this lower third a name first (at the top of the inspector).');
+      return;
+    }
+
+    setStatus('saving');
+    try {
+      const templateJson = {
+        width: element.width,
+        height: element.height,
+        layout: element.layout,
+        style: element.style,
+        animation: element.animation,
+        defaultDurationMs: element.defaultDurationMs,
+        alwaysOn: element.alwaysOn,
+        bind: element.bind,
+        contentLines: element.contentLines,
+        ticker: element.ticker,
+        automations: element.automations,
+      };
+
+      // Remove undefined keys
+      Object.keys(templateJson).forEach(k => (templateJson as any)[k] === undefined && delete (templateJson as any)[k]);
+
+      const res = await fetch('/dashboard/api/lower-third-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, template_json: templateJson }),
+      });
+
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Save failed');
+
+      setStatus('saved');
+      setTimeout(() => setStatus('idle'), 2000);
+    } catch (err: any) {
+      console.error('[SaveLowerThird]', err);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 2000);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={save}
+      disabled={status === 'saving'}
+      className={`h-7 w-full rounded-md border text-[12px] leading-[1.4] transition-colors ${
+        status === 'saved'
+          ? 'border-emerald-700 bg-emerald-900/30 text-emerald-300'
+          : status === 'error'
+          ? 'border-red-700 bg-red-900/20 text-red-300'
+          : 'border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] text-slate-300 hover:border-indigo-500/50 hover:text-slate-100'
+      }`}
+    >
+      {status === 'saving' ? 'Saving…' : status === 'saved' ? '✓ Saved to Library' : status === 'error' ? '✗ Save failed' : '↑ Save to Library'}
+    </button>
+  );
+}
+
+function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreateVariant, onInsertLowerThird }: {
   components: OverlayComponentDef[],
   onInsert: (c: OverlayComponentDef) => void,
   onEdit: (id: string) => void,
   onDelete: (id: string) => void,
-  onCreateVariant: (id: string) => void
+  onCreateVariant: (id: string) => void,
+  onInsertLowerThird?: (template: any) => void,
 }) {
-  if (!components || components.length === 0) {
-    return (
-      <div className="p-4 text-center">
-        <div className="mb-2 text-[14px] leading-[1.4] text-slate-300">No Components Found</div>
-        <div className="text-[12px] leading-[1.4] text-slate-600">Select elements on the canvas and click "Create Component" to build reusable blocks.</div>
-      </div>
-    );
-  }
+  const [ltTemplates, setLtTemplates] = useState<any[]>([]);
+  const [ltLoaded, setLtLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch('/dashboard/api/lower-third-templates', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => { if (d.ok) setLtTemplates(d.templates ?? []); })
+      .catch(() => {})
+      .finally(() => setLtLoaded(true));
+  }, []);
 
   return (
-    <div className="flex flex-col gap-2 p-2">
-      {components.map((comp: OverlayComponentDef) => {
-        const isBuiltin = comp.id.startsWith('preset_');
+    <div className="flex flex-col gap-3 p-2">
 
-        return (
-          <div
-            key={comp.id}
-            className="group relative flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] p-3 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20] cursor-pointer"
-            onClick={() => onInsert(comp)}
-          >
-            <div className="flex flex-col truncate">
-              <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
-              <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">
-                {comp.elements?.length || 0} nodes
-                {comp.variantName ? ` • ${comp.variantName}` : ""}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
-              <button
-                className={uiClasses.iconButton}
-                onClick={(e) => { e.stopPropagation(); onCreateVariant(comp.id); }}
-                title="Create Variant"
+      {/* Lower Thirds section */}
+      <div>
+        <div className="flex items-center justify-between px-1 mb-1.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">Lower Thirds</span>
+          <a href="/dashboard/overlays" target="_blank" className="text-[10px] text-indigo-400 hover:text-indigo-300">Manage →</a>
+        </div>
+        {!ltLoaded ? (
+          <div className="text-[11px] text-slate-600 px-1">Loading…</div>
+        ) : ltTemplates.length === 0 ? (
+          <div className="text-[11px] text-slate-600 px-1">No saved lower thirds yet. Name and save one from the inspector.</div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {ltTemplates.map((tmpl: any) => (
+              <div
+                key={tmpl.public_id}
+                className="group flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] px-3 py-2 cursor-pointer hover:border-indigo-500/50 hover:bg-[#1d1d20] transition-colors"
+                onClick={() => onInsertLowerThird?.(tmpl)}
+                title={`Insert "${tmpl.name}" lower third`}
               >
-                <svg {...TOOL_ICON_PROPS}><path d="M5 5h6v6H5z" /><path d="M13 13h6v6h-6z" /><path d="M8 8l8 8" /></svg>
-              </button>
-              <button
-                className={uiClasses.iconButton}
-                onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
-                title="Edit Master"
-              >
-                <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              </button>
-              {!isBuiltin && (
-                <button
-                  className={`${uiClasses.iconButton} hover:text-red-400`}
-                  onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
-                  title="Delete"
-                >
-                  <svg {...TOOL_ICON_PROPS}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                </button>
-              )}
-              <button
-                className={`${uiClasses.iconButton} hover:bg-indigo-500/15 hover:text-indigo-100`}
-                title="Insert Instance"
-              >
-                <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-              </button>
-            </div>
+                <div className="flex flex-col truncate">
+                  <span className="text-[12px] font-semibold text-slate-200 truncate">{tmpl.name}</span>
+                  <span className="text-[10px] text-slate-500 font-mono">@{tmpl.name.toLowerCase().replace(/\s+/g, '-')}</span>
+                </div>
+                <span className="text-[10px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex-none ml-2">+ Insert</span>
+              </div>
+            ))}
           </div>
-        );
-      })}
+        )}
+      </div>
+
+      <div className="h-px bg-[rgba(255,255,255,0.06)]" />
+
+      {/* Components section */}
+      <div>
+        <div className="px-1 mb-1.5">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold">Components</span>
+        </div>
+        {(!components || components.length === 0) ? (
+          <div className="px-1 text-[11px] text-slate-600">Select elements and click "Create Component" to build reusable blocks.</div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {components.map((comp: OverlayComponentDef) => {
+              const isBuiltin = comp.id.startsWith('preset_');
+              return (
+                <div
+                  key={comp.id}
+                  className="group relative flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] p-3 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20] cursor-pointer"
+                  onClick={() => onInsert(comp)}
+                >
+                  <div className="flex flex-col truncate">
+                    <span className="truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200" title={comp.name}>{comp.name}</span>
+                    <span className="mt-1 text-[11px] leading-[1.4] text-slate-500">
+                      {comp.elements?.length || 0} nodes
+                      {comp.variantName ? ` • ${comp.variantName}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
+                    <button
+                      className={uiClasses.iconButton}
+                      onClick={(e) => { e.stopPropagation(); onCreateVariant(comp.id); }}
+                      title="Create Variant"
+                    >
+                      <svg {...TOOL_ICON_PROPS}><path d="M5 5h6v6H5z" /><path d="M13 13h6v6h-6z" /><path d="M8 8l8 8" /></svg>
+                    </button>
+                    <button
+                      className={uiClasses.iconButton}
+                      onClick={(e) => { e.stopPropagation(); onEdit(comp.id); }}
+                      title="Edit Master"
+                    >
+                      <svg {...TOOL_ICON_PROPS}><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    {!isBuiltin && (
+                      <button
+                        className={`${uiClasses.iconButton} hover:text-red-400`}
+                        onClick={(e) => { e.stopPropagation(); onDelete(comp.id); }}
+                        title="Delete"
+                      >
+                        <svg {...TOOL_ICON_PROPS}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                      </button>
+                    )}
+                    <button
+                      className={`${uiClasses.iconButton} hover:bg-indigo-500/15 hover:text-indigo-100`}
+                      title="Insert Instance"
+                    >
+                      <svg {...TOOL_ICON_PROPS}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

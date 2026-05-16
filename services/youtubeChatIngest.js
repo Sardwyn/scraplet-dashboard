@@ -9,10 +9,13 @@
 
 import db from "../db.js";
 import fetch from "node-fetch";
+import Redis from "ioredis";
 import { getOrCreateUserChatOverlay } from "../src/widgets/chat-overlay/service.js";
 import { push as pushRing } from "../src/runtime/ringBuffer.js";
 import { buildChatEnvelopeV1FromYouTube } from "../src/ingest/buildChatEnvelopeV1.js";
 import { fanOutAfterModeration } from "../src/ingest/fanOutAfterModeration.js";
+
+const redisClient = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379");
 
 const YT_BROADCASTS_URL = "https://www.googleapis.com/youtube/v3/liveBroadcasts";
 const YT_CHAT_URL = "https://www.googleapis.com/youtube/v3/liveChat/messages";
@@ -28,6 +31,26 @@ const loops = new Map(); // key: dashboardUserId -> { state, getPublicState }
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function saveStateToRedis(userId, state) {
+  const publicState = {
+    running: state.running,
+    startedAt: state.startedAt,
+    lastPollAt: state.lastPollAt,
+    lastError: state.lastError,
+    lastInfo: state.lastInfo,
+    liveChatId: state.liveChatId,
+    broadcastId: state.broadcastId,
+    broadcastTitle: state.broadcastTitle,
+    channelSlug: state.channelSlug,
+    pollingIntervalMillis: state.pollingIntervalMillis,
+    lastInsertCount: state.lastInsertCount,
+    totalInserted: state.totalInserted,
+    overlayPublicId: state.overlayPublicId,
+    nextPageToken: state.nextPageToken,
+  };
+  await redisClient.hset("yt_ingest_state", userId, JSON.stringify(publicState));
 }
 
 async function getYouTubeAuthContextForUser(userId) {
@@ -384,6 +407,7 @@ async function runLoop(dashboardUserId, state) {
     state.broadcastId = null;
     state.broadcastTitle = null;
     state.lastInfo = "No live broadcast detected (waiting)";
+    await saveStateToRedis(userId, state);
     await sleep(3000);
   }
 
@@ -420,16 +444,18 @@ async function runLoop(dashboardUserId, state) {
 
       pageToken = nextPageToken || pageToken;
 
+      await saveStateToRedis(userId, state);
       await sleep(Math.max(1000, pollingIntervalMillis || 2000));
     } catch (e) {
       state.lastError = String(e?.message || e);
       state.lastPollAt = new Date().toISOString();
+      await saveStateToRedis(userId, state);
       await sleep(3000);
     }
   }
 }
 
-export function startYouTubeChatIngest(dashboardUserId) {
+export async function startYouTubeChatIngest(dashboardUserId) {
   const userId = Number(dashboardUserId);
   if (!Number.isFinite(userId) || userId <= 0)
     throw new Error("Invalid dashboard user id");
@@ -438,6 +464,9 @@ export function startYouTubeChatIngest(dashboardUserId) {
   if (existing?.state?.running) {
     return existing.getPublicState();
   }
+
+  const savedStateStr = await redisClient.hget("yt_ingest_state", userId);
+  const savedState = savedStateStr ? JSON.parse(savedStateStr) : {};
 
   const state = {
     running: true,
@@ -451,9 +480,9 @@ export function startYouTubeChatIngest(dashboardUserId) {
     channelSlug: null,
     broadcasterUserId: null,
     pollingIntervalMillis: null,
-    nextPageToken: null,
+    nextPageToken: savedState.nextPageToken || null,
     lastInsertCount: 0,
-    totalInserted: 0,
+    totalInserted: savedState.totalInserted || 0,
 
     overlayPublicId: null,
     overlayBufferMax: 120,
@@ -481,20 +510,32 @@ export function startYouTubeChatIngest(dashboardUserId) {
   runLoop(userId, state)
     .catch((e) => {
       state.lastError = String(e?.message || e);
+      saveStateToRedis(userId, state).catch(console.error);
     })
     .finally(() => {
       state.running = false;
+      saveStateToRedis(userId, state).catch(console.error);
     });
 
+  await saveStateToRedis(userId, state);
   return getPublicState();
 }
 
-export function stopYouTubeChatIngest(dashboardUserId) {
+export async function stopYouTubeChatIngest(dashboardUserId) {
   const userId = Number(dashboardUserId);
   const loopObj = loops.get(userId);
-  if (!loopObj) return { running: false };
+  if (!loopObj) {
+    const savedStateStr = await redisClient.hget("yt_ingest_state", userId);
+    if (savedStateStr) {
+      const parsed = JSON.parse(savedStateStr);
+      parsed.running = false;
+      await redisClient.hset("yt_ingest_state", userId, JSON.stringify(parsed));
+    }
+    return { running: false };
+  }
 
   loopObj.state.running = false;
+  await saveStateToRedis(userId, loopObj.state);
 
   return {
     running: false,
@@ -504,9 +545,17 @@ export function stopYouTubeChatIngest(dashboardUserId) {
   };
 }
 
-export function getYouTubeChatIngestStatus(dashboardUserId) {
+export async function getYouTubeChatIngestStatus(dashboardUserId) {
   const userId = Number(dashboardUserId);
   const loopObj = loops.get(userId);
-  if (!loopObj) return { running: false };
-  return loopObj.getPublicState();
+  if (loopObj) return loopObj.getPublicState();
+  
+  const savedStateStr = await redisClient.hget("yt_ingest_state", userId);
+  if (savedStateStr) {
+    const parsed = JSON.parse(savedStateStr);
+    parsed.running = false; // It's not running in this memory space
+    return parsed;
+  }
+  
+  return { running: false };
 }

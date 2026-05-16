@@ -1,0 +1,536 @@
+<%
+  // Widget Library Section
+  // Displays saved widget templates (lower thirds, alerts) that can be used in bot commands
+  const lowerThirdTemplates = locals.lowerThirdTemplates || [];
+  const alertTemplates = locals.alertTemplates || [];
+  const totalWidgetTemplates = lowerThirdTemplates.length + alertTemplates.length;
+%>
+
+<!-- ── Widget Library section ─────────────────────────────────────── -->
+<section class="overlay-library__section" data-library-section data-kind="widget-library">
+  <div class="overlay-library__section-head">
+    <div>
+      <div class="overlay-library__section-title">Widget Library</div>
+      <div class="overlay-library__section-sub">Reusable widget configs for bot commands — extract from overlays, use in Scrapbot and Discord.</div>
+    </div>
+    <div class="overlay-library__section-meta"><%= totalWidgetTemplates %> template<%= totalWidgetTemplates === 1 ? '' : 's' %></div>
+  </div>
+
+  <!-- Widget Library Tabs -->
+  <div class="flex gap-2 mb-6 border-b border-white/10">
+    <button type="button" class="widget-library-tab is-active" data-widget-tab="lower-thirds">
+      Lower Thirds (<%= lowerThirdTemplates.length %>)
+    </button>
+    <button type="button" class="widget-library-tab" data-widget-tab="alerts">
+      Alerts (<%= alertTemplates.length %>)
+    </button>
+  </div>
+
+  <!-- Lower Thirds Tab -->
+  <div class="widget-library-tab-content" data-widget-tab-content="lower-thirds">
+    <div class="mb-4">
+      <button type="button" class="pc-btn pc-btn--primary" onclick="showSaveWidgetModal('lower-third')">
+        + Save Lower Third from Overlay
+      </button>
+    </div>
+
+    <% if (lowerThirdTemplates.length > 0) { %>
+      <div class="overlay-library__grid" data-library-grid>
+        <% lowerThirdTemplates.forEach(function(tmpl, index) {
+             const createdLabel = new Date(tmpl.created_at).toLocaleDateString();
+             const hue = (index * 41 + 28) % 360;
+             const isDefault = tmpl.is_default;
+        %>
+          <article
+            class="overlay-card"
+            data-library-item
+            data-kind="widget-library"
+            data-widget-type="lower-third"
+            data-search="<%= [tmpl.name, 'lower-third', 'lower third'].join(' ').toLowerCase() %>"
+            style="--card-hue: <%= hue %>;"
+          >
+            <div class="overlay-card__preview">
+              <div class="overlay-card__chrome">
+                <span class="overlay-card__chip">Lower Third</span>
+                <% if (isDefault) { %>
+                  <span class="overlay-card__badge">Default</span>
+                <% } %>
+                <div class="overlay-card__stage-block overlay-card__stage-block--caption" style="width:72%; height:20%;"></div>
+                <div class="overlay-card__stage-line overlay-card__stage-line--a" style="width:34%; top:32px;"></div>
+                <div class="overlay-card__stage-line overlay-card__stage-line--b" style="width:54%; top:56px;"></div>
+              </div>
+            </div>
+            <div class="overlay-card__body">
+              <div class="overlay-card__meta">
+                <span class="overlay-card__kind">Widget Template</span>
+                <span class="overlay-card__stamp">Saved <%= createdLabel %></span>
+              </div>
+              <div>
+                <div class="overlay-card__name"><%= tmpl.name %></div>
+                <% if (tmpl.source_overlay_name) { %>
+                  <div class="overlay-card__sub">From: <%= tmpl.source_overlay_name %></div>
+                <% } %>
+              </div>
+              <div class="overlay-card__footer">
+                <% if (!isDefault) { %>
+                  <button type="button" class="pc-btn pc-btn--ghost" onclick="setDefaultTemplate('lower-third', <%= tmpl.id %>)">Set Default</button>
+                <% } %>
+                <button type="button" class="pc-btn pc-btn--ghost" onclick="editWidgetTemplate('lower-third', <%= tmpl.id %>, '<%= tmpl.name %>')">Rename</button>
+                <button type="button" class="pc-btn pc-btn--ghost text-red-200 hover:text-red-100" onclick="deleteWidgetTemplate('lower-third', <%= tmpl.id %>, '<%= tmpl.name %>')">Delete</button>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="overlay-library__empty">
+        <div class="overlay-library__empty-title">No lower third templates saved</div>
+        <div class="overlay-library__empty-copy">Save lower third widgets from your overlays to reuse them in bot commands.</div>
+        <button type="button" class="pc-btn pc-btn--primary" onclick="showSaveWidgetModal('lower-third')">Save from Overlay</button>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Alerts Tab -->
+  <div class="widget-library-tab-content hidden" data-widget-tab-content="alerts">
+    <div class="mb-4">
+      <button type="button" class="pc-btn pc-btn--primary" onclick="showSaveWidgetModal('alert')">
+        + Save Alert from Overlay
+      </button>
+    </div>
+
+    <% if (alertTemplates.length > 0) { %>
+      <div class="overlay-library__grid" data-library-grid>
+        <% alertTemplates.forEach(function(tmpl, index) {
+             const createdLabel = new Date(tmpl.created_at).toLocaleDateString();
+             const hue = (index * 47 + 15) % 360;
+             const isDefault = tmpl.is_default;
+        %>
+          <article
+            class="overlay-card"
+            data-library-item
+            data-kind="widget-library"
+            data-widget-type="alert"
+            data-search="<%= [tmpl.name, 'alert'].join(' ').toLowerCase() %>"
+            style="--card-hue: <%= hue %>;"
+          >
+            <div class="overlay-card__preview">
+              <div class="overlay-card__chrome">
+                <span class="overlay-card__chip">Alert</span>
+                <% if (isDefault) { %>
+                  <span class="overlay-card__badge">Default</span>
+                <% } %>
+                <div class="overlay-card__stage-block overlay-card__stage-block--panel" style="width:60%; height:30%; top:35%;"></div>
+                <div class="overlay-card__stage-line overlay-card__stage-line--a" style="width:40%; top:45%;"></div>
+              </div>
+            </div>
+            <div class="overlay-card__body">
+              <div class="overlay-card__meta">
+                <span class="overlay-card__kind">Widget Template</span>
+                <span class="overlay-card__stamp">Saved <%= createdLabel %></span>
+              </div>
+              <div>
+                <div class="overlay-card__name"><%= tmpl.name %></div>
+                <% if (tmpl.source_overlay_name) { %>
+                  <div class="overlay-card__sub">From: <%= tmpl.source_overlay_name %></div>
+                <% } %>
+              </div>
+              <div class="overlay-card__footer">
+                <% if (!isDefault) { %>
+                  <button type="button" class="pc-btn pc-btn--ghost" onclick="setDefaultTemplate('alert', <%= tmpl.id %>)">Set Default</button>
+                <% } %>
+                <button type="button" class="pc-btn pc-btn--ghost" onclick="editWidgetTemplate('alert', <%= tmpl.id %>, '<%= tmpl.name %>')">Rename</button>
+                <button type="button" class="pc-btn pc-btn--ghost text-red-200 hover:text-red-100" onclick="deleteWidgetTemplate('alert', <%= tmpl.id %>, '<%= tmpl.name %>')">Delete</button>
+              </div>
+            </div>
+          </article>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="overlay-library__empty">
+        <div class="overlay-library__empty-title">No alert templates saved</div>
+        <div class="overlay-library__empty-copy">Save alert widgets from your overlays to reuse them in bot commands.</div>
+        <button type="button" class="pc-btn pc-btn--primary" onclick="showSaveWidgetModal('alert')">Save from Overlay</button>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<!-- Save Widget Modal -->
+<div id="saveWidgetModal" class="modal hidden">
+  <div class="modal__backdrop" onclick="closeSaveWidgetModal()"></div>
+  <div class="modal__content">
+    <div class="modal__header">
+      <h2 class="modal__title" id="saveWidgetModalTitle">Save Widget from Overlay</h2>
+      <button type="button" class="modal__close" onclick="closeSaveWidgetModal()">&times;</button>
+    </div>
+    <div class="modal__body">
+      <p class="text-sm text-gray-400 mb-4" id="saveWidgetModalDescription">Select an overlay to extract the widget config from.</p>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Select Overlay</label>
+        <select id="saveWidgetOverlaySelect" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md">
+          <option value="">-- Select an overlay --</option>
+        </select>
+      </div>
+
+      <div id="saveWidgetWidgetSelect" class="mb-4 hidden">
+        <label class="block text-sm font-medium mb-2">Select Widget</label>
+        <select id="saveWidgetWidgetList" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md">
+          <option value="">-- Select a widget --</option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Template Name</label>
+        <input type="text" id="saveWidgetName" placeholder="e.g., Neon Lower Third" class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md" />
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="pc-btn pc-btn--ghost" onclick="closeSaveWidgetModal()">Cancel</button>
+      <button type="button" class="pc-btn pc-btn--primary" onclick="saveWidgetTemplate()">Save Template</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .widget-library-tab {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.2s;
+    cursor: pointer;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .widget-library-tab:hover {
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .widget-library-tab.is-active {
+    color: white;
+    border-bottom-color: #3b82f6;
+  }
+  
+  .widget-library-tab-content.hidden {
+    display: none;
+  }
+  
+  .overlay-card__badge {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    z-index: 10;
+  }
+  
+  .modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal.hidden {
+    display: none;
+  }
+  
+  .modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+  }
+  
+  .modal__content {
+    position: relative;
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+  }
+  
+  .modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .modal__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  
+  .modal__close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal__close:hover {
+    color: white;
+  }
+  
+  .modal__body {
+    padding: 1.5rem;
+  }
+  
+  .modal__footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+</style>
+
+<script>
+  // Widget Library Tab Switching
+  (function() {
+    const tabs = document.querySelectorAll('.widget-library-tab');
+    const tabContents = document.querySelectorAll('.widget-library-tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.widgetTab;
+        
+        // Update active tab
+        tabs.forEach(t => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        
+        // Show target content
+        tabContents.forEach(content => {
+          if (content.dataset.widgetTabContent === targetTab) {
+            content.classList.remove('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        });
+      });
+    });
+  })();
+  
+  // Save Widget Modal
+  let currentWidgetType = null;
+  
+  function showSaveWidgetModal(widgetType) {
+    currentWidgetType = widgetType;
+    const modal = document.getElementById('saveWidgetModal');
+    const title = document.getElementById('saveWidgetModalTitle');
+    const description = document.getElementById('saveWidgetModalDescription');
+    
+    title.textContent = `Save ${widgetType === 'lower-third' ? 'Lower Third' : 'Alert'} from Overlay`;
+    description.textContent = `Select an overlay to extract the ${widgetType === 'lower-third' ? 'lower third' : 'alert'} widget config from.`;
+    
+    // Load overlays
+    loadOverlaysForWidget();
+    
+    modal.classList.remove('hidden');
+  }
+  
+  function closeSaveWidgetModal() {
+    const modal = document.getElementById('saveWidgetModal');
+    modal.classList.add('hidden');
+    document.getElementById('saveWidgetOverlaySelect').value = '';
+    document.getElementById('saveWidgetWidgetSelect').classList.add('hidden');
+    document.getElementById('saveWidgetName').value = '';
+    currentWidgetType = null;
+  }
+  
+  async function loadOverlaysForWidget() {
+    // For now, just populate with existing overlays from the page
+    // In production, this would fetch from API
+    const select = document.getElementById('saveWidgetOverlaySelect');
+    select.innerHTML = '<option value="">-- Select an overlay --</option>';
+    
+    // Get overlays from the page data
+    const overlayCards = document.querySelectorAll('[data-kind="overlay"]');
+    overlayCards.forEach(card => {
+      const name = card.querySelector('.overlay-card__name')?.textContent || 'Unnamed';
+      const id = card.querySelector('[href*="/edit"]')?.href?.match(/\/overlays\/(\d+)\/edit/)?.[1];
+      if (id) {
+        const option = document.createElement('option');
+        option.value = id;
+        option.textContent = name;
+        select.appendChild(option);
+      }
+    });
+  }
+  
+  document.getElementById('saveWidgetOverlaySelect')?.addEventListener('change', async function() {
+    const overlayId = this.value;
+    if (!overlayId) {
+      document.getElementById('saveWidgetWidgetSelect').classList.add('hidden');
+      return;
+    }
+    
+    // Fetch widgets from overlay
+    try {
+      const response = await fetch(`/api/widget-library/extract/${overlayId}`);
+      const data = await response.json();
+      
+      if (!data.ok) {
+        alert('Failed to load widgets from overlay');
+        return;
+      }
+      
+      const widgets = currentWidgetType === 'lower-third' ? data.lowerThirds : data.alerts;
+      const widgetSelect = document.getElementById('saveWidgetWidgetList');
+      const widgetSelectContainer = document.getElementById('saveWidgetWidgetSelect');
+      
+      if (widgets.length === 0) {
+        alert(`No ${currentWidgetType === 'lower-third' ? 'lower third' : 'alert'} widgets found in this overlay`);
+        widgetSelectContainer.classList.add('hidden');
+        return;
+      }
+      
+      widgetSelect.innerHTML = '<option value="">-- Select a widget --</option>';
+      widgets.forEach((widget, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `Widget ${index + 1} (ID: ${widget.id})`;
+        option.dataset.config = JSON.stringify(widget.config);
+        widgetSelect.appendChild(option);
+      });
+      
+      widgetSelectContainer.classList.remove('hidden');
+    } catch (err) {
+      console.error('Failed to load widgets:', err);
+      alert('Failed to load widgets from overlay');
+    }
+  });
+  
+  async function saveWidgetTemplate() {
+    const overlayId = document.getElementById('saveWidgetOverlaySelect').value;
+    const widgetIndex = document.getElementById('saveWidgetWidgetList').value;
+    const name = document.getElementById('saveWidgetName').value.trim();
+    
+    if (!overlayId || widgetIndex === '' || !name) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    const widgetOption = document.getElementById('saveWidgetWidgetList').selectedOptions[0];
+    const widgetConfig = JSON.parse(widgetOption.dataset.config);
+    
+    const endpoint = currentWidgetType === 'lower-third' ? '/api/widget-library/lower-thirds' : '/api/widget-library/alerts';
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          overlayId,
+          widgetConfig
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        alert(`Failed to save template: ${data.error}`);
+        return;
+      }
+      
+      alert('Template saved successfully!');
+      closeSaveWidgetModal();
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      alert('Failed to save template');
+    }
+  }
+  
+  async function setDefaultTemplate(type, id) {
+    const endpoint = type === 'lower-third' ? `/api/widget-library/lower-thirds/${id}/set-default` : `/api/widget-library/alerts/${id}/set-default`;
+    
+    try {
+      const response = await fetch(endpoint, { method: 'POST' });
+      const data = await response.json();
+      
+      if (!data.ok) {
+        alert(`Failed to set default: ${data.error}`);
+        return;
+      }
+      
+      alert('Default template updated!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to set default:', err);
+      alert('Failed to set default template');
+    }
+  }
+  
+  async function editWidgetTemplate(type, id, currentName) {
+    const newName = prompt('Enter new name:', currentName);
+    if (!newName || newName === currentName) return;
+    
+    const endpoint = type === 'lower-third' ? `/api/widget-library/lower-thirds/${id}` : `/api/widget-library/alerts/${id}`;
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+      
+      const data = await response.json();
+      
+      if (!data.ok) {
+        alert(`Failed to rename: ${data.error}`);
+        return;
+      }
+      
+      alert('Template renamed!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to rename:', err);
+      alert('Failed to rename template');
+    }
+  }
+  
+  async function deleteWidgetTemplate(type, id, name) {
+    if (!confirm(`Delete template "${name}"?`)) return;
+    
+    const endpoint = type === 'lower-third' ? `/api/widget-library/lower-thirds/${id}` : `/api/widget-library/alerts/${id}`;
+    
+    try {
+      const response = await fetch(endpoint, { method: 'DELETE' });
+      const data = await response.json();
+      
+      if (!data.ok) {
+        alert(`Failed to delete: ${data.error}`);
+        return;
+      }
+      
+      alert('Template deleted!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to delete:', err);
+      alert('Failed to delete template');
+    }
+  }
+</script>

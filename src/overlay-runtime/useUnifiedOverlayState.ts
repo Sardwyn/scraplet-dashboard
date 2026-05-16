@@ -13,7 +13,8 @@ const STATE_TTL_MS = 60_000; // 60 seconds
  */
 export function useUnifiedOverlayState(
   publicId: string,
-  overlayConfig: OverlayConfigV0
+  overlayConfig: OverlayConfigV0,
+  onPacketSideEffect?: (packet: OverlayRuntimePacketV1) => void
 ): UnifiedOverlayState & { processExternalPacket: (packet: OverlayRuntimePacketV1) => void } {
   // Initialize state from sessionStorage or create empty state
   const [state, setState] = useState<UnifiedOverlayState>(() => {
@@ -125,6 +126,9 @@ export function useUnifiedOverlayState(
     const connection = new SSEConnection({
       publicId,
       onPacket: (packet: OverlayRuntimePacketV1) => {
+        // Fire side-effect first (e.g. dispatch scraplet:overlay:event for BotLayerRoot)
+        onPacketSideEffect?.(packet);
+
         if (!engineRef.current) return;
         setState((currentState) => {
           const updates = engineRef.current!.processPacket(packet, currentState);

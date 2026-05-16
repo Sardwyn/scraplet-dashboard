@@ -869,6 +869,55 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
     );
 }
 
+/**
+ * TickerInner — Scrolling ticker with accurate pixel-based timing.
+ * Measures actual rendered text width via ref to calculate correct animation duration,
+ * fixing the "resets too early" bug caused by character-count-based estimation.
+ */
+function TickerInner({
+    singleText, repeated, speed, height, bgColor, color, fontSize, paddingLeft
+}: {
+    singleText: string; repeated: string; speed: number; height: number;
+    bgColor: string; color: string; fontSize: number; paddingLeft: number;
+}) {
+    const innerRef = React.useRef<HTMLDivElement>(null);
+    const outerRef = React.useRef<HTMLDivElement>(null);
+    const [duration, setDuration] = React.useState<number | null>(null);
+
+    React.useEffect(() => {
+        if (innerRef.current) {
+            // One copy width = half of scrollWidth (two copies in the div)
+            // We animate from 0 to -50% of the inner div's width
+            // The inner div must NOT have paddingLeft (that breaks the measurement)
+            const oneWidth = innerRef.current.scrollWidth / 2;
+            if (oneWidth > 0) {
+                setDuration(oneWidth / speed);
+            }
+        }
+    }, [singleText, speed, fontSize]);
+
+    const animStyle = duration
+        ? { animation: `scraplet-ticker-scroll ${duration}s linear infinite` }
+        : { visibility: "hidden" as const };
+
+    return (
+        <div ref={outerRef} style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            height, backgroundColor: bgColor, overflow: "hidden",
+            display: "flex", alignItems: "center",
+        }}>
+            {/* Gap before text is part of the text content, not padding */}
+            <div ref={innerRef} style={{
+                display: "inline-block", whiteSpace: "nowrap",
+                fontSize, color, ...animStyle,
+            }}>
+                {repeated}
+            </div>
+            <style>{`@keyframes scraplet-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}`}</style>
+        </div>
+    );
+}
+
 function resolveText(text: string, data?: Record<string, string>) {
     if (!data) return text;
     return text.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
@@ -2846,9 +2895,12 @@ export function ElementRenderer({
         const rawSubtitle = data?.[keys.subtitle] || "";
         const hasContent = Boolean(rawText || rawTitle || rawSubtitle);
 
-        const isActive = activeVal
-            ? activeVal !== "0" && activeVal !== "false"
-            : hasContent;
+        // alwaysOn bypasses the active key — element is always visible
+        const isActive = lt.alwaysOn
+            ? true
+            : activeVal
+                ? activeVal !== "0" && activeVal !== "false"
+                : hasContent;
 
         const [renderState, setRenderState] = React.useState<{
             show: boolean;
@@ -2927,6 +2979,8 @@ export function ElementRenderer({
             const ratio = lt.layout?.splitRatio ?? 0.6;
             const leftW = `${ratio * 100}%`;
             const rightW = `${(1 - ratio) * 100}%`;
+            const leftSize = lt.layout?.leftSizePx ?? titleSize;
+            const rightSize = lt.layout?.rightSizePx ?? subSize;
 
             contentNode = (
                 <div style={{ display: "flex", width: "100%", height: "100%", alignItems: "center" }}>
@@ -2936,19 +2990,21 @@ export function ElementRenderer({
                             paddingRight: padding,
                             textAlign: "right",
                             borderRight: `2px solid ${accent}`,
-                            fontSize: titleSize,
+                            fontSize: leftSize,
                             fontWeight: titleWeight,
                             color: titleColor,
                         }}
                     >
                         {titleText}
                     </div>
-                    <div style={{ width: rightW, paddingLeft: padding, fontSize: subSize, color: subtitleColor }}>
+                    <div style={{ width: rightW, paddingLeft: padding, fontSize: rightSize, color: subtitleColor }}>
                         {subText}
                     </div>
                 </div>
             );
         } else {
+            // Stacked (default) — title, subtitle, plus optional extra content lines
+            const extraLines = lt.contentLines ?? [];
             contentNode = (
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     {titleText && (
@@ -2961,6 +3017,26 @@ export function ElementRenderer({
                             {subText}
                         </div>
                     )}
+                    {extraLines.map((line, i) => {
+                        const lineText = resolveText(data?.[line.key] ?? "", data);
+                        if (!lineText) return null;
+                        const lineWeight = line.weight === "bold" ? 700 : line.weight === "light" ? 300 : 400;
+                        return (
+                            <div
+                                key={i}
+                                style={{
+                                    fontSize: line.sizePx ?? 20,
+                                    color: line.color ?? subtitleColor,
+                                    fontWeight: lineWeight,
+                                    fontStyle: line.italic ? "italic" : "normal",
+                                    opacity: line.opacity ?? 1,
+                                    marginTop: 3,
+                                }}
+                            >
+                                {lineText}
+                            </div>
+                        );
+                    })}
                 </div>
             );
         }
@@ -2997,7 +3073,37 @@ export function ElementRenderer({
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ width: "100%", height: "100%", ...combinedAnimStyle }}>
                     <div style={innerStyle}>
-                        <div style={containerStyle}>{contentNode}</div>
+                        <div style={containerStyle}>
+                            {contentNode}
+                            {lt.ticker?.enabled && (() => {
+                                const tickerText = resolveText(data?.[lt.ticker.key] ?? "", data);
+                                const displayText = tickerText || (overlayPublicId ? "Ticker text — set via lower_third.ticker data key" : "");
+                                if (!displayText) return null;
+                                const tickerH = lt.ticker.heightPx ?? 32;
+                                const tickerBg = lt.ticker.bgColor ?? accent;
+                                const tickerColor = lt.ticker.color ?? "#fff";
+                                const tickerSize = lt.ticker.sizePx ?? 18;
+                                const tickerPad = lt.ticker.paddingPx ?? 8;
+                                const speed = lt.ticker.speed ?? 80;
+                                // Duplicate text for seamless loop
+                                const sep = lt.ticker.separator ?? "   •   ";
+                                const singleText = `${displayText}${sep}`;
+                                const repeated = `${singleText}${singleText}`;
+                                // Use a ref-measured TickerInner to get accurate pixel-based duration
+                                return (
+                                    <TickerInner
+                                        singleText={singleText}
+                                        repeated={repeated}
+                                        speed={speed}
+                                        height={tickerH}
+                                        bgColor={tickerBg}
+                                        color={tickerColor}
+                                        fontSize={tickerSize}
+                                        paddingLeft={tickerPad}
+                                    />
+                                );
+                            })()}
+                        </div>
                     </div>
                 </div>
             </div>

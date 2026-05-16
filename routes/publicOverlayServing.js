@@ -161,6 +161,12 @@ const router = express.Router();
 const ASSET_BASE = '/static/overlays';
 
 router.get('/o/:slug', async (req, res) => {
+    // CRITICAL: Force OBS CEF to never cache overlay pages
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+    
     const { slug } = req.params;
     try {
         const result = await db.query(

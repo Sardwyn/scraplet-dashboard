@@ -3,11 +3,13 @@
 import express from "express";
 import crypto from "crypto";
 import fetch from "node-fetch";
+import Redis from "ioredis";
 import db from "../db.js";
 import { ensureChatEventsSubscriptionForUser } from "../services/kickEvents.js";
 import { upsertExternalAccountToken } from "../services/externalAccountTokens.js";
 
 const router = express.Router();
+const redisClient = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379");
 
 // Optional debug logging for Kick routes
 router.use((req, _res, next) => {
@@ -54,22 +56,7 @@ const KICK_API_CHANNELS_URL =
 // PKCE store with auto-expiry (state -> { verifier, createdAt })
 // ─────────────────────────────────────────────
 
-const kickPkceStore = {
-  data: new Map(),
-  set(state, payload) {
-    this.data.set(state, payload);
-    // Auto-expire after 10 minutes
-    setTimeout(() => {
-      this.data.delete(state);
-    }, 10 * 60 * 1000);
-  },
-  get(state) {
-    return this.data.get(state);
-  },
-  delete(state) {
-    return this.data.delete(state);
-  },
-};
+// Removed in-memory kickPkceStore, using redisClient directly
 
 // ─────────────────────────────────────────────
 // Helpers – state signing + PKCE helpers
@@ -173,11 +160,11 @@ router.get("/kick/start", async (req, res, _next) => {
   const verifier = newVerifier();
   const chall = challengeFromVerifier(verifier);
 
-  // Store PKCE data in memory keyed by state
-  kickPkceStore.set(state, {
+  // Store PKCE data in Redis keyed by state (expires in 10 minutes)
+  await redisClient.setex(`kick_pkce:${state}`, 600, JSON.stringify({
     verifier,
     createdAt: now,
-  });
+  }));
 
   const params = new URLSearchParams({
     response_type: "code",
@@ -240,13 +227,15 @@ router.get("/kick/callback", async (req, res) => {
     return res.status(400).send("Invalid or expired state");
   }
 
-  // Retrieve PKCE verifier for this state
-  const pkce = kickPkceStore.get(stateString);
+  // Retrieve PKCE verifier for this state from Redis
+  const pkceStr = await redisClient.get(`kick_pkce:${stateString}`);
+  const pkce = pkceStr ? JSON.parse(pkceStr) : null;
+  
   if (!pkce) {
     console.error("[auth:kick/callback] no PKCE data for state", stateString);
     return res.status(400).send("Missing PKCE verifier");
   }
-  kickPkceStore.delete(stateString);
+  await redisClient.del(`kick_pkce:${stateString}`);
 
   try {
     // ── 1) Exchange code for tokens ──────────────────────────────

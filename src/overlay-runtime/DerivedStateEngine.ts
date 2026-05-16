@@ -111,6 +111,7 @@ export class DerivedStateEngine {
   private readonly options: DerivedStateEngineOptions;
   private readonly seenAlertIds: Set<string> = new Set();
   private readonly seenAlertIdsOrder: string[] = [];
+  private readonly automationCooldowns: Map<string, number> = new Map();
 
   constructor(options: DerivedStateEngineOptions) {
     this.options = options;
@@ -146,7 +147,7 @@ export class DerivedStateEngine {
       return this.processTrustSignal(packet, currentState);
     }
 
-    // platform.* — may route to alert, counter, or both
+    // platform.* — may route to alert, counter, or automation
     const isAlert = matchesAny(type, ALERT_PATTERNS);
     const isCounter = matchesAny(type, COUNTER_PATTERNS);
 
@@ -165,8 +166,72 @@ export class DerivedStateEngine {
       return alertResult ?? counterResult;
     }
 
+    // Lower third automations — platform events trigger auto lower thirds
+    if (type.startsWith("platform.")) {
+      this.processLowerThirdAutomations(packet);
+    }
+
     // Unrecognised packet type
     return null;
+  }
+
+  /**
+   * Checks all lower_third elements in the overlay config for matching automations.
+   * Dispatches overlay.lower_third.show via window event when a trigger matches.
+   */
+  private processLowerThirdAutomations(packet: OverlayRuntimePacketV1): void {
+    const type = packet.header.type;
+    const payload = packet.payload as any;
+
+    const elements = (this.options.overlayConfig as any)?.elements ?? [];
+    for (const el of elements) {
+      if ((el as any).type !== "lower_third") continue;
+      const automations: any[] = (el as any).automations ?? [];
+
+      for (const auto of automations) {
+        if (!auto.enabled) continue;
+        if (auto.trigger !== type) continue;
+
+        // Cooldown check
+        const cooldownMs = auto.cooldownMs ?? 30_000;
+        const cooldownKey = `${(el as any).id}:${type}`;
+        const lastFired = this.automationCooldowns.get(cooldownKey) ?? 0;
+        if (Date.now() - lastFired < cooldownMs) continue;
+        this.automationCooldowns.set(cooldownKey, Date.now());
+
+        // Resolve template variables
+        const actor = payload?.actor?.displayName ?? payload?.actor?.username ?? "Someone";
+        const viewers = payload?.viewers != null ? String(payload.viewers) : "";
+        const amount = payload?.amount != null ? String(payload.amount) : "";
+
+        const resolve = (tpl: string) =>
+          (tpl ?? "")
+            .replace(/\{actor\}/g, actor)
+            .replace(/\{viewers\}/g, viewers)
+            .replace(/\{amount\}/g, amount);
+
+        const title = resolve(auto.titleTemplate);
+        const subtitle = resolve(auto.subtitleTemplate);
+        const durationMs = auto.durationMs ?? (el as any).defaultDurationMs ?? 8000;
+
+        // Fire via window event — picked up by useOverlayEvents in main.tsx
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("scraplet:overlay:event", {
+            detail: {
+              header: {
+                id: `auto-${Date.now()}`,
+                type: "overlay.lower_third.show",
+                ts: Date.now(),
+                producer: "automation",
+                platform: "internal",
+                scope: packet.header.scope,
+              },
+              payload: { title, subtitle, duration_ms: durationMs },
+            },
+          }));
+        }
+      }
+    }
   }
 
   // -------------------------------------------------------------------------

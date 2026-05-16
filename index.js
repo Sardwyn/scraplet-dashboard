@@ -31,6 +31,7 @@ import dashboardScrapbotRoutes from './routes/dashboardScrapbot.js';
 import widgetsLoaderRoutes from './routes/widgets-loader.js';
 import overlaysApiRouter from "./routes/api/overlays.js";
 import lowerThirdTemplatesRouter from "./routes/api/lowerThirdTemplates.js";
+import botLayerRouter from "./routes/api/botLayer.js";
 import overlayComponentsRouter from "./routes/api/overlayComponents.js";
 import discordIntegrationRoutes from "./routes/integrations/discord.js";
 import obsWidgetConfigRouter from "./routes/obsWidgetConfig.js";
@@ -73,6 +74,8 @@ import earningsRouter from './routes/earnings.js';
 import marketplaceRouter from './routes/api/marketplace.js';
 import marketplacePageRouter from './routes/marketplace.js';
 import collectionsRouter from './routes/collections.js';
+import widgetLibraryRouter from './routes/widgetLibrary.js';
+import botWidgetPreferencesRouter from './routes/api/botWidgetPreferences.js';
 import widgetTestFireRouter from './routes/api/widgetTestFire.js';
 import streamerContextRouter from './routes/streamerContext.js';
 import generationApiRouter from './routes/generationApi.js';
@@ -145,6 +148,7 @@ app.set('trust proxy', 1);
 app.engine('ejs', ejs.__express);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.disable('view cache'); // Disable view caching to allow template updates
 
 app.use(
   ['/profile-assets', '/dashboard/profile-assets'],
@@ -221,6 +225,8 @@ app.use(
 
 app.use("/dashboard/api", assetsRouter);
 app.use("/dashboard/api/uploads", uploadsRouter);
+app.use("/api/widget-library", widgetLibraryRouter);
+app.use("/api/bot-widget-preferences", botWidgetPreferencesRouter);
 app.use("/dashboard", intelApiRouter);
 
 //register apps and widgets here
@@ -331,6 +337,7 @@ app.use('/', widgetsLoaderRoutes);
 app.use("/dashboard", overlaysRouter);
 app.use("/dashboard/api", overlaysApiRouter);
 app.use("/dashboard/api", lowerThirdTemplatesRouter);
+app.use("/api", botLayerRouter);
 app.use("/dashboard/api", overlayComponentsRouter);
 // app.use("/", publicOverlayRouter);
 app.use("/", publicOverlayServing);

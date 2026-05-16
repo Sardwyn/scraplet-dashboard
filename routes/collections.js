@@ -3,27 +3,16 @@ import express from 'express';
 import crypto from 'crypto';
 import requireAuth from '../utils/requireAuth.js';
 import db from '../db.js';
+import { CollectionDal } from '../dal/CollectionDal.js';
 
 const router = express.Router();
 
 // GET /dashboard/api/collections - List user's collections
 router.get('/dashboard/api/collections', requireAuth, async (req, res) => {
   try {
-    const userId = req.session.user.id;
-    
-    const { rows } = await db.query(`
-      SELECT 
-        c.*,
-        COUNT(oci.overlay_id) as overlay_count,
-        ARRAY_AGG(oci.overlay_id ORDER BY oci.sort_order ASC, oci.added_at ASC) FILTER (WHERE oci.overlay_id IS NOT NULL) as overlay_ids
-      FROM overlay_collections c
-      LEFT JOIN overlay_collection_items oci ON oci.collection_id = c.id
-      WHERE c.user_id = $1
-      GROUP BY c.id
-      ORDER BY c.updated_at DESC
-    `, [userId]);
-
-    res.json(rows);
+    const dal = new CollectionDal(req.session.user.id);
+    const collections = await dal.getUserCollections();
+    res.json(collections);
   } catch (err) {
     console.error('[Collections] List error:', err);
     res.status(500).json({ error: err.message });
@@ -161,8 +150,8 @@ router.post('/dashboard/api/collections/:id/overlays', requireAuth, async (req, 
 
     // Update overlay's collection_id for quick reference
     await db.query(
-      'UPDATE overlays SET collection_id = $1 WHERE id = $2',
-      [collectionId, overlayId]
+      'UPDATE overlays SET collection_id = $1 WHERE id = $2 AND user_id = $3',
+      [collectionId, overlayId, userId]
     );
 
     res.json(rows[0]);
@@ -202,8 +191,8 @@ router.delete('/dashboard/api/collections/:id/overlays/:overlayId', requireAuth,
 
     // Clear overlay's collection_id
     await db.query(
-      'UPDATE overlays SET collection_id = NULL WHERE id = $1',
-      [overlayId]
+      'UPDATE overlays SET collection_id = NULL WHERE id = $1 AND user_id = $2',
+      [overlayId, userId]
     );
 
     res.json({ success: true });

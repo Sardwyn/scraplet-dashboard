@@ -8,10 +8,14 @@
 import { chromium } from 'playwright';
 import fs from 'fs/promises';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const EDITOR_URL = process.env.EDITOR_URL || 'http://localhost:3000/dashboard/overlays/editor';
-const RESULTS_DIR = './metrics/performance/results';
-const TEST_OVERLAYS_DIR = './metrics/performance/test-overlays';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const EDITOR_URL = process.env.EDITOR_URL || 'https://scraplet.store/dashboard/overlays/editor';
+const RESULTS_DIR = path.join(__dirname, 'results');
+const TEST_OVERLAYS_DIR = path.join(__dirname, 'test-overlays');
 
 // Performance thresholds (based on Figma's 60fps target)
 const THRESHOLDS = {
@@ -39,10 +43,18 @@ class TestRunner {
     // Ensure results directory exists
     await fs.mkdir(RESULTS_DIR, { recursive: true });
     
-    // Launch browser
+    // Launch browser with headless mode and server-friendly flags
     this.browser = await chromium.launch({
-      headless: false, // Set to true for CI
-      args: ['--disable-blink-features=AutomationControlled']
+      headless: true,
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions'
+      ]
     });
     
     this.page = await this.browser.newPage();
@@ -69,6 +81,37 @@ class TestRunner {
     console.log('✅ Browser launched');
   }
 
+  async login() {
+    console.log('🔐 Logging in...');
+    
+    // Use perftest credentials
+    const loginUrl = 'https://scraplet.store/auth/login';
+    await this.page.goto(loginUrl);
+    
+    // Wait for form to load
+    await this.page.waitForSelector('input[type="email"]', { timeout: 5000 });
+    
+    // Fill login form
+    await this.page.fill('input[type="email"]', 'perftest@scraplet.store');
+    await this.page.fill('input[type="password"]', 'perftest123');
+    
+    // Click login and wait for navigation
+    await Promise.all([
+      this.page.waitForNavigation({ timeout: 10000 }),
+      this.page.click('button[type="submit"]')
+    ]);
+    
+    // Check if we're on dashboard or back on login (error)
+    const currentUrl = this.page.url();
+    console.log(`Current URL after login: ${currentUrl}`);
+    
+    if (currentUrl.includes('/auth/login')) {
+      throw new Error('Login failed - check credentials or account status');
+    }
+    
+    console.log('✅ Logged in');
+  }
+
   async loadOverlay(overlayPath) {
     console.log(`📂 Loading overlay: ${overlayPath}`);
     
@@ -78,7 +121,7 @@ class TestRunner {
     
     // Navigate to editor with overlay data
     await this.page.goto(`${EDITOR_URL}?test=true`);
-    await this.page.waitForSelector('#overlay-editor-root');
+    await this.page.waitForSelector('#overlay-editor-root', { timeout: 30000 });
     
     // Inject overlay data
     await this.page.evaluate((data) => {
@@ -289,6 +332,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   
   try {
     await runner.setup();
+    await runner.login();
     
     // Load test overlay
     await runner.loadOverlay('medium.json');

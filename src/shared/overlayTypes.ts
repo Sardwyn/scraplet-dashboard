@@ -711,6 +711,9 @@ export interface OverlayLowerThirdElement extends OverlayElementBase {
   layout?: {
     mode?: LowerThirdLayoutMode;              // default "stacked"
     splitRatio?: number;                      // default 0.6
+    // Split mode per-side typography
+    leftSizePx?: number;                      // default titleSizePx
+    rightSizePx?: number;                     // default subtitleSizePx
   };
   bind?: {
     textKey?: string;                         // default "lower_third"
@@ -738,7 +741,65 @@ export interface OverlayLowerThirdElement extends OverlayElementBase {
     durationMs?: number;                      // default 450
     easing?: OverlayAnimation["easing"];      // runtime may still default custom easing
   };
-  defaultDurationMs?: number;                 // default 8000
+  defaultDurationMs?: number;                 // default 8000 — how long to show when triggered
+  alwaysOn?: boolean;                         // bypass active key — always visible
+  automations?: LowerThirdAutomation[];       // event-driven triggers
+
+  /**
+   * Additional content lines beyond title+subtitle (newsroom mode).
+   * Rendered below subtitle in stacked layout.
+   */
+  contentLines?: Array<{
+    key: string;                              // bind key e.g. "lower_third.line3"
+    label?: string;                           // editor label
+    sizePx?: number;                          // default 20
+    color?: string;                           // default subtitleColor
+    weight?: "normal" | "bold" | "light";     // default "normal"
+    italic?: boolean;                         // default false
+    opacity?: number;                         // default 1
+  }>;
+
+  /**
+   * Scrolling ticker strip at the bottom of the element.
+   */
+  ticker?: {
+    enabled: boolean;
+    key: string;                              // bind key e.g. "lower_third.ticker"
+    speed?: number;                           // px/s, default 80
+    sizePx?: number;                          // default 18
+    color?: string;                           // default "#fff"
+    bgColor?: string;                         // default accent color
+    paddingPx?: number;                       // default 8
+    heightPx?: number;                        // default 32
+    separator?: string;                       // default "   •   "
+  };
+}
+
+/* =========================
+   LOWER THIRD AUTOMATIONS
+========================= */
+
+export type LowerThirdTrigger =
+  | "platform.kick.raid"
+  | "platform.kick.follow"
+  | "platform.kick.subscription"
+  | "platform.twitch.raid"
+  | "platform.twitch.follow"
+  | "platform.twitch.subscription"
+  | "platform.youtube.follow"
+  | "platform.youtube.subscription";
+
+export interface LowerThirdAutomation {
+  trigger: LowerThirdTrigger;
+  enabled: boolean;
+  /** Title template — supports {actor}, {viewers}, {amount} */
+  titleTemplate: string;
+  /** Subtitle template — supports {actor}, {viewers}, {amount} */
+  subtitleTemplate: string;
+  /** How long to show in ms. Falls back to element defaultDurationMs. */
+  durationMs?: number;
+  /** Minimum ms between firings for this trigger. Default 30000. */
+  cooldownMs?: number;
 }
 
 /* =========================

@@ -10,10 +10,10 @@ import {
 const router = express.Router();
 
 // POST /integrations/youtube/chat/start
-router.post("/integrations/youtube/chat/start", requireAuth, (req, res) => {
+router.post("/integrations/youtube/chat/start", requireAuth, async (req, res) => {
   const userId = req.session.user.id;
   try {
-    const status = startYouTubeChatIngest(userId);
+    const status = await startYouTubeChatIngest(userId);
     return res.json({ ok: true, status });
   } catch (e) {
     return res.status(400).json({ ok: false, error: String(e?.message || e) });
@@ -21,16 +21,16 @@ router.post("/integrations/youtube/chat/start", requireAuth, (req, res) => {
 });
 
 // POST /integrations/youtube/chat/stop
-router.post("/integrations/youtube/chat/stop", requireAuth, (req, res) => {
+router.post("/integrations/youtube/chat/stop", requireAuth, async (req, res) => {
   const userId = req.session.user.id;
-  const status = stopYouTubeChatIngest(userId);
+  const status = await stopYouTubeChatIngest(userId);
   return res.json({ ok: true, status });
 });
 
 // GET /integrations/youtube/chat/status
-router.get("/integrations/youtube/chat/status", requireAuth, (req, res) => {
+router.get("/integrations/youtube/chat/status", requireAuth, async (req, res) => {
   const userId = req.session.user.id;
-  const status = getYouTubeChatIngestStatus(userId);
+  const status = await getYouTubeChatIngestStatus(userId);
   return res.json({ ok: true, status });
 });
 

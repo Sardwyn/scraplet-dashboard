@@ -4,69 +4,56 @@
    TOKENS & THEMING
    ───────────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
+  color-scheme: light; /* Pulp is light paper by default */
 
-  /* ── Core Palette (System SaaS Default) ── */
-  --np-bg: #05070c;
-  --np-text: rgba(255, 255, 255, 0.88);
-  --np-muted: rgba(255, 255, 255, 0.58);
+  /* ── Core Palette (Retro Sci-Fi Pulp) ── */
+  --np-bg: #0b0f14; /* Void */
+  --np-text: #0c0e12; /* Ink */
+  --np-muted: rgba(12, 14, 18, 0.65);
 
   /* Brand Accents */
-  --np-amber: #ffb02e;
-  --np-amber-2: #ff8a1f;
-  --np-green: #39ffb6;
+  --np-amber: #f5c400; /* Pulp Yellow */
+  --np-amber-2: #ff6a2a; /* Pulp Orange */
+  --np-green: #25c7c7; /* Sci-Fi Teal */
 
   /* Surfaces */
-  --np-surface: rgba(14, 18, 32, 0.78);
-  --np-surface-2: rgba(10, 13, 22, 0.90);
+  --np-surface: #f5ebd6; /* Paper */
+  --np-surface-2: #e8dbbe; /* Darker Paper */
 
   /* Borders / Depth */
-  --np-border: rgba(255, 255, 255, 0.10);
-  --np-border-2: rgba(255, 255, 255, 0.06);
-  --np-shadow: rgba(0, 0, 0, 0.65);
+  --np-border: #0c0e12; /* Ink */
+  --np-border-2: #0c0e12;
+  --np-shadow: #0c0e12;
 
   /* Radii + Spacing */
-  --np-r-lg: 18px;
-  --np-r-md: 14px;
-  --np-pad: 16px;
-  --np-gap: 16px;
-
-  /* Old "Hardware" Strip (Keeping for back-compat) */
-  --np-rail: rgba(255, 176, 46, 0.18);
-  --np-rail-2: rgba(255, 176, 46, 0.08);
+  --np-r-lg: 0px; /* Hard angles for comic style */
+  --np-r-md: 0px;
+  --np-pad: 20px;
+  --np-gap: 20px;
 
   /* ── pc-* Control Surface Primitives ── */
-  --pc-bg: var(--np-bg);
-  --pc-panel: rgba(10, 14, 20, 0.90);
-  --pc-text: rgba(255, 255, 255, 0.90);
-  --pc-muted: rgba(255, 255, 255, 0.58);
+  --pc-bg: #0b0f14; /* Outer void */
+  --pc-panel: #f5ebd6; /* Paper cards */
+  --pc-text: #0c0e12; /* Ink text */
+  --pc-muted: rgba(12, 14, 18, 0.65);
 
-  --pc-accent: #55d6ff;
-  --pc-accent-2: #39ffb6;
-  --pc-warn: #ffc940;
-  --pc-err: #ff5a5a;
+  --pc-accent: #25c7c7; /* Teal */
+  --pc-accent-2: #f5c400; /* Yellow */
+  --pc-warn: #ff6a2a; /* Orange */
+  --pc-err: #e03131; /* Red */
 
   /* Spacing */
-  --pc-gap: 16px;
-  --pc-pad: 16px;
-  --pc-hd-h: 44px;
+  --pc-gap: 20px;
+  --pc-pad: 20px;
+  --pc-hd-h: 54px;
 
   /* Radii */
-  --pc-r-md: 8px;
-  --pc-r-sm: 6px;
+  --pc-r-md: 0px;
+  --pc-r-sm: 0px;
 
   /* Borders & Effects */
-  --pc-border-a: 0.12;
-  /* Alpha for borders */
-  --pc-border-hi: 0.20;
-  /* Highlight alpha */
-  --pc-glow-a: 0.0;
-  /* No glow in SaaS mode */
-  --pc-scanlines: 0.18;
-  /* OLED scanline intensity */
-  --pc-grid-a: 0.06;
-  /* Grid opacity */
-  --pc-shadow: rgba(0, 0, 0, 0.65);
+  --pc-border-w: 3px; /* Thick comic ink */
+  --pc-shadow-hard: 6px 6px 0px 0px #0c0e12; /* Brutalist shadow */
 }
 
 
@@ -76,14 +63,13 @@
    ───────────────────────────────────────────────────────────── */
 
 body.np {
-  /* Default SaaS Gradient Background */
-  background:
-    radial-gradient(circle at 18% 0%, rgba(255, 176, 46, 0.10), transparent 55%),
-    radial-gradient(circle at 75% 12%, rgba(57, 255, 182, 0.07), transparent 52%),
-    radial-gradient(circle at 50% 120%, rgba(122, 162, 255, 0.06), transparent 60%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.0) 35%),
-    var(--pc-bg);
+  /* Halftone/Grid Background for that comic feel */
+  background-color: var(--pc-bg);
+  background-image: radial-gradient(var(--pc-text) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: 0 0;
   color: var(--pc-text);
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -105,46 +91,25 @@ body.np {
 /* -- Panel -- */
 .pc-panel {
   border-radius: var(--pc-r-md);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 26%),
-    var(--pc-panel);
-  border: 1px solid rgba(255, 255, 255, var(--pc-border-a));
-  box-shadow:
-    0 10px 18px rgba(0, 0, 0, 0.78),
-    0 24px 70px rgba(0, 0, 0, 0.62),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.70);
-  overflow: hidden;
+  background: var(--pc-panel);
+  border: var(--pc-border-w) solid var(--np-border);
+  box-shadow: var(--pc-shadow-hard);
   position: relative;
-  transition: border-color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-
-
-.pc-panel::before {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: calc(var(--pc-r-md) - 2px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  pointer-events: none;
-}
-
+/* Comic book highlight accent (simulating a misregistered print or speed line) */
 .pc-panel::after {
-  /* Top Rail Highlight */
   content: "";
   position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 10px;
-  height: 1px;
-  background: linear-gradient(90deg,
-      rgba(85, 214, 255, 0.00),
-      rgba(85, 214, 255, 0.26),
-      rgba(57, 255, 182, 0.18),
-      rgba(85, 214, 255, 0.00));
-  opacity: 0.80;
-  pointer-events: none;
+  left: -10px;
+  top: -10px;
+  width: 40px;
+  height: 40px;
+  background: var(--pc-accent-2);
+  z-index: -1;
+  border: var(--pc-border-w) solid var(--np-border);
+  display: none; /* Can be enabled for specific hero panels */
 }
 
 
@@ -154,11 +119,9 @@ body.np {
   align-items: center;
   justify-content: space-between;
   min-height: var(--pc-hd-h);
-  padding: 10px var(--pc-pad);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.10)),
-    linear-gradient(90deg, rgba(85, 214, 255, 0.10), rgba(0, 0, 0, 0.00) 36%, rgba(0, 0, 0, 0.00) 64%, rgba(57, 255, 182, 0.08));
+  padding: 14px var(--pc-pad);
+  border-bottom: var(--pc-border-w) solid var(--np-border);
+  background: var(--pc-accent-2); /* High contrast yellow header */
 }
 
 .pc-panel-bd {
@@ -168,11 +131,11 @@ body.np {
 
 /* -- Typography -- */
 .pc-panel-title {
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.9px;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--pc-text);
 }
 
 .pc-panel-sub {
@@ -197,83 +160,92 @@ body.np {
 }
 
 
-/* -- Buttons (Canonical + Alias) -- */
+/* -- Buttons (Neo-Pulp) -- */
 .pc-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(0, 0, 0, 0.38);
-  color: rgba(255, 255, 255, 0.88);
+  border: var(--pc-border-w) solid var(--np-border);
+  background: var(--pc-panel);
+  color: var(--pc-text);
   border-radius: var(--pc-r-sm);
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
   cursor: pointer;
   user-select: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: all 0.12s ease;
+  box-shadow: 4px 4px 0px 0px var(--np-border);
+  transition: transform 0.1s, box-shadow 0.1s;
   white-space: nowrap;
 }
 
 .pc-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  /* slightly brighter hover */
-  border-color: rgba(255, 255, 255, 0.24);
+  background: var(--pc-accent-2);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px 0px var(--np-border);
 }
 
 .pc-btn:active {
-  transform: translateY(1px);
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px 0px var(--np-border);
 }
 
 /* Primary */
 .pc-btn-primary,
 .pc-btn--primary {
-  border-color: rgba(85, 214, 255, 0.42);
-  background: linear-gradient(180deg, rgba(85, 214, 255, 0.18), rgba(0, 0, 0, 0.40));
-  box-shadow: 0 0 0 2px rgba(85, 214, 255, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--pc-accent);
+  color: var(--pc-text);
 }
 
-
+.pc-btn-primary:hover,
+.pc-btn--primary:hover {
+  background: #3cf3f3; /* Brighter teal on hover */
+}
 
 /* Ghost */
 .pc-btn-ghost,
 .pc-btn--ghost {
-  background: rgba(0, 0, 0, 0.32);
-  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  border: var(--pc-border-w) dashed var(--np-border);
 }
 
 .pc-btn-ghost:hover,
 .pc-btn--ghost:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  background: var(--pc-panel);
+  border-style: solid;
+  box-shadow: 4px 4px 0px 0px var(--np-border);
 }
 
 /* Danger */
 .pc-btn-danger,
 .pc-btn--danger {
-  border-color: rgba(255, 90, 90, 0.46);
-  background: linear-gradient(180deg, rgba(255, 90, 90, 0.20), rgba(0, 0, 0, 0.42));
-  color: #ffcccc;
+  background: var(--pc-err);
+  color: white;
 }
 
 
 /* -- Inputs -- */
 .pc-input {
   width: 100%;
-  background: rgba(0, 0, 0, 0.46);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #ffffff;
+  border: var(--pc-border-w) solid var(--np-border);
   border-radius: var(--pc-r-sm);
-  color: rgba(255, 255, 255, 0.90);
-  padding: 10px 12px;
-  font-size: 12px;
+  color: var(--pc-text);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
   outline: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.70);
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .pc-input:focus {
-  border-color: rgba(85, 214, 255, 0.40);
-  box-shadow: 0 0 0 2px rgba(85, 214, 255, 0.12);
+  background: #ffffff;
+  box-shadow: 4px 4px 0px 0px var(--pc-accent);
+  transform: translate(-2px, -2px);
 }
 
 
@@ -283,51 +255,40 @@ body.np {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.26);
-  font-size: 10px;
+  padding: 6px 12px;
+  border-radius: 0px;
+  border: 2px solid var(--np-border);
+  background: var(--pc-accent-2);
+  font-size: 11px;
+  font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--pc-text);
+  box-shadow: 2px 2px 0px 0px var(--np-border);
 }
 
 .pc-chip.is-active,
 .pc-badge.is-online {
-  border-color: rgba(57, 255, 182, 0.40);
-  box-shadow: 0 0 10px rgba(57, 255, 182, 0.15);
+  background: var(--pc-accent);
+  color: white;
 }
 
 
 /* ─────────────────────────────────────────────────────────────
    OLED & CHARTS
    ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   OLED / READOUTS (Comic Book Radar/Terminal)
+   ───────────────────────────────────────────────────────────── */
 .pc-oled {
   position: relative;
-  background:
-    radial-gradient(circle at 30% 0%, rgba(85, 214, 255, 0.10), transparent 46%),
-    radial-gradient(circle at 78% 20%, rgba(57, 255, 182, 0.08), transparent 52%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.00) 35%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.56), rgba(0, 0, 0, 0.74));
-  border: 1px solid rgba(85, 214, 255, 0.20);
+  background: #000000;
+  border: var(--pc-border-w) solid var(--np-border);
   border-radius: var(--pc-r-md);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.70),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.78),
-    inset 0 10px 22px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 20px rgba(37, 199, 199, 0.1);
   overflow: hidden;
-}
-
-.pc-oled::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: var(--pc-r-md);
-  opacity: 0.62;
-  background: radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.55) 100%);
+  color: var(--pc-accent);
+  font-family: 'Share Tech Mono', monospace;
 }
 
 .pc-oled::after {
@@ -335,13 +296,10 @@ body.np {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: var(--pc-r-md);
-  opacity: var(--pc-scanlines);
   background:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.10) 0.6px, transparent 0.7px);
-  background-size: 100% 5px, 12px 12px;
-  mix-blend-mode: overlay;
+    repeating-linear-gradient(0deg, rgba(37, 199, 199, 0.05) 0px, transparent 1px, transparent 2px),
+    repeating-linear-gradient(90deg, rgba(37, 199, 199, 0.05) 0px, transparent 1px, transparent 2px);
+  background-size: 20px 20px;
 }
 
 .pc-chart-viewport {

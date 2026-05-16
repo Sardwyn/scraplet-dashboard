@@ -15,6 +15,7 @@ import { getWidgetRenderer } from '../shared/overlayRenderer/widgetContract';
 import { useUnifiedOverlayState } from './useUnifiedOverlayState';
 import type { OverlayConfigV0 as DerivedOverlayConfigV0 } from './DerivedStateEngine';
 import './widgetRenderers'; // Register unified-state widget renderers
+import { BotLayerRoot } from './BotLayerRoot';
 
 
 
@@ -349,34 +350,14 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
   useEffect(() => {
     if (!publicId) return;
 
-    // Connect to Event Gate
-    const url = `/api/overlays/public/${encodeURIComponent(publicId)}/events/stream`;
-    console.log("[OverlayEvents] Connecting to:", url);
-
-    // Pass Last-Event-ID if we have one (reconnect scenario)
-    // Note: Native EventSource handles Last-Event-ID auto-magically on reconnect, 
-    // but we can also append it to query if needed manually.
-    const es = new EventSource(url);
-
-    es.onopen = () => console.log("[OverlayEvents] Connected");
-    es.onerror = (e) => {
-      // EventSource auto-reconnects, but nice to log
-      console.warn("[OverlayEvents] Connection lost/error", e);
-    };
-
-    es.onmessage = (msg) => {
+    // useOverlayEvents no longer opens its own SSE connection.
+    // Packets are forwarded here via scraplet:overlay:event dispatched by
+    // useUnifiedOverlayState's onPacketSideEffect — single SSE connection for the whole runtime.
+    const handlePacket = (e: Event) => {
       try {
-        if (!msg.data) return;
-        const packet = JSON.parse(msg.data);
+        const packet = (e as CustomEvent).detail;
         const { header, payload } = packet || {};
-
-        console.log("[OverlayEvents] Packet:", header?.type, payload);
-        // Multiplex to widgets via window event (avoids per-widget SSE connections)
-        if (header?.type) {
-          window.dispatchEvent(new CustomEvent('scraplet:overlay:event', {
-            detail: packet
-          }));
-        }
+        if (!header?.type) return;
         // Producer → Overlay events
         if (header?.type === "overlay.lower_third.show") {
           // 1. Resolve payload
@@ -534,11 +515,11 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
       }
     };
 
+    window.addEventListener('scraplet:overlay:event', handlePacket);
     return () => {
-      es.close();
-      console.log("[OverlayEvents] Disconnected");
+      window.removeEventListener('scraplet:overlay:event', handlePacket);
     };
-  }, [publicId, elements]); // Re-bind if elements list changes drastically? Ideally stable.
+  }, [publicId, elements]);
 
   return { overrides, data, flash, variables };
 }
@@ -663,8 +644,14 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const isOBS = navigator.userAgent.includes("OBS");
 
   // Unified overlay state — owns all SSE connections and widget state derivation
+  // Side-effect: dispatch scraplet:overlay:event so BotLayerRoot and other
+  // window-event listeners receive packets from the single SSE connection.
   const overlayConfigForState: DerivedOverlayConfigV0 = overlay ? (overlay as any) : { elements: [] };
-  const unifiedState = useUnifiedOverlayState(publicId, overlayConfigForState);
+  const unifiedState = useUnifiedOverlayState(publicId, overlayConfigForState, (packet) => {
+    if (packet?.header?.type) {
+      window.dispatchEvent(new CustomEvent('scraplet:overlay:event', { detail: packet }));
+    }
+  });
 
   // Chat messages now flow through overlayGate SSE (chat.message packets) — no widget SSE bridge needed.
 
@@ -1047,6 +1034,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   return (
     <>
       <FontLoader fonts={usedFonts} />
+      
+      {/* Main overlay viewport */}
       <div
         style={{
           width: "100vw",
@@ -1126,6 +1115,23 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           )}
 
         </div>
+      </div>
+
+      {/* BOT LAYER — MUST be outside the overflow:hidden viewport container.
+           OBS CEF (Chromium 75) does not composite elements inside overflow:hidden ancestors.
+           position:fixed + inset:0 places it over the full viewport without being clipped. */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          overflow: 'visible',
+          pointerEvents: 'none',
+          zIndex: 9000,
+          willChange: 'transform',
+          transform: 'translateZ(0)',
+        }}
+      >
+        <BotLayerRoot publicId={publicId} isEditorMode={false} />
       </div>
 
       {!isOBS && <DebugHud state={state} data={eventData} />}

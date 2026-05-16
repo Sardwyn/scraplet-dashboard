@@ -82,6 +82,25 @@ router.get("/overlays", requireAuth, async (req, res, next) => {
       [userId]
     );
 
+    // Fetch widget library templates
+    const { rows: lowerThirdTemplates } = await db.query(
+      `SELECT lt.*, o.name as source_overlay_name
+       FROM lower_third_templates lt
+       LEFT JOIN overlays o ON o.id = lt.source_overlay_id
+       WHERE lt.user_id = $1
+       ORDER BY lt.is_default DESC, lt.created_at DESC`,
+      [userId]
+    );
+
+    const { rows: alertTemplates } = await db.query(
+      `SELECT at.*, o.name as source_overlay_name
+       FROM alert_templates at
+       LEFT JOIN overlays o ON o.id = at.source_overlay_id
+       WHERE at.user_id = $1
+       ORDER BY at.is_default DESC, at.created_at DESC`,
+      [userId]
+    );
+
     const { rows: collections } = await db.query(
       `SELECT 
         c.*,
@@ -96,11 +115,12 @@ router.get("/overlays", requireAuth, async (req, res, next) => {
 
     res.render("layout", {
       tabView: "tabs/overlays",
-    currentPage: "overlays",
-    currentPage: "overlays",
+      currentPage: "overlays",
       user: sessionUser,
       overlays: rows,
       templates,
+      lowerThirdTemplates,
+      alertTemplates,
       collections,
     });
 
