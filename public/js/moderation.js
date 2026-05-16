@@ -1067,8 +1067,13 @@ const INTENSITY_PRESETS = [
 
 function setIntensityLabel(idx) {
   const el = qs('#m_guard_intensity_label');
-  if (!el) return;
-  el.textContent = INTENSITY_NAMES[idx] || 'Custom';
+  if (el) el.textContent = INTENSITY_NAMES[idx] || 'Custom';
+
+  // Sync Dymo active state
+  const labels = qsa('.pc-dymo');
+  labels.forEach((l, i) => {
+    l.classList.toggle('pc-dymo--active', i === idx);
+  });
 }
 
 function resetIntensityUIBeforeSnap() {
