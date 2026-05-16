@@ -5,13 +5,13 @@
     <div class="min-w-0">
       <div class="inline-flex items-center gap-2 mb-2">
         <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
-        <span class="text-xs tracking-[0.28em] text-gray-500">OVERVIEW</span>
+        <span class="text-xs tracking-[0.28em] pc-text-muted">OVERVIEW</span>
       </div>
 
-      <h1 class="text-4xl font-bold text-gray-100 truncate">
+      <h1 class="text-4xl font-bold pc-text-main truncate">
         Welcome, <%= user.username %>
       </h1>
-      <p class="text-gray-400 mt-2">
+      <p class="pc-text-muted mt-2">
         Your creator mission-control.
       </p>
 
@@ -19,8 +19,8 @@
         <% if (kick?.connected) { %>
           <span class="pc-chip">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-            Kick: <span class="font-mono text-emerald-200 ml-1">CONNECTED</span>
-            <% if (kick.username) { %><span class="text-gray-500 ml-2">(@<%= kick.username %>)</span><% } %>
+            Kick: <span class="font-mono pc-text-accent ml-1">CONNECTED</span>
+            <% if (kick.username) { %><span class="pc-text-muted ml-2">(@<%= kick.username %>)</span><% } %>
           </span>
         <% } else { %>
           <span class="pc-chip">
@@ -79,8 +79,8 @@
   <div class="pc-panel mb-10">
     <div class="pc-panel-hd flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-xs tracking-[0.28em] text-gray-500">SYSTEM</span>
-        <span class="text-xs text-gray-300 font-semibold">QUICK STATUS</span>
+        <span class="text-xs tracking-[0.28em] pc-text-muted">SYSTEM</span>
+        <span class="text-xs pc-text-main font-semibold">QUICK STATUS</span>
       </div>
 
       <div class="flex items-center gap-2">
@@ -154,8 +154,8 @@
             </div>
           </div>
           <!-- Progress bar -->
-          <div class="w-full h-1.5 rounded-full bg-white/5 mb-3">
-            <div class="h-1.5 rounded-full transition-all duration-500 <%= pct === 100 ? 'bg-emerald-400' : pct >= 60 ? 'bg-indigo-400' : 'bg-yellow-400' %>"
+          <div class="w-full h-1.5 rounded-full bg-black/40 mb-3 border border-white/5">
+            <div class="h-1.5 rounded-full transition-all duration-500 bg-indigo-400"
                  style="width: <%= pct %>%"></div>
           </div>
           <!-- Public URL — click to open -->
