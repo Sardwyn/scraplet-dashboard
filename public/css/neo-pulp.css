@@ -64,24 +64,43 @@
   --oled-grid: rgba(37, 199, 199, 0.08);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   TAILWIND OVERRIDES (Global Reset)
-   ───────────────────────────────────────────────────────────── */
-body.np { color: var(--pc-text-void); } /* Default body text on dark bg */
+/* Global contrast for Neo-Pulp */
+body.np { 
+  color: var(--pc-text-void); 
+} 
 
-body.np .text-gray-100 { color: var(--pc-text-void) !important; }
-body.np .text-gray-200 { color: var(--pc-text-void) !important; }
+/* Titles and Main Text should be Paper White on Dark Background */
+body.np h1, 
+body.np h2, 
+body.np h3, 
+body.np .pc-text-main { 
+  color: var(--pc-text-void) !important; 
+}
+
+body.np .pc-text-muted { 
+  color: var(--pc-muted-void) !important; 
+}
+
+/* Tailwind Overrides */
+body.np .text-gray-100,
+body.np .text-gray-200,
 body.np .text-gray-300 { color: var(--pc-text-void) !important; }
-body.np .text-gray-400 { color: var(--pc-muted-void) !important; }
+body.np .text-gray-400,
 body.np .text-gray-500 { color: var(--pc-muted-void) !important; }
 
-/* Panels and their content should be INK */
-body.np .pc-panel { color: var(--pc-text); }
+/* REVERSE for Panels: Content inside pc-panel should be INK */
+body.np .pc-panel,
+body.np .pc-panel h1,
+body.np .pc-panel h2,
+body.np .pc-panel h3,
+body.np .pc-panel .pc-text-main { 
+  color: var(--pc-text) !important; 
+}
+body.np .pc-panel .pc-text-muted,
 body.np .pc-panel .text-gray-400,
-body.np .pc-panel .text-gray-500 { color: var(--pc-muted) !important; }
-body.np .pc-panel .text-gray-100,
-body.np .pc-panel .text-gray-200,
-body.np .pc-panel .text-gray-300 { color: var(--pc-text) !important; }
+body.np .pc-panel .text-gray-500 { 
+  color: var(--pc-muted) !important; 
+}
 
 body.np .bg-gray-100 { background-color: var(--pc-surface-2) !important; }
 body.np .bg-gray-800 { background-color: var(--pc-panel) !important; }
@@ -121,13 +140,13 @@ body.np .pc-nav-header a:hover {
    ───────────────────────────────────────────────────────────── */
 
 body.np {
-  /* Halftone/Grid Background for that comic feel */
+  /* Halftone Background */
   background-color: var(--pc-bg);
-  background-image: radial-gradient(var(--pc-text) 1px, transparent 1px);
-  background-size: 16px 16px;
-  background-position: 0 0;
-  color: var(--pc-text);
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  background-image: radial-gradient(rgba(37, 199, 199, 0.15) 1.5px, transparent 0);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
