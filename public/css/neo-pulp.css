@@ -93,24 +93,29 @@ body.np .bg-white\/5, body.np .bg-white\/10 { background-color: rgba(245, 235, 2
 body.np .border-gray-800, body.np .border-white\/5, body.np .border-white\/10 { border-color: rgba(12, 14, 18, 0.4) !important; }
 
 /* REVERSE: Reset for anything inside a pc-panel (Paper) */
-body.np .pc-panel h1, 
-body.np .pc-panel h2, 
-body.np .pc-panel h3,
-body.np .pc-panel h4,
-body.np .pc-panel p,
-body.np .pc-panel div,
-body.np .pc-panel span,
-body.np .pc-panel label,
-body.np .pc-panel .text-white,
-body.np .pc-panel .text-gray-100,
-body.np .pc-panel .text-gray-200,
-body.np .pc-panel .text-gray-300 { color: var(--pc-text) !important; }
+/* We MUST exclude OLED/PIP/Log-Feed from this black-text rule */
+body.np .pc-panel h1:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *), 
+body.np .pc-panel h2:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *), 
+body.np .pc-panel h3:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel h4:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel p:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel div:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel span:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel label:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-white:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-gray-100:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-gray-200:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-gray-300:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *) { 
+  color: var(--pc-text) !important; 
+}
 
-body.np .pc-panel .pc-text-muted,
-body.np .pc-panel .text-white\/40,
-body.np .pc-panel .text-white\/50,
-body.np .pc-panel .text-gray-400, 
-body.np .pc-panel .text-gray-500 { color: var(--pc-muted) !important; }
+body.np .pc-panel .pc-text-muted:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-white\/40:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-white\/50:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
+body.np .pc-panel .text-gray-400:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *), 
+body.np .pc-panel .text-gray-500:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *) { 
+  color: var(--pc-muted) !important; 
+}
 
 /* OLED & PIP Specificity Override */
 body.np .pc-oled, body.np .pc-pip,
@@ -1689,43 +1694,47 @@ input[type="range"].pc-range::-moz-range-thumb {
 /* -- Dossier Tabs (Folder Style) -- */
 .pc-dossier-tabs {
   display: flex;
-  gap: 4px;
+  gap: 0px; /* No gap for folder look */
   position: relative;
   z-index: 10;
-  margin-bottom: -2px; /* Overlap the panel border */
-  padding-left: 10px;
+  margin-bottom: -2px; 
+  padding-left: 20px;
 }
 
 .pc-dossier-tab {
-  background: var(--pc-surface-2);
-  color: var(--pc-muted) !important;
-  padding: 8px 24px;
+  background: #d1cbc1; /* Darker creme for inactive */
+  color: rgba(0,0,0,0.5) !important;
+  padding: 10px 30px;
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 1px;
-  border: var(--pc-border-w) solid var(--np-border);
+  border: 2px solid var(--np-border);
   border-bottom: none;
   cursor: pointer;
   position: relative;
-  clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-  transition: background 0.2s, color 0.2s, transform 0.2s;
-  min-width: 140px;
+  /* More aggressive slant */
+  clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 160px;
   text-align: center;
+  margin-right: -15px; /* Overlap them */
 }
 
 .pc-dossier-tab:hover {
-  background: var(--pc-panel);
-  color: var(--pc-text) !important;
+  background: #e3ddd3;
+  color: #000 !important;
+  z-index: 12;
 }
 
 .pc-dossier-tab[data-active="true"] {
   background: var(--pc-panel);
   color: var(--pc-text) !important;
-  transform: translateY(-1px);
-  z-index: 11;
-  padding-bottom: 12px;
-  height: calc(100% + 4px);
+  transform: translateY(-4px) scale(1.05);
+  z-index: 15;
+  padding-bottom: 14px;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
+  clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); /* Slightly wider active tab */
 }
 
 /* -- Dossier Content Wrapper -- */
