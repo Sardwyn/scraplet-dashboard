@@ -94,18 +94,18 @@ body.np .border-gray-800, body.np .border-white\/5, body.np .border-white\/10 { 
 
 /* REVERSE: Reset for anything inside a pc-panel (Paper) */
 /* We MUST exclude OLED/PIP/Log-Feed from this black-text rule */
-body.np .pc-panel h1:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *), 
-body.np .pc-panel h2:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *), 
-body.np .pc-panel h3:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel h4:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel p:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel div:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel span:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel label:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel .text-white:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel .text-gray-100:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel .text-gray-200:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *),
-body.np .pc-panel .text-gray-300:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *) { 
+body.np .pc-panel h1:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo), 
+body.np .pc-panel h2:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo), 
+body.np .pc-panel h3:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel h4:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel p:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel div:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel span:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel label:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel .text-white:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel .text-gray-100:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel .text-gray-200:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo),
+body.np .pc-panel .text-gray-300:not(.pc-oled *):not(.pc-pip *):not(.pc-log-feed *):not(.pc-dymo) { 
   color: var(--pc-text) !important; 
 }
 
@@ -1691,7 +1691,7 @@ input[type="range"].pc-range::-moz-range-thumb {
 .pc-dymo {
   display: inline-block;
   background: #111;
-  color: #fff !important;
+  color: #ffffff !important;
   padding: 2px 8px;
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
