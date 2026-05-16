@@ -251,7 +251,7 @@ body.np::after {
   gap: 8px;
   border: var(--pc-border-w) solid var(--np-border);
   background: var(--pc-panel);
-  color: var(--pc-text);
+  color: var(--pc-text) !important; /* Default to dark text for buttons */
   border-radius: var(--pc-r-sm);
   padding: 10px 16px;
   font-size: 14px;
@@ -262,6 +262,28 @@ body.np::after {
   box-shadow: 4px 4px 0px 0px var(--np-border);
   transition: transform 0.1s, box-shadow 0.1s;
   white-space: nowrap;
+}
+
+/* GHOST BUTTONS on Dark Background */
+body.np .pc-btn--ghost {
+  background: transparent;
+  color: var(--pc-text-void) !important;
+  border-color: var(--pc-text-void);
+  box-shadow: none;
+}
+
+body.np .pc-btn--ghost:hover {
+  background: var(--pc-panel);
+  color: var(--pc-text) !important;
+  border-style: solid;
+  border-color: var(--np-border);
+  box-shadow: 4px 4px 0px 0px var(--np-border);
+}
+
+/* REVERSE: Ghost buttons inside panels should be dark */
+body.np .pc-panel .pc-btn--ghost {
+  color: var(--pc-text) !important;
+  border-color: var(--np-border);
 }
 
 .pc-btn:hover {
