@@ -62,6 +62,21 @@
   --oled-bg: #030303;
   --oled-accent: #25c7c7;
   --oled-grid: rgba(37, 199, 199, 0.08);
+  --oled-glass: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PREMIUM PULP TEXTURES
+   ───────────────────────────────────────────────────────────── */
+body.np::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("https://www.transparenttextures.com/patterns/cardboard-flat.png");
+  opacity: 0.05;
+  z-index: 100;
+  mix-blend-mode: multiply;
 }
 
 /* Global contrast for Neo-Pulp */
@@ -186,44 +201,56 @@ body.np {
    Canonical definitions.
    ───────────────────────────────────────────────────────────── */
 
-/* -- Panel -- */
+/* -- Panel (Premium Refinement) -- */
 .pc-panel {
-  border-radius: var(--pc-r-md);
+  position: relative;
   background: var(--pc-panel);
   border: var(--pc-border-w) solid var(--np-border);
   box-shadow: var(--pc-shadow-hard);
-  position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.2s ease;
 }
 
-/* Comic book highlight accent (simulating a misregistered print or speed line) */
-.pc-panel::after {
-  content: "";
+/* Premium Detail: Rivets in the corners */
+.pc-panel::before, .pc-panel::after {
+  content: "•";
   position: absolute;
-  left: -10px;
-  top: -10px;
-  width: 40px;
-  height: 40px;
-  background: var(--pc-accent-2);
-  z-index: -1;
-  border: var(--pc-border-w) solid var(--np-border);
-  display: none; /* Can be enabled for specific hero panels */
+  font-size: 14px;
+  color: var(--np-border);
+  opacity: 0.2;
+  line-height: 1;
+  z-index: 5;
 }
-
-
+.pc-panel::before { top: 6px; left: 8px; }
+.pc-panel::after { top: 6px; right: 8px; }
 
 .pc-panel-hd {
+  padding: 12px 20px;
+  background: var(--pc-surface-2); /* Muted paper instead of loud yellow */
+  border-bottom: var(--pc-border-w) solid var(--np-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: var(--pc-hd-h);
-  padding: 14px var(--pc-pad);
-  border-bottom: var(--pc-border-w) solid var(--np-border);
-  background: var(--pc-accent-2); /* High contrast yellow header */
+  position: relative;
+  min-height: 54px;
+}
+
+/* Strategic yellow accent stripe */
+.pc-panel-hd::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--pc-accent-2);
 }
 
 .pc-panel-bd {
   padding: var(--pc-pad);
+  flex: 1;
   position: relative;
 }
 
@@ -281,8 +308,8 @@ body.np {
 
 .pc-btn:hover {
   background: var(--pc-accent-2);
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px var(--np-border);
+  transform: translate(-3px, -3px);
+  box-shadow: 7px 7px 0px 0px var(--np-border);
 }
 
 .pc-btn:active {
@@ -417,7 +444,8 @@ body.np {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.3) 100%),
+    var(--oled-glass),
+    radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%),
     repeating-linear-gradient(0deg, var(--oled-grid) 0, var(--oled-grid) 1px, transparent 1px, transparent 20px),
     repeating-linear-gradient(90deg, var(--oled-grid) 0, var(--oled-grid) 1px, transparent 1px, transparent 20px);
   z-index: 3;
