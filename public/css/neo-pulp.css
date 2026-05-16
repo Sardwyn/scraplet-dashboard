@@ -102,28 +102,25 @@ body.np .pc-panel .text-gray-500 {
   color: var(--pc-muted) !important; 
 }
 
-/* OLED & PIP PANELS: Must be light text even if inside a light panel */
-body.np .pc-oled,
+/* OLED & PIP PANELS (and any dark sub-panels)
+   Must be light text even if nested inside a light pc-panel.
+   We use high specificity here to win over the pc-panel overrides.
+*/
+body.np .pc-oled, 
 body.np .pc-pip,
-body.np .pc-oled h1,
-body.np .pc-pip h1,
-body.np .pc-oled h2,
-body.np .pc-pip h2,
-body.np .pc-oled h3,
-body.np .pc-pip h3,
-body.np .pc-oled .pc-text-main,
-body.np .pc-pip .pc-text-main {
+body.np .pc-oled *, 
+body.np .pc-pip * {
   color: var(--oled-accent) !important;
+  border-color: rgba(37, 199, 199, 0.2) !important;
 }
 
+/* Ensure muted variants inside dark panels still have some opacity */
 body.np .pc-oled .pc-text-muted,
 body.np .pc-pip .pc-text-muted,
-body.np .pc-oled .text-gray-400,
-body.np .pc-pip .text-gray-400,
-body.np .pc-oled .text-gray-500,
-body.np .pc-pip .text-gray-500 {
+body.np .pc-oled [class*="text-gray-"],
+body.np .pc-pip [class*="text-gray-"] {
   color: var(--oled-accent) !important;
-  opacity: 0.7;
+  opacity: 0.6 !important;
 }
 
 body.np .bg-gray-100 { background-color: var(--pc-surface-2) !important; }
@@ -473,13 +470,31 @@ body.np {
 /* ─────────────────────────────────────────────────────────────
    INTEGRATIONS BAY
    ───────────────────────────────────────────────────────────── */
+/* Integration Cards (Modules) */
 .pc-int {
-  position: relative;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: var(--pc-r-sm);
-  padding: 4px;
-  transition: all 0.2s;
+  background: var(--pc-surface-2);
+  border: var(--pc-border-w) solid var(--np-border);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pc-int:hover {
+  transform: translateY(-4px);
+  box-shadow: 4px 4px 0px 0px var(--np-border);
+}
+
+.pc-int--ok { border-color: var(--pc-accent); }
+.pc-int--warn { border-color: var(--pc-warn); }
+.pc-int--bad { border-color: var(--pc-err); }
+
+.pc-int .pc-int-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .pc-int:hover {
