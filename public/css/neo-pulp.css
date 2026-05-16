@@ -1606,7 +1606,7 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
 
 .pc-dossier-tab {
   background: #d1cbc1 !important; 
-  color: rgba(0,0,0,0.5) !important;
+  color: rgba(0,0,0,0.6) !important;
   padding: 10px 30px;
   font-size: 11px;
   font-weight: 900;
@@ -1616,11 +1616,12 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
   border-bottom: none !important;
   cursor: pointer;
   position: relative;
-  clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
+  /* Asymmetrical Slant: Straight left, Slanted right */
+  clip-path: polygon(0% 0%, 85% 0%, 100% 100%, 0% 100%);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 160px;
+  min-width: 140px;
   text-align: center;
-  margin-right: -15px; 
+  margin-right: -10px; 
 }
 
 .pc-dossier-tab:hover {
@@ -1632,11 +1633,10 @@ html[data-theme="control-room"] .pc-oled.pc-readout {
 .pc-dossier-tab[data-active="true"] {
   background: var(--pc-panel) !important;
   color: var(--pc-text) !important;
-  transform: translateY(-4px) scale(1.05);
+  transform: translateY(2px); /* Physical join with panel border */
   z-index: 15;
-  padding-bottom: 14px;
-  box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-  clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); 
+  padding-bottom: 12px;
+  clip-path: polygon(0% 0%, 90% 0%, 100% 100%, 0% 100%); 
 }
 
 /* -- Range Input (Analog Slider) -- */
@@ -1684,65 +1684,39 @@ input[type="range"].pc-range::-moz-range-thumb {
   background: var(--pc-slider-thumb);
   border: 2px solid var(--np-border);
 }
-   DOSSIER TABS
+
+/* ─────────────────────────────────────────────────────────────
+   DYMO LABELS
    ───────────────────────────────────────────────────────────── */
-
-/* -- Dossier Tabs (Folder Style) -- */
-.pc-dossier-tabs {
-  display: flex;
-  gap: 0px; /* No gap for folder look */
-  position: relative;
-  z-index: 10;
-  margin-bottom: -2px; 
-  padding-left: 20px;
-}
-
-.pc-dossier-tab {
-  background: #d1cbc1; /* Darker creme for inactive */
-  color: rgba(0,0,0,0.5) !important;
-  padding: 10px 30px;
-  font-size: 11px;
-  font-weight: 900;
+.pc-dymo {
+  display: inline-block;
+  background: #111;
+  color: #fff !important;
+  padding: 2px 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  border: 2px solid var(--np-border);
-  border-bottom: none;
-  cursor: pointer;
+  letter-spacing: 2px;
+  border-radius: 1px;
+  box-shadow: 1px 1px 0px rgba(255,255,255,0.1);
   position: relative;
-  /* More aggressive slant */
-  clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 160px;
-  text-align: center;
-  margin-right: -15px; /* Overlap them */
+  border: 1px solid #000;
+  transform: rotate(-0.5deg);
+  cursor: help;
+  user-select: none;
 }
 
-.pc-dossier-tab:hover {
-  background: #e3ddd3;
-  color: #000 !important;
-  z-index: 12;
+.pc-dymo--red { 
+  background: #8e1a1a; 
+  transform: rotate(0.8deg);
 }
 
-.pc-dossier-tab[data-active="true"] {
-  background: var(--pc-panel);
-  color: var(--pc-text) !important;
-  transform: translateY(-4px) scale(1.05);
-  z-index: 15;
-  padding-bottom: 14px;
-  box-shadow: 0 -4px 10px rgba(0,0,0,0.1);
-  clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%); /* Slightly wider active tab */
+.pc-dymo--active {
+  box-shadow: 0 0 10px rgba(255,255,255,0.1), 2px 2px 0px #000;
+  transform: scale(1.1) rotate(0.2deg);
+  z-index: 10;
 }
 
-/* -- Dossier Content Wrapper -- */
-.pc-dossier-content {
-  border-top-left-radius: 0 !important;
+.pc-dymo:hover {
+  filter: brightness(1.2);
 }
-  border-radius: 0;
-  box-shadow: 4px 4px 0px rgba(0,0,0,0.4);
-}
-
-input[type="range"].pc-range:active::-webkit-slider-thumb {
-  transform: scaleY(1.1);
-  background: var(--pc-accent);
-}
-   ───────────────────────────────────────────────────────────── */
