@@ -34,8 +34,11 @@
   /* ── pc-* Control Surface Primitives ── */
   --pc-bg: #0b0f14; /* Outer void */
   --pc-panel: #f5ebd6; /* Paper cards */
-  --pc-text: #0c0e12; /* Ink text */
+  /* pc-text defaults to INK for panels, but we need VOID variants */
+  --pc-text: #0c0e12; /* Ink text (on paper) */
+  --pc-text-void: #f5ebd6; /* Paper text (on void) */
   --pc-muted: rgba(12, 14, 18, 0.65);
+  --pc-muted-void: rgba(245, 235, 214, 0.5);
 
   --pc-accent: #25c7c7; /* Teal */
   --pc-accent-2: #f5c400; /* Yellow */
@@ -64,11 +67,21 @@
 /* ─────────────────────────────────────────────────────────────
    TAILWIND OVERRIDES (Global Reset)
    ───────────────────────────────────────────────────────────── */
-body.np .text-gray-100 { color: var(--pc-text) !important; }
-body.np .text-gray-200 { color: var(--pc-text) !important; }
-body.np .text-gray-300 { color: var(--pc-text) !important; }
-body.np .text-gray-400 { color: var(--pc-muted) !important; }
-body.np .text-gray-500 { color: var(--pc-muted) !important; }
+body.np { color: var(--pc-text-void); } /* Default body text on dark bg */
+
+body.np .text-gray-100 { color: var(--pc-text-void) !important; }
+body.np .text-gray-200 { color: var(--pc-text-void) !important; }
+body.np .text-gray-300 { color: var(--pc-text-void) !important; }
+body.np .text-gray-400 { color: var(--pc-muted-void) !important; }
+body.np .text-gray-500 { color: var(--pc-muted-void) !important; }
+
+/* Panels and their content should be INK */
+body.np .pc-panel { color: var(--pc-text); }
+body.np .pc-panel .text-gray-400,
+body.np .pc-panel .text-gray-500 { color: var(--pc-muted) !important; }
+body.np .pc-panel .text-gray-100,
+body.np .pc-panel .text-gray-200,
+body.np .pc-panel .text-gray-300 { color: var(--pc-text) !important; }
 
 body.np .bg-gray-100 { background-color: var(--pc-surface-2) !important; }
 body.np .bg-gray-800 { background-color: var(--pc-panel) !important; }
@@ -85,8 +98,20 @@ body.np .text-indigo-300 { color: var(--pc-accent) !important; }
 body.np .bg-emerald-400 { background-color: var(--pc-accent) !important; }
 body.np .text-emerald-200 { color: var(--pc-accent) !important; }
 
-body.np .bg-yellow-400 { background-color: var(--pc-accent-2) !important; }
-body.np .text-yellow-200 { color: var(--pc-accent-2) !important; }
+body.np .pc-nav-header {
+  background-color: var(--pc-bg) !important;
+  border-bottom: var(--pc-border-w) solid var(--np-border) !important;
+}
+
+body.np .pc-nav-header a,
+body.np .pc-nav-header span,
+body.np .pc-nav-header button {
+  color: var(--pc-text-void) !important;
+}
+
+body.np .pc-nav-header a:hover {
+  color: var(--pc-accent) !important;
+}
 
 
 
