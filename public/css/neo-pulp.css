@@ -1761,3 +1761,91 @@ input[type="range"].pc-range:active::-webkit-slider-thumb {
   transform: scaleY(1.1);
   background: var(--pc-accent);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   PULP LEDGER TABLE REFINEMENT
+   ───────────────────────────────────────────────────────────── */
+body.np .pc-panel table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+body.np .pc-panel table thead {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-bottom: 2px solid var(--np-border) !important;
+}
+
+body.np .pc-panel table thead th {
+  color: #000 !important;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  padding: 14px 15px !important;
+  border-bottom: 2px solid var(--np-border) !important;
+}
+
+body.np .pc-panel table tbody tr {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15) !important;
+  transition: background 0.15s;
+}
+
+body.np .pc-panel table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+body.np .pc-panel table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+body.np .pc-panel table tbody td {
+  padding: 14px 15px !important;
+  color: #1a1a1a !important;
+  vertical-align: top;
+}
+
+/* Action Badges in Pulp Theme */
+body.np .m-badge {
+  background: rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid rgba(0, 0, 0, 0.25) !important;
+  color: #000 !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 10px;
+  box-shadow: none !important;
+  padding: 1px 10px;
+}
+
+body.np .m-badge--ignore {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #064e3b !important;
+  border-style: solid !important;
+}
+
+body.np .m-badge--timeout {
+  background: rgba(59, 130, 246, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  color: #1e3a8a !important;
+}
+
+body.np .m-badge--ban {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #7f1d1d !important;
+}
+
+body.np .m-badge--delete {
+  background: rgba(234, 179, 8, 0.12) !important;
+  border-color: rgba(234, 179, 8, 0.5) !important;
+  color: #854d0e !important;
+}
+
+/* Table Input Focus Refinement */
+body.np .pc-panel table .pc-input:focus,
+body.np .pc-panel table .pc-select:focus {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #000 !important;
+  box-shadow: 2px 2px 0px #000 !important;
+}
