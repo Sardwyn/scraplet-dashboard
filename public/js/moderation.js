@@ -312,11 +312,11 @@ function ruleRow(rule) {
 
     <td class="p-3 align-top">
       <div class="flex items-center gap-2">
-        <select class="border border-gray-800 bg-gray-950 rounded px-2 py-1 text-sm" data-k="action">
+        <select class="pc-select text-xs !py-1 !px-2" data-k="action" style="width:auto;">
           ${actionOptions(a)}
         </select>
 
-        <input class="w-24 border border-gray-800 bg-gray-950 rounded px-2 py-1 text-sm"
+        <input class="pc-input text-xs !py-1 !px-2 w-20"
                data-k="duration_seconds"
                type="number" min="0"
                value="${escapeHtml(dur)}"
@@ -326,8 +326,8 @@ function ruleRow(rule) {
 
     <td class="p-3 align-top text-right">
       <div class="inline-flex items-center gap-2">
-        <button class="border border-gray-800 bg-gray-950 hover:bg-gray-800 rounded px-3 py-1.5 text-sm" data-act="save">Save</button>
-        <button class="border border-red-800 bg-red-950/40 hover:bg-red-900/50 text-red-200 rounded px-3 py-1.5 text-sm" data-act="del">Delete</button>
+        <button class="pc-btn pc-btn--ghost !py-1 !px-3 !text-xs" data-act="save">Save</button>
+        <button class="pc-btn pc-btn--ghost !py-1 !px-3 !text-xs !text-red-500 !border-red-500" data-act="del">Delete</button>
       </div>
     </td>
   `;
@@ -744,14 +744,17 @@ function renderHot(items) {
 
   empty.classList.add('hidden');
   list.innerHTML = items.slice(0, 10).map(h => `
-    <div class="border border-gray-800 rounded-lg p-3 bg-black/20">
-      <div class="text-sm font-semibold">${escapeHtml(h.signature || '')}</div>
-      <div class="mt-1 text-xs text-gray-500">
-        score: ${escapeHtml(h.score ?? '')} • seen: ${escapeHtml(h.count ?? '')}
+    <div class="pc-log-item flex-col items-start gap-1">
+      <div class="flex items-center gap-2 w-full">
+        <span class="pc-log-tag">HOT</span>
+        <span class="font-bold text-white flex-1">${escapeHtml(h.signature || '')}</span>
       </div>
-      <div class="mt-2 flex gap-2">
-        <button class="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700" data-ov="${escapeHtml(h.signature_hash)}" data-mode="allow">Allow</button>
-        <button class="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700" data-ov="${escapeHtml(h.signature_hash)}" data-mode="deny">Deny</button>
+      <div class="flex items-center justify-between w-full opacity-60">
+        <span>score: ${escapeHtml(h.score ?? '')} • seen: ${escapeHtml(h.count ?? '')}</span>
+        <div class="flex gap-2">
+          <button class="hover:text-cyan-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="allow">[Allow]</button>
+          <button class="hover:text-red-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="deny">[Deny]</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -776,12 +779,13 @@ function renderIncidents(items) {
     } else {
       empty.classList.add('hidden');
       list.innerHTML = items.slice(0, 6).map(it => `
-        <div class="border border-gray-800 rounded-lg p-3 bg-black/20">
-          <div class="text-sm font-semibold">${escapeHtml(it.signature || '')}</div>
-          <div class="mt-1 text-xs text-gray-500">
-            users: ${escapeHtml(it.unique_users ?? '')}
-            • repeats: ${escapeHtml(it.repeats ?? '')}
-            • action: ${escapeHtml(it.action ?? '')}
+        <div class="pc-log-item">
+          <span class="pc-log-tag">EVENT</span>
+          <div class="flex-1">
+            <div class="font-bold">${escapeHtml(it.signature || '')}</div>
+            <div class="text-[10px] opacity-60 mt-0.5">
+              USERS: ${escapeHtml(it.unique_users ?? '')} • REPEATS: ${escapeHtml(it.repeats ?? '')} • ACTION: ${escapeHtml(it.action ?? '')}
+            </div>
           </div>
         </div>
       `).join('');
