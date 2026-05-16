@@ -5,11 +5,15 @@
   <title>Login — Scraplet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=9">
 </head>
 
-<body class="min-h-screen flex items-center justify-center bg-transparent text-white p-6">
-  <div class="w-full max-w-md bg-gray-900/80 border border-gray-800 rounded-xl p-8">
-    <h1 class="text-2xl font-bold mb-6">Login</h1>
+<body class="np min-h-screen flex items-center justify-center bg-transparent text-white p-6">
+  <div class="pc-panel w-full max-w-md">
+    <div class="pc-panel-hd">
+      <div class="pc-panel-title">System Login</div>
+    </div>
+    <div class="pc-panel-bd">
 
     <form
       action="/auth/login<%= embed ? '?embed=1' : '' %>"
@@ -25,7 +29,7 @@
         name="email"
         placeholder="Email"
         required
-        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        class="pc-input"
         autocomplete="email"
       />
 
@@ -34,25 +38,26 @@
         name="password"
         placeholder="Password"
         required
-        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        class="pc-input"
         autocomplete="current-password"
       />
 
       <button
         type="submit"
-        class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded"
+        class="pc-btn pc-btn--primary w-full"
       >
-        Login
+        Access System
       </button>
     </form>
 
-    <div class="mt-6 text-sm text-gray-300">
-      <span>Don’t have an account?</span>
+    <div class="mt-6 text-sm pc-text-muted text-center border-t border-black/5 pt-4">
+      <span>No authorization?</span>
       <a
         href="/auth/signup<%= embed ? '?embed=1' : '' %>"
-        class="text-yellow-400 hover:text-yellow-300 font-semibold"
-      >Sign up</a>
+        class="text-cyan-400 hover:underline font-bold"
+      >Create Account</a>
     </div>
   </div>
+</div>
 </body>
 </html>

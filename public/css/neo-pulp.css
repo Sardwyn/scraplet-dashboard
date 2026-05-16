@@ -66,8 +66,68 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   PREMIUM PULP TEXTURES
+   GLOBAL TAILWIND RESETS (Aggressive Overrides)
    ───────────────────────────────────────────────────────────── */
+body.np { color: var(--pc-text-void); }
+
+/* Typography */
+body.np h1, body.np h2, body.np h3, body.np .text-white { color: var(--pc-text-void) !important; }
+body.np .text-gray-100, body.np .text-gray-200, body.np .text-gray-300 { color: var(--pc-text-void) !important; }
+body.np .text-gray-400, body.np .text-gray-500, body.np .text-gray-600 { color: var(--pc-muted-void) !important; }
+
+/* Status Colors */
+body.np .text-green-400, body.np .text-emerald-400, body.np .text-green-500 { color: var(--pc-accent) !important; }
+body.np .text-red-400, body.np .text-red-500, body.np .text-rose-500 { color: var(--pc-err) !important; }
+body.np .text-amber-400, body.np .text-yellow-400, body.np .text-orange-400 { color: var(--pc-accent-2) !important; }
+
+/* Backgrounds */
+body.np .bg-gray-800, body.np .bg-gray-900, body.np .bg-gray-950 { background-color: var(--pc-bg) !important; }
+body.np .bg-white\/5, body.np .bg-white\/10 { background-color: rgba(245, 235, 214, 0.05) !important; }
+
+/* Borders */
+body.np .border-gray-800, body.np .border-white\/5, body.np .border-white\/10 { border-color: rgba(12, 14, 18, 0.4) !important; }
+
+/* REVERSE: Reset for anything inside a pc-panel (Paper) */
+body.np .pc-panel h1, 
+body.np .pc-panel h2, 
+body.np .pc-panel h3,
+body.np .pc-panel p,
+body.np .pc-panel span:not([class*="text-"]) { color: var(--pc-text) !important; }
+
+body.np .pc-panel .text-gray-400, 
+body.np .pc-panel .text-gray-500 { color: var(--pc-muted) !important; }
+
+body.np .pc-panel .text-white { color: var(--pc-text) !important; }
+
+/* OLED & PIP Specificity Override */
+body.np .pc-oled, body.np .pc-pip,
+body.np .pc-oled *, body.np .pc-pip * {
+  color: var(--oled-accent) !important;
+  border-color: rgba(37, 199, 199, 0.2) !important;
+}
+
+body.np .pc-oled [class*="text-gray-"],
+body.np .pc-pip [class*="text-gray-"] {
+  color: var(--oled-accent) !important;
+  opacity: 0.6 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL & LAYOUT
+   ───────────────────────────────────────────────────────────── */
+
+body.np {
+  background-color: var(--pc-bg);
+  background-image: radial-gradient(rgba(37, 199, 199, 0.15) 1.5px, transparent 0);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Paper Texture Overlay */
 body.np::after {
   content: "";
   position: absolute;
@@ -79,111 +139,9 @@ body.np::after {
   mix-blend-mode: multiply;
 }
 
-/* Global contrast for Neo-Pulp */
-body.np { 
-  color: var(--pc-text-void); 
-} 
-
-/* Titles and Main Text should be Paper White on Dark Background */
-body.np h1, 
-body.np h2, 
-body.np h3, 
-body.np .pc-text-main { 
-  color: var(--pc-text-void) !important; 
-}
-
-body.np .pc-text-muted { 
-  color: var(--pc-muted-void) !important; 
-}
-
-/* Tailwind Overrides */
-body.np .text-gray-100,
-body.np .text-gray-200,
-body.np .text-gray-300 { color: var(--pc-text-void) !important; }
-body.np .text-gray-400,
-body.np .text-gray-500 { color: var(--pc-muted-void) !important; }
-
-/* REVERSE for Panels: Content inside pc-panel should be INK */
-body.np .pc-panel,
-body.np .pc-panel h1,
-body.np .pc-panel h2,
-body.np .pc-panel h3,
-body.np .pc-panel .pc-text-main { 
-  color: var(--pc-text) !important; 
-}
-body.np .pc-panel .pc-text-muted,
-body.np .pc-panel .text-gray-400,
-body.np .pc-panel .text-gray-500 { 
-  color: var(--pc-muted) !important; 
-}
-
-/* OLED & PIP PANELS (and any dark sub-panels)
-   Must be light text even if nested inside a light pc-panel.
-   We use high specificity here to win over the pc-panel overrides.
-*/
-body.np .pc-oled, 
-body.np .pc-pip,
-body.np .pc-oled *, 
-body.np .pc-pip * {
-  color: var(--oled-accent) !important;
-  border-color: rgba(37, 199, 199, 0.2) !important;
-}
-
-/* Ensure muted variants inside dark panels still have some opacity */
-body.np .pc-oled .pc-text-muted,
-body.np .pc-pip .pc-text-muted,
-body.np .pc-oled [class*="text-gray-"],
-body.np .pc-pip [class*="text-gray-"] {
-  color: var(--oled-accent) !important;
-  opacity: 0.6 !important;
-}
-
-body.np .bg-gray-100 { background-color: var(--pc-surface-2) !important; }
-body.np .bg-gray-800 { background-color: var(--pc-panel) !important; }
-body.np .bg-gray-900 { background-color: var(--pc-bg) !important; }
-
-/* Handle specific Tailwind primary/accent colors */
-body.np .bg-indigo-400,
-body.np .bg-indigo-500,
-body.np .bg-indigo-600 { background-color: var(--pc-accent) !important; }
-
-body.np .text-indigo-400,
-body.np .text-indigo-300 { color: var(--pc-accent) !important; }
-
-body.np .bg-emerald-400 { background-color: var(--pc-accent) !important; }
-body.np .text-emerald-200 { color: var(--pc-accent) !important; }
-
-body.np .pc-nav-header {
-  background-color: var(--pc-bg) !important;
-  border-bottom: var(--pc-border-w) solid var(--np-border) !important;
-}
-
-body.np .pc-nav-header a,
-body.np .pc-nav-header span,
-body.np .pc-nav-header button {
-  color: var(--pc-text-void) !important;
-}
-
-body.np .pc-nav-header a:hover {
-  color: var(--pc-accent) !important;
-}
-
-
-
-
-/* ─────────────────────────────────────────────────────────────
-   GLOBAL & LAYOUT
-   ───────────────────────────────────────────────────────────── */
-
-body.np {
-  /* Halftone Background */
-  background-color: var(--pc-bg);
-  background-image: radial-gradient(rgba(37, 199, 199, 0.15) 1.5px, transparent 0);
-  background-size: 24px 24px;
-  background-attachment: fixed;
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  transition: background 0.2s ease, color 0.2s ease;
+.pc-page {
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 

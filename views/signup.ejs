@@ -5,11 +5,15 @@
   <title>Sign Up — Scraplet</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/dashboard/css/neo-pulp.css?v=9">
 </head>
 
-<body class="min-h-screen flex items-center justify-center bg-transparent text-white p-6">
-  <div class="w-full max-w-md bg-gray-900/80 border border-gray-800 rounded-xl p-8">
-    <h1 class="text-2xl font-bold mb-6">Create your account</h1>
+<body class="np min-h-screen flex items-center justify-center bg-transparent text-white p-6">
+  <div class="pc-panel w-full max-w-md">
+    <div class="pc-panel-hd">
+      <div class="pc-panel-title">New Identity Registration</div>
+    </div>
+    <div class="pc-panel-bd">
 
     <form
       action="/auth/signup<%= embed ? '?embed=1' : '' %>"
@@ -25,7 +29,7 @@
         name="email"
         placeholder="Email"
         required
-        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        class="pc-input"
         autocomplete="email"
       />
 
@@ -34,7 +38,7 @@
         name="username"
         placeholder="Username"
         required
-        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        class="pc-input"
         autocomplete="username"
       />
 
@@ -43,25 +47,26 @@
         name="password"
         placeholder="Password"
         required
-        class="w-full p-3 bg-gray-800 border border-gray-700 rounded"
+        class="pc-input"
         autocomplete="new-password"
       />
 
       <button
         type="submit"
-        class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded"
+        class="pc-btn pc-btn--primary w-full"
       >
-        Sign up
+        Initialize Account
       </button>
     </form>
 
-    <div class="mt-6 text-sm text-gray-300">
-      <span>Already have an account?</span>
+    <div class="mt-6 text-sm pc-text-muted text-center border-t border-black/5 pt-4">
+      <span>Existing credentials detected?</span>
       <a
         href="/auth/login<%= embed ? '?embed=1' : '' %>"
-        class="text-yellow-400 hover:text-yellow-300 font-semibold"
+        class="text-cyan-400 hover:underline font-bold"
       >Log in</a>
     </div>
   </div>
+</div>
 </body>
 </html>
