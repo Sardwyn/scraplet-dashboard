@@ -100,21 +100,16 @@
     </div>
   </div>
 
-  <!-- TABS -->
-  <div class="mt-6 border-b border-white/10 flex items-center gap-6">
-    <button
-      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
-      data-tab="rules" data-active="true">Rules</button>
-    <button
-      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
-      data-tab="settings">Settings</button>
-    <button
-      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
-      data-tab="test">Test</button>
-    <button
-      class="py-3 border-b-2 border-transparent data-[active=true]:border-white text-white/70 data-[active=true]:text-white"
-      data-tab="incidents">Incidents</button>
+  <!-- TABS (DOSSIER STYLE) -->
+  <div class="mt-8 pc-dossier-tabs">
+    <button class="pc-dossier-tab" data-tab="rules" data-active="true">Rules</button>
+    <button class="pc-dossier-tab" data-tab="settings">Settings</button>
+    <button class="pc-dossier-tab" data-tab="test">Test</button>
+    <button class="pc-dossier-tab" data-tab="incidents">Incidents</button>
   </div>
+
+  <div class="pc-panel pc-dossier-content">
+    <div class="pc-panel-bd">
 
   <!-- RULES -->
   <section class="mt-6" data-pane="rules">
@@ -419,27 +414,8 @@
       </button>
     </div>
 
-    <div class="pc-panel mb-4">
-      <div class="pc-panel-bd p-0 overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-white/5 border-b border-white/5">
-              <tr class="text-white/60">
-                <th class="p-3 text-left">Time</th>
-                <th class="p-3 text-left">Signature</th>
-                <th class="p-3 text-left">Users</th>
-                <th class="p-3 text-left">Window</th>
-                <th class="p-3 text-left">
-                  <div>Action</div>
-                  <div class="text-[11px] text-white/40 font-normal mt-1">“ignore” = exception</div>
-                </th>
-                <th class="p-3 text-left"></th>
-              </tr>
-            </thead>
-            <tbody id="m_incidents_tbody" class="text-white"></tbody>
-          </table>
-        </div>
-      </div>
+    <div id="m_incidents_full_list" class="pc-log-feed h-[500px] overflow-y-auto">
+      <!-- Populated by moderation.js -->
     </div>
 
     <div class="mt-4 flex items-center justify-between">
@@ -495,6 +471,8 @@
       </div>
     </div>
   </section>
+    </div>
+  </div>
 </div>
 
 <!-- ADD RULE MODAL -->

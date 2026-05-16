@@ -96,13 +96,21 @@ body.np .border-gray-800, body.np .border-white\/5, body.np .border-white\/10 { 
 body.np .pc-panel h1, 
 body.np .pc-panel h2, 
 body.np .pc-panel h3,
+body.np .pc-panel h4,
 body.np .pc-panel p,
-body.np .pc-panel span:not([class*="text-"]) { color: var(--pc-text) !important; }
+body.np .pc-panel div,
+body.np .pc-panel span,
+body.np .pc-panel label,
+body.np .pc-panel .text-white,
+body.np .pc-panel .text-gray-100,
+body.np .pc-panel .text-gray-200,
+body.np .pc-panel .text-gray-300 { color: var(--pc-text) !important; }
 
+body.np .pc-panel .pc-text-muted,
+body.np .pc-panel .text-white\/40,
+body.np .pc-panel .text-white\/50,
 body.np .pc-panel .text-gray-400, 
 body.np .pc-panel .text-gray-500 { color: var(--pc-muted) !important; }
-
-body.np .pc-panel .text-white { color: var(--pc-text) !important; }
 
 /* OLED & PIP Specificity Override */
 body.np .pc-oled, body.np .pc-pip,
@@ -1674,6 +1682,56 @@ input[type="range"].pc-range::-moz-range-thumb {
   width: 14px;
   background: var(--pc-slider-thumb);
   border: 2px solid var(--np-border);
+/* ─────────────────────────────────────────────────────────────
+   DOSSIER TABS
+   ───────────────────────────────────────────────────────────── */
+
+/* -- Dossier Tabs (Folder Style) -- */
+.pc-dossier-tabs {
+  display: flex;
+  gap: 4px;
+  position: relative;
+  z-index: 10;
+  margin-bottom: -2px; /* Overlap the panel border */
+  padding-left: 10px;
+}
+
+.pc-dossier-tab {
+  background: var(--pc-surface-2);
+  color: var(--pc-muted) !important;
+  padding: 8px 24px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: var(--pc-border-w) solid var(--np-border);
+  border-bottom: none;
+  cursor: pointer;
+  position: relative;
+  clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+  min-width: 140px;
+  text-align: center;
+}
+
+.pc-dossier-tab:hover {
+  background: var(--pc-panel);
+  color: var(--pc-text) !important;
+}
+
+.pc-dossier-tab[data-active="true"] {
+  background: var(--pc-panel);
+  color: var(--pc-text) !important;
+  transform: translateY(-1px);
+  z-index: 11;
+  padding-bottom: 12px;
+  height: calc(100% + 4px);
+}
+
+/* -- Dossier Content Wrapper -- */
+.pc-dossier-content {
+  border-top-left-radius: 0 !important;
+}
   border-radius: 0;
   box-shadow: 4px 4px 0px rgba(0,0,0,0.4);
 }

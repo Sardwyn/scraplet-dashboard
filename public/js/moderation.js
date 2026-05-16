@@ -771,6 +771,7 @@ function renderIncidents(items) {
   const list = qs('#m_incidents_list');
   const empty = qs('#m_incidents_empty');
   const tbody = qs('#m_incidents_tbody');
+  const fullList = qs('#m_incidents_full_list');
 
   if (list && empty) {
     if (!items?.length) {
@@ -792,21 +793,19 @@ function renderIncidents(items) {
     }
   }
 
-  if (tbody) {
-    tbody.innerHTML = items?.length ? items.map(it => `
-      <tr class="border-t border-gray-800">
-        <td class="p-3 text-xs text-gray-400">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</td>
-        <td class="p-3 text-sm font-mono">${escapeHtml(it.signature || '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.unique_users ?? '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.window_seconds ?? '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.action ?? '')}</td>
-        <td class="p-3 text-right"></td>
-      </tr>
-    `).join('') : `
-      <tr class="border-t border-gray-800">
-        <td colspan="6" class="p-6 text-sm text-gray-500">No incidents yet.</td>
-      </tr>
-    `;
+  if (fullList) {
+    fullList.innerHTML = items?.length ? items.map(it => `
+      <div class="pc-log-item">
+        <span class="pc-log-time">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</span>
+        <span class="pc-log-tag">${escapeHtml((it.action || 'EVENT').toUpperCase())}</span>
+        <div class="flex-1">
+          <div class="font-bold text-white">${escapeHtml(it.signature || '')}</div>
+          <div class="text-[10px] opacity-60 mt-0.5 uppercase">
+            USERS: ${escapeHtml(it.unique_users ?? '')} • WINDOW: ${escapeHtml(it.window_seconds ?? '')}s
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="p-4 text-center opacity-40">No incidents logged.</div>';
   }
 }
 
