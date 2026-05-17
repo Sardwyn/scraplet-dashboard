@@ -1919,7 +1919,7 @@ body.np .m-stamp {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.2em 0.5em;
+  padding: 0.4em 0.8em;
   border: 6px solid currentColor;
   outline: 2px solid currentColor;
   outline-offset: 3px;
@@ -1931,7 +1931,7 @@ body.np .m-stamp {
   text-transform: uppercase;
   transform: rotate(-8deg);
   opacity: 0.85;
-  color: #ef4444; /* default: vibrant red ink */
+  color: #ef4444 !important; /* default: vibrant red ink */
   user-select: none;
   white-space: nowrap;
   /* slight bleed to mimic rubber ink spread */
@@ -1940,15 +1940,15 @@ body.np .m-stamp {
 }
 
 body.np .m-stamp--clear {
-  color: #22c55e; /* vibrant green ink */
+  color: #22c55e !important; /* vibrant green ink */
 }
 
 body.np .m-stamp--flagged {
-  color: #ef4444; /* vibrant red ink */
+  color: #ef4444 !important; /* vibrant red ink */
 }
 
 body.np .m-stamp--error {
-  color: #3b82f6; /* vibrant blue ink */
+  color: #3b82f6 !important; /* vibrant blue ink */
 }
 
 /* Sub-label below the stamp (action type) */
