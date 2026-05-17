@@ -438,7 +438,7 @@ function wireQuickTogglesOnce() {
     linkEl.addEventListener('change', async () => {
       try {
         if (linkEl.checked) {
-          await createRuleIfMissing('link_posting', { rule_value: null, action: 'timeout', duration_seconds: 30, ignore_mods: true });
+          await createRuleIfMissing('link_posting', { rule_value: '*', action: 'timeout', duration_seconds: 30, ignore_mods: true });
         } else {
           const r = findGlobalRuleByType('link_posting');
           if (r) await setRuleEnabled(r.id, false);
@@ -653,7 +653,7 @@ qs('#m_create_rule')?.addEventListener('click', async () => {
       rule_value = String(qs('#m_new_rule_value')?.value || '').trim();
       if (!rule_value) throw new Error('Enter a value for this preset.');
     } else {
-      rule_value = null;
+      rule_value = '*';
     }
 
     await api('/dashboard/api/moderation/rules', {
