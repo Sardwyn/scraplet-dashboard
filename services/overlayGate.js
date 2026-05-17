@@ -7,26 +7,6 @@ const pub = new Redis(REDIS_URL);
 
 const HEARTBEAT_INTERVAL_MS = 20000;
 
-// In-memory event buffer for replay on reconnect
-// Stores last 100 events per overlay channel, keyed by channelKey
-const EVENT_BUFFER_MAX = 100;
-const eventBuffers = new Map(); // channelKey -> [{id, data}]
-
-function bufferEvent(channel, id, data) {
-    if (!eventBuffers.has(channel)) eventBuffers.set(channel, []);
-    const buf = eventBuffers.get(channel);
-    buf.push({ id, data });
-    if (buf.length > EVENT_BUFFER_MAX) buf.shift();
-}
-
-function getReplayEvents(channel, lastEventId) {
-    if (!lastEventId || !eventBuffers.has(channel)) return [];
-    const buf = eventBuffers.get(channel);
-    const idx = buf.findIndex(e => e.id === lastEventId);
-    if (idx === -1) return buf; // unknown ID — replay all buffered
-    return buf.slice(idx + 1); // replay everything after last seen
-}
-
 // Strict Packet Validator (same as before)
 function validatePacket(packet) {
   if (!packet || typeof packet !== "object") throw new Error("Packet must be an object");
@@ -50,76 +30,72 @@ function validatePacket(packet) {
 }
 
 function channelKey(tenantId, publicId) {
-  return `overlay:${tenantId}:${publicId}`;
+  return `overlay:stream:${tenantId}:${publicId}`; // Using explicit stream namespace
 }
 
 export const overlayGate = {
   async subscribe(tenantId, publicId, res, lastEventId) {
     const channel = channelKey(tenantId, publicId);
-
-    // IMPORTANT: dedicated Redis subscriber per SSE connection
+    
+    // IMPORTANT: dedicated Redis connection per SSE connection for XREAD block
     const client = new Redis(REDIS_URL);
-
-    try {
-      await client.subscribe(channel);
-    } catch (err) {
-      console.error("[OverlayGate] Redis subscribe failed:", err);
-      client.disconnect();
-      throw err;
-    }
-
-    // Replay any missed events since last-event-id
-    if (lastEventId) {
-      const missed = getReplayEvents(channel, lastEventId);
-      for (const ev of missed) {
-        res.write(`id: ${ev.id}\n`);
-        res.write("event: message\n");
-        res.write(`data: ${ev.data}\n\n`);
-      }
-      if (missed.length > 0 && res.flush) res.flush();
-    }
-
-    const onMessage = (_channel, message) => {
-      if (_channel !== channel) return;
-
-      let packet;
-      try {
-        packet = JSON.parse(message);
-      } catch (e) {
-        console.error("[OverlayGate] Bad JSON from Redis:", e);
-        return;
-      }
-
-      const eventId = packet.header?.id ?? String(Date.now());
-      // Buffer for replay
-      bufferEvent(channel, eventId, JSON.stringify(packet));
-
-      res.write(`id: ${eventId}\n`);
-      res.write("event: message\n");
-      res.write(`data: ${JSON.stringify(packet)}\n\n`);
-
-      if (res.flush) res.flush();
-    };
-
-    client.on("message", onMessage);
+    
+    let isSubscribed = true;
+    let currentOffset = lastEventId || '$';
+    
+    res.write(": welcome\n\n");
 
     const hb = setInterval(() => {
       res.write(": ping\n\n");
+      if (res.flush) res.flush();
     }, HEARTBEAT_INTERVAL_MS);
 
-    res.on("close", async () => {
+    res.on("close", () => {
+      isSubscribed = false;
       clearInterval(hb);
-      try {
-        client.off("message", onMessage);
-        await client.unsubscribe(channel);
-      } catch (e) {
-        // ignore cleanup errors
-      } finally {
-        client.disconnect();
-      }
+      client.disconnect();
     });
 
-    res.write(": welcome\n\n");
+    // Run background loop to block on XREAD
+    (async () => {
+      while (isSubscribed) {
+        try {
+          const start = Date.now();
+          // BLOCK for 10 seconds. If no messages, it returns null and we loop again
+          const streamResults = await client.xread('BLOCK', 10000, 'STREAMS', channel, currentOffset);
+          
+          if (!isSubscribed) break;
+
+          if (streamResults) {
+            const messages = streamResults[0][1];
+            for (const [messageId, fields] of messages) {
+              currentOffset = messageId;
+              
+              // We saved it as ['payload', JSON.stringify(packet)]
+              const payloadIdx = fields.indexOf('payload');
+              if (payloadIdx !== -1 && payloadIdx + 1 < fields.length) {
+                const packetStr = fields[payloadIdx + 1];
+                
+                res.write(`id: ${messageId}\n`);
+                res.write("event: message\n");
+                res.write(`data: ${packetStr}\n\n`);
+              }
+            }
+            if (res.flush) res.flush();
+          } else {
+            // Prevent event-loop starvation if stream doesn't exist yet (XREAD returns instantly)
+            if (Date.now() - start < 1000) {
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          }
+        } catch (e) {
+          if (!isSubscribed) break;
+          console.error("[OverlayGate] XREAD error:", e);
+          // Wait a bit before retrying on error
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    })();
   },
 
   async publish(tenantId, publicId, packet) {
@@ -147,9 +123,10 @@ export const overlayGate = {
     }
 
     try {
-      await pub.publish(channel, JSON.stringify(packet));
+      // Kafka-like log: keep last 1000 events reliably in a Redis Stream using XADD
+      await pub.xadd(channel, 'MAXLEN', '~', 1000, '*', 'payload', JSON.stringify(packet));
     } catch (err) {
-      console.error("[OverlayGate] Redis publish failed:", err);
+      console.error("[OverlayGate] Redis XADD failed:", err);
     }
   },
 };

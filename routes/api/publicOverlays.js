@@ -48,7 +48,8 @@ router.get('/:publicId/events/stream', async (req, res) => {
             'X-Accel-Buffering': 'no'
         });
         res.flushHeaders();
-        overlayGate.subscribe(tenantId, publicId, res, req.headers['last-event-id']);
+        const lastEventId = req.query.lastEventId || req.headers['last-event-id'];
+        overlayGate.subscribe(tenantId, publicId, res, lastEventId);
     } catch (err) {
         console.error('[PublicOverlayEvents] Error:', err);
         if (!res.headersSent) res.status(500).send('Internal Server Error');
