@@ -1865,7 +1865,8 @@ body.np .m-verdict-doc {
   border: 2px solid var(--np-border);
   font-family: var(--np-font-mono, 'Courier Prime', 'Courier New', monospace);
   overflow: hidden;
-  min-height: 120px;
+  padding: 1rem 0;
+  min-height: 180px;
 }
 
 /* Left: detail rows */
