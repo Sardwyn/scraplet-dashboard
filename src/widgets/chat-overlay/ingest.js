@@ -39,33 +39,33 @@ export async function enqueueChatForUser(ownerUserId, item) {
       `SELECT public_id FROM overlays WHERE user_id = $1`,
       [String(ownerUserId)]
     );
-    const packet = {
-      header: {
-        id: String(safeItem.id || crypto.randomUUID()),
-        type: "chat.message",
-        ts: safeItem.ts,
-        producer: "chat-ingest",
-        platform: safeItem.platform,
-        scope: {
-          tenantId: String(ownerUserId),
-          overlayPublicId: row.public_id,
-        }
-      },
-      payload: {
-        author: {
-          display: safeItem.user.name,
-          color: safeItem.color,
-          avatar: safeItem.user.avatar,
-          badges: safeItem.badges,
-        },
-        message: {
-          text: safeItem.text,
-          emotes: safeItem.emotes,
-        },
-        platform: safeItem.platform,
-      },
-    };
     for (const row of overlays.rows) {
+      const packet = {
+        header: {
+          id: String(safeItem.id || crypto.randomUUID()),
+          type: "chat.message",
+          ts: safeItem.ts,
+          producer: "chat-ingest",
+          platform: safeItem.platform,
+          scope: {
+            tenantId: String(ownerUserId),
+            overlayPublicId: row.public_id,
+          }
+        },
+        payload: {
+          author: {
+            display: safeItem.user.name,
+            color: safeItem.color,
+            avatar: safeItem.user.avatar,
+            badges: safeItem.badges,
+          },
+          message: {
+            text: safeItem.text,
+            emotes: safeItem.emotes,
+          },
+          platform: safeItem.platform,
+        },
+      };
       overlayGate.publish(String(ownerUserId), row.public_id, packet);
     }
   } catch (e) {

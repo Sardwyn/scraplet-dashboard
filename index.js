@@ -1,5 +1,5 @@
 import './bootstrap/env.js';
-import { startChatOutboxWorker } from "./services/chatOutboxDeliver.js";
+// import { startChatOutboxWorker } from "./services/chatOutboxDeliver.js";
 import { startKickTokenRefreshWorker } from "./services/kickTokenRefreshWorker.js";
 import { startBroadcasterBackfillWorker } from "./services/backfillBroadcasterIds.js";
 import { initTikTokIngestManager } from "./services/tiktokChatIngest.js";
@@ -425,8 +425,7 @@ app.use((err, req, res, next) => {
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
-
-startChatOutboxWorker();
+// startChatOutboxWorker();
 initTikTokIngestManager().catch(console.error);
 startKickTokenRefreshWorker();
 startBroadcasterBackfillWorker();

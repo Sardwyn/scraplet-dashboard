@@ -14,40 +14,9 @@ if (!rawUrl) {
   );
 }
 
-// If we have a URL, parse it into an explicit config so we *know*
-// password is a plain string.
-let poolConfig = null;
-
-if (rawUrl) {
-  try {
-    const u = new URL(rawUrl);
-
-    poolConfig = {
-      user: decodeURIComponent(u.username),
-      password: u.password ? String(u.password) : undefined,
-      host: u.hostname,
-      port: u.port ? Number(u.port) : 5432,
-      database: u.pathname.replace(/^\//, ''),
-      max: 10,
-    };
-
-    console.log('[scrapbotDb] Using config:', {
-      user: poolConfig.user,
-      host: poolConfig.host,
-      port: poolConfig.port,
-      database: poolConfig.database,
-      passwordType: typeof poolConfig.password,
-    });
-  } catch (err) {
-    console.error('[scrapbotDb] Failed to parse SCRAPBOT_DATABASE_URL:', err);
-  }
-}
-
 let scrapbotDb;
 
-if (!poolConfig) {
-  // No valid config -> export a dummy pool that always throws,
-  // so we don't get weird SASL errors, just a clear message.
+if (!rawUrl) {
   console.error(
     '[scrapbotDb] No valid DB config; scrapbot DB operations will fail.'
   );
@@ -60,7 +29,10 @@ if (!poolConfig) {
     },
   };
 } else {
-  scrapbotDb = new Pool(poolConfig);
+  scrapbotDb = new Pool({
+    connectionString: rawUrl,
+    ssl: false,
+  });
 
   scrapbotDb.on('error', (err) => {
     console.error('[scrapbotDb] idle client error', err);

@@ -859,7 +859,10 @@ function signatureFor(m){
   const p = (m && m.platform) ? String(m.platform) : "";
   const u = getUserName(m);
   const t = (m && m.text) ? String(m.text) : "";
-  return p + "|" + u + "|" + t;
+  // Include message ID so distinct messages with identical text are never collapsed.
+  // Dedup still fires only if the same message_id is re-delivered (e.g. outbox retry).
+  const id = (m && m.id) ? String(m.id) : "";
+  return p + "|" + u + "|" + t + "|" + id;
 }
 
 function renderPinned(){

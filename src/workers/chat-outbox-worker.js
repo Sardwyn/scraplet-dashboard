@@ -107,6 +107,7 @@ async function lockBatch(meta) {
   if (meta.hasDeliveredAt) where.push("delivered_at IS NULL");
 
   if (meta.hasNextAttemptAt) where.push("(next_attempt_at IS NULL OR next_attempt_at <= now())");
+  if (meta.hasLockedAt) where.push("(locked_at IS NULL OR locked_at <= now() - interval '2 minutes')");
 
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
   const orderBy = meta.hasCreatedAt ? "ORDER BY created_at ASC" : "ORDER BY event_id ASC";
@@ -233,6 +234,7 @@ async function processOne(meta, row) {
 
   // 1) Ask Scrapbot for moderation decision / command handling
   let scrapbotData = null;
+  let scrapbotFailed = false;
 
   try {
     const resp = await fetchWithTimeout(SCRAPBOT_INGEST_URL, {
@@ -248,14 +250,31 @@ async function processOne(meta, row) {
     const rawText = await resp.text().catch(() => "");
 
     if (!resp.ok) {
-      await markFailure(meta, row.event_id, `scrapbot_http_${resp.status}`);
-      return { ok: false, reason: "scrapbot_http", status: resp.status, body: rawText.slice(0, 200) };
+      if (resp.status >= 400 && resp.status < 500) {
+        // 4xx = bad payload, will never recover — hard fail so we don't loop forever
+        console.error("[chat-outbox-worker] Scrapbot rejected payload (4xx), marking failure:", {
+          event_id: row.event_id,
+          status: resp.status,
+          body: rawText.slice(0, 200),
+        });
+        await markFailure(meta, row.event_id, `scrapbot_http_${resp.status}`);
+        return { ok: false, reason: "scrapbot_http_4xx", status: resp.status };
+      }
+      // 5xx = transient (scrapbot restarting/crashing) — fail-open, same as network error
+      console.warn("[chat-outbox-worker] Scrapbot 5xx (transient), failing open:", {
+        event_id: row.event_id,
+        status: resp.status,
+        body: rawText.slice(0, 100),
+      });
+      scrapbotFailed = true;
+      scrapbotData = null;
+    } else {
+      scrapbotData = safeJsonParse(rawText) || { raw: rawText };
     }
-
-    scrapbotData = safeJsonParse(rawText) || { raw: rawText };
   } catch (err) {
-    // Scrapbot unreachable — fail-open: fan-out with no decision (allows message through)
+    // Scrapbot unreachable (ECONNREFUSED, timeout, etc.) — fail-open: fan-out with no decision
     console.warn("[chat-outbox-worker] Scrapbot unreachable, failing open:", err?.message || String(err));
+    scrapbotFailed = true;
     scrapbotData = null;
   }
 

@@ -1249,7 +1249,7 @@ export async function kickWebhookHandler(req, res) {
       // Phase 4: Reliable Delivery via Outbox
       try {
         // Ensure event_id exists (Kick message_id or random UUID)
-        const eventId = chat_v1.event_id || crypto.randomUUID();
+        const eventId = chat_v1.id || chat_v1.event_id || crypto.randomUUID();
         chat_v1.event_id = eventId; // Ensure it's in the payload
 
         // Enqueue to Outbox (public schema)
