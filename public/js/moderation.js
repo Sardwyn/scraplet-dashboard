@@ -697,7 +697,7 @@ qs('#m_run_test')?.addEventListener('click', async () => {
     const payload = {
       platform: platform(),
       text: String(qs('#m_test_text')?.value || ''),
-      senderUsername: String(qs('#m_test_sender')?.value || 'tester'),
+      senderUsername: 'tester',
       userRole: String(qs('#m_test_role')?.value || 'everyone'),
       channelSlug: '',
     };
