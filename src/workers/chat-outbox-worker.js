@@ -237,7 +237,11 @@ async function processOne(meta, row) {
   let scrapbotFailed = false;
 
   try {
-    const resp = await fetchWithTimeout(SCRAPBOT_INGEST_URL, {
+    const platform = chat_v1?.platform || "kick";
+    const baseUrl = SCRAPBOT_INGEST_URL.replace(/\/api\/inbound\/[^/]+$/, "");
+    const targetUrl = `${baseUrl}/api/inbound/${platform}`;
+
+    const resp = await fetchWithTimeout(targetUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

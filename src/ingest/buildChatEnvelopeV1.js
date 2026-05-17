@@ -270,3 +270,76 @@ export function buildChatEnvelopeV1FromTikTok({
     supervisor_id: env.source.supervisor_id
   });
 }
+
+/**
+ * Twitch → ChatEnvelopeV1
+ */
+export function buildChatEnvelopeV1FromTwitch({
+  ownerUserId,
+  channelSlug,
+  platformChannelId = null,
+
+  messageId = null,
+  messageText,
+  messageTs = null,
+
+  authorUsername = null,
+  authorDisplay = null,
+  authorPlatformUserId = null,
+  role = "viewer",
+  badges = null,
+
+  ingest = "api",
+  supervisorId = "dashboard:twitch-eventsub",
+
+  platformPayload = null,
+  raw = null,
+} = {}) {
+  if (typeof normalizeChatEnvelopeV1 !== "function") {
+    throw new Error("normalizeChatEnvelopeV1 missing from contracts/chatEnvelopeV1.js");
+  }
+
+  const env = {
+    v: 1,
+    id: str(messageId) || undefined,
+    ts: messageTs || isoNow(),
+
+    platform: "twitch",
+    scraplet_user_id: Number(ownerUserId),
+
+    channel: {
+      slug: cleanSlug(channelSlug) || undefined,
+      platform_channel_id: str(platformChannelId) || undefined,
+    },
+
+    author: {
+      display: str(authorDisplay || authorUsername) || "Unknown",
+      username: cleanUsername(authorUsername) || undefined,
+      platform_user_id: str(authorPlatformUserId) || undefined,
+      role: safeRole(role),
+      badges: Array.isArray(badges) ? badges.map((b) => String(b)) : undefined,
+    },
+
+    message: {
+      text: String(messageText ?? ""),
+      emotes: (platformPayload && Array.isArray(platformPayload.emotes)) ? platformPayload.emotes : undefined,
+    },
+
+    source: {
+      ingest: safeIngest(ingest),
+      supervisor_id: str(supervisorId) || "dashboard:twitch-eventsub",
+      received_ts: isoNow(),
+    },
+
+    platform_payload:
+      platformPayload && typeof platformPayload === "object" ? platformPayload : undefined,
+
+    raw: raw && typeof raw === "object" ? raw : undefined,
+  };
+
+  return normalizeChatEnvelopeV1(env, {
+    ingest: env.source.ingest,
+    supervisor_id: env.source.supervisor_id,
+  });
+}
+
