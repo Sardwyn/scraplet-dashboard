@@ -13,21 +13,20 @@ jest.unstable_mockModule('../../db.js', () => ({
   __esModule: true
 }));
 
+const mockGetHandlesForUser = jest.fn();
+
 jest.unstable_mockModule('../../scripts/stats.js', () => ({
   getStatsForUser: mockGetStatsForUser,
   gradeMarketability: mockGradeMarketability,
   __esModule: true
 }));
 
+jest.unstable_mockModule('../../scripts/externalAccounts.js', () => ({
+  getHandlesForUser: mockGetHandlesForUser,
+  __esModule: true
+}));
+
 const publicRoutes = (await import('../../routes/public.js')).default;
-
-const { resetMetrics } = await import('../../utils/metrics.js');
-
-
-
-const { resetMetrics } = await import('../../utils/metrics.js');
-
-
 
 const { resetMetrics } = await import('../../utils/metrics.js');
 
@@ -44,19 +43,12 @@ function createApp() {
 
 describe('Public profile controller', () => {
   beforeEach(() => {
-
     resetMetrics();
-
-
-    resetMetrics();
-
-
-    resetMetrics();
-
-
     mockQuery.mockReset();
     mockGetStatsForUser.mockReset();
     mockGradeMarketability.mockReset();
+    mockGetHandlesForUser.mockReset();
+    mockGetHandlesForUser.mockResolvedValue({});
   });
 
   it('renders stats and omits hidden buttons', async () => {
@@ -85,7 +77,8 @@ describe('Public profile controller', () => {
           { id: 1, label: 'Support Me', url: 'https://twitch.tv/creator', visible: true, icon: null },
           { id: 2, label: 'Hidden Link', url: 'https://example.com', visible: false, icon: null }
         ]
-      });
+      })
+      .mockResolvedValueOnce({ rows: [] });
 
     mockGetStatsForUser.mockResolvedValue({
       followers: { twitch: 1200 },
@@ -128,6 +121,7 @@ describe('Public profile controller', () => {
           }
         ]
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
     mockGetStatsForUser.mockRejectedValue(new Error('API offline'));
@@ -168,6 +162,7 @@ describe('Public profile controller', () => {
           }
         ]
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
     mockGetStatsForUser.mockResolvedValue({
@@ -213,6 +208,7 @@ describe('Public profile controller', () => {
           }
         ]
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] });
 
     mockGetStatsForUser.mockResolvedValue({

@@ -3,7 +3,7 @@
  * Tests the pure state-transform functions in isolation.
  */
 
-import { describe, it, expect } from "vitest";
+
 
 // ── Minimal stubs for the functions under test ────────────────────────────────
 

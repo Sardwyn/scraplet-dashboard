@@ -100,7 +100,7 @@
         <% if (!account) { %>
           <div class="pc-text-muted text-sm italic">No Scrapbot account found for this user yet.</div>
         <% } else if (cmds.length) { %>
-          <div class="pc-oled overflow-hidden">
+          <div class="pc-oled pc-readout overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead>
@@ -285,11 +285,11 @@
                 Click a chip to insert one.
               </div>
               <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                <div class="pc-oled p-3">
+                <div class="pc-mini-oled pc-readout p-3">
                   <div class="text-[10px] text-white/40 mb-1 uppercase tracking-wider">Example</div>
                   <div class="font-mono text-xs text-white/90">Hello ${user} — welcome to ${channel}!</div>
                 </div>
-                <div class="pc-oled p-3">
+                <div class="pc-mini-oled pc-readout p-3">
                   <div class="text-[10px] text-white/40 mb-1 uppercase tracking-wider">Becomes</div>
                   <div class="font-mono text-xs text-white/90">Hello TabLord — welcome to scraplet!</div>
                 </div>
@@ -333,7 +333,7 @@
               </div>
               <div class="mt-3">
                 <div class="pc-text-muted text-[10px] mb-1">Output</div>
-                <div class="pc-oled p-3">
+                <div class="pc-mini-oled pc-readout p-3">
                   <div class="font-mono text-xs text-white/90 whitespace-pre-wrap" id="cmdPreviewOut">—</div>
                 </div>
                 <div class="text-[10px] text-white/40 mt-2">
@@ -515,7 +515,7 @@
               <% if (!blacklist.length) { %>
                 <div class="pc-text-muted text-sm italic">No blacklisted users.</div>
               <% } else { %>
-                <div class="pc-oled max-h-48 overflow-auto p-2">
+                <div class="pc-mini-oled pc-readout max-h-48 overflow-auto p-2">
                   <table class="w-full text-left text-xs">
                     <thead>
                       <tr class="text-white/30 border-b border-white/5">

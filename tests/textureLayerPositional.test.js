@@ -3,7 +3,7 @@
  * Moving a parent element by (dx, dy) must move its texture child by exactly (dx, dy).
  */
 
-import { describe, it, expect } from "vitest";
+
 
 // Simulate the move logic used in OverlayEditorApp when an element is moved.
 // The real app calls updateElement for the parent, then syncs texture children.

@@ -266,7 +266,7 @@
           const statsLabel =
             (typeof followerCount === 'number' && followerCount > 0)
               ? followerCount.toLocaleString() + ' Total Followers'
-              : 'Total Followers';
+              : 'Stats unavailable';
         %>
 
         <% if (hasBreakdown && breakdownRows.length) { %>
@@ -298,6 +298,16 @@
             </div>
           </div>
         <% } %>
+      <% } %>
+
+      <% if (sectionType === 'marketability' && visible('marketability') && visible('stats')) { %>
+        <% const grade = (typeof marketability !== 'undefined' && marketability) ? marketability : 'F'; %>
+        <div class="pc-stats-row" data-section-type="marketability">
+          <div class="pc-stats-pill">
+            <span class="pc-stats-dot"></span>
+            <span class="pc-stats-label">Marketability Grade: <%= grade %></span>
+          </div>
+        </div>
       <% } %>
 
       <% if (sectionType === 'bio' && visible('bio')) { %>

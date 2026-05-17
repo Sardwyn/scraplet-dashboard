@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { runCLI } from '@jest/core';
 import path from 'path';
 import { fileURLToPath } from 'url';

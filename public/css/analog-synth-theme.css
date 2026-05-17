@@ -559,25 +559,25 @@ html[data-theme="analog-synth"] textarea:focus {
    ───────────────────────────────────────────────────────────── */
 
 /* Panel section labels (e.g. "SYSTEM", "OVERVIEW") */
-html[data-theme="analog-synth"] .text-gray-500 {
+html[data-theme="analog-synth"] .text-gray-500:not(.pc-oled *):not(.pc-mini-oled *) {
   color: #7a6a55 !important;
 }
 
 /* Secondary text, sub-labels */
-html[data-theme="analog-synth"] .text-gray-400 {
+html[data-theme="analog-synth"] .text-gray-400:not(.pc-oled *):not(.pc-mini-oled *) {
   color: #8a7a65 !important;
 }
 
 /* Primary text, names, values */
-html[data-theme="analog-synth"] .text-gray-300 {
+html[data-theme="analog-synth"] .text-gray-300:not(.pc-oled *):not(.pc-mini-oled *) {
   color: var(--as-charcoal) !important;
 }
 
-html[data-theme="analog-synth"] .text-gray-200 {
+html[data-theme="analog-synth"] .text-gray-200:not(.pc-oled *):not(.pc-mini-oled *) {
   color: var(--as-charcoal) !important;
 }
 
-html[data-theme="analog-synth"] .text-gray-100 {
+html[data-theme="analog-synth"] .text-gray-100:not(.pc-oled *):not(.pc-mini-oled *) {
   color: var(--as-charcoal-dark) !important;
 }
 
@@ -837,37 +837,37 @@ html[data-theme="analog-synth"] .pc-rocker:not(.pc-rocker--disabled):active {
    ───────────────────────────────────────────────────────────── */
 
 /* All white text → dark charcoal on cream */
-html[data-theme="analog-synth"] .text-white {
+html[data-theme="analog-synth"] .text-white:not(.pc-oled *):not(.pc-mini-oled *) {
   color: var(--as-charcoal) !important;
 }
 
-html[data-theme="analog-synth"] .text-white\/90,
-html[data-theme="analog-synth"] .text-white\/80 {
+html[data-theme="analog-synth"] .text-white\/90:not(.pc-oled *):not(.pc-mini-oled *),
+html[data-theme="analog-synth"] .text-white\/80:not(.pc-oled *):not(.pc-mini-oled *) {
   color: var(--as-charcoal) !important;
 }
 
-html[data-theme="analog-synth"] .text-white\/70,
-html[data-theme="analog-synth"] .text-white\/60 {
+html[data-theme="analog-synth"] .text-white\/70:not(.pc-oled *):not(.pc-mini-oled *),
+html[data-theme="analog-synth"] .text-white\/60:not(.pc-oled *):not(.pc-mini-oled *) {
   color: rgba(43, 53, 64, 0.75) !important;
 }
 
-html[data-theme="analog-synth"] .text-white\/50,
-html[data-theme="analog-synth"] .text-white\/40 {
+html[data-theme="analog-synth"] .text-white\/50:not(.pc-oled *):not(.pc-mini-oled *),
+html[data-theme="analog-synth"] .text-white\/40:not(.pc-oled *):not(.pc-mini-oled *) {
   color: rgba(43, 53, 64, 0.55) !important;
 }
 
-html[data-theme="analog-synth"] .text-white\/30,
-html[data-theme="analog-synth"] .text-white\/20 {
+html[data-theme="analog-synth"] .text-white\/30:not(.pc-oled *):not(.pc-mini-oled *),
+html[data-theme="analog-synth"] .text-white\/20:not(.pc-oled *):not(.pc-mini-oled *) {
   color: rgba(43, 53, 64, 0.4) !important;
 }
 
 /* Border whites → dark */
-html[data-theme="analog-synth"] .border-white\/5,
-html[data-theme="analog-synth"] .border-white\/10 {
+html[data-theme="analog-synth"] .border-white\/5:not(.pc-oled *):not(.pc-mini-oled *),
+html[data-theme="analog-synth"] .border-white\/10:not(.pc-oled *):not(.pc-mini-oled *) {
   border-color: rgba(43, 53, 64, 0.15) !important;
 }
 
-html[data-theme="analog-synth"] .border-white\/20 {
+html[data-theme="analog-synth"] .border-white\/20:not(.pc-oled *):not(.pc-mini-oled *) {
   border-color: rgba(43, 53, 64, 0.25) !important;
 }
 
@@ -882,6 +882,58 @@ html[data-theme="analog-synth"] .pc-readout .text-white\/80,
 html[data-theme="analog-synth"] .pc-mini-oled .text-white\/90,
 html[data-theme="analog-synth"] .pc-mini-oled .text-white\/80 {
   color: #d4c090 !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .text-white\/70,
+html[data-theme="analog-synth"] .pc-readout .text-white\/60,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/70,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/60 {
+  color: rgba(212, 192, 144, 0.8) !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .text-white\/50,
+html[data-theme="analog-synth"] .pc-readout .text-white\/40,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/50,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/40 {
+  color: rgba(212, 192, 144, 0.55) !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .text-white\/30,
+html[data-theme="analog-synth"] .pc-readout .text-white\/20,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/30,
+html[data-theme="analog-synth"] .pc-mini-oled .text-white\/20 {
+  color: rgba(212, 192, 144, 0.35) !important;
+}
+
+/* Buttons inside readout/OLED screens — keep them retro-glowing amber */
+html[data-theme="analog-synth"] .pc-readout .pc-btn,
+html[data-theme="analog-synth"] .pc-mini-oled .pc-btn {
+  color: #d4c090 !important;
+  border-color: rgba(212, 192, 144, 0.3) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .pc-btn:hover,
+html[data-theme="analog-synth"] .pc-mini-oled .pc-btn:hover {
+  color: #e8d090 !important;
+  border-color: rgba(212, 192, 144, 0.6) !important;
+  background: rgba(212, 192, 144, 0.1) !important;
+}
+
+/* Also style specific action button helper classes inside displays */
+html[data-theme="analog-synth"] .pc-readout .pc-btn.text-red-300,
+html[data-theme="analog-synth"] .pc-mini-oled .pc-btn.text-red-300 {
+  color: #ff8080 !important;
+  border-color: rgba(255, 128, 128, 0.2) !important;
+}
+
+html[data-theme="analog-synth"] .pc-readout .pc-btn.text-red-300:hover,
+html[data-theme="analog-synth"] .pc-mini-oled .pc-btn.text-red-300:hover {
+  color: #ff9999 !important;
+  border-color: rgba(255, 128, 128, 0.5) !important;
+  background: rgba(255, 128, 128, 0.08) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────

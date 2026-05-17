@@ -62,8 +62,16 @@ function normaliseSection(section, type) {
  *   - Only when sections is missing/empty do we fall back to legacy ordering.
  */
 export function ensureLayout(rawLayout) {
+  let parsedLayout = rawLayout;
+  if (typeof rawLayout === "string") {
+    try {
+      parsedLayout = JSON.parse(rawLayout);
+    } catch (err) {
+      parsedLayout = {};
+    }
+  }
   const layout =
-    rawLayout && typeof rawLayout === "object" ? { ...rawLayout } : {};
+    parsedLayout && typeof parsedLayout === "object" ? { ...parsedLayout } : {};
 
   const inputSections = Array.isArray(layout.sections)
     ? layout.sections
