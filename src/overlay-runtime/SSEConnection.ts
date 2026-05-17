@@ -76,7 +76,6 @@ export class SSEConnection {
     };
 
     es.addEventListener('message', handleMessage);
-    es.onmessage = handleMessage; // belt and braces
 
     es.onerror = () => {
       if (this.destroyed) return;
