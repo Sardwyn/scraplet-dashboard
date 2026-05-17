@@ -831,20 +831,18 @@ function renderHot(items) {
   if (!list || !empty) return;
 
   if (!items?.length) {
-    empty.classList.remove('hidden');
-    list.innerHTML = '';
+    list.innerHTML = '<div class="p-4 text-green-400 font-mono text-sm opacity-80">> No hot signatures right now.</div>';
     return;
   }
 
-  empty.classList.add('hidden');
   list.innerHTML = items.slice(0, 10).map(h => `
     <div class="pc-log-item flex-col items-start gap-1">
       <div class="flex items-center gap-2 w-full">
         <span class="pc-log-tag">HOT</span>
-        <span class="font-bold text-white flex-1">${escapeHtml(h.signature || '')}</span>
+        <span class="font-bold text-white flex-1">${escapeHtml(h.signature_text || h.sample_text || h.signature_hash || '')}</span>
       </div>
       <div class="flex items-center justify-between w-full opacity-60">
-        <span>score: ${escapeHtml(h.score ?? '')} • seen: ${escapeHtml(h.count ?? '')}</span>
+        <span>score: ${escapeHtml(h.confidence_score ?? h.score ?? '')} • hits: ${escapeHtml(h.total_hits ?? h.count ?? '')}</span>
         <div class="flex gap-2">
           <button class="hover:text-cyan-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="allow">[Allow]</button>
           <button class="hover:text-red-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="deny">[Deny]</button>
@@ -869,10 +867,8 @@ function renderIncidents(items) {
 
   if (list && empty) {
     if (!items?.length) {
-      empty.classList.remove('hidden');
-      list.innerHTML = '';
+      list.innerHTML = '<div class="p-4 text-green-400 font-mono text-sm opacity-80">> No incidents yet.</div>';
     } else {
-      empty.classList.add('hidden');
       list.innerHTML = items.slice(0, 6).map(it => `
         <div class="pc-log-item">
           <span class="pc-log-tag">${escapeHtml((it.incident_type || 'EVENT').toUpperCase())}</span>
