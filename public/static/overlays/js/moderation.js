@@ -438,7 +438,7 @@ function wireQuickTogglesOnce() {
     linkEl.addEventListener('change', async () => {
       try {
         if (linkEl.checked) {
-          await createRuleIfMissing('link_posting', { rule_value: '*', action: 'timeout', duration_seconds: 30, ignore_mods: true });
+          await createRuleIfMissing('link_posting', { rule_value: '', action: 'timeout', duration_seconds: 30, ignore_mods: true });
         } else {
           const r = findGlobalRuleByType('link_posting');
           if (r) await setRuleEnabled(r.id, false);
@@ -653,7 +653,7 @@ qs('#m_create_rule')?.addEventListener('click', async () => {
       rule_value = String(qs('#m_new_rule_value')?.value || '').trim();
       if (!rule_value) throw new Error('Enter a value for this preset.');
     } else {
-      rule_value = '*';
+      rule_value = '';
     }
 
     await api('/dashboard/api/moderation/rules', {
@@ -859,6 +859,23 @@ function renderHot(items) {
   }));
 }
 
+function formatIncidentDescription(it) {
+  const users = Number(it.unique_users) || 0;
+  const msgs = Number(it.total_messages ?? it.repeats) || 0;
+  const actionText = (Array.isArray(it.actions) ? it.actions[0] : (it.action || 'moderated')).toLowerCase();
+  
+  const sample = String(it.signature_text || it.sample_text || it.signature || '').trim();
+  const quotedSample = sample ? ` "${sample}"` : '';
+
+  if (users > 5) {
+    return `Spam swarm detected: ${users} accounts posting matching text${quotedSample}. Blocked ${msgs} messages & timed out offenders.`;
+  } else if (users > 1) {
+    return `Coordinated spam: ${users} users sent ${msgs} identical messages${quotedSample}. All matched messages blocked automatically.`;
+  } else {
+    return `Rapid spam block: Account repeatedly posting${quotedSample}. Intercepted ${msgs} messages and applied ${actionText} constraints.`;
+  }
+}
+
 function renderIncidents(items) {
   const list = qs('#m_incidents_list');
   const empty = qs('#m_incidents_empty');
@@ -869,33 +886,39 @@ function renderIncidents(items) {
     if (!items?.length) {
       list.innerHTML = '<div class="p-4 text-green-400 font-mono text-sm opacity-80">> No incidents yet.</div>';
     } else {
-      list.innerHTML = items.slice(0, 6).map(it => `
-        <div class="pc-log-item">
-          <span class="pc-log-tag">${escapeHtml((it.incident_type || 'EVENT').toUpperCase())}</span>
-          <div class="flex-1">
-            <div class="font-bold">${escapeHtml(it.signature_text || it.sample_text || it.signature || 'Unknown incident')}</div>
-            <div class="text-[10px] opacity-60 mt-0.5">
-              USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')} • ACTION: ${escapeHtml(Array.isArray(it.actions) ? it.actions[0] : (it.action || 'auto'))}
+      list.innerHTML = items.slice(0, 6).map(it => {
+        const sample = String(it.signature_text || it.sample_text || it.signature || '').trim();
+        return `
+          <div class="pc-log-item">
+            <span class="pc-log-tag">${escapeHtml((it.incident_type || 'EVENT').toUpperCase())}</span>
+            <div class="flex-1">
+              <div class="font-bold text-white">${escapeHtml(formatIncidentDescription(it))}</div>
+              <div class="text-[10px] opacity-60 mt-0.5">
+                TELEMETRY: SIGNATURE: ${escapeHtml(sample || 'NONE')} • USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')}
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
   }
 
   if (fullList) {
-    fullList.innerHTML = items?.length ? items.map(it => `
-      <div class="pc-log-item">
-        <span class="pc-log-time">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</span>
-        <span class="pc-log-tag">${escapeHtml((it.incident_type || it.action || 'EVENT').toUpperCase())}</span>
-        <div class="flex-1">
-          <div class="font-bold text-white">${escapeHtml(it.signature_text || it.sample_text || it.signature || 'Unknown incident')}</div>
-          <div class="text-[10px] opacity-60 mt-0.5 uppercase">
-            USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')} • WINDOW: ${escapeHtml(it.window_seconds ?? '?')}s
+    fullList.innerHTML = items?.length ? items.map(it => {
+      const sample = String(it.signature_text || it.sample_text || it.signature || '').trim();
+      return `
+        <div class="pc-log-item">
+          <span class="pc-log-time">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</span>
+          <span class="pc-log-tag">${escapeHtml((it.incident_type || it.action || 'EVENT').toUpperCase())}</span>
+          <div class="flex-1">
+            <div class="font-bold text-white">${escapeHtml(formatIncidentDescription(it))}</div>
+            <div class="text-[10px] opacity-60 mt-0.5 uppercase">
+              SIGNATURE: ${escapeHtml(sample || 'NONE')} • USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')} • WINDOW: ${escapeHtml(it.window_seconds ?? '?')}s
+            </div>
           </div>
         </div>
-      </div>
-    `).join('') : '<div class="p-4 text-center opacity-40">No incidents logged.</div>';
+      `;
+    }).join('') : '<div class="p-4 text-center opacity-40">No incidents logged.</div>';
   }
 }
 
