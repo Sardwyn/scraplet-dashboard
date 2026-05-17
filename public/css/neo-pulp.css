@@ -1858,7 +1858,9 @@ body.np .pc-panel table .pc-select:focus {
 body.np .m-verdict-doc {
   position: relative;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2rem;
   background: var(--np-paper);
   border: 2px solid var(--np-border);
   font-family: var(--np-font-mono, 'Courier Prime', 'Courier New', monospace);
@@ -1868,9 +1870,9 @@ body.np .m-verdict-doc {
 
 /* Left: detail rows */
 body.np .m-verdict-details {
-  flex: 1;
-  padding: 1rem 1.25rem;
-  border-right: 1px dashed rgba(0,0,0,0.15);
+  flex: 0 1 auto;
+  min-width: 40%;
+  padding: 1rem 0 1rem 1.25rem;
 }
 
 body.np .m-verdict-row {
@@ -1903,12 +1905,12 @@ body.np .m-verdict-val {
 
 /* Right: stamp column */
 body.np .m-verdict-stamp-wrap {
-  flex: 0 0 180px;
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem 1rem;
+  padding: 1rem 1.5rem 1rem 0;
   gap: 0.6rem;
 }
 
@@ -1917,63 +1919,68 @@ body.np .m-stamp {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.35em 0.7em;
-  border: 4px solid currentColor;
+  padding: 0.2em 0.5em;
+  border: 6px solid currentColor;
   outline: 2px solid currentColor;
   outline-offset: 3px;
-  border-radius: 3px;
-  font-family: 'Impact', 'Arial Black', 'Haettenschweiler', sans-serif;
-  font-size: 1.9rem;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 3rem;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
-  transform: rotate(-14deg);
-  opacity: 0.82;
-  color: #991b1b; /* default: flagged red ink */
+  transform: rotate(-8deg);
+  opacity: 0.85;
+  color: #ef4444; /* default: vibrant red ink */
   user-select: none;
   white-space: nowrap;
   /* slight bleed to mimic rubber ink spread */
-  text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor;
+  text-shadow: 1px 1px 0px currentColor;
+  box-shadow: inset 0 0 0 2px var(--np-paper), 0 0 0 1px currentColor;
 }
 
 body.np .m-stamp--clear {
-  color: #15803d;
+  color: #22c55e; /* vibrant green ink */
 }
 
 body.np .m-stamp--flagged {
-  color: #991b1b;
+  color: #ef4444; /* vibrant red ink */
 }
 
 body.np .m-stamp--error {
-  color: #1e3a8a;
+  color: #3b82f6; /* vibrant blue ink */
 }
 
 /* Sub-label below the stamp (action type) */
 body.np .m-stamp-sub {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  opacity: 0.55;
+  opacity: 0.6;
   color: var(--np-ink);
   text-align: center;
-  transform: rotate(-14deg);
+  transform: rotate(-8deg);
+  margin-top: 0.5rem;
 }
 
 /* Clear state: no details, centre the stamp */
+body.np .m-verdict-doc.m-verdict-doc--clear {
+  justify-content: flex-start;
+}
+
 body.np .m-verdict-doc.m-verdict-doc--clear .m-verdict-details {
   display: flex;
   align-items: center;
-  font-size: 0.8rem;
-  opacity: 0.6;
-  border-right: none;
+  font-size: 0.85rem;
+  opacity: 0.7;
 }
 
 body.np .m-verdict-doc.m-verdict-doc--clear .m-verdict-stamp-wrap {
-  flex: 0 0 220px;
+  flex: 0 1 auto;
 }
 
 body.np .m-verdict-doc.m-verdict-doc--clear .m-stamp {
-  font-size: 2.4rem;
+  font-size: 3.5rem;
 }
 body.np .m-verdict-msg { font-size: 0.8rem; color: var(--np-ink); opacity: 0.65; line-height: 1.5; display: block; }
