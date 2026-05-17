@@ -1976,3 +1976,4 @@ body.np .m-verdict-doc.m-verdict-doc--clear .m-verdict-stamp-wrap {
 body.np .m-verdict-doc.m-verdict-doc--clear .m-stamp {
   font-size: 2.4rem;
 }
+body.np .m-verdict-msg { font-size: 0.8rem; color: var(--np-ink); opacity: 0.65; line-height: 1.5; display: block; }

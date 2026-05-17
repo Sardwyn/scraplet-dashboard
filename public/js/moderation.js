@@ -726,6 +726,10 @@ qs('#m_run_test')?.addEventListener('click', async () => {
       stampWord.textContent = 'FLAGGED';
       stampSub.textContent = action + (dur ? ` · ${dur}` : '');
 
+      // Hide message span, show rows
+      const msgEl = qs('#m_verdict_msg');
+      if (msgEl) { msgEl.textContent = ''; msgEl.style.display = 'none'; }
+
       // Detail rows
       qs('#m_verdict_reason').textContent = reason;
       qs('#m_verdict_reason_row').style.display = '';
@@ -750,9 +754,13 @@ qs('#m_run_test')?.addEventListener('click', async () => {
       stampWord.textContent = out?.offline ? 'OFFLINE' : 'CLEAR';
       stampSub.textContent = out?.offline ? 'bot unavailable' : 'no rules matched';
 
-      detailsEl.textContent = out?.offline
-        ? 'Scrapbot is offline or unreachable. Cannot evaluate rules.'
-        : 'This message does not trigger any of your active moderation rules.';
+      const msgEl = qs('#m_verdict_msg');
+      if (msgEl) {
+        msgEl.textContent = out?.offline
+          ? 'Scrapbot is offline or unreachable. Cannot evaluate rules.'
+          : 'This message does not trigger any of your active moderation rules.';
+        msgEl.style.display = '';
+      }
 
       qs('#m_verdict_reason_row').style.display = 'none';
       qs('#m_verdict_rule_row').style.display = 'none';
@@ -771,13 +779,14 @@ qs('#m_run_test')?.addEventListener('click', async () => {
     stamp.className = 'm-stamp m-stamp--error';
     qs('#m_stamp_word').textContent = 'ERROR';
     qs('#m_stamp_sub').textContent = err.message || 'request failed';
-    qs('.m-verdict-details').textContent = 'An error occurred while contacting the moderation service.';
+    const msgEl = qs('#m_verdict_msg');
+    if (msgEl) msgEl.textContent = 'An error occurred while contacting the moderation service.';
     qs('#m_verdict_reason_row').style.display = 'none';
     qs('#m_verdict_rule_row').style.display = 'none';
     qs('#m_verdict_action_row').style.display = 'none';
     qs('#m_verdict_duration_row').style.display = 'none';
 
-    qs('#m_test_result_wrap').style.display = '';
+    wrapEl.style.display = '';
   }
 });
 
