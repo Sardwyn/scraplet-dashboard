@@ -1,4 +1,5 @@
 // src/widgets/chat-overlay/ingest.js
+import crypto from "crypto";
 import { getOrCreateUserChatOverlay } from "./service.js";
 import { push as pushRing } from "../../runtime/ringBuffer.js";
 import { overlayGate } from "../../../services/overlayGate.js";
@@ -40,9 +41,15 @@ export async function enqueueChatForUser(ownerUserId, item) {
     );
     const packet = {
       header: {
+        id: String(safeItem.id || crypto.randomUUID()),
         type: "chat.message",
-        eventId: String(safeItem.id || Date.now()),
         ts: safeItem.ts,
+        producer: "chat-ingest",
+        platform: safeItem.platform,
+        scope: {
+          tenantId: String(ownerUserId),
+          overlayPublicId: row.public_id,
+        }
       },
       payload: {
         author: {
