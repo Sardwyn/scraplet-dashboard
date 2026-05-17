@@ -691,7 +691,6 @@ qs('#m_run_test')?.addEventListener('click', async () => {
   const wrapEl = qs('#m_test_result_wrap');
   if (!outEl || !wrapEl) return;
 
-  // Reset state
   wrapEl.style.display = 'none';
 
   try {
@@ -704,53 +703,60 @@ qs('#m_run_test')?.addEventListener('click', async () => {
     };
 
     const out = await api('/dashboard/api/moderation/test', { method: 'POST', body: JSON.stringify(payload) });
-
-    // Populate raw output
     outEl.textContent = JSON.stringify(out, null, 2);
 
-    // Populate verdict card
     const d = out?.decision;
     const matched = !!d?.matched;
-
-    const icon = qs('#m_verdict_icon');
-    const label = qs('#m_verdict_label');
-    const card = qs('#m_test_verdict');
+    const doc = qs('#m_test_verdict');
+    const stamp = qs('#m_verdict_stamp');
+    const stampWord = qs('#m_stamp_word');
+    const stampSub = qs('#m_stamp_sub');
+    const detailsEl = qs('.m-verdict-details');
 
     if (matched) {
-      icon.textContent = '⚠';
-      label.textContent = 'FLAGGED';
-      card.className = 'm-verdict-card m-verdict-card--flagged';
-
       const action = (d.action || 'none').toUpperCase();
       const dur = d.duration_seconds > 0 ? `${d.duration_seconds}s` : null;
       const ruleType = d.rule?.rule_type?.replace(/_/g, ' ') || '';
       const ruleVal = d.rule?.rule_value || '';
       const reason = d.explain?.match_reason || '';
 
-      qs('#m_verdict_action').textContent = action;
-      qs('#m_verdict_rule').textContent = `${ruleType}: "${ruleVal}"`;
+      // Stamp
+      doc.className = 'm-verdict-doc';
+      stamp.className = 'm-stamp m-stamp--flagged';
+      stampWord.textContent = 'FLAGGED';
+      stampSub.textContent = action + (dur ? ` · ${dur}` : '');
+
+      // Detail rows
       qs('#m_verdict_reason').textContent = reason;
-
-      const durRow = qs('#m_verdict_duration_row');
-      if (dur) {
-        qs('#m_verdict_duration').textContent = dur;
-        durRow.style.display = '';
-      } else {
-        durRow.style.display = 'none';
-      }
-
-      qs('#m_verdict_action_row').style.display = '';
-      qs('#m_verdict_rule_row').style.display = '';
       qs('#m_verdict_reason_row').style.display = '';
 
-    } else {
-      icon.textContent = '✓';
-      label.textContent = out?.offline ? 'OFFLINE — COULD NOT TEST' : 'NO MATCH — MESSAGE CLEAR';
-      card.className = 'm-verdict-card m-verdict-card--clear';
+      qs('#m_verdict_rule').textContent = `${ruleType}: "${ruleVal}"`;
+      qs('#m_verdict_rule_row').style.display = '';
 
-      qs('#m_verdict_action_row').style.display = 'none';
-      qs('#m_verdict_rule_row').style.display = 'none';
+      qs('#m_verdict_action').textContent = action;
+      qs('#m_verdict_action_row').style.display = '';
+
+      if (dur) {
+        qs('#m_verdict_duration').textContent = dur;
+        qs('#m_verdict_duration_row').style.display = '';
+      } else {
+        qs('#m_verdict_duration_row').style.display = 'none';
+      }
+
+    } else {
+      // Clear / no match
+      doc.className = 'm-verdict-doc m-verdict-doc--clear';
+      stamp.className = 'm-stamp m-stamp--clear';
+      stampWord.textContent = out?.offline ? 'OFFLINE' : 'CLEAR';
+      stampSub.textContent = out?.offline ? 'bot unavailable' : 'no rules matched';
+
+      detailsEl.textContent = out?.offline
+        ? 'Scrapbot is offline or unreachable. Cannot evaluate rules.'
+        : 'This message does not trigger any of your active moderation rules.';
+
       qs('#m_verdict_reason_row').style.display = 'none';
+      qs('#m_verdict_rule_row').style.display = 'none';
+      qs('#m_verdict_action_row').style.display = 'none';
       qs('#m_verdict_duration_row').style.display = 'none';
     }
 
@@ -759,13 +765,16 @@ qs('#m_run_test')?.addEventListener('click', async () => {
   } catch (err) {
     outEl.textContent = JSON.stringify({ ok: false, error: err.message || 'Error' }, null, 2);
 
-    const card = qs('#m_test_verdict');
-    qs('#m_verdict_icon').textContent = '✗';
-    qs('#m_verdict_label').textContent = 'ERROR';
-    card.className = 'm-verdict-card m-verdict-card--error';
-    qs('#m_verdict_action_row').style.display = 'none';
-    qs('#m_verdict_rule_row').style.display = 'none';
+    const doc = qs('#m_test_verdict');
+    const stamp = qs('#m_verdict_stamp');
+    doc.className = 'm-verdict-doc m-verdict-doc--clear';
+    stamp.className = 'm-stamp m-stamp--error';
+    qs('#m_stamp_word').textContent = 'ERROR';
+    qs('#m_stamp_sub').textContent = err.message || 'request failed';
+    qs('.m-verdict-details').textContent = 'An error occurred while contacting the moderation service.';
     qs('#m_verdict_reason_row').style.display = 'none';
+    qs('#m_verdict_rule_row').style.display = 'none';
+    qs('#m_verdict_action_row').style.display = 'none';
     qs('#m_verdict_duration_row').style.display = 'none';
 
     qs('#m_test_result_wrap').style.display = '';

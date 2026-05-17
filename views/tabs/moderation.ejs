@@ -403,32 +403,39 @@
     </div>
 
     <div class="mt-4" id="m_test_result_wrap" style="display:none;">
-      <!-- Verdict card -->
-      <div id="m_test_verdict" class="m-verdict-card">
-        <div class="m-verdict-status">
-          <span id="m_verdict_icon" class="m-verdict-icon"></span>
-          <span id="m_verdict_label" class="m-verdict-label"></span>
-        </div>
-        <div class="m-verdict-body">
-          <div class="m-verdict-row" id="m_verdict_action_row">
-            <span class="m-verdict-key">ACTION</span>
-            <span id="m_verdict_action" class="m-verdict-val"></span>
+      <!-- Verdict document-with-stamp -->
+      <div id="m_test_verdict" class="m-verdict-doc">
+
+        <!-- Left: detail rows -->
+        <div class="m-verdict-details">
+          <div class="m-verdict-row" id="m_verdict_reason_row">
+            <span class="m-verdict-key">REASON</span>
+            <span id="m_verdict_reason" class="m-verdict-val"></span>
           </div>
           <div class="m-verdict-row" id="m_verdict_rule_row">
             <span class="m-verdict-key">RULE</span>
             <span id="m_verdict_rule" class="m-verdict-val"></span>
           </div>
-          <div class="m-verdict-row" id="m_verdict_reason_row">
-            <span class="m-verdict-key">WHY</span>
-            <span id="m_verdict_reason" class="m-verdict-val"></span>
+          <div class="m-verdict-row" id="m_verdict_action_row">
+            <span class="m-verdict-key">ACTION</span>
+            <span id="m_verdict_action" class="m-verdict-val"></span>
           </div>
           <div class="m-verdict-row" id="m_verdict_duration_row">
             <span class="m-verdict-key">DURATION</span>
             <span id="m_verdict_duration" class="m-verdict-val"></span>
           </div>
         </div>
+
+        <!-- Right: rubber stamp -->
+        <div class="m-verdict-stamp-wrap">
+          <div id="m_verdict_stamp" class="m-stamp">
+            <span id="m_stamp_word"></span>
+          </div>
+          <div id="m_stamp_sub" class="m-stamp-sub"></div>
+        </div>
+
       </div>
-      <!-- Raw output toggle for power users -->
+      <!-- Raw output toggle -->
       <div class="mt-2">
         <button id="m_test_raw_toggle" class="text-xs pc-text-muted underline cursor-pointer bg-transparent border-none p-0">Show raw output</button>
         <pre id="m_test_out" class="mt-2 pc-panel pc-panel-bd text-xs overflow-auto" style="display:none;"></pre>

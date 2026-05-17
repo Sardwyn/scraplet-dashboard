@@ -1851,67 +1851,34 @@ body.np .pc-panel table .pc-select:focus {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   MODERATION TEST VERDICT CARD
+   MODERATION TEST VERDICT — STAMP ON DOCUMENT
    ───────────────────────────────────────────────────────────── */
-body.np .m-verdict-card {
+
+/* Document wrapper */
+body.np .m-verdict-doc {
+  position: relative;
+  display: flex;
+  align-items: stretch;
   background: var(--np-paper);
   border: 2px solid var(--np-border);
-  border-left-width: 6px;
-  border-left-color: var(--np-border);
   font-family: var(--np-font-mono, 'Courier Prime', 'Courier New', monospace);
-  padding: 0;
   overflow: hidden;
+  min-height: 120px;
 }
 
-body.np .m-verdict-card--flagged {
-  border-left-color: #b45309; /* amber-700 */
-}
-
-body.np .m-verdict-card--clear {
-  border-left-color: #15803d; /* green-700 */
-}
-
-body.np .m-verdict-card--error {
-  border-left-color: #b91c1c; /* red-700 */
-}
-
-body.np .m-verdict-status {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--np-border);
-  background: rgba(0,0,0,0.04);
-}
-
-body.np .m-verdict-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-  font-style: normal;
-}
-
-body.np .m-verdict-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--np-ink);
-}
-
-body.np .m-verdict-card--flagged .m-verdict-label { color: #92400e; }
-body.np .m-verdict-card--clear   .m-verdict-label { color: #14532d; }
-body.np .m-verdict-card--error   .m-verdict-label { color: #991b1b; }
-
-body.np .m-verdict-body {
-  padding: 0.5rem 0;
+/* Left: detail rows */
+body.np .m-verdict-details {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  border-right: 1px dashed rgba(0,0,0,0.15);
 }
 
 body.np .m-verdict-row {
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  padding: 0.35rem 1rem;
-  border-bottom: 1px dashed rgba(0,0,0,0.1);
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.08);
 }
 
 body.np .m-verdict-row:last-child {
@@ -1920,16 +1887,92 @@ body.np .m-verdict-row:last-child {
 
 body.np .m-verdict-key {
   flex: 0 0 5.5rem;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--np-ink);
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 body.np .m-verdict-val {
   font-size: 0.8rem;
   color: var(--np-ink);
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+/* Right: stamp column */
+body.np .m-verdict-stamp-wrap {
+  flex: 0 0 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+  gap: 0.6rem;
+}
+
+/* The rubber stamp itself */
+body.np .m-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35em 0.7em;
+  border: 4px solid currentColor;
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 3px;
+  font-family: 'Impact', 'Arial Black', 'Haettenschweiler', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-14deg);
+  opacity: 0.82;
+  color: #991b1b; /* default: flagged red ink */
+  user-select: none;
+  white-space: nowrap;
+  /* slight bleed to mimic rubber ink spread */
+  text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor;
+}
+
+body.np .m-stamp--clear {
+  color: #15803d;
+}
+
+body.np .m-stamp--flagged {
+  color: #991b1b;
+}
+
+body.np .m-stamp--error {
+  color: #1e3a8a;
+}
+
+/* Sub-label below the stamp (action type) */
+body.np .m-stamp-sub {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  color: var(--np-ink);
+  text-align: center;
+  transform: rotate(-14deg);
+}
+
+/* Clear state: no details, centre the stamp */
+body.np .m-verdict-doc.m-verdict-doc--clear .m-verdict-details {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  opacity: 0.6;
+  border-right: none;
+}
+
+body.np .m-verdict-doc.m-verdict-doc--clear .m-verdict-stamp-wrap {
+  flex: 0 0 220px;
+}
+
+body.np .m-verdict-doc.m-verdict-doc--clear .m-stamp {
+  font-size: 2.4rem;
 }
