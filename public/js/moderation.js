@@ -295,7 +295,7 @@ function ruleRow(rule) {
 
   tr.innerHTML = `
     <td class="p-3 align-top">
-      <input type="checkbox" data-k="enabled" ${enabledChecked}>
+      <input type="checkbox" class="pc-toggle" data-k="enabled" ${enabledChecked}>
     </td>
 
     <td class="p-3 align-top">
