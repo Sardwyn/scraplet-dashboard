@@ -875,11 +875,11 @@ function renderIncidents(items) {
       empty.classList.add('hidden');
       list.innerHTML = items.slice(0, 6).map(it => `
         <div class="pc-log-item">
-          <span class="pc-log-tag">EVENT</span>
+          <span class="pc-log-tag">${escapeHtml((it.incident_type || 'EVENT').toUpperCase())}</span>
           <div class="flex-1">
-            <div class="font-bold">${escapeHtml(it.signature || '')}</div>
+            <div class="font-bold">${escapeHtml(it.signature_text || it.sample_text || it.signature || 'Unknown incident')}</div>
             <div class="text-[10px] opacity-60 mt-0.5">
-              USERS: ${escapeHtml(it.unique_users ?? '')} • REPEATS: ${escapeHtml(it.repeats ?? '')} • ACTION: ${escapeHtml(it.action ?? '')}
+              USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')} • ACTION: ${escapeHtml(Array.isArray(it.actions) ? it.actions[0] : (it.action || 'auto'))}
             </div>
           </div>
         </div>
@@ -891,11 +891,11 @@ function renderIncidents(items) {
     fullList.innerHTML = items?.length ? items.map(it => `
       <div class="pc-log-item">
         <span class="pc-log-time">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</span>
-        <span class="pc-log-tag">${escapeHtml((it.action || 'EVENT').toUpperCase())}</span>
+        <span class="pc-log-tag">${escapeHtml((it.incident_type || it.action || 'EVENT').toUpperCase())}</span>
         <div class="flex-1">
-          <div class="font-bold text-white">${escapeHtml(it.signature || '')}</div>
+          <div class="font-bold text-white">${escapeHtml(it.signature_text || it.sample_text || it.signature || 'Unknown incident')}</div>
           <div class="text-[10px] opacity-60 mt-0.5 uppercase">
-            USERS: ${escapeHtml(it.unique_users ?? '')} • WINDOW: ${escapeHtml(it.window_seconds ?? '')}s
+            USERS: ${escapeHtml(it.unique_users ?? '?')} • MSGS: ${escapeHtml(it.total_messages ?? it.repeats ?? '?')} • WINDOW: ${escapeHtml(it.window_seconds ?? '?')}s
           </div>
         </div>
       </div>
