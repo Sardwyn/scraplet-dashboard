@@ -402,9 +402,37 @@
       </div>
     </div>
 
-    <div class="mt-4">
-      <label class="text-sm pc-text-muted">Result</label>
-      <pre id="m_test_out" class="mt-2 pc-panel pc-panel-bd text-xs overflow-auto"></pre>
+    <div class="mt-4" id="m_test_result_wrap" style="display:none;">
+      <!-- Verdict card -->
+      <div id="m_test_verdict" class="m-verdict-card">
+        <div class="m-verdict-status">
+          <span id="m_verdict_icon" class="m-verdict-icon"></span>
+          <span id="m_verdict_label" class="m-verdict-label"></span>
+        </div>
+        <div class="m-verdict-body">
+          <div class="m-verdict-row" id="m_verdict_action_row">
+            <span class="m-verdict-key">ACTION</span>
+            <span id="m_verdict_action" class="m-verdict-val"></span>
+          </div>
+          <div class="m-verdict-row" id="m_verdict_rule_row">
+            <span class="m-verdict-key">RULE</span>
+            <span id="m_verdict_rule" class="m-verdict-val"></span>
+          </div>
+          <div class="m-verdict-row" id="m_verdict_reason_row">
+            <span class="m-verdict-key">WHY</span>
+            <span id="m_verdict_reason" class="m-verdict-val"></span>
+          </div>
+          <div class="m-verdict-row" id="m_verdict_duration_row">
+            <span class="m-verdict-key">DURATION</span>
+            <span id="m_verdict_duration" class="m-verdict-val"></span>
+          </div>
+        </div>
+      </div>
+      <!-- Raw output toggle for power users -->
+      <div class="mt-2">
+        <button id="m_test_raw_toggle" class="text-xs pc-text-muted underline cursor-pointer bg-transparent border-none p-0">Show raw output</button>
+        <pre id="m_test_out" class="mt-2 pc-panel pc-panel-bd text-xs overflow-auto" style="display:none;"></pre>
+      </div>
     </div>
   </section>
 

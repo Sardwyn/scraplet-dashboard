@@ -688,8 +688,11 @@ updateNewRuleDurationUI();
 
 qs('#m_run_test')?.addEventListener('click', async () => {
   const outEl = qs('#m_test_out');
-  if (!outEl) return;
-  outEl.textContent = 'Running...';
+  const wrapEl = qs('#m_test_result_wrap');
+  if (!outEl || !wrapEl) return;
+
+  // Reset state
+  wrapEl.style.display = 'none';
 
   try {
     const payload = {
@@ -701,11 +704,84 @@ qs('#m_run_test')?.addEventListener('click', async () => {
     };
 
     const out = await api('/dashboard/api/moderation/test', { method: 'POST', body: JSON.stringify(payload) });
+
+    // Populate raw output
     outEl.textContent = JSON.stringify(out, null, 2);
+
+    // Populate verdict card
+    const d = out?.decision;
+    const matched = !!d?.matched;
+
+    const icon = qs('#m_verdict_icon');
+    const label = qs('#m_verdict_label');
+    const card = qs('#m_test_verdict');
+
+    if (matched) {
+      icon.textContent = '⚠';
+      label.textContent = 'FLAGGED';
+      card.className = 'm-verdict-card m-verdict-card--flagged';
+
+      const action = (d.action || 'none').toUpperCase();
+      const dur = d.duration_seconds > 0 ? `${d.duration_seconds}s` : null;
+      const ruleType = d.rule?.rule_type?.replace(/_/g, ' ') || '';
+      const ruleVal = d.rule?.rule_value || '';
+      const reason = d.explain?.match_reason || '';
+
+      qs('#m_verdict_action').textContent = action;
+      qs('#m_verdict_rule').textContent = `${ruleType}: "${ruleVal}"`;
+      qs('#m_verdict_reason').textContent = reason;
+
+      const durRow = qs('#m_verdict_duration_row');
+      if (dur) {
+        qs('#m_verdict_duration').textContent = dur;
+        durRow.style.display = '';
+      } else {
+        durRow.style.display = 'none';
+      }
+
+      qs('#m_verdict_action_row').style.display = '';
+      qs('#m_verdict_rule_row').style.display = '';
+      qs('#m_verdict_reason_row').style.display = '';
+
+    } else {
+      icon.textContent = '✓';
+      label.textContent = out?.offline ? 'OFFLINE — COULD NOT TEST' : 'NO MATCH — MESSAGE CLEAR';
+      card.className = 'm-verdict-card m-verdict-card--clear';
+
+      qs('#m_verdict_action_row').style.display = 'none';
+      qs('#m_verdict_rule_row').style.display = 'none';
+      qs('#m_verdict_reason_row').style.display = 'none';
+      qs('#m_verdict_duration_row').style.display = 'none';
+    }
+
+    wrapEl.style.display = '';
+
   } catch (err) {
     outEl.textContent = JSON.stringify({ ok: false, error: err.message || 'Error' }, null, 2);
+
+    const card = qs('#m_test_verdict');
+    qs('#m_verdict_icon').textContent = '✗';
+    qs('#m_verdict_label').textContent = 'ERROR';
+    card.className = 'm-verdict-card m-verdict-card--error';
+    qs('#m_verdict_action_row').style.display = 'none';
+    qs('#m_verdict_rule_row').style.display = 'none';
+    qs('#m_verdict_reason_row').style.display = 'none';
+    qs('#m_verdict_duration_row').style.display = 'none';
+
+    qs('#m_test_result_wrap').style.display = '';
   }
 });
+
+// Raw output toggle
+qs('#m_test_raw_toggle')?.addEventListener('click', () => {
+  const pre = qs('#m_test_out');
+  const btn = qs('#m_test_raw_toggle');
+  if (!pre) return;
+  const hidden = pre.style.display === 'none';
+  pre.style.display = hidden ? '' : 'none';
+  btn.textContent = hidden ? 'Hide raw output' : 'Show raw output';
+});
+
 
 // =====================================================
 // Shield panel (incidents + hot intel + overrides)

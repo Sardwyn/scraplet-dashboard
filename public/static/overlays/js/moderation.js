@@ -306,17 +306,17 @@ function ruleRow(rule) {
 
     <td class="p-3 align-top">
       ${meta.valueKind === 'none'
-        ? `<span class="text-xs text-gray-500">—</span>`
-        : `<div class="font-mono text-xs break-all">${escapeHtml(rule.rule_value || '')}</div>`}
+      ? `<span class="text-xs text-gray-500">—</span>`
+      : `<div class="font-mono text-xs break-all">${escapeHtml(rule.rule_value || '')}</div>`}
     </td>
 
     <td class="p-3 align-top">
       <div class="flex items-center gap-2">
-        <select class="border border-gray-800 bg-gray-950 rounded px-2 py-1 text-sm" data-k="action">
+        <select class="pc-select text-xs !py-1 !px-2" data-k="action" style="width:auto;">
           ${actionOptions(a)}
         </select>
 
-        <input class="w-24 border border-gray-800 bg-gray-950 rounded px-2 py-1 text-sm"
+        <input class="pc-input text-xs !py-1 !px-2 w-20"
                data-k="duration_seconds"
                type="number" min="0"
                value="${escapeHtml(dur)}"
@@ -326,8 +326,8 @@ function ruleRow(rule) {
 
     <td class="p-3 align-top text-right">
       <div class="inline-flex items-center gap-2">
-        <button class="border border-gray-800 bg-gray-950 hover:bg-gray-800 rounded px-3 py-1.5 text-sm" data-act="save">Save</button>
-        <button class="border border-red-800 bg-red-950/40 hover:bg-red-900/50 text-red-200 rounded px-3 py-1.5 text-sm" data-act="del">Delete</button>
+        <button class="pc-btn pc-btn--ghost !py-1 !px-3 !text-xs" data-act="save">Save</button>
+        <button class="pc-btn pc-btn--ghost !py-1 !px-3 !text-xs !text-red-500 !border-red-500" data-act="del">Delete</button>
       </div>
     </td>
   `;
@@ -560,22 +560,22 @@ function updateNewRuleValueUI() {
 
   // Your EJS uses these IDs:
   const labelEl = qs('#m_new_rule_value_label');
-  const hintEl  = qs('#m_new_rule_value_hint');
+  const hintEl = qs('#m_new_rule_value_hint');
   const inputEl = qs('#m_new_rule_value');
 
   if (labelEl) {
     labelEl.textContent =
       meta.valueKind === 'number' ? 'Threshold' :
-      preset === 'blacklist_word' ? 'Word to match' :
-      'Phrase to match';
+        preset === 'blacklist_word' ? 'Word to match' :
+          'Phrase to match';
   }
 
   if (hintEl) {
     hintEl.textContent =
       meta.valueKind === 'none' ? 'No value required.' :
-      meta.valueKind === 'number' ? 'Example: 0.7 (70% caps). Higher = stricter.' :
-      preset === 'equals' ? 'Must match the message exactly.' :
-      'Matches anywhere in the message.';
+        meta.valueKind === 'number' ? 'Example: 0.7 (70% caps). Higher = stricter.' :
+          preset === 'equals' ? 'Must match the message exactly.' :
+            'Matches anywhere in the message.';
   }
 
   if (inputEl) {
@@ -599,10 +599,10 @@ function updateNewRuleDurationUI() {
   if (btn) {
     const label =
       action === 'ignore' ? 'Create exception (ignore)' :
-      action === 'timeout' ? 'Create timeout rule' :
-      action === 'ban' ? 'Create ban rule' :
-      action === 'delete' ? 'Create delete rule' :
-      'Create rule';
+        action === 'timeout' ? 'Create timeout rule' :
+          action === 'ban' ? 'Create ban rule' :
+            action === 'delete' ? 'Create delete rule' :
+              'Create rule';
     btn.textContent = label;
   }
 
@@ -688,8 +688,11 @@ updateNewRuleDurationUI();
 
 qs('#m_run_test')?.addEventListener('click', async () => {
   const outEl = qs('#m_test_out');
-  if (!outEl) return;
-  outEl.textContent = 'Running...';
+  const wrapEl = qs('#m_test_result_wrap');
+  if (!outEl || !wrapEl) return;
+
+  // Reset state
+  wrapEl.style.display = 'none';
 
   try {
     const payload = {
@@ -701,11 +704,84 @@ qs('#m_run_test')?.addEventListener('click', async () => {
     };
 
     const out = await api('/dashboard/api/moderation/test', { method: 'POST', body: JSON.stringify(payload) });
+
+    // Populate raw output
     outEl.textContent = JSON.stringify(out, null, 2);
+
+    // Populate verdict card
+    const d = out?.decision;
+    const matched = !!d?.matched;
+
+    const icon = qs('#m_verdict_icon');
+    const label = qs('#m_verdict_label');
+    const card = qs('#m_test_verdict');
+
+    if (matched) {
+      icon.textContent = '⚠';
+      label.textContent = 'FLAGGED';
+      card.className = 'm-verdict-card m-verdict-card--flagged';
+
+      const action = (d.action || 'none').toUpperCase();
+      const dur = d.duration_seconds > 0 ? `${d.duration_seconds}s` : null;
+      const ruleType = d.rule?.rule_type?.replace(/_/g, ' ') || '';
+      const ruleVal = d.rule?.rule_value || '';
+      const reason = d.explain?.match_reason || '';
+
+      qs('#m_verdict_action').textContent = action;
+      qs('#m_verdict_rule').textContent = `${ruleType}: "${ruleVal}"`;
+      qs('#m_verdict_reason').textContent = reason;
+
+      const durRow = qs('#m_verdict_duration_row');
+      if (dur) {
+        qs('#m_verdict_duration').textContent = dur;
+        durRow.style.display = '';
+      } else {
+        durRow.style.display = 'none';
+      }
+
+      qs('#m_verdict_action_row').style.display = '';
+      qs('#m_verdict_rule_row').style.display = '';
+      qs('#m_verdict_reason_row').style.display = '';
+
+    } else {
+      icon.textContent = '✓';
+      label.textContent = out?.offline ? 'OFFLINE — COULD NOT TEST' : 'NO MATCH — MESSAGE CLEAR';
+      card.className = 'm-verdict-card m-verdict-card--clear';
+
+      qs('#m_verdict_action_row').style.display = 'none';
+      qs('#m_verdict_rule_row').style.display = 'none';
+      qs('#m_verdict_reason_row').style.display = 'none';
+      qs('#m_verdict_duration_row').style.display = 'none';
+    }
+
+    wrapEl.style.display = '';
+
   } catch (err) {
     outEl.textContent = JSON.stringify({ ok: false, error: err.message || 'Error' }, null, 2);
+
+    const card = qs('#m_test_verdict');
+    qs('#m_verdict_icon').textContent = '✗';
+    qs('#m_verdict_label').textContent = 'ERROR';
+    card.className = 'm-verdict-card m-verdict-card--error';
+    qs('#m_verdict_action_row').style.display = 'none';
+    qs('#m_verdict_rule_row').style.display = 'none';
+    qs('#m_verdict_reason_row').style.display = 'none';
+    qs('#m_verdict_duration_row').style.display = 'none';
+
+    qs('#m_test_result_wrap').style.display = '';
   }
 });
+
+// Raw output toggle
+qs('#m_test_raw_toggle')?.addEventListener('click', () => {
+  const pre = qs('#m_test_out');
+  const btn = qs('#m_test_raw_toggle');
+  if (!pre) return;
+  const hidden = pre.style.display === 'none';
+  pre.style.display = hidden ? '' : 'none';
+  btn.textContent = hidden ? 'Hide raw output' : 'Show raw output';
+});
+
 
 // =====================================================
 // Shield panel (incidents + hot intel + overrides)
@@ -744,14 +820,17 @@ function renderHot(items) {
 
   empty.classList.add('hidden');
   list.innerHTML = items.slice(0, 10).map(h => `
-    <div class="border border-gray-800 rounded-lg p-3 bg-black/20">
-      <div class="text-sm font-semibold">${escapeHtml(h.signature || '')}</div>
-      <div class="mt-1 text-xs text-gray-500">
-        score: ${escapeHtml(h.score ?? '')} • seen: ${escapeHtml(h.count ?? '')}
+    <div class="pc-log-item flex-col items-start gap-1">
+      <div class="flex items-center gap-2 w-full">
+        <span class="pc-log-tag">HOT</span>
+        <span class="font-bold text-white flex-1">${escapeHtml(h.signature || '')}</span>
       </div>
-      <div class="mt-2 flex gap-2">
-        <button class="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700" data-ov="${escapeHtml(h.signature_hash)}" data-mode="allow">Allow</button>
-        <button class="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700" data-ov="${escapeHtml(h.signature_hash)}" data-mode="deny">Deny</button>
+      <div class="flex items-center justify-between w-full opacity-60">
+        <span>score: ${escapeHtml(h.score ?? '')} • seen: ${escapeHtml(h.count ?? '')}</span>
+        <div class="flex gap-2">
+          <button class="hover:text-cyan-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="allow">[Allow]</button>
+          <button class="hover:text-red-400 font-bold uppercase text-[10px]" data-ov="${escapeHtml(h.signature_hash)}" data-mode="deny">[Deny]</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -768,6 +847,7 @@ function renderIncidents(items) {
   const list = qs('#m_incidents_list');
   const empty = qs('#m_incidents_empty');
   const tbody = qs('#m_incidents_tbody');
+  const fullList = qs('#m_incidents_full_list');
 
   if (list && empty) {
     if (!items?.length) {
@@ -776,33 +856,32 @@ function renderIncidents(items) {
     } else {
       empty.classList.add('hidden');
       list.innerHTML = items.slice(0, 6).map(it => `
-        <div class="border border-gray-800 rounded-lg p-3 bg-black/20">
-          <div class="text-sm font-semibold">${escapeHtml(it.signature || '')}</div>
-          <div class="mt-1 text-xs text-gray-500">
-            users: ${escapeHtml(it.unique_users ?? '')}
-            • repeats: ${escapeHtml(it.repeats ?? '')}
-            • action: ${escapeHtml(it.action ?? '')}
+        <div class="pc-log-item">
+          <span class="pc-log-tag">EVENT</span>
+          <div class="flex-1">
+            <div class="font-bold">${escapeHtml(it.signature || '')}</div>
+            <div class="text-[10px] opacity-60 mt-0.5">
+              USERS: ${escapeHtml(it.unique_users ?? '')} • REPEATS: ${escapeHtml(it.repeats ?? '')} • ACTION: ${escapeHtml(it.action ?? '')}
+            </div>
           </div>
         </div>
       `).join('');
     }
   }
 
-  if (tbody) {
-    tbody.innerHTML = items?.length ? items.map(it => `
-      <tr class="border-t border-gray-800">
-        <td class="p-3 text-xs text-gray-400">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</td>
-        <td class="p-3 text-sm font-mono">${escapeHtml(it.signature || '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.unique_users ?? '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.window_seconds ?? '')}</td>
-        <td class="p-3 text-sm">${escapeHtml(it.action ?? '')}</td>
-        <td class="p-3 text-right"></td>
-      </tr>
-    `).join('') : `
-      <tr class="border-t border-gray-800">
-        <td colspan="6" class="p-6 text-sm text-gray-500">No incidents yet.</td>
-      </tr>
-    `;
+  if (fullList) {
+    fullList.innerHTML = items?.length ? items.map(it => `
+      <div class="pc-log-item">
+        <span class="pc-log-time">${escapeHtml(fmtTime(it.created_at || it.ts || ''))}</span>
+        <span class="pc-log-tag">${escapeHtml((it.action || 'EVENT').toUpperCase())}</span>
+        <div class="flex-1">
+          <div class="font-bold text-white">${escapeHtml(it.signature || '')}</div>
+          <div class="text-[10px] opacity-60 mt-0.5 uppercase">
+            USERS: ${escapeHtml(it.unique_users ?? '')} • WINDOW: ${escapeHtml(it.window_seconds ?? '')}s
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="p-4 text-center opacity-40">No incidents logged.</div>';
   }
 }
 
@@ -881,7 +960,21 @@ function setChecked(id, v) {
 }
 
 function refreshBoundLabels() {
-  // Optional: if you have any <span data-bind="..."> labels, update them here.
+  const map = {
+    m_swarm_window_seconds: 'm_swarm_window_seconds_label',
+    m_swarm_min_unique_users: 'm_swarm_min_unique_users_label',
+    m_swarm_min_repeats: 'm_swarm_min_repeats_label',
+    m_swarm_cooldown_seconds: 'm_swarm_cooldown_seconds_label',
+    m_swarm_escalate_repeat_threshold: 'm_swarm_escalate_repeat_threshold_label',
+  };
+
+  for (const [inputId, labelId] of Object.entries(map)) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if (input && label) {
+      label.textContent = input.value;
+    }
+  }
 }
 
 const INTENSITY_NAMES = ['Lite', 'Balanced', 'Strong', 'Heavy', 'Nuclear'];
@@ -916,8 +1009,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 600,
     flood_cooldown_seconds: 60,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Balanced
@@ -949,8 +1041,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 600,
     flood_cooldown_seconds: 120,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Strong
@@ -982,8 +1073,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 900,
     flood_cooldown_seconds: 120,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Heavy
@@ -1015,8 +1105,7 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 1200,
     flood_cooldown_seconds: 180,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 
   // Nuclear
@@ -1048,15 +1137,19 @@ const INTENSITY_PRESETS = [
     flood_max_duration_seconds: 1800,
     flood_cooldown_seconds: 300,
 
-    swarm_promote_global: true,
-    swarm_promote_confidence: 0.75,
+
   },
 ];
 
 function setIntensityLabel(idx) {
   const el = qs('#m_guard_intensity_label');
-  if (!el) return;
-  el.textContent = INTENSITY_NAMES[idx] || 'Custom';
+  if (el) el.textContent = INTENSITY_NAMES[idx] || 'Custom';
+
+  // Sync Dymo active state
+  const labels = qsa('.pc-dymo');
+  labels.forEach((l, i) => {
+    l.classList.toggle('pc-dymo--active', i === idx);
+  });
 }
 
 function resetIntensityUIBeforeSnap() {
@@ -1079,21 +1172,24 @@ function snapIntensityToClosestPreset() {
   try {
     const current = buildSettingsPayloadFromControls();
 
-    let bestIdx = 1;
-    let bestScore = Infinity;
+    let exactMatchIdx = null;
 
     for (let i = 0; i < INTENSITY_PRESETS.length; i++) {
       const preset = INTENSITY_PRESETS[i];
       const score = presetDistance(preset, current);
-      if (score < bestScore) {
-        bestScore = score;
-        bestIdx = i;
+      if (score === 0) {
+        exactMatchIdx = i;
+        break;
       }
     }
 
     const r = qs('#m_guard_intensity');
-    if (r) r.value = String(bestIdx);
-    setIntensityLabel(bestIdx);
+    if (exactMatchIdx !== null) {
+      if (r) r.value = String(exactMatchIdx);
+      setIntensityLabel(exactMatchIdx);
+    } else {
+      setIntensityLabel(null); // Resolves to "Custom" label
+    }
   } finally {
     suppressAutoSave = prev;
   }
@@ -1113,18 +1209,6 @@ function presetDistance(preset, current) {
   num(preset.swarm_cooldown_seconds, current.swarm_cooldown_seconds, 1);
   str(preset.swarm_action, current.swarm_action, 8);
   num(preset.swarm_duration_seconds, current.swarm_duration_seconds, 0.2);
-
-  bool(preset.swarm_promote_global, current.swarm_promote_global, 2);
-  num(preset.swarm_promote_confidence, current.swarm_promote_confidence, 0.2);
-
-  bool(preset.sig_lowercase, current.sig_lowercase, 2);
-  bool(preset.sig_strip_punct, current.sig_strip_punct, 2);
-  bool(preset.sig_collapse_ws, current.sig_collapse_ws, 2);
-  bool(preset.sig_strip_emojis, current.sig_strip_emojis, 2);
-
-  bool(preset.swarm_escalate, current.swarm_escalate, 4);
-  num(preset.swarm_escalate_repeat_threshold, current.swarm_escalate_repeat_threshold, 2);
-  str(preset.swarm_escalate_action, current.swarm_escalate_action, 6);
 
   bool(preset.flood_enabled, current.flood_enabled, 6);
   num(preset.flood_window_seconds, current.flood_window_seconds, 1);
@@ -1151,18 +1235,6 @@ function applyPresetToControls(preset) {
     setVal('m_swarm_cooldown_seconds', preset.swarm_cooldown_seconds);
     if (qs('#m_swarm_action')) qs('#m_swarm_action').value = String(preset.swarm_action || 'timeout').toLowerCase();
     setVal('m_swarm_duration_seconds', preset.swarm_duration_seconds);
-
-    setChecked('m_swarm_promote_global', preset.swarm_promote_global);
-    setVal('m_swarm_promote_confidence', preset.swarm_promote_confidence);
-
-    setChecked('m_sig_lowercase', preset.sig_lowercase);
-    setChecked('m_sig_strip_punct', preset.sig_strip_punct);
-    setChecked('m_sig_collapse_ws', preset.sig_collapse_ws);
-    setChecked('m_sig_strip_emojis', preset.sig_strip_emojis);
-
-    setChecked('m_swarm_escalate', preset.swarm_escalate);
-    setVal('m_swarm_escalate_repeat_threshold', preset.swarm_escalate_repeat_threshold);
-    if (qs('#m_swarm_escalate_action')) qs('#m_swarm_escalate_action').value = String(preset.swarm_escalate_action || 'ban').toLowerCase();
 
     setChecked('m_flood_enabled', preset.flood_enabled);
     setVal('m_flood_window_seconds', preset.flood_window_seconds);
@@ -1195,18 +1267,6 @@ function buildSettingsPayloadFromControls() {
     swarm_action: String(qs('#m_swarm_action')?.value || 'timeout').toLowerCase(),
     swarm_duration_seconds: Number(qs('#m_swarm_duration_seconds')?.value || 30) || 30,
 
-    swarm_promote_global: !!qs('#m_swarm_promote_global')?.checked,
-    swarm_promote_confidence: Number(qs('#m_swarm_promote_confidence')?.value || 0.75) || 0.75,
-
-    sig_lowercase: !!qs('#m_sig_lowercase')?.checked,
-    sig_strip_punct: !!qs('#m_sig_strip_punct')?.checked,
-    sig_collapse_ws: !!qs('#m_sig_collapse_ws')?.checked,
-    sig_strip_emojis: !!qs('#m_sig_strip_emojis')?.checked,
-
-    swarm_escalate: !!qs('#m_swarm_escalate')?.checked,
-    swarm_escalate_repeat_threshold: Number(qs('#m_swarm_escalate_repeat_threshold')?.value || 2) || 2,
-    swarm_escalate_action: String(qs('#m_swarm_escalate_action')?.value || 'ban').toLowerCase(),
-
     flood_enabled: !!qs('#m_flood_enabled')?.checked,
     flood_window_seconds: Number(qs('#m_flood_window_seconds')?.value || 10) || 10,
     flood_max_messages: Number(qs('#m_flood_max_messages')?.value || 5) || 5,
@@ -1229,9 +1289,9 @@ async function saveSettingsNow() {
   const payload = buildSettingsPayloadFromControls();
 
   await api(`/dashboard/api/moderation/settings?platform=${encodeURIComponent(platform())}`, {
-  method: 'PUT',
-  body: JSON.stringify(payload),
-});
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 
 
   await loadSettings();
@@ -1241,7 +1301,7 @@ async function saveSettingsNow() {
   if (postSaveHooks.length) {
     const hooks = postSaveHooks;
     postSaveHooks = [];
-    try { hooks.forEach(fn => fn()); } catch (_) {}
+    try { hooks.forEach(fn => fn()); } catch (_) { }
   }
 
   const shield = qs('#m_shield_status_line');
@@ -1251,7 +1311,7 @@ async function saveSettingsNow() {
 }
 
 qs('#m_save_settings')?.addEventListener('click', async () => {
-  try { await saveNowImmediate(); } catch (_) {}
+  try { await saveNowImmediate(); } catch (_) { }
 });
 
 async function loadSettings() {
@@ -1270,18 +1330,6 @@ async function loadSettings() {
     if (s.swarm_cooldown_seconds != null) setVal('m_swarm_cooldown_seconds', s.swarm_cooldown_seconds);
     if (qs('#m_swarm_action') && s.swarm_action != null) qs('#m_swarm_action').value = String(s.swarm_action).toLowerCase();
     if (s.swarm_duration_seconds != null) setVal('m_swarm_duration_seconds', s.swarm_duration_seconds);
-
-    setChecked('m_swarm_promote_global', s.swarm_promote_global);
-    if (s.swarm_promote_confidence != null) setVal('m_swarm_promote_confidence', s.swarm_promote_confidence);
-
-    setChecked('m_sig_lowercase', s.sig_lowercase);
-    setChecked('m_sig_strip_punct', s.sig_strip_punct);
-    setChecked('m_sig_collapse_ws', s.sig_collapse_ws);
-    setChecked('m_sig_strip_emojis', s.sig_strip_emojis);
-
-    setChecked('m_swarm_escalate', s.swarm_escalate);
-    if (s.swarm_escalate_repeat_threshold != null) setVal('m_swarm_escalate_repeat_threshold', s.swarm_escalate_repeat_threshold);
-    if (qs('#m_swarm_escalate_action') && s.swarm_escalate_action != null) qs('#m_swarm_escalate_action').value = String(s.swarm_escalate_action).toLowerCase();
 
     setChecked('m_flood_enabled', s.flood_enabled);
     if (s.flood_window_seconds != null) setVal('m_flood_window_seconds', s.flood_window_seconds);
@@ -1371,17 +1419,12 @@ function triggerNuclearFlash() {
 
 
 function wireSettingsAutoSave() {
-  if (!AUTO_SAVE_ANY_SETTINGS_CHANGE) return;
-
   const ids = [
-    'm_swarm_enabled','m_swarm_window_seconds','m_swarm_min_unique_users','m_swarm_min_repeats','m_swarm_cooldown_seconds',
-    'm_swarm_action','m_swarm_duration_seconds','m_swarm_promote_global','m_swarm_promote_confidence',
+    'm_swarm_enabled', 'm_swarm_window_seconds', 'm_swarm_min_unique_users', 'm_swarm_min_repeats', 'm_swarm_cooldown_seconds',
+    'm_swarm_action', 'm_swarm_duration_seconds',
 
-    'm_sig_lowercase','m_sig_strip_punct','m_sig_collapse_ws','m_sig_strip_emojis',
-    'm_swarm_escalate','m_swarm_escalate_repeat_threshold','m_swarm_escalate_action',
-
-    'm_flood_enabled','m_flood_window_seconds','m_flood_max_messages','m_flood_action','m_flood_duration_seconds',
-    'm_flood_escalate','m_flood_escalate_multiplier','m_flood_max_duration_seconds','m_flood_cooldown_seconds',
+    'm_flood_enabled', 'm_flood_window_seconds', 'm_flood_max_messages', 'm_flood_action', 'm_flood_duration_seconds',
+    'm_flood_escalate', 'm_flood_escalate_multiplier', 'm_flood_max_duration_seconds', 'm_flood_cooldown_seconds',
   ];
 
   ids.forEach(id => {
@@ -1390,6 +1433,8 @@ function wireSettingsAutoSave() {
     const ev = (el.type === 'checkbox') ? 'change' : 'input';
 
     el.addEventListener(ev, () => {
+      refreshBoundLabels();
+      snapIntensityToClosestPreset();
       if (suppressAutoSave) return;
       scheduleSave('settings');
     });

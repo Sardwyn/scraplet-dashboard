@@ -1849,3 +1849,87 @@ body.np .pc-panel table .pc-select:focus {
   border-color: #000 !important;
   box-shadow: 2px 2px 0px #000 !important;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   MODERATION TEST VERDICT CARD
+   ───────────────────────────────────────────────────────────── */
+body.np .m-verdict-card {
+  background: var(--np-paper);
+  border: 2px solid var(--np-border);
+  border-left-width: 6px;
+  border-left-color: var(--np-border);
+  font-family: var(--np-font-mono, 'Courier Prime', 'Courier New', monospace);
+  padding: 0;
+  overflow: hidden;
+}
+
+body.np .m-verdict-card--flagged {
+  border-left-color: #b45309; /* amber-700 */
+}
+
+body.np .m-verdict-card--clear {
+  border-left-color: #15803d; /* green-700 */
+}
+
+body.np .m-verdict-card--error {
+  border-left-color: #b91c1c; /* red-700 */
+}
+
+body.np .m-verdict-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--np-border);
+  background: rgba(0,0,0,0.04);
+}
+
+body.np .m-verdict-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  font-style: normal;
+}
+
+body.np .m-verdict-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--np-ink);
+}
+
+body.np .m-verdict-card--flagged .m-verdict-label { color: #92400e; }
+body.np .m-verdict-card--clear   .m-verdict-label { color: #14532d; }
+body.np .m-verdict-card--error   .m-verdict-label { color: #991b1b; }
+
+body.np .m-verdict-body {
+  padding: 0.5rem 0;
+}
+
+body.np .m-verdict-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.35rem 1rem;
+  border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+
+body.np .m-verdict-row:last-child {
+  border-bottom: none;
+}
+
+body.np .m-verdict-key {
+  flex: 0 0 5.5rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--np-ink);
+  opacity: 0.5;
+}
+
+body.np .m-verdict-val {
+  font-size: 0.8rem;
+  color: var(--np-ink);
+  line-height: 1.4;
+}
