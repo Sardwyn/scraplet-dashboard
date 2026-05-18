@@ -244,12 +244,12 @@
         icon: `<svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" aria-label="Kick"><path d="M4 3h3.5v7.5L13 3h4l-6.5 8.5L17 21h-4l-5.5-7V21H4z"/></svg>`,
         state: kickState,
         connectedAs: kickObj.username || null,
-        sub: kickObj.connected
+        sub: (kickObj.connected && !kickObj.needsReauth)
           ? `Connected as @${kickObj.username || '—'}`
           : (kickObj.needsReauth
             ? 'Token expired — reconnect required'
             : 'Connect to unlock widgets + analytics'),
-        primaryHref: kickObj.connected ? null : '/auth/kick/start',
+        primaryHref: kickObj.needsReauth ? '/auth/kick/start' : (kickObj.connected ? null : '/auth/kick/start'),
         primaryLabel: kickObj.needsReauth ? 'Reconnect' : 'Connect',
         secondaryFormAction: '/api/integrations/kick/disconnect',
         secondaryLabel: 'Disconnect',
@@ -262,12 +262,12 @@
         icon: `<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22" aria-label="Twitch"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/></svg>`,
         state: twitchState,
         connectedAs: twitchObj.username || null,
-        sub: twitchObj.connected
+        sub: (twitchObj.connected && !twitchObj.needsReauth)
           ? `Connected as @${twitchObj.username || '—'}`
           : (twitchObj.needsReauth
             ? 'Token expired — reconnect required'
             : 'Connect to unlock widgets + analytics'),
-        primaryHref: twitchObj.connected ? null : '/auth/twitch/start',
+        primaryHref: twitchObj.needsReauth ? '/auth/twitch/start' : (twitchObj.connected ? null : '/auth/twitch/start'),
         primaryLabel: twitchObj.needsReauth ? 'Reconnect' : 'Connect',
         secondaryFormAction: '/api/integrations/twitch/disconnect',
         secondaryLabel: 'Disconnect',
