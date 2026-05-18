@@ -191,21 +191,35 @@ router.get("/twitch/callback", async (req, res) => {
     const channelSlug = identity.login ? identity.login.toLowerCase() : null;
 
     // 3) Upsert external_accounts row
-    const { rows: accRows } = await db.query(
-      `
-      INSERT INTO external_accounts (platform, external_user_id, username, user_id)
-      VALUES ('twitch', $1, $2, $3)
-      ON CONFLICT (platform, external_user_id)
-      DO UPDATE SET
-        username = EXCLUDED.username,
-        user_id  = EXCLUDED.user_id,
-        updated_at = now()
-      RETURNING id
-      `,
-      [twitchUserId, twitchDisplayName || `user-${twitchUserId}`, decoded.user_id]
+    // The table has two unique constraints: (platform, external_user_id) AND (user_id, platform).
+    // We update the existing row for this dashboard user+platform first, then insert if missing.
+    let accountId;
+    const { rows: existingRows } = await db.query(
+      `SELECT id FROM external_accounts WHERE user_id = $1 AND platform = 'twitch' LIMIT 1`,
+      [decoded.user_id]
     );
 
-    const accountId = accRows[0].id;
+    if (existingRows.length > 0) {
+      // Update the existing row in-place (handles Twitch account swaps too)
+      await db.query(
+        `UPDATE external_accounts
+         SET external_user_id = $1, username = $2, updated_at = now()
+         WHERE id = $3`,
+        [twitchUserId, twitchDisplayName || `user-${twitchUserId}`, existingRows[0].id]
+      );
+      accountId = existingRows[0].id;
+    } else {
+      // First-time connect — plain insert (no conflict possible for this user+platform)
+      const { rows: accRows } = await db.query(
+        `INSERT INTO external_accounts (platform, external_user_id, username, user_id)
+         VALUES ('twitch', $1, $2, $3)
+         ON CONFLICT (platform, external_user_id)
+         DO UPDATE SET username = EXCLUDED.username, user_id = EXCLUDED.user_id, updated_at = now()
+         RETURNING id`,
+        [twitchUserId, twitchDisplayName || `user-${twitchUserId}`, decoded.user_id]
+      );
+      accountId = accRows[0].id;
+    }
 
     // 4) Upsert external_account_tokens
     await upsertExternalAccountToken({
