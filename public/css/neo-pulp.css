@@ -571,6 +571,109 @@ body.np .pc-panel .pc-btn--ghost {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   ROCKER SWITCHES: Integration Cards (base — all themes)
+   ───────────────────────────────────────────────────────────── */
+.pc-rocker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.pc-rocker-form {
+  display: contents;
+}
+
+.pc-rocker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 36px;
+  height: 64px;
+  background: linear-gradient(180deg, #1a1a1a 0%, #2a2a2a 100%);
+  border: 2px solid #111;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5);
+  transition: box-shadow 0.1s ease, transform 0.1s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pc-rocker--disabled {
+  cursor: default;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.pc-rocker-paddle {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  height: 50%;
+  border-radius: 3px;
+  transition:
+    top 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* ON state — paddle at top, green glow */
+.pc-rocker--on {
+  border-color: #005a30;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5),
+    0 0 10px rgba(0, 255, 159, 0.4);
+}
+
+.pc-rocker--on .pc-rocker-paddle {
+  top: 3px;
+  background: linear-gradient(180deg, #00ff9f 0%, #00cc7a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.5),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 0 8px rgba(0, 255, 159, 0.6),
+    0 0 16px rgba(0, 255, 159, 0.3);
+}
+
+/* OFF state — paddle at bottom, red glow */
+.pc-rocker--off {
+  border-color: #5a0000;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 3px 0 #0a0a0a,
+    0 4px 8px rgba(0,0,0,0.5),
+    0 0 8px rgba(255, 40, 40, 0.3);
+}
+
+.pc-rocker--off .pc-rocker-paddle {
+  top: 50%;
+  background: linear-gradient(180deg, #c8c0b0 0%, #a09888 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* Press effect */
+.pc-rocker:not(.pc-rocker--disabled):active {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 1px 0 #0a0a0a,
+    0 2px 4px rgba(0,0,0,0.5);
+  transform: translateY(2px);
+}
+
+/* ─────────────────────────────────────────────────────────────
    PREMIUM PANELS (Studio / Scrapbot)
    ───────────────────────────────────────────────────────────── */
 .pc-panel--premium {
