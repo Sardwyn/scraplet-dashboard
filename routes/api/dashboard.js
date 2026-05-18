@@ -1207,6 +1207,11 @@ router.post("/widgets/chat/save", requireAuth, async (req, res) => {
     next.fontSize = asInt(next.fontSize, CHAT_OVERLAY_DEFAULTS.fontSize);
     next.theme = asStr(next.theme, CHAT_OVERLAY_DEFAULTS.theme);
 
+    next.enableKick = asBool(next.enableKick);
+    next.enableTwitch = asBool(next.enableTwitch);
+    next.enableYoutube = asBool(next.enableYoutube);
+    next.enableTiktok = asBool(next.enableTiktok);
+
     await updateUserChatOverlay(sessionUser.id, next);
 
     return res.redirect("/dashboard/widgets/chat/configure?ok=1");

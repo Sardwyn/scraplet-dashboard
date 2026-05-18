@@ -291,7 +291,7 @@ async function processOne(meta, row) {
     const publicId = overlay?.public_id || null;
 
     if (publicId) {
-      fanOutAfterModeration({
+      await fanOutAfterModeration({
         chat_v1,
         decision,
         publicId,

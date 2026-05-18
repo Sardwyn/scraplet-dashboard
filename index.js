@@ -18,6 +18,7 @@ import integrationsRoutes from './routes/integrations.js';
 import dashboardRoutes from './routes/dashboard.js';
 import authRoutes from './routes/auth.js';
 import kickAuthRoutes from './routes/kickAuth.js';
+import twitchAuthRoutes from './routes/twitchAuth.js';
 import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
 import profileRoutes from './routes/profile.js';
@@ -28,7 +29,6 @@ import { EventBus } from './eventBus.js';
 import eventsIngestRoutes from './routes/eventsIngest.js';
 import dashboardMetricsRouter from './routes/dashboardMetrics.js';
 import dashboardScrapbotRoutes from './routes/dashboardScrapbot.js';
-import widgetsLoaderRoutes from './routes/widgets-loader.js';
 import overlaysApiRouter from "./routes/api/overlays.js";
 import lowerThirdTemplatesRouter from "./routes/api/lowerThirdTemplates.js";
 import botLayerRouter from "./routes/api/botLayer.js";
@@ -42,20 +42,16 @@ import profileApiRoutes from './routes/profileApi.js';
 import publicProfileApi from './routes/publicProfileApi.js';
 import emailApiRoutes from './routes/emailApi.js';
 import moderationProxyApi from './routes/moderationProxyApi.js';
-import { registerChatOverlay } from "./src/widgets/chat-overlay/index.js";
 import raffleEventsIngestRoutes from "./routes/raffleEventsIngest.js";
 import subsEventsIngestRoutes from "./routes/subsEventsIngest.js";
 import ttsRouter from "./src/tts/routes.js";
 import overlayAlertsRouter from './routes/overlay/alerts.js';
 //CASINO GAMES
-import { registerBlackjack } from "./src/widgets/blackjack/index.js";
-import { registerRoulette } from "./src/widgets/roulette/index.js";
-import { registerPlinko } from "./src/widgets/plinko/index.js";
-import { registerCrash } from "./src/widgets/crash/index.js";
 import crashRoutes from "./src/domains/casino/crash/routes.js";
 
 // INTEGRATIONS
 import kickIntegrationsRouter from './routes/integrations/kick.js';
+import twitchIntegrationsRouter from './routes/integrations/twitch.js';
 import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
@@ -208,6 +204,7 @@ app.use('/dashboard', express.static(path.join(__dirname, 'public')));
 
 app.use(dashboardMetricsRouter);
 app.use('/api/integrations', kickIntegrationsRouter);
+app.use('/api/integrations', twitchIntegrationsRouter);
 app.use(youtubeIntegrationsRouter);
 app.use(youtubeChatDebugRouter);
 
@@ -228,14 +225,6 @@ app.use("/dashboard/api/uploads", uploadsRouter);
 app.use("/api/widget-library", widgetLibraryRouter);
 app.use("/api/bot-widget-preferences", botWidgetPreferencesRouter);
 app.use("/dashboard", intelApiRouter);
-
-//register apps and widgets here
-registerChatOverlay(app);
-registerBlackjack(app);
-registerPlinko(app);
-registerRoulette(app);
-registerCrash(app);
-
 app.use('/dashboard/api/public', publicProfileApi);
 app.use(moderationProxyApi);
 app.use("/api/tts", ttsRouter);
@@ -330,8 +319,6 @@ app.get('/dev-login', async (req, res) => {
   }
 });
 
-// Widget Loader Routes
-app.use('/', widgetsLoaderRoutes);
 
 // Overlays Routes
 app.use("/dashboard", overlaysRouter);
@@ -400,6 +387,7 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/obs', obsWidgetConfigRouter);
 
 app.use('/auth', kickAuthRoutes);
+app.use('/auth', twitchAuthRoutes);
 app.use('/auth', authRoutes);
 
 app.use('/account', accountRoutes);

@@ -159,6 +159,50 @@
           </div>
         </section>
 
+        <!-- Data Sources & Pipelines -->
+        <details class="pc-panel" open>
+          <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
+            <div class="relative z-10" style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-family: Space Grotesk, Inter, system-ui; font-weight:700; font-size:15px; color:rgba(255,255,255,0.92);">
+                Data Sources & Pipelines
+              </div>
+              <div class="pc-muted" style="font-size:12px;">▼</div>
+            </div>
+          </summary>
+          <div class="pc-panel-bd">
+            <div class="relative z-10" style="display:flex; flex-direction:column; gap:12px;">
+              <div class="pc-muted" style="font-size:12px; margin-bottom:4px;">
+                Toggle ingestion pipelines for each platform. Inbound chat messages from disabled platforms are ignored.
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;" class="pc-btn pc-btn-ghost justify-start">
+                  <input type="hidden" name="enableKick" value="0" />
+                  <input type="checkbox" name="enableKick" value="1" <%= (cfg && cfg.enableKick === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable Kick</span>
+                </label>
+
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;" class="pc-btn pc-btn-ghost justify-start">
+                  <input type="hidden" name="enableTwitch" value="0" />
+                  <input type="checkbox" name="enableTwitch" value="1" <%= (cfg && cfg.enableTwitch === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable Twitch</span>
+                </label>
+
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;" class="pc-btn pc-btn-ghost justify-start">
+                  <input type="hidden" name="enableYoutube" value="0" />
+                  <input type="checkbox" name="enableYoutube" value="1" <%= (cfg && cfg.enableYoutube === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable YouTube</span>
+                </label>
+
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;" class="pc-btn pc-btn-ghost justify-start">
+                  <input type="hidden" name="enableTiktok" value="0" />
+                  <input type="checkbox" name="enableTiktok" value="1" <%= (cfg && cfg.enableTiktok === false) ? "" : "checked" %> />
+                  <span style="color: rgba(255,255,255,0.86); font-size:13px;">Enable TikTok</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </details>
+
         <!-- Typography -->
         <details class="pc-panel" open>
           <summary class="pc-panel-hd" style="cursor:pointer; list-style:none;">
@@ -843,6 +887,11 @@
     setField("showAvatars", presetCfg.showAvatars);
     setField("showPlatformIcon", presetCfg.showPlatformIcon);
     setField("shadow", presetCfg.shadow);
+
+    setField("enableKick", presetCfg.enableKick !== false);
+    setField("enableTwitch", presetCfg.enableTwitch !== false);
+    setField("enableYoutube", presetCfg.enableYoutube !== false);
+    setField("enableTiktok", presetCfg.enableTiktok !== false);
 
     setField("usernameColorMode", presetCfg.usernameColorMode);
     setField("nameColor", presetCfg.nameColor);

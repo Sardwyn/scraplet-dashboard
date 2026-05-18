@@ -24,9 +24,40 @@ const CENTRALIZED_FANOUT =
  * @param {boolean} [options.forcePush=false] - Force push even in centralized mode (for legacy fallback)
  * @returns {Object} { pushed: boolean, reason: string }
  */
-export function fanOutAfterModeration({ chat_v1, decision, publicId, ownerUserId, forcePush = false }) {
+export async function fanOutAfterModeration({ chat_v1, decision, publicId, ownerUserId, forcePush = false }) {
     recordStage('messages', 4, chat_v1?.message?.text?.slice(0,30));
     console.log("[CHAIN-4] fanOutAfterModeration called", { ownerUserId, decision: decision?.action });
+
+    // Load the overlay to check pipeline config
+    let config = {};
+    if (ownerUserId) {
+        try {
+            const { rows } = await db.query(
+                `SELECT config_json FROM obs_widgets WHERE owner_user_id = $1 AND type = 'chat_overlay' LIMIT 1`,
+                [ownerUserId]
+            );
+            if (rows[0]?.config_json) {
+                config = rows[0].config_json;
+            }
+        } catch (dbErr) {
+            console.warn("[fanOutAfterModeration] failed to fetch overlay config:", dbErr.message);
+        }
+    }
+
+    const platform = String(chat_v1?.platform || "kick").toLowerCase();
+    if (platform === "kick" && config.enableKick === false) {
+        return { pushed: false, reason: "kick_pipeline_disabled" };
+    }
+    if (platform === "twitch" && config.enableTwitch === false) {
+        return { pushed: false, reason: "twitch_pipeline_disabled" };
+    }
+    if (platform === "youtube" && config.enableYoutube === false) {
+        return { pushed: false, reason: "youtube_pipeline_disabled" };
+    }
+    if (platform === "tiktok" && config.enableTiktok === false) {
+        return { pushed: false, reason: "tiktok_pipeline_disabled" };
+    }
+
     // If centralized fan-out is disabled (rollback mode), allow all pushes
     if (!CENTRALIZED_FANOUT || forcePush) {
         const leanMessage = buildLeanMessage(chat_v1, "unknown");

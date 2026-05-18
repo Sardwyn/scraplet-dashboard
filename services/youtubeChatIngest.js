@@ -213,6 +213,7 @@ async function insertChatMessages({
   if (!items.length) return { inserted: 0 };
 
   let inserted = 0;
+  let messagesPushedToOverlay = 0;
   const leanToPush = [];
 
   for (const m of items) {
@@ -334,7 +335,7 @@ async function insertChatMessages({
 
       // Phase 3: Use centralized fan-out instead of batch push
       if (overlayPublicId && shouldFanOut) {
-        const fanOutResult = fanOutAfterModeration({
+        const fanOutResult = await fanOutAfterModeration({
           chat_v1,
           decision: scrapbotDecision,
           publicId: overlayPublicId,

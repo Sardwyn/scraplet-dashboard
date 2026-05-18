@@ -1528,6 +1528,66 @@ router.get("/", requireAuth, async (req, res) => {
   }
 
   // ─────────────────────────────────────────────
+  // Twitch connection state
+  // ─────────────────────────────────────────────
+  let twitch = {
+    connected: false,
+    username: null,
+    needsReauth: false,
+    state: "not_linked",
+    primaryHref: "/auth/twitch/start",
+    primaryLabel: "Connect",
+  };
+
+  try {
+    const { rows: acctRows } = await db.query(
+      `
+      SELECT username
+      FROM public.external_accounts
+      WHERE platform = 'twitch' AND user_id = $1
+      LIMIT 1
+      `,
+      [sessionUser.id]
+    );
+
+    const hasExternal = !!acctRows[0];
+    if (acctRows[0]?.username) twitch.username = acctRows[0].username;
+
+    const { rows: tokenRows } = await db.query(
+      `
+      SELECT eat.refresh_token, eat.refresh_error
+      FROM public.external_account_tokens eat
+      JOIN public.external_accounts ea ON ea.id = eat.external_account_id
+      WHERE ea.platform = 'twitch' AND ea.user_id = $1
+      LIMIT 1
+      `,
+      [sessionUser.id]
+    );
+
+    const t = tokenRows[0] || null;
+    const hasRefreshToken = !!t?.refresh_token;
+    const hasRefreshError = !!t?.refresh_error;
+    twitch.connected = hasRefreshToken && !hasRefreshError;
+    twitch.needsReauth = hasExternal && (!hasRefreshToken || hasRefreshError);
+
+    if (twitch.connected) {
+      twitch.state = "ok";
+      twitch.primaryHref = null;
+      twitch.primaryLabel = null;
+    } else if (twitch.needsReauth) {
+      twitch.state = "reauth";
+      twitch.primaryHref = "/auth/twitch/start";
+      twitch.primaryLabel = "Reconnect";
+    } else {
+      twitch.state = "not_linked";
+      twitch.primaryHref = "/auth/twitch/start";
+      twitch.primaryLabel = "Connect";
+    }
+  } catch (err) {
+    console.warn("[dashboard] twitch connection check failed:", err?.message || err);
+  }
+
+  // ─────────────────────────────────────────────
   // Discord connection state (DB truth; no network)
   // ─────────────────────────────────────────────
   let discord = {
@@ -1723,6 +1783,7 @@ router.get("/", requireAuth, async (req, res) => {
     profileUrl,
     kick,
     youtube,
+    twitch,
     discord,
     casino,
     baseUrl: getPublicBaseUrl(req),
@@ -2985,6 +3046,11 @@ router.post("/widgets/chat/save", requireAuth, async (req, res) => {
       showAvatars: truthy(req.body.showAvatars),
       showPlatformIcon: truthy(req.body.showPlatformIcon),
       shadow: truthy(req.body.shadow),
+
+      enableKick: truthy(req.body.enableKick),
+      enableTwitch: truthy(req.body.enableTwitch),
+      enableYoutube: truthy(req.body.enableYoutube),
+      enableTiktok: truthy(req.body.enableTiktok),
 
       usernameColorMode: firstScalar(
         req.body.usernameColorMode,
