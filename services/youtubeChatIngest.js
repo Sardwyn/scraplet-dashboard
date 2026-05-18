@@ -10,8 +10,7 @@
 import db from "../db.js";
 import fetch from "node-fetch";
 import Redis from "ioredis";
-import { getOrCreateUserChatOverlay } from "../src/widgets/chat-overlay/service.js";
-import { push as pushRing } from "../src/runtime/ringBuffer.js";
+// Legacy overlay imports removed
 import { buildChatEnvelopeV1FromYouTube } from "../src/ingest/buildChatEnvelopeV1.js";
 import { fanOutAfterModeration } from "../src/ingest/fanOutAfterModeration.js";
 
@@ -334,11 +333,10 @@ async function insertChatMessages({
       inserted += 1;
 
       // Phase 3: Use centralized fan-out instead of batch push
-      if (overlayPublicId && shouldFanOut) {
+      if (shouldFanOut) {
         const fanOutResult = await fanOutAfterModeration({
           chat_v1,
           decision: scrapbotDecision,
-          publicId: overlayPublicId,
           ownerUserId,
         });
 
@@ -349,15 +347,7 @@ async function insertChatMessages({
     }
   }
 
-  if (overlayPublicId && leanToPush.length) {
-    for (const lean of leanToPush) {
-      try {
-        await pushRing(overlayPublicId, lean, overlayBufferMax);
-      } catch (e) {
-        // non-fatal
-      }
-    }
-  }
+
 
   return { inserted };
 }
@@ -379,17 +369,7 @@ async function runLoop(dashboardUserId, state) {
   state.channelSlug = ctx.channelSlug;
   state.broadcasterUserId = ctx.broadcasterUserId;
 
-  // Resolve (or create) overlay target once per loop
-  try {
-    const w = await getOrCreateUserChatOverlay(userId);
-    state.overlayPublicId = w?.public_id || null;
-    const cfg = w?.config_json || {};
-    const max = Math.min(Math.max(parseInt(cfg?.bufferMax ?? 120, 10), 30), 500);
-    state.overlayBufferMax = max;
-  } catch {
-    state.overlayPublicId = null;
-    state.overlayBufferMax = 120;
-  }
+
 
   // Wait for live broadcast (if user not live yet)
   while (state.running) {

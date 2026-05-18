@@ -13,7 +13,6 @@ import crypto from "crypto";
 import { maybeQueueGoLiveEmail } from "../../services/emailQueue.js";
 import { enqueueAlertForUserEvent } from "../alerts/engine.js";
 
-import { push as pushRing } from "../runtime/ringBuffer.js";
 import { overlayGate } from "../../services/overlayGate.js";
 import { recordStage } from "../services/pipelineHealth.js";
 
