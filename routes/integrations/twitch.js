@@ -1,11 +1,14 @@
 import express from 'express';
 import db from '../../db.js';
 import requireAuth from '../../utils/requireAuth.js';
+import { stopTwitchChatIngest } from '../../services/twitchChatIngest.js';
 
 const router = express.Router();
 
 router.post('/twitch/disconnect', requireAuth, async (req, res) => {
   const userId = req.session.user.id;
+
+  stopTwitchChatIngest(userId);
 
   // Single authority: delete token rows, then channels, then external_accounts
   await db.query(

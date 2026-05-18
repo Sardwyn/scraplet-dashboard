@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import Redis from "ioredis";
 import db from "../db.js";
 import { upsertExternalAccountToken } from "../services/externalAccountTokens.js";
+import { startTwitchChatIngest } from "../services/twitchChatIngest.js";
 
 const router = express.Router();
 const redisClient = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379");
@@ -250,6 +251,11 @@ router.get("/twitch/callback", async (req, res) => {
 
     // 6) Ensure session.user is hydrated
     await hydrateSessionUser(decoded.user_id, req);
+
+    // Start Twitch Chat Ingest connection immediately
+    await startTwitchChatIngest(decoded.user_id).catch(err => {
+      console.error("[auth:twitch/callback] Failed to start Twitch chat ingest:", err);
+    });
 
     return res.redirect("/dashboard?twitch=connected");
   } catch (err) {

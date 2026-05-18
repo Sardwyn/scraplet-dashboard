@@ -3,6 +3,7 @@ import './bootstrap/env.js';
 import { startKickTokenRefreshWorker } from "./services/kickTokenRefreshWorker.js";
 import { startBroadcasterBackfillWorker } from "./services/backfillBroadcasterIds.js";
 import { initTikTokIngestManager } from "./services/tiktokChatIngest.js";
+import { initTwitchChatIngest } from "./services/twitchChatIngest.js";
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -415,6 +416,7 @@ app.listen(port, () => {
 });
 // startChatOutboxWorker();
 initTikTokIngestManager().catch(console.error);
+initTwitchChatIngest().catch(console.error);
 startKickTokenRefreshWorker();
 startBroadcasterBackfillWorker();
 
