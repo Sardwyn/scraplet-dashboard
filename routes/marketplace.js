@@ -15,7 +15,12 @@ router.get('/dashboard/marketplace', async (req, res, next) => {
              u.username as creator_username,
              o.public_id as overlay_public_id,
              o.thumbnail_url,
-             'overlay' as listing_type
+             'overlay' as listing_type,
+             m.featured,
+             m.category,
+             m.platform_tags,
+             m.install_count,
+             m.avg_rating
       FROM marketplace_overlays m
       JOIN users u ON u.id = m.user_id
       JOIN overlays o ON o.id = m.overlay_id
@@ -41,7 +46,12 @@ router.get('/dashboard/marketplace', async (req, res, next) => {
           WHERE oci.collection_id = c.id
           ORDER BY oci.sort_order ASC, oci.added_at ASC
           LIMIT 1
-        ) as first_overlay_public_id
+        ) as first_overlay_public_id,
+        false as featured,
+        null as category,
+        null::text[] as platform_tags,
+        0 as install_count,
+        0.0 as avg_rating
       FROM marketplace_collections mc
       JOIN users u ON u.id = mc.user_id
       JOIN overlay_collections c ON c.id = mc.collection_id
@@ -232,11 +242,82 @@ router.post('/dashboard/api/marketplace/acquire/:listingId', requireAuth, async 
       RETURNING id, public_id
     `, [userId, slug, name, publicId, JSON.stringify(config)]);
 
+    // Increment install_count
+    await db.query(`
+      UPDATE marketplace_overlays
+      SET install_count = COALESCE(install_count, 0) + 1
+      WHERE id = $1
+    `, [listingId]);
+
     res.json({ ok: true, overlayId: newOverlay.id, publicId: newOverlay.public_id, editUrl: '/dashboard/overlays/' + newOverlay.id + '/edit' });
   } catch (err) {
     console.error('[marketplace] acquire error:', err.message);
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// POST /marketplace/:id/install — install overlay and increment install_count
+router.post('/marketplace/:id/install', requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const listingId = Number(req.params.id);
+
+    const { rows: [listing] } = await db.query(`
+      SELECT m.*, o.name as overlay_name
+      FROM marketplace_overlays m
+      JOIN overlays o ON o.id = m.overlay_id
+      WHERE m.id = $1 AND m.status = 'published'
+    `, [listingId]);
+
+    if (!listing) return res.status(404).json({ ok: false, error: 'Listing not found' });
+    if (listing.price_cents > 0) return res.status(402).json({ ok: false, error: 'Paid overlays require checkout' });
+
+    // Clone overlay into buyer's account
+    const publicId = crypto.randomBytes(12).toString('hex');
+    const slug = 'marketplace-' + listing.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) + '-' + Date.now().toString(36);
+    const name = listing.title + ' (from marketplace)';
+    const config = listing.snapshot_config || {};
+
+    const { rows: [newOverlay] } = await db.query(`
+      INSERT INTO overlays (user_id, slug, name, public_id, config_json, scene_type)
+      VALUES ($1, $2, $3, $4, $5, 'overlay')
+      RETURNING id, public_id
+    `, [userId, slug, name, publicId, JSON.stringify(config)]);
+
+    // Increment install_count
+    await db.query(`
+      UPDATE marketplace_overlays
+      SET install_count = COALESCE(install_count, 0) + 1
+      WHERE id = $1
+    `, [listingId]);
+
+    res.json({ ok: true, overlayId: newOverlay.id, publicId: newOverlay.public_id, editUrl: '/dashboard/overlays/' + newOverlay.id + '/edit' });
+  } catch (err) { next(err); }
+});
+
+// GET /marketplace/:listingId — public listing landing page
+router.get('/marketplace/:listingId', async (req, res, next) => {
+  try {
+    const { rows: [listing] } = await db.query(`
+      SELECT m.*, u.username as creator_username, o.public_id as overlay_public_id
+      FROM marketplace_overlays m
+      JOIN users u ON u.id = m.user_id
+      JOIN overlays o ON o.id = m.overlay_id
+      WHERE m.id = $1 AND m.status = 'published'
+    `, [Number(req.params.listingId)]);
+
+    if (!listing) return res.status(404).render('404', { user: req.session?.user || null });
+
+    // Extract widget type names from snapshot_config
+    const widgets = listing.snapshot_config?.elements || [];
+    listing.widget_list = [...new Set(widgets.map(e => e.type).filter(Boolean))];
+
+    res.render('marketplace-listing', {
+      listing,
+      user: req.session?.user || null,
+      req,
+    });
+  } catch (err) { next(err); }
 });
 
 export default router;
@@ -275,20 +356,30 @@ router.get('/marketplace/:id/reviews', async (req, res, next) => {
     res.json(rows);
   } catch (err) { next(err); }
 });
-
 router.get('/marketplace/api/listings', async (req, res, next) => {
   try {
-    const { q = '', category = '', platform = '', page = '0' } = req.query;
+    const { q = '', category = '', platform = '', page = '0', sort = 'featured' } = req.query;
     const offset = Math.max(0, Number(page)) * 24;
+    
+    let orderByClause = 'mo.featured DESC NULLS LAST, mo.avg_rating DESC NULLS LAST, mo.published_at DESC';
+    if (sort === 'latest') {
+      orderByClause = 'mo.published_at DESC';
+    } else if (sort === 'rating') {
+      orderByClause = 'mo.avg_rating DESC NULLS LAST';
+    } else if (sort === 'installs') {
+      orderByClause = 'mo.install_count DESC NULLS LAST';
+    }
+
     const { rows } = await db.query(
-      `SELECT mo.*, u.username as creator_name
+      `SELECT mo.*, u.username as creator_name, o.public_id as overlay_public_id, o.thumbnail_url
        FROM marketplace_overlays mo
        LEFT JOIN users u ON u.id = mo.user_id
+       LEFT JOIN overlays o ON o.id = mo.overlay_id
        WHERE mo.status = 'published'
-         AND ($1 = '' OR to_tsvector('english', mo.name || ' ' || COALESCE(mo.description,'')) @@ plainto_tsquery('english', $1))
+         AND ($1 = '' OR to_tsvector('english', mo.title || ' ' || COALESCE(mo.description,'')) @@ plainto_tsquery('english', $1))
          AND ($2 = '' OR mo.category = $2)
          AND ($3 = '' OR $3 = ANY(COALESCE(mo.platform_tags, ARRAY[]::text[])))
-       ORDER BY mo.featured DESC NULLS LAST, mo.avg_rating DESC NULLS LAST
+       ORDER BY ${orderByClause}
        LIMIT 24 OFFSET $4`,
       [q, category, platform, offset]
     );

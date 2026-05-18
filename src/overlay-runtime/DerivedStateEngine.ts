@@ -55,7 +55,7 @@ interface ChatEnvelopeV1 {
     display: string;
     color?: string;
     avatar?: string;
-    badges?: Array<{ label: string; imageUrl?: string }>;
+    badges?: Array<string | { label?: string; imageUrl?: string; type?: string; text?: string }>;
   };
   message: {
     text: string;
@@ -268,10 +268,30 @@ export class DerivedStateEngine {
       if (platform === "tiktok" && !config.enableTiktok) continue;
 
       // Resolve badges (req 3.5)
-      const badges: ResolvedBadge[] = (payload.author.badges ?? []).map((b) => ({
-        label: b.label,
-        imageUrl: b.imageUrl,
-      }));
+      const BADGE_URLS: Record<string, string> = {
+        broadcaster: 'https://files.kick.com/images/badges/broadcaster/badge_image',
+        moderator:   'https://files.kick.com/images/badges/moderator/badge_image',
+        subscriber:  'https://files.kick.com/images/badges/subscriber/badge_image',
+        verified:    'https://files.kick.com/images/badges/verified/badge_image',
+        og:          'https://files.kick.com/images/badges/og/badge_image',
+        vip:         'https://files.kick.com/images/badges/vip/badge_image',
+      };
+
+      const badges: ResolvedBadge[] = (payload.author.badges ?? []).map((b) => {
+        if (typeof b === 'string') {
+          const type = b.toLowerCase();
+          return {
+            label: b,
+            imageUrl: BADGE_URLS[type] || undefined,
+          };
+        }
+        const label = b?.label || b?.text || b?.type || 'badge';
+        const type = String(b?.type || b?.label || '').toLowerCase();
+        return {
+          label,
+          imageUrl: b?.imageUrl || BADGE_URLS[type] || undefined,
+        };
+      });
 
       // Build tokens (req 3.3, 3.4)
       const rawText = payload.message.text;

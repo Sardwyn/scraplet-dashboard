@@ -1,107 +1,293 @@
-<div class="max-w-6xl mx-auto px-4 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
 
-  <div class="flex items-center justify-between mb-8">
-    <div>
-      <h1 class="text-3xl font-bold text-white">Overlay Marketplace</h1>
-      <p class="text-gray-400 mt-1 text-sm">Browse and download stream overlays created by the community.</p>
+  <!-- Hero Section -->
+  <div class="relative rounded-3xl overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 shadow-2xl p-8 sm:p-12">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(99,102,241,0.15),transparent_50%)]"></div>
+    <div class="relative z-10 max-w-2xl">
+      <span class="px-3 py-1 text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 rounded-full">Scraplet Marketplace</span>
+      <h1 class="text-4xl sm:text-5xl font-black tracking-tight text-white mt-4 font-sans leading-none">
+        Elevate Your Stream Aesthetics
+      </h1>
+      <p class="text-slate-400 mt-4 text-base sm:text-lg leading-relaxed">
+        Browse premium, high-performance interactive overlays, alerts, and complete scene collections designed by creators, for creators.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <% if (user) { %>
+          <a href="/dashboard/overlays" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/20 text-white text-sm font-bold transition-all duration-200 transform hover:-translate-y-0.5">
+            + Publish Your Creations
+          </a>
+        <% } else { %>
+          <a href="/auth/login" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/20 text-white text-sm font-bold transition-all duration-200 transform hover:-translate-y-0.5">
+            Get Started Free
+          </a>
+        <% } %>
+        <a href="#browse-section" class="px-5 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 text-sm font-semibold transition-all duration-200">
+          Explore All Overlays
+        </a>
+      </div>
     </div>
-    <% if (user) { %>
-      <a href="/dashboard/overlays" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
-        + Publish Your Overlay
-      </a>
-    <% } else { %>
-      <a href="/auth/login" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors">
-        Sign in to download
-      </a>
-    <% } %>
   </div>
 
-  <% if (!listings || listings.length === 0) { %>
-    <div class="text-center py-24 text-gray-500">
-      <div class="text-5xl mb-4">🎨</div>
-      <div class="text-lg font-semibold text-gray-400">No overlays yet</div>
-      <p class="text-sm mt-2">Be the first to publish an overlay to the marketplace.</p>
-      <% if (user) { %>
-        <a href="/dashboard/overlays" class="mt-4 inline-block px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">Publish an overlay</a>
-      <% } %>
-    </div>
-  <% } else { %>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <% listings.forEach(function(l) { 
-        const isCollection = l.listing_type === 'collection';
-        const previewUrl = isCollection ? (l.first_overlay_public_id ? `/o/${l.first_overlay_public_id}` : null) : `/o/${l.overlay_public_id}`;
-        const thumbnailUrl = l.thumbnail_url;
-      %>
-        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-colors group">
-          <!-- Preview -->
-          <div class="aspect-video bg-gray-800 flex items-center justify-center relative overflow-hidden">
-            <% if (thumbnailUrl) { %>
-              <img src="<%= thumbnailUrl %>" alt="<%= l.title %>" class="w-full h-full object-cover" />
-            <% } else { %>
-              <svg class="w-12 h-12 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            <% } %>
-            
-            <% if (previewUrl) { %>
-              <a href="<%= previewUrl %>" target="_blank" rel="noopener"
-                 class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 text-white text-sm font-semibold">
-                Preview ↗
-              </a>
-            <% } %>
-            
-            <% if (isCollection) { %>
-              <div class="absolute top-2 right-2 px-2 py-1 rounded bg-indigo-600 text-white text-xs font-semibold">
-                <%= l.overlay_count %> overlays
+  <!-- Featured Section -->
+  <% 
+    const featuredListings = listings.filter(l => l.featured); 
+    if (featuredListings.length > 0) { 
+  %>
+    <div class="space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+          <span class="text-yellow-500">★</span> Featured Overlays
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <% featuredListings.slice(0, 2).forEach(function(l) { 
+          const isCollection = l.listing_type === 'collection';
+          const detailUrl = `/marketplace/${l.id}`;
+          const thumbnailUrl = l.thumbnail_url;
+        %>
+          <div class="relative group flex flex-col sm:flex-row bg-slate-900/60 hover:bg-slate-900 border border-indigo-500/30 rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300">
+            <!-- Thumbnail -->
+            <div class="relative sm:w-1/2 aspect-video sm:aspect-auto overflow-hidden bg-slate-950 flex items-center justify-center">
+              <% if (thumbnailUrl) { %>
+                <img src="<%= thumbnailUrl %>" alt="<%= l.title %>" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+              <% } else { %>
+                <svg class="w-16 h-16 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              <% } %>
+              <div class="absolute top-3 left-3 px-2 py-1 text-[10px] font-bold tracking-wide uppercase bg-yellow-500 text-slate-950 rounded-md shadow-lg">
+                ★ Featured
               </div>
-            <% } %>
-          </div>
+              <% if (isCollection) { %>
+                <div class="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-indigo-600/90 text-white text-xs font-semibold shadow-md">
+                  <%= l.overlay_count %> Overlays
+                </div>
+              <% } %>
+            </div>
 
-          <div class="p-4">
-            <div class="flex items-start justify-between gap-2">
+            <!-- Content -->
+            <div class="p-6 sm:w-1/2 flex flex-col justify-between space-y-4">
               <div>
-                <h3 class="font-semibold text-white text-sm"><%= l.title %></h3>
-                <p class="text-xs text-gray-500 mt-0.5">by <%= l.creator_username %></p>
-                <% if (isCollection) { %>
-                  <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Collection</span>
-                <% } %>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                    <%= l.category || 'Stream Pack' %>
+                  </span>
+                  <span class="text-lg font-black text-emerald-400">
+                    <%= l.price_cents === 0 ? 'Free' : '$' + (l.price_cents/100).toFixed(2) %>
+                  </span>
+                </div>
+                <h3 class="font-extrabold text-white text-lg mt-2 group-hover:text-indigo-400 transition-colors">
+                  <a href="<%= detailUrl %>"><%= l.title %></a>
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">by <span class="font-semibold text-slate-400"><%= l.creator_username || l.creator_name %></span></p>
+                <p class="text-sm text-slate-400 mt-3 line-clamp-2 leading-relaxed"><%= l.description %></p>
               </div>
-              <span class="text-sm font-bold <%= l.price_cents === 0 ? 'text-green-400' : 'text-white' %> shrink-0">
+
+              <!-- Meta and Action -->
+              <div class="space-y-4 pt-2">
+                <div class="flex items-center gap-4 text-xs text-slate-500">
+                  <span class="flex items-center gap-1">
+                    <span class="text-yellow-500 text-sm">★</span>
+                    <strong class="text-slate-300"><%= l.avg_rating > 0 ? Number(l.avg_rating).toFixed(1) : 'New' %></strong>
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <strong class="text-slate-300"><%= l.install_count || 0 %></strong> installs
+                  </span>
+                </div>
+                
+                <div class="flex gap-2">
+                  <a href="<%= detailUrl %>" class="flex-1 text-center py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all">
+                    View Details
+                  </a>
+                  <% if (user) { %>
+                    <button onclick="acquireItem(<%= l.id %>, '<%= isCollection ? 'collection' : 'overlay' %>', this)" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md">
+                      Get Free
+                    </button>
+                  <% } else { %>
+                    <a href="/auth/login" class="flex-1 text-center py-2.5 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 text-xs font-bold border border-indigo-500/20 transition-all">
+                      Log In to Install
+                    </a>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Search & Filter Controls -->
+  <div id="browse-section" class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-xl backdrop-blur-md space-y-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-extrabold text-white tracking-tight">Browse Community Catalog</h2>
+        <p class="text-slate-400 text-sm mt-1">Filter, search, and sort overlays by category or rating.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="reset-filters" class="px-3.5 py-2 text-xs font-bold text-slate-400 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-colors">
+          Reset Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter Inputs Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Search Input -->
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <input type="text" id="search-input" placeholder="Search title or description..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm transition-all" />
+      </div>
+
+      <!-- Category Filter -->
+      <div>
+        <select id="category-filter" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 focus:outline-none focus:border-indigo-500 text-sm transition-all">
+          <option value="">All Categories</option>
+          <option value="Sleek & Minimalist">Sleek & Minimalist</option>
+          <option value="Chibi & Anime">Chibi & Anime</option>
+          <option value="Cyberpunk">Cyberpunk</option>
+          <option value="Retro / 8-Bit">Retro / 8-Bit</option>
+          <option value="Sports & Analytics">Sports & Analytics</option>
+          <option value="Chat & Interactive">Chat & Interactive</option>
+        </select>
+      </div>
+
+      <!-- Platform Filter -->
+      <div>
+        <select id="platform-filter" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 focus:outline-none focus:border-indigo-500 text-sm transition-all">
+          <option value="">All Platforms</option>
+          <option value="Twitch">Twitch</option>
+          <option value="YouTube">YouTube</option>
+          <option value="Kick">Kick</option>
+        </select>
+      </div>
+
+      <!-- Sort Filter -->
+      <div>
+        <select id="sort-filter" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 focus:outline-none focus:border-indigo-500 text-sm transition-all">
+          <option value="featured">Sort by: Featured</option>
+          <option value="latest">Sort by: Latest</option>
+          <option value="rating">Sort by: Highest Rated</option>
+          <option value="installs">Sort by: Most Installed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Listings Card Grid -->
+  <div id="listings-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <!-- Server-rendered cards (or fallbacks) -->
+    <% listings.forEach(function(l) { 
+      const isCollection = l.listing_type === 'collection';
+      const detailUrl = `/marketplace/${l.id}`;
+      const thumbnailUrl = l.thumbnail_url;
+    %>
+      <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col justify-between group">
+        <!-- Thumbnail -->
+        <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden">
+          <% if (thumbnailUrl) { %>
+            <img src="<%= thumbnailUrl %>" alt="<%= l.title %>" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+          <% } else { %>
+            <svg class="w-12 h-12 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <% } %>
+          
+          <a href="<%= detailUrl %>" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-sm font-bold gap-1">
+            View Listing ↗
+          </a>
+
+          <% if (l.featured) { %>
+            <div class="absolute top-2.5 left-2.5 px-2 py-0.5 text-[9px] font-bold bg-yellow-500 text-slate-950 rounded shadow-md">
+              ★ Featured
+            </div>
+          <% } %>
+          
+          <% if (isCollection) { %>
+            <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold shadow-md">
+              <%= l.overlay_count %> Overlays
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Meta Content -->
+        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span class="font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                <%= l.category || 'General' %>
+              </span>
+              <span class="font-black text-base text-emerald-400">
                 <%= l.price_cents === 0 ? 'Free' : '$' + (l.price_cents/100).toFixed(2) %>
               </span>
             </div>
-
+            
+            <h3 class="font-bold text-white text-base mt-2.5 line-clamp-1 group-hover:text-indigo-400 transition-colors">
+              <a href="<%= detailUrl %>"><%= l.title %></a>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">by <span class="font-semibold text-slate-400"><%= l.creator_username || l.creator_name %></span></p>
+            
             <% if (l.description) { %>
-              <p class="text-xs text-gray-400 mt-2 line-clamp-2"><%= l.description %></p>
+              <p class="text-xs text-slate-400 mt-3 line-clamp-2 leading-relaxed"><%= l.description %></p>
             <% } %>
+          </div>
 
-            <div class="mt-4">
+          <!-- Bottom Action and Ratings -->
+          <div class="space-y-4 pt-2">
+            <div class="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs text-slate-500">
+              <span class="flex items-center gap-1 font-semibold text-slate-300">
+                <span class="text-yellow-500 text-sm">★</span>
+                <%= l.avg_rating > 0 ? Number(l.avg_rating).toFixed(1) : 'New' %>
+              </span>
+              <span class="flex items-center gap-1 font-semibold text-slate-300">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <%= l.install_count || 0 %>
+              </span>
+            </div>
+
+            <div>
               <% if (!user) { %>
-                <a href="/auth/login" class="block w-full text-center py-2 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 text-xs font-semibold hover:bg-indigo-600/30 transition-colors">
-                  Sign in to get this
+                <a href="/auth/login" class="block w-full text-center py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition-all">
+                  Log in to Get
                 </a>
               <% } else if (l.price_cents === 0) { %>
                 <button
                   onclick="acquireItem(<%= l.id %>, '<%= isCollection ? 'collection' : 'overlay' %>', this)"
-                  class="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors">
-                  Get this free
+                  class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md">
+                  Get Free
                 </button>
               <% } else { %>
-                <button class="w-full py-2 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-300 text-xs font-semibold cursor-not-allowed opacity-60">
-                  Paid — coming soon
-                </button>
+                <a href="<%= detailUrl %>" class="block w-full text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md">
+                  Buy Package
+                </a>
               <% } %>
             </div>
           </div>
         </div>
-      <% }) %>
-    </div>
-  <% } %>
+      </div>
+    <% }) %>
+  </div>
 
+  <!-- Loading State -->
+  <div id="loading-spinner" class="hidden flex justify-center py-12">
+    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="empty-state" class="hidden text-center py-20 bg-slate-900/20 border border-slate-800/80 rounded-2xl">
+    <div class="text-5xl mb-4">🔍</div>
+    <h3 class="text-lg font-bold text-white">No results found</h3>
+    <p class="text-slate-400 mt-2 text-sm">Try adjusting your filters or search keywords.</p>
+  </div>
 </div>
 
 <script>
+// Install Flow helper
 async function acquireItem(listingId, type, btn) {
+  if (btn.disabled) return;
   btn.disabled = true;
-  btn.textContent = 'Adding...';
+  const originalText = btn.textContent;
+  btn.textContent = 'Adding to Library...';
+  
   try {
     const endpoint = type === 'collection' 
       ? '/dashboard/api/marketplace/acquire-collection/' + listingId
@@ -111,15 +297,172 @@ async function acquireItem(listingId, type, btn) {
     const d = await r.json();
     if (d.ok) {
       btn.textContent = '✓ Added!';
-      btn.className = btn.className.replace('bg-indigo-600', 'bg-green-600');
-      setTimeout(() => { window.location.href = d.editUrl; }, 800);
+      btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+      btn.classList.add('bg-emerald-600');
+      
+      // Sparkle/celebration animation
+      setTimeout(() => { 
+        window.location.href = d.editUrl; 
+      }, 700);
     } else {
       btn.textContent = 'Error: ' + d.error;
       btn.disabled = false;
+      setTimeout(() => { btn.textContent = originalText; }, 3000);
     }
   } catch(e) {
     btn.textContent = 'Failed';
     btn.disabled = false;
+    setTimeout(() => { btn.textContent = originalText; }, 2000);
   }
 }
+
+// Client Side Searching and Filtering
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('search-input');
+  const categoryFilter = document.getElementById('category-filter');
+  const platformFilter = document.getElementById('platform-filter');
+  const sortFilter = document.getElementById('sort-filter');
+  const resetFiltersBtn = document.getElementById('reset-filters');
+  const listingsContainer = document.getElementById('listings-container');
+  const loadingSpinner = document.getElementById('loading-spinner');
+  const emptyState = document.getElementById('empty-state');
+
+  const isLoggedIn = <%= user ? 'true' : 'false' %>;
+
+  let debounceTimer;
+
+  // Event Listeners
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchFilteredListings, 300);
+  });
+  categoryFilter.addEventListener('change', fetchFilteredListings);
+  platformFilter.addEventListener('change', fetchFilteredListings);
+  sortFilter.addEventListener('change', fetchFilteredListings);
+
+  resetFiltersBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    categoryFilter.value = '';
+    platformFilter.value = '';
+    sortFilter.value = 'featured';
+    fetchFilteredListings();
+  });
+
+  async function fetchFilteredListings() {
+    listingsContainer.classList.add('opacity-40');
+    loadingSpinner.classList.remove('hidden');
+    emptyState.classList.add('hidden');
+
+    try {
+      const q = encodeURIComponent(searchInput.value.trim());
+      const category = encodeURIComponent(categoryFilter.value);
+      const platform = encodeURIComponent(platformFilter.value);
+      const sort = encodeURIComponent(sortFilter.value);
+
+      const response = await fetch(`/marketplace/api/listings?q=${q}&category=${category}&platform=${platform}&sort=${sort}`);
+      const listings = await response.json();
+
+      listingsContainer.innerHTML = '';
+      listingsContainer.classList.remove('opacity-40');
+      loadingSpinner.classList.add('hidden');
+
+      if (!listings || listings.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      listings.forEach(l => {
+        const isCollection = l.is_collection_listing || l.listing_type === 'collection';
+        const detailUrl = `/marketplace/${l.id}`;
+        const price = l.price_cents === 0 ? 'Free' : '$' + (l.price_cents/100).toFixed(2);
+        const rating = l.avg_rating > 0 ? Number(l.avg_rating).toFixed(1) : 'New';
+        const installs = l.install_count || 0;
+        const categoryBadge = l.category || 'General';
+
+        let thumbnailHtml = `<svg class="w-12 h-12 text-slate-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`;
+        if (l.thumbnail_url) {
+          thumbnailHtml = `<img src="${l.thumbnail_url}" alt="${l.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />`;
+        }
+
+        let actionButton = '';
+        if (!isLoggedIn) {
+          actionButton = `<a href="/auth/login" class="block w-full text-center py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700 transition-all">Log in to Get</a>`;
+        } else if (l.price_cents === 0) {
+          actionButton = `<button onclick="acquireItem(${l.id}, '${isCollection ? 'collection' : 'overlay'}', this)" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md">Get Free</button>`;
+        } else {
+          actionButton = `<a href="${detailUrl}" class="block w-full text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-md">Buy Package</a>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col justify-between group';
+        card.innerHTML = `
+          <!-- Thumbnail -->
+          <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden">
+            ${thumbnailHtml}
+            
+            <a href="${detailUrl}" class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 text-white text-sm font-bold gap-1">
+              View Listing ↗
+            </a>
+
+            ${l.featured ? `
+              <div class="absolute top-2.5 left-2.5 px-2 py-0.5 text-[9px] font-bold bg-yellow-500 text-slate-950 rounded shadow-md">
+                ★ Featured
+              </div>
+            ` : ''}
+            
+            ${isCollection ? `
+              <div class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold shadow-md">
+                ${l.overlay_count || 1} Overlays
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Meta Content -->
+          <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="flex items-center justify-between text-xs text-slate-500">
+                <span class="font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                  ${categoryBadge}
+                </span>
+                <span class="font-black text-base text-emerald-400">
+                  ${price}
+                </span>
+              </div>
+              
+              <h3 class="font-bold text-white text-base mt-2.5 line-clamp-1 group-hover:text-indigo-400 transition-colors">
+                <a href="${detailUrl}">${l.title}</a>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">by <span class="font-semibold text-slate-400">${l.creator_name || 'Creator'}</span></p>
+              
+              ${l.description ? `<p class="text-xs text-slate-400 mt-3 line-clamp-2 leading-relaxed">${l.description}</p>` : ''}
+            </div>
+
+            <!-- Bottom Action and Ratings -->
+            <div class="space-y-4 pt-2">
+              <div class="flex items-center justify-between border-t border-slate-800/80 pt-3 text-xs text-slate-500">
+                <span class="flex items-center gap-1 font-semibold text-slate-300">
+                  <span class="text-yellow-500 text-sm">★</span>
+                  ${rating}
+                </span>
+                <span class="flex items-center gap-1 font-semibold text-slate-300">
+                  <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  ${installs}
+                </span>
+              </div>
+
+              <div>
+                ${actionButton}
+              </div>
+            </div>
+          </div>
+        `;
+        listingsContainer.appendChild(card);
+      });
+    } catch (e) {
+      console.error('Failed to filter listings:', e);
+      listingsContainer.classList.remove('opacity-40');
+      loadingSpinner.classList.add('hidden');
+    }
+  }
+});
 </script>

@@ -52,6 +52,52 @@ async function saveStateToRedis(userId, state) {
   await redisClient.hset("yt_ingest_state", userId, JSON.stringify(publicState));
 }
 
+async function refreshYouTubeAccessToken(externalAccountId, refreshToken) {
+  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.YOUTUBE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET for YouTube refresh");
+  }
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  const r = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body,
+  });
+
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(`YouTube refresh failed (${r.status}): ${data?.error || "unknown_error"}`);
+  }
+
+  const accessToken = data.access_token;
+  const expiresIn = Number(data.expires_in || 0);
+
+  if (!accessToken) throw new Error("YouTube refresh response missing access_token");
+  const expiresAt = expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000) : new Date(Date.now() + 3600 * 1000);
+
+  await db.query(
+    `
+    UPDATE external_account_tokens
+       SET access_token = $2,
+           expires_at   = $3,
+           updated_at   = now()
+      WHERE external_account_id = $1
+    `,
+    [externalAccountId, accessToken, expiresAt]
+  );
+
+  return { accessToken, expiresAt };
+}
+
 async function getYouTubeAuthContextForUser(userId) {
   const r = await db.query(
     `
@@ -60,6 +106,8 @@ async function getYouTubeAuthContextForUser(userId) {
       ea.external_user_id AS broadcaster_user_id,
       ea.username AS broadcaster_username,
       t.access_token,
+      t.refresh_token,
+      t.expires_at,
       c.channel_slug
     FROM external_accounts ea
     JOIN external_account_tokens t ON t.external_account_id = ea.id
@@ -74,9 +122,25 @@ async function getYouTubeAuthContextForUser(userId) {
   const row = r.rows[0] || null;
   if (!row?.access_token) return null;
 
+  let accessToken = String(row.access_token);
+  const expiresAt = row.expires_at ? new Date(row.expires_at) : null;
+  const refreshToken = row.refresh_token ? String(row.refresh_token) : null;
+  const externalAccountId = String(row.external_account_id);
+
+  // Proactively refresh access token if expired or expiring within 60 seconds
+  if (expiresAt && (expiresAt.getTime() - Date.now() < 60 * 1000) && refreshToken) {
+    try {
+      console.log(`[youtubeChatIngest] Proactively refreshing YouTube token for user ${userId}...`);
+      const refreshed = await refreshYouTubeAccessToken(externalAccountId, refreshToken);
+      accessToken = refreshed.accessToken;
+    } catch (err) {
+      console.error(`[youtubeChatIngest] Proactive token refresh failed for user ${userId}:`, err?.message || err);
+    }
+  }
+
   return {
-    externalAccountId: String(row.external_account_id),
-    accessToken: String(row.access_token),
+    externalAccountId,
+    accessToken,
     channelSlug: row.channel_slug ? String(row.channel_slug) : "@youtube",
     broadcasterUserId: row.broadcaster_user_id
       ? String(row.broadcaster_user_id)
@@ -359,43 +423,53 @@ async function runLoop(dashboardUserId, state) {
   let liveChatId = null;
   let broadcastChannelId = null;
 
-  const ctx = await getYouTubeAuthContextForUser(userId);
-  if (!ctx) {
-    state.lastError = "No YouTube token found for user (not connected)";
-    state.running = false;
-    return;
-  }
-
-  state.channelSlug = ctx.channelSlug;
-  state.broadcasterUserId = ctx.broadcasterUserId;
-
-
-
   // Wait for live broadcast (if user not live yet)
   while (state.running) {
-    const live = await resolveLiveChatId(ctx.accessToken);
-    if (live?.liveChatId) {
-      liveChatId = live.liveChatId;
-      broadcastChannelId =
-        live.broadcastChannelId || ctx.broadcasterUserId || null;
-      state.liveChatId = liveChatId;
-      state.broadcastId = live.broadcastId;
-      state.broadcastTitle = live.title;
-      state.lastInfo = null;
-      break;
+    const ctx = await getYouTubeAuthContextForUser(userId);
+    if (!ctx) {
+      state.lastError = "No YouTube token found for user (not connected)";
+      state.running = false;
+      return;
     }
-    state.liveChatId = null;
-    state.broadcastId = null;
-    state.broadcastTitle = null;
-    state.lastInfo = "No live broadcast detected (waiting)";
-    await saveStateToRedis(userId, state);
-    await sleep(3000);
+
+    state.channelSlug = ctx.channelSlug;
+    state.broadcasterUserId = ctx.broadcasterUserId;
+
+    try {
+      const live = await resolveLiveChatId(ctx.accessToken);
+      if (live?.liveChatId) {
+        liveChatId = live.liveChatId;
+        broadcastChannelId =
+          live.broadcastChannelId || ctx.broadcasterUserId || null;
+        state.liveChatId = liveChatId;
+        state.broadcastId = live.broadcastId;
+        state.broadcastTitle = live.title;
+        state.lastInfo = null;
+        break;
+      }
+      state.liveChatId = null;
+      state.broadcastId = null;
+      state.broadcastTitle = null;
+      state.lastInfo = "No live broadcast detected (waiting)";
+      await saveStateToRedis(userId, state);
+      await sleep(5000);
+    } catch (e) {
+      state.lastError = String(e?.message || e);
+      state.lastInfo = "Failed to resolve live broadcast state";
+      await saveStateToRedis(userId, state);
+      await sleep(5000);
+    }
   }
 
   if (!state.running) return;
 
   while (state.running) {
     try {
+      const ctx = await getYouTubeAuthContextForUser(userId);
+      if (!ctx) {
+        throw new Error("No YouTube token found for user (not connected)");
+      }
+
       const { items, nextPageToken, pollingIntervalMillis } = await pollChatOnce(
         {
           accessToken: ctx.accessToken,

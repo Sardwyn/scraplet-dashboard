@@ -56,6 +56,7 @@ import twitchIntegrationsRouter from './routes/integrations/twitch.js';
 import youtubeIntegrationsRouter from './routes/integrations/youtube.js';
 import youtubeChatDebugRouter from './routes/integrations/youtube_chat_debug.js';
 import youtubeChatIngestRouter from './routes/integrations/youtube_chat_ingest.js';
+import tiktokIntegrationsRouter from './routes/integrations/tiktok.js';
 import statusProxyRoutes from './routes/statusProxy.js';
 import highlightsApiRouter from './routes/highlightsApi.js';
 import insightsApiRouter from './routes/insightsApi.js';
@@ -206,6 +207,8 @@ app.use('/dashboard', express.static(path.join(__dirname, 'public')));
 app.use(dashboardMetricsRouter);
 app.use('/api/integrations', kickIntegrationsRouter);
 app.use('/api/integrations', twitchIntegrationsRouter);
+app.use('/api/integrations', tiktokIntegrationsRouter);
+app.use(tiktokIntegrationsRouter);
 app.use(youtubeIntegrationsRouter);
 app.use(youtubeChatDebugRouter);
 

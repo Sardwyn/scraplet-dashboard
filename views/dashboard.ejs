@@ -290,7 +290,9 @@
           ? 'Connected'
           : ((tiktokObj.username || tiktokObj.unique_id) ? 'Reconnect' : 'Connect'),
         badge: tiktokObj.liveBadge || null,
-        showSecondary: false
+        secondaryFormAction: '/api/integrations/tiktok/disconnect',
+        secondaryLabel: 'Disconnect',
+        showSecondary: true
       },
 
       {

@@ -121,7 +121,7 @@ export function ChatOverlayWidget({ state }: WidgetRendererProps) {
           <div key={msg.id} style={msgStyle}>
             {cfg.showAvatars && (
               msg.avatar
-                ? <img src={msg.avatar} alt={msg.username} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 2 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                ? <img src={msg.avatar} alt={msg.username} referrerPolicy="no-referrer" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 2 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                 : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
             )}
             {cfg.showPlatformIcon && msg.platform && (
@@ -131,7 +131,7 @@ export function ChatOverlayWidget({ state }: WidgetRendererProps) {
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: 3, flexShrink: 0 }}>
                 {msg.badges.map((b, i) => {
                   const url = BADGE_URLS[(b.type || '').toLowerCase()];
-                  return url ? <img key={i} src={url} alt={b.text || b.type} style={{ height: '1.1em', width: 'auto', verticalAlign: 'middle' }} /> : null;
+                  return url ? <img key={i} src={url} alt={b.text || b.type} referrerPolicy="no-referrer" style={{ height: '1.1em', width: 'auto', verticalAlign: 'middle' }} /> : null;
                 })}
               </span>
             )}

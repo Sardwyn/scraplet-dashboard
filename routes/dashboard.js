@@ -1663,7 +1663,15 @@ router.get("/", requireAuth, async (req, res) => {
     `SELECT * FROM external_accounts WHERE user_id = $1 AND platform = 'tiktok' LIMIT 1`,
     [sessionUser.id]
   );
-  const tiktok = tiktokRows[0] || null;
+  let tiktok = null;
+  if (tiktokRows.length > 0) {
+    tiktok = {
+      ...tiktokRows[0],
+      connected: !!tiktokRows[0].enabled,
+      username: tiktokRows[0].unique_id,
+      needsReauth: false
+    };
+  }
 
   // ─────────────────────────────────────────────
   // Fetch real overlays from DB with element type counts
