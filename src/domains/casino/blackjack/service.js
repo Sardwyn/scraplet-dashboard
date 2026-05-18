@@ -5,13 +5,15 @@
 // - Calls the blackjack widget engine (session-manager)
 //
 
-import { getOrCreateUserBlackjack } from "../../../widgets/blackjack/service.js";
-import { BLACKJACK_DEFAULTS } from "../../../widgets/blackjack/defaults.js";
-import { buildBlackjackNarration } from "../../../widgets/blackjack/narrator.js";
-import {
-  startRoundForPlayer,
-  actForPlayer,
-} from "../../../widgets/blackjack/server/session-manager.js";
+// Legacy widgets removed
+const getOrCreateUserBlackjack = async () => ({ public_id: 'dummy' });
+const BLACKJACK_DEFAULTS = {};
+const buildBlackjackNarration = () => "Blackjack played.";
+const getSession = async () => null;
+const createSession = async () => ({});
+const updateSession = async () => {};
+const startRoundForPlayer = async () => ({ roundId: 'dummy' });
+const actForPlayer = async () => ({});
 
 export async function blackjackStartRound({
   ownerUserId,

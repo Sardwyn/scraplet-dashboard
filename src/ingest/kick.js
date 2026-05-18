@@ -13,7 +13,6 @@ import crypto from "crypto";
 import { maybeQueueGoLiveEmail } from "../../services/emailQueue.js";
 import { enqueueAlertForUserEvent } from "../alerts/engine.js";
 
-import { getOrCreateUserChatOverlay } from "../widgets/chat-overlay/service.js";
 import { push as pushRing } from "../runtime/ringBuffer.js";
 import { overlayGate } from "../../services/overlayGate.js";
 import { recordStage } from "../services/pipelineHealth.js";
@@ -446,26 +445,7 @@ function pickPlayerKey({ senderUserId, senderUsername }) {
   return null;
 }
 
-async function pushChatToOverlay({ ownerUserId, msg }) {
-  const w = await getOrCreateUserChatOverlay(ownerUserId);
-  if (!w || !w.is_enabled) return;
 
-  const max = parseIntSafe(w?.config_json?.maxMessages, 120) || 120;
-
-  const lean = {
-    id: msg.id || null,
-    ts: msg.ts || new Date().toISOString(),
-    user: msg.user || { name: "unknown", avatar: null },
-    badges: Array.isArray(msg.badges) ? msg.badges.slice(0, 6) : [],
-    text: String(msg.text || "").slice(0, 400),
-  };
-
-  if (!lean.text) return;
-  await pushRing(w.public_id, lean, max);
-
-  // NOTE: overlayGate publish is handled by fanOutAfterModeration (chat-outbox-worker)
-  // Do NOT publish here — that causes double delivery to the overlay SSE stream.
-}
 
 function verifySignature(req) {
   const secret = process.env.SCRAPLET_SHARED_SECRET;

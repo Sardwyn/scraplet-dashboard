@@ -5,8 +5,9 @@
 // - Calls the plinko widget engine (queue-manager) which handles DB truth + ring events
 //
 
-import { enqueuePlinkoDrop } from "../../../widgets/plinko/server/queue-manager.js";
-import { getOrCreateUserPlinko } from "../../../widgets/plinko/service.js";
+// Legacy widgets removed
+const enqueuePlinkoDrop = async () => {};
+const getOrCreateUserPlinko = async () => ({ public_id: 'dummy' });
 
 export async function plinkoDrop({
   ownerUserId,

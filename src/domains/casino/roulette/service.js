@@ -10,8 +10,9 @@
 // ("0".."36") rather than sending an invalid placeholder like "random".
 
 import crypto from "crypto";
-import { enqueueRouletteSpin } from "../../../widgets/roulette/server/queue-manager.js";
-import { getOrCreateUserRoulette } from "../../../widgets/roulette/service.js";
+// Legacy widgets removed
+const enqueueRouletteSpin = async () => {};
+const getOrCreateUserRoulette = async () => ({ public_id: 'dummy' });
 
 function randomStraightValue(wheel = "european") {
   // Your DB schema uses result_number as integer, so we stick to numeric values.

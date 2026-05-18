@@ -4,7 +4,6 @@
 // This ensures messages only reach overlays if they are allowed or moderation is unknown (fail-open).
 //
 
-import { push as pushRing } from "../runtime/ringBuffer.js";
 import { overlayGate } from "../../services/overlayGate.js";
 import { recordStage } from "../services/pipelineHealth.js";
 import db from "../../db.js";
@@ -24,7 +23,7 @@ const CENTRALIZED_FANOUT =
  * @param {boolean} [options.forcePush=false] - Force push even in centralized mode (for legacy fallback)
  * @returns {Object} { pushed: boolean, reason: string }
  */
-export async function fanOutAfterModeration({ chat_v1, decision, publicId, ownerUserId, forcePush = false }) {
+export async function fanOutAfterModeration({ chat_v1, decision, ownerUserId, forcePush = false }) {
     recordStage('messages', 4, chat_v1?.message?.text?.slice(0,30));
     console.log("[CHAIN-4] fanOutAfterModeration called", { ownerUserId, decision: decision?.action });
 
@@ -61,7 +60,6 @@ export async function fanOutAfterModeration({ chat_v1, decision, publicId, owner
     // If centralized fan-out is disabled (rollback mode), allow all pushes
     if (!CENTRALIZED_FANOUT || forcePush) {
         const leanMessage = buildLeanMessage(chat_v1, "unknown");
-        pushRing(publicId, leanMessage);
         publishChatToOverlayGate(ownerUserId, leanMessage).catch(e =>
             console.warn("[fanOutAfterModeration] overlayGate publish failed:", e.message)
         );
@@ -90,8 +88,6 @@ export async function fanOutAfterModeration({ chat_v1, decision, publicId, owner
     const leanMessage = buildLeanMessage(chat_v1, moderationStatus);
 
     try {
-        pushRing(publicId, leanMessage);
-
         // Publish chat.message packet to overlayGate so unified overlay runtime
         // receives it via SSE — no CEF polling, no widget SSE needed.
         publishChatToOverlayGate(ownerUserId, leanMessage).catch(e =>

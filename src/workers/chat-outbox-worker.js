@@ -15,7 +15,6 @@ import "dotenv/config";
 import fetch from "node-fetch";
 
 import db from "../../db.js";
-import { getOrCreateUserChatOverlay } from "../widgets/chat-overlay/service.js";
 import { fanOutAfterModeration } from "../ingest/fanOutAfterModeration.js";
 import { recordStage } from "../services/pipelineHealth.js";
 
@@ -287,17 +286,11 @@ async function processOne(meta, row) {
 
   // 2) Fan-out ONLY after decision
   try {
-    const overlay = await getOrCreateUserChatOverlay(ownerUserId);
-    const publicId = overlay?.public_id || null;
-
-    if (publicId) {
-      await fanOutAfterModeration({
-        chat_v1,
-        decision,
-        publicId,
-        ownerUserId,
-      });
-    }
+    await fanOutAfterModeration({
+      chat_v1,
+      decision,
+      ownerUserId,
+    });
   } catch (err) {
     console.error("[chat-outbox-worker] overlay fan-out failed", {
       event_id: row.event_id,
