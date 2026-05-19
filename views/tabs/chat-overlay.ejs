@@ -315,9 +315,21 @@
               </label>
 
               <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
-                <input type="hidden" name="showPlatformIcon" value="0" />
-                <input type="checkbox" name="showPlatformIcon" value="1" <%= (cfg && cfg.showPlatformIcon === false) ? "" : "checked" %> />
-                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Show platform icon</span>
+                <input type="hidden" name="showPlatformBadge" value="0" />
+                <input type="checkbox" name="showPlatformBadge" value="1" <%= (cfg && cfg.showPlatformBadge !== false) ? "checked" : "" %> />
+                <span style="color: rgba(255,255,255,0.86); font-size:13px;">Show platform badge</span>
+              </label>
+
+              <label style="display:block;">
+                <div class="pc-muted" style="font-size:11px; letter-spacing:0.14em; text-transform:uppercase;">Platform badge style</div>
+                <% const pbs = (cfg && cfg.platformBadgeStyle) ? String(cfg.platformBadgeStyle) : "symbol"; %>
+                <select class="pc-input" style="margin-top:6px;" name="platformBadgeStyle">
+                  <option value="symbol" <%= pbs === "symbol" ? "selected" : "" %>>Symbol (icon image)</option>
+                  <option value="text" <%= pbs === "text" ? "selected" : "" %>>Text (platform name)</option>
+                  <option value="dot" <%= pbs === "dot" ? "selected" : "" %>>Dot (color dot)</option>
+                  <option value="highlight" <%= pbs === "highlight" ? "selected" : "" %>>Highlight (colored chip)</option>
+                </select>
+                <div class="pc-muted" style="margin-top:6px; font-size:12px;">Only shown when "Show platform badge" is enabled.</div>
               </label>
 
               <label style="display:flex; align-items:center; gap:10px;" class="pc-btn pc-btn-ghost">
@@ -885,7 +897,8 @@
     setField("maxMessageWidthPx", presetCfg.maxMessageWidthPx);
 
     setField("showAvatars", presetCfg.showAvatars);
-    setField("showPlatformIcon", presetCfg.showPlatformIcon);
+    setField("showPlatformBadge", presetCfg.showPlatformBadge !== false);
+    setField("platformBadgeStyle", presetCfg.platformBadgeStyle || "symbol");
     setField("shadow", presetCfg.shadow);
 
     setField("enableKick", presetCfg.enableKick !== false);

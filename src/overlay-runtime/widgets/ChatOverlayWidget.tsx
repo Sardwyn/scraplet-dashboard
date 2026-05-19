@@ -28,7 +28,8 @@ interface ChatOverlayState {
   nameColorMode: string;
   messageColor: string;
   showAvatars: boolean;
-  showPlatformIcon: boolean;
+  showPlatformBadge: boolean;
+  platformBadgeStyle: string;
   showBadges: boolean;
   shadow: boolean;
   bubbleEnabled: boolean;
@@ -45,7 +46,7 @@ interface ChatOverlayState {
 }
 
 const PLATFORM_COLORS: Record<string, string> = { kick: '#53fc18', youtube: '#ff0000', twitch: '#9146ff' };
-const PLATFORM_ICONS: Record<string, string>  = { kick: '🟢', youtube: '▶️', twitch: '💜' };
+const PLATFORM_ICONS: Record<string, string>  = { kick: '/icons/kick.png', youtube: '/icons/youtube.svg', twitch: '/icons/twitch.svg' };
 
 const BADGE_URLS: Record<string, string> = {
   broadcaster: 'https://files.kick.com/images/badges/broadcaster/badge_image',
@@ -55,8 +56,6 @@ const BADGE_URLS: Record<string, string> = {
   og:          'https://files.kick.com/images/badges/og/badge_image',
   vip:         'https://files.kick.com/images/badges/vip/badge_image',
 };
-
-const KEYFRAMES = ``;
 
 export function ChatOverlayWidget({ state }: WidgetRendererProps) {
   const cfg = state as ChatOverlayState;
@@ -101,6 +100,39 @@ export function ChatOverlayWidget({ state }: WidgetRendererProps) {
     } : {}),
   };
 
+  const renderPlatformBadge = (platform: string) => {
+    if (!platform || !cfg.showPlatformBadge) return null;
+    
+    const style = cfg.platformBadgeStyle || 'symbol';
+    const color = PLATFORM_COLORS[platform] || '#ffffff';
+    const icon = PLATFORM_ICONS[platform] || '/icons/default.svg';
+    const label = platform.charAt(0).toUpperCase() + platform.slice(1);
+
+    if (style === 'text') {
+      return <span style={{ fontSize: '0.8em', fontWeight: 700, color: '#a1a1aa', flexShrink: 0, marginTop: 4 }}>{label}</span>;
+    } else if (style === 'dot') {
+      return <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0, marginTop: 10 }} />;
+    } else if (style === 'highlight') {
+      return (
+        <span style={{ 
+          fontSize: '0.7em', 
+          fontWeight: 800, 
+          backgroundColor: color, 
+          color: ['#53fc18', '#ffff00'].includes(color) ? '#000' : '#fff',
+          padding: '2px 6px', 
+          borderRadius: 4, 
+          flexShrink: 0, 
+          marginTop: 2 
+        }}>
+          {label}
+        </span>
+      );
+    } else {
+      // symbol (default)
+      return <img src={icon} alt={platform} style={{ width: 16, height: 16, objectFit: 'contain', flexShrink: 0, marginTop: 4 }} />;
+    }
+  };
+
   return (
     <>
       <div style={{
@@ -122,13 +154,11 @@ export function ChatOverlayWidget({ state }: WidgetRendererProps) {
             {cfg.showAvatars && (
               msg.avatar
                 ? <img src={msg.avatar} alt={msg.username} referrerPolicy="no-referrer" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, marginTop: 2 }} onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+                : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', flexShrink: 0, marginTop: 2 }} />
             )}
-            {cfg.showPlatformIcon && msg.platform && (
-              <span style={{ fontSize: 12, flexShrink: 0, marginTop: 2 }}>{PLATFORM_ICONS[msg.platform] ?? '💬'}</span>
-            )}
+            {renderPlatformBadge(msg.platform)}
             {cfg.showBadges && msg.badges && msg.badges.length > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: 3, flexShrink: 0 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginRight: 3, flexShrink: 0, marginTop: 2 }}>
                 {msg.badges.map((b, i) => {
                   const url = BADGE_URLS[(b.type || '').toLowerCase()];
                   return url ? <img key={i} src={url} alt={b.text || b.type} referrerPolicy="no-referrer" style={{ height: '1.1em', width: 'auto', verticalAlign: 'middle' }} /> : null;

@@ -3032,7 +3032,8 @@ router.post("/widgets/chat/save", requireAuth, async (req, res) => {
       messageGapPx: intOr(req.body.messageGapPx, CHAT_OVERLAY_DEFAULTS.messageGapPx),
 
       showAvatars: truthy(req.body.showAvatars),
-      showPlatformIcon: truthy(req.body.showPlatformIcon),
+      showPlatformBadge: truthy(req.body.showPlatformBadge),
+      platformBadgeStyle: firstScalar(req.body.platformBadgeStyle, 'symbol'),
       shadow: truthy(req.body.shadow),
 
       enableKick: truthy(req.body.enableKick),
