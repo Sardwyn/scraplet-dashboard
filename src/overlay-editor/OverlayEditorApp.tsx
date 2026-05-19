@@ -9090,7 +9090,6 @@ const CanvasElement = React.memo(function CanvasElement({
         <div className="absolute inset-0 overflow-visible pointer-events-none">
           <div
             className="absolute inset-0"
-            style={{ transform: `rotate(${rotationDeg}deg)`, transformOrigin: "center center" }}
           >
             <div
               className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
@@ -9235,6 +9234,8 @@ const CanvasElement = React.memo(function CanvasElement({
           top: y,
           width: w,
           height: h,
+          transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
+          transformOrigin: "center center",
           pointerEvents: suppressPointerEvents ? "none" : undefined,
           ...(isSelected ? selectionStyle : {}),
         }}
@@ -9329,6 +9330,8 @@ const CanvasElement = React.memo(function CanvasElement({
         (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
       }
       style={{
+        transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
+        transformOrigin: "center center",
         ...(isSelected ? selectionStyle : {}),
         pointerEvents: suppressPointerEvents ? "none" : undefined,
       }}
