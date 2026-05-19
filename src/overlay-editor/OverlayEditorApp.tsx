@@ -804,18 +804,42 @@ function rectFromEl(el: AnyEl) {
   const y = el.y ?? 0;
   const w = el.width ?? 0;
   const h = el.height ?? 0;
-  return {
-    x,
-    y,
-    w,
-    h,
-    l: x,
-    r: x + w,
-    t: y,
-    b: y + h,
-    cx: x + w / 2,
-    cy: y + h / 2,
-  };
+  const rot = Number(el.rotationDeg ?? 0);
+
+  // Fast path — no rotation, just return the raw rect
+  if (rot === 0) {
+    return { x, y, w, h, l: x, r: x + w, t: y, b: y + h, cx: x + w / 2, cy: y + h / 2 };
+  }
+
+  // Project all 4 corners through the rotation to get the axis-aligned envelope
+  // (OBB → AABB, same as Figma).  Rotation origin is the element's own centre.
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+  const rad = (rot * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+
+  // Half-extents in local space
+  const hw = w / 2;
+  const hh = h / 2;
+
+  // World coords of all 4 corners
+  const corners = [
+    { lx: -hw, ly: -hh },
+    { lx:  hw, ly: -hh },
+    { lx:  hw, ly:  hh },
+    { lx: -hw, ly:  hh },
+  ].map(({ lx, ly }) => ({
+    wx: cx + lx * cos - ly * sin,
+    wy: cy + lx * sin + ly * cos,
+  }));
+
+  const l = Math.min(...corners.map((c) => c.wx));
+  const r = Math.max(...corners.map((c) => c.wx));
+  const t = Math.min(...corners.map((c) => c.wy));
+  const b = Math.max(...corners.map((c) => c.wy));
+
+  return { x: l, y: t, w: r - l, h: b - t, l, r, t, b, cx, cy };
 }
 
 function computeSelectionBounds(elements: AnyEl[]) {
