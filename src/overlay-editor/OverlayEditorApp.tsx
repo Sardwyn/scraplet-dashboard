@@ -9343,8 +9343,6 @@ const CanvasElement = React.memo(function CanvasElement({
         (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
       }
       style={{
-        transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
-        transformOrigin: "center center",
         ...(isSelected ? selectionStyle : {}),
         pointerEvents: suppressPointerEvents ? "none" : undefined,
       }}
