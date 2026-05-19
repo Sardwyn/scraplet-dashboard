@@ -9083,6 +9083,7 @@ const CanvasElement = React.memo(function CanvasElement({
       style={{
         transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
         transformOrigin: "center center",
+        pointerEvents: suppressPointerEvents ? "none" : "auto",
         ...(isSelected ? selectionStyle : {}),
       }}
     >
@@ -9253,7 +9254,7 @@ const CanvasElement = React.memo(function CanvasElement({
           top: y,
           width: w,
           height: h,
-          pointerEvents: suppressPointerEvents ? "none" : undefined,
+          pointerEvents: "none",
         }}
         onDoubleClick={(e) => {
           if (el.type === "text" && onInlineEdit && !isLocked) {
@@ -9343,7 +9344,7 @@ const CanvasElement = React.memo(function CanvasElement({
       }}
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
-        pointerEvents: suppressPointerEvents ? "none" : undefined,
+        pointerEvents: "none",
       }}
     >
       {contentNode}
