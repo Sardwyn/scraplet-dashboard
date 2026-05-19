@@ -44,6 +44,7 @@ import {
   OverlayMotionPreset
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
+import { resolveElementTransform } from "../shared/overlayRenderer/renderResolver";
 import { FontLoader } from "../shared/FontManager";
 import { BindingPicker } from "./BindingPicker";
 import { SourceCatalog } from "../shared/bindingEngine";
@@ -802,19 +803,30 @@ function computeEqualSpacingGuides(
 function rectFromEl(el: AnyEl) {
   const x = el.x ?? 0;
   const y = el.y ?? 0;
-  const w = el.width ?? 0;
-  const h = el.height ?? 0;
+  const rawW = el.width ?? 0;
+  const rawH = el.height ?? 0;
+  
+  const sx = el.scaleX ?? 1;
+  const sy = el.scaleY ?? 1;
+  
+  const w = rawW * Math.abs(sx);
+  const h = rawH * Math.abs(sy);
   const rot = Number(el.rotationDeg ?? 0);
+  
+  const cx = x + rawW / 2;
+  const cy = y + rawH / 2;
 
-  // Fast path — no rotation, just return the raw rect
+  // Fast path — no rotation, just return the scaled rect around the same center
   if (rot === 0) {
-    return { x, y, w, h, l: x, r: x + w, t: y, b: y + h, cx: x + w / 2, cy: y + h / 2 };
+    const l = cx - w / 2;
+    const r = cx + w / 2;
+    const t = cy - h / 2;
+    const b = cy + h / 2;
+    return { x: l, y: t, w, h, l, r, t, b, cx, cy };
   }
 
   // Project all 4 corners through the rotation to get the axis-aligned envelope
-  // (OBB → AABB, same as Figma).  Rotation origin is the element's own centre.
-  const cx = x + w / 2;
-  const cy = y + h / 2;
+  // (OBB → AABB, same as Figma). Rotation origin is the element's own centre.
   const rad = (rot * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
@@ -9065,30 +9077,38 @@ const CanvasElement = React.memo(function CanvasElement({
       ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
       : {};
 
-  // Strip rotation from the element passed to ElementRenderer — rotation is handled
-  // by the outer wrapper div so it doesn't fight with react-rnd's translate transform.
-  const renderedElNoRotation = useMemo(() => ({
+  // Strip all transforms from the element passed to ElementRenderer — they are handled
+  // by the outer wrapper div so the selection box tightly bounds the transformed shape.
+  const renderedElNoTransform = useMemo(() => ({
     ...renderedEl,
     rotationDeg: 0,
+    scaleX: 1,
+    scaleY: 1,
+    tiltX: 0,
+    tiltY: 0,
+    skewX: 0,
+    skewY: 0,
   } as AnyEl), [renderedEl]);
 
+  const fullTransform = useMemo(() => resolveElementTransform(renderedEl as any), [renderedEl]);
+
   const contentNode = (
-    // Single rotating wrapper — keeps the react-rnd translate and our rotate on separate elements
-    // so CSS transform composition works correctly (translate on Rnd, rotate here).
+    // Single transforming wrapper — keeps the react-rnd translate and our transforms on separate elements
+    // so CSS transform composition works correctly (translate on Rnd, scale/rotate/tilt here).
     <div
       className={
         "absolute inset-0 overflow-visible " +
         (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
       }
       style={{
-        transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
+        transform: fullTransform !== 'none' ? fullTransform : undefined,
         transformOrigin: "center center",
         pointerEvents: suppressPointerEvents ? "none" : "auto",
         ...(isSelected ? selectionStyle : {}),
       }}
     >
       <ElementRenderer
-        element={renderedElNoRotation as any}
+        element={renderedElNoTransform as any}
         layout="fill"
         elementsById={previewElementsById}
         overlayComponents={overlayComponents}
