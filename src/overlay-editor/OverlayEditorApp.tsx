@@ -9076,10 +9076,14 @@ const CanvasElement = React.memo(function CanvasElement({
     // Single rotating wrapper — keeps the react-rnd translate and our rotate on separate elements
     // so CSS transform composition works correctly (translate on Rnd, rotate here).
     <div
-      className="absolute inset-0 overflow-visible"
+      className={
+        "absolute inset-0 overflow-visible " +
+        (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
+      }
       style={{
         transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
         transformOrigin: "center center",
+        ...(isSelected ? selectionStyle : {}),
       }}
     >
       <ElementRenderer
@@ -9250,7 +9254,6 @@ const CanvasElement = React.memo(function CanvasElement({
           width: w,
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : undefined,
-          ...(isSelected ? selectionStyle : {}),
         }}
         onDoubleClick={(e) => {
           if (el.type === "text" && onInlineEdit && !isLocked) {
@@ -9338,12 +9341,8 @@ const CanvasElement = React.memo(function CanvasElement({
         }
         onCycleSelect((e as any).clientX, (e as any).clientY, false);
       }}
-      className={
-        (isLocked ? "cursor-not-allowed " : "cursor-move ") +
-        (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
-      }
+      className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
-        ...(isSelected ? selectionStyle : {}),
         pointerEvents: suppressPointerEvents ? "none" : undefined,
       }}
     >
