@@ -9065,10 +9065,25 @@ const CanvasElement = React.memo(function CanvasElement({
       ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` }
       : {};
 
+  // Strip rotation from the element passed to ElementRenderer — rotation is handled
+  // by the outer wrapper div so it doesn't fight with react-rnd's translate transform.
+  const renderedElNoRotation = useMemo(() => ({
+    ...renderedEl,
+    rotationDeg: 0,
+  } as AnyEl), [renderedEl]);
+
   const contentNode = (
-    <>
+    // Single rotating wrapper — keeps the react-rnd translate and our rotate on separate elements
+    // so CSS transform composition works correctly (translate on Rnd, rotate here).
+    <div
+      className="absolute inset-0 overflow-visible"
+      style={{
+        transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
+        transformOrigin: "center center",
+      }}
+    >
       <ElementRenderer
-        element={renderedEl as any}
+        element={renderedElNoRotation as any}
         layout="fill"
         elementsById={previewElementsById}
         overlayComponents={overlayComponents}
@@ -9088,140 +9103,140 @@ const CanvasElement = React.memo(function CanvasElement({
 
       {showTransformOverlay && (
         <div className="absolute inset-0 overflow-visible pointer-events-none">
+          {/* Border */}
           <div
-            className="absolute inset-0"
-          >
-            <div
-              className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
-              style={{
-                borderColor: ACCENT_TINT,
-                borderRadius: supportsRadiusHandle(renderedEl) ? radiusValue : 2,
-              }}
-            />
-            {([
-              ["nw", 0, 0],
-              ["n", (w ?? 0) / 2, 0],
-              ["ne", w ?? 0, 0],
-              ["e", w ?? 0, (h ?? 0) / 2],
-              ["se", w ?? 0, h ?? 0],
-              ["s", (w ?? 0) / 2, h ?? 0],
-              ["sw", 0, h ?? 0],
-              ["w", 0, (h ?? 0) / 2],
-            ] as [ResizeHandleKind, number, number][]).map(([handle, left, top]) => (
-              <button
-                key={`${el.id}_${handle}`}
-                type="button"
-                className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
-                style={{ left, top, cursor: getResizeCursor(handle, rotationDeg), pointerEvents: "auto" }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onResizeStart(e, handle, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg);
-                }}
-                aria-label={`Resize ${handle}`}
-              />
-            ))}
-
-            {renderedEl.type === "path" && (
-              <svg className="absolute inset-0 overflow-visible pointer-events-none">
-                {pathHandles
-                  .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
-                  .map((handle) => {
-                    const anchor = pathAnchors.find((a) => a.commandIndex === handle.anchorCommandIndex);
-                    if (!anchor) return null;
-                    return (
-                      <line
-                        key={`${el.id}_handle_line_${handle.curveCommandIndex}_${handle.role}`}
-                        x1={anchor.x} y1={anchor.y} x2={handle.x} y2={handle.y}
-                        stroke="rgba(165,180,252,0.8)" strokeWidth={1}
-                      />
-                    );
-                  })}
-              </svg>
-            )}
-
-            {renderedEl.type === "path" && pathHandles
-              .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
-              .map((handle) => (
-                <React.Fragment key={`${el.id}_handle_${handle.curveCommandIndex}_${handle.role}`}>
-                  <button
-                    type="button"
-                    className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-100 bg-indigo-400 shadow-[0_0_0_1px_rgba(15,23,42,0.85)]"
-                    style={{ left: handle.x, top: handle.y, cursor: "grab", pointerEvents: "auto" }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
-                      if (!stagePoint || !editablePath) return;
-                      onPathHandleDown(e, el.id, handle.curveCommandIndex, handle.role, stagePoint, editablePath, rotationDeg, !e.altKey);
-                    }}
-                  />
-                </React.Fragment>
-              ))}
-
-            {renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => (
-              <button
-                key={`${el.id}_anchor_${anchor.commandIndex}`}
-                type="button"
-                className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${
-                  selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex
-                    ? "border-indigo-100 bg-indigo-300"
-                    : "border-white bg-[#111113]"
-                }`}
-                style={{ left: anchor.x, top: anchor.y, cursor: "grab", pointerEvents: "auto" }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
-                  if (!stagePoint || !editablePath) return;
-                  onPathAnchorDown(e, el.id, anchor.commandIndex, stagePoint, editablePath, rotationDeg);
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onPathAnchorClick(e, el.id, anchor.commandIndex, editablePath!);
-                }}
-                title={`Path point ${anchorIndex + 1}`}
-              />
-            ))}
-
-            {supportsRadiusHandle(renderedEl) && (
-              <button
-                type="button"
-                className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
-                style={{
-                  left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w ?? 0) / 2)),
-                  top: 0,
-                  cursor: "grab",
-                  pointerEvents: "auto",
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRadiusStart(e, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg, radiusValue);
-                }}
-                aria-label="Adjust corner radius"
-              />
-            )}
-
-            <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
+            className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
+            style={{
+              borderColor: ACCENT_TINT,
+              borderRadius: supportsRadiusHandle(renderedEl) ? radiusValue : 2,
+            }}
+          />
+          {/* Resize handles */}
+          {([
+            ["nw", 0, 0],
+            ["n", (w ?? 0) / 2, 0],
+            ["ne", w ?? 0, 0],
+            ["e", w ?? 0, (h ?? 0) / 2],
+            ["se", w ?? 0, h ?? 0],
+            ["s", (w ?? 0) / 2, h ?? 0],
+            ["sw", 0, h ?? 0],
+            ["w", 0, (h ?? 0) / 2],
+          ] as [ResizeHandleKind, number, number][]).map(([handle, left, top]) => (
             <button
+              key={`${el.id}_${handle}`}
               type="button"
-              className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
-              style={{ pointerEvents: "auto" }}
+              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-[3px] border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+              style={{ left, top, cursor: getResizeCursor(handle, rotationDeg), pointerEvents: "auto" }}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const centerX = (x ?? 0) + (w ?? 0) / 2;
-                const centerY = (y ?? 0) + (h ?? 0) / 2;
-                onRotateStart(e, el.id, centerX, centerY);
+                onResizeStart(e, handle, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg);
               }}
-              title="Rotate (snaps to 15deg, hold Alt for free rotate)"
+              aria-label={`Resize ${handle}`}
             />
-          </div>
+          ))}
+
+          {/* Path handles */}
+          {renderedEl.type === "path" && (
+            <svg className="absolute inset-0 overflow-visible pointer-events-none">
+              {pathHandles
+                .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+                .map((handle) => {
+                  const anchor = pathAnchors.find((a) => a.commandIndex === handle.anchorCommandIndex);
+                  if (!anchor) return null;
+                  return (
+                    <line
+                      key={`${el.id}_handle_line_${handle.curveCommandIndex}_${handle.role}`}
+                      x1={anchor.x} y1={anchor.y} x2={handle.x} y2={handle.y}
+                      stroke="rgba(165,180,252,0.8)" strokeWidth={1}
+                    />
+                  );
+                })}
+            </svg>
+          )}
+
+          {renderedEl.type === "path" && pathHandles
+            .filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex)
+            .map((handle) => (
+              <React.Fragment key={`${el.id}_handle_${handle.curveCommandIndex}_${handle.role}`}>
+                <button
+                  type="button"
+                  className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-indigo-100 bg-indigo-400 shadow-[0_0_0_1px_rgba(15,23,42,0.85)]"
+                  style={{ left: handle.x, top: handle.y, cursor: "grab", pointerEvents: "auto" }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                    if (!stagePoint || !editablePath) return;
+                    onPathHandleDown(e, el.id, handle.curveCommandIndex, handle.role, stagePoint, editablePath, rotationDeg, !e.altKey);
+                  }}
+                />
+              </React.Fragment>
+            ))}
+
+          {renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => (
+            <button
+              key={`${el.id}_anchor_${anchor.commandIndex}`}
+              type="button"
+              className={`absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${
+                selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex
+                  ? "border-indigo-100 bg-indigo-300"
+                  : "border-white bg-[#111113]"
+              }`}
+              style={{ left: anchor.x, top: anchor.y, cursor: "grab", pointerEvents: "auto" }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const stagePoint = clientToStage((e as any).clientX, (e as any).clientY);
+                if (!stagePoint || !editablePath) return;
+                onPathAnchorDown(e, el.id, anchor.commandIndex, stagePoint, editablePath, rotationDeg);
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onPathAnchorClick(e, el.id, anchor.commandIndex, editablePath!);
+              }}
+              title={`Path point ${anchorIndex + 1}`}
+            />
+          ))}
+
+          {supportsRadiusHandle(renderedEl) && (
+            <button
+              type="button"
+              className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]"
+              style={{
+                left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w ?? 0) / 2)),
+                top: 0,
+                cursor: "grab",
+                pointerEvents: "auto",
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onRadiusStart(e, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg, radiusValue);
+              }}
+              aria-label="Adjust corner radius"
+            />
+          )}
+
+          {/* Rotation handle */}
+          <div className="absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none" style={{ background: ACCENT_TINT }} />
+          <button
+            type="button"
+            className="absolute left-1/2 -top-10 h-4 w-4 -translate-x-1/2 rounded-full border border-white bg-indigo-400 shadow-[0_0_0_2px_rgba(15,23,42,0.85)] cursor-grab active:cursor-grabbing"
+            style={{ pointerEvents: "auto" }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const centerX = (x ?? 0) + (w ?? 0) / 2;
+              const centerY = (y ?? 0) + (h ?? 0) / 2;
+              onRotateStart(e, el.id, centerX, centerY);
+            }}
+            title="Rotate (snaps to 15deg, hold Alt for free rotate)"
+          />
         </div>
       )}
-    </>
+    </div>
   );
 
   if (showTransformOverlay || forcePlainWrapper) {
@@ -9234,8 +9249,6 @@ const CanvasElement = React.memo(function CanvasElement({
           top: y,
           width: w,
           height: h,
-          transform: rotationDeg ? `rotate(${rotationDeg}deg)` : undefined,
-          transformOrigin: "center center",
           pointerEvents: suppressPointerEvents ? "none" : undefined,
           ...(isSelected ? selectionStyle : {}),
         }}
