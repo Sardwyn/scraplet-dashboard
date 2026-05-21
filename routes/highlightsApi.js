@@ -268,27 +268,35 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
     let currentLiveCcv = 0;
     try {
       const { rows: userRows } = await db.query(
-        `SELECT ea.user_id, c.platform FROM external_accounts ea
+        `SELECT ea.user_id, c.platform, c.external_user_id FROM external_accounts ea
          JOIN channels c ON c.account_id = ea.id
          WHERE c.channel_slug = $1 LIMIT 1`,
         [channelSlug]
       );
-      if (userRows[0]?.user_id) {
-        const { user_id: userId, platform } = userRows[0];
-        if (platform === 'kick') {
-          // Call Kick API directly with the stored OAuth token
-          const kickClient = await KickClient.forUser(userId);
-          const data = await kickClient.api('/public/v1/channels');
+      if (userRows[0]) {
+        const { user_id: userId, platform, external_user_id: externalUserId } = userRows[0];
+        if (platform === 'kick' && externalUserId) {
+          // Try channel's own token; fall back to platform admin token (user_id=4)
+          // so we can still read viewer count even if the channel's token has expired.
+          let kickClient;
+          try {
+            kickClient = await KickClient.forUser(userId);
+          } catch (_tokenErr) {
+            console.warn(`[channel-stats] token for user ${userId} invalid, falling back to admin token`);
+            kickClient = await KickClient.forUser(4);
+          }
+          // Pass broadcaster_user_id so we get the target channel, not the token owner's channel
+          const data = await kickClient.api(`/public/v1/channels?broadcaster_user_id=${externalUserId}`);
           const ch = Array.isArray(data?.data) ? data.data[0] : data?.data;
           currentLiveCcv = Number(ch?.livestream?.viewer_count ?? 0);
-        } else {
+        } else if (platform !== 'kick') {
           // For other platforms fall back to user_stats cache
           const { rows: statRows } = await db.query(
             `SELECT ccv FROM public.user_stats WHERE user_id = $1`,
             [userId]
           );
           const ccvData = statRows[0]?.ccv || {};
-          currentLiveCcv = Number(ccvData.kick || ccvData.twitch || ccvData.youtube || 0);
+          currentLiveCcv = Number(ccvData.twitch || ccvData.youtube || 0);
         }
         // Ratchet peak_ccv upward in the DB so it tracks the session max
         if (s.status === 'live' && currentLiveCcv > (s.peak_ccv || 0)) {
