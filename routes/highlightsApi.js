@@ -240,6 +240,16 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
       [channelSlug]
     );
 
+    // Count real-time messages and unique chatters since stream started
+    const { rows: liveStatsRows } = await db.query(
+      `SELECT COUNT(*)::int as total_msgs, COUNT(DISTINCT actor_username)::int as unique_chatters_count
+       FROM public.chat_messages
+       WHERE channel_slug = $1 AND created_at > $2
+         AND actor_username != $1`,
+      [channelSlug, s.started_at]
+    );
+    const liveStats = liveStatsRows[0] || { total_msgs: 0, unique_chatters_count: 0 };
+
     // Get top chatters for this session
     const { rows: chatters } = await db.query(
       `SELECT actor_username, COUNT(*) as msg_count
@@ -253,19 +263,42 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
 
     const liveMpm = parseFloat((mpmRows[0]?.mpm || 0).toFixed(1));
 
+    // Try to get current CCV from user_stats as a live fallback if peak_ccv is not set yet
+    let currentLiveCcv = 0;
+    try {
+      const { rows: userRows } = await db.query(
+        `SELECT ea.user_id FROM external_accounts ea
+         JOIN channels c ON c.account_id = ea.id
+         WHERE c.channel_slug = $1 LIMIT 1`,
+        [channelSlug]
+      );
+      if (userRows[0]?.user_id) {
+        const { rows: statRows } = await db.query(
+          `SELECT ccv FROM public.user_stats WHERE user_id = $1`,
+          [userRows[0].user_id]
+        );
+        const ccvData = statRows[0]?.ccv || {};
+        currentLiveCcv = Number(ccvData.kick || ccvData.twitch || ccvData.youtube || 0);
+      }
+    } catch (e) {
+      console.warn('[channel-stats] live ccv fetch failed:', e.message);
+    }
+
+    const peakCc = s.peak_ccv || currentLiveCcv || 0;
+
     const stats = {
-      peak_viewers: s.peak_ccv,
+      peak_viewers: peakCc,
       session_duration_minutes: Math.round(s.duration_minutes || 0),
-      total_messages: s.total_messages,
-      unique_chatters: s.unique_chatters,
+      total_messages: liveStats.total_msgs || 0,
+      unique_chatters: liveStats.unique_chatters_count || 0,
       messages_per_minute: liveMpm,
       top_chatters: chatters.map(c => c.actor_username),
       // Scrapbot compatibility aliases
       dur: Math.round(s.duration_minutes || 0),
-      peak: s.peak_ccv,
-      msgs: s.total_messages,
+      peak: peakCc,
+      msgs: liveStats.total_msgs || 0,
       mpm: liveMpm,
-      chatters_count: s.unique_chatters,
+      chatters_count: liveStats.unique_chatters_count || 0,
     };
 
     return res.json({ ok: true, live: true, stats });
