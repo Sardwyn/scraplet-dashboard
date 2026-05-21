@@ -223,7 +223,7 @@ function connectUser(state) {
 
     conn.on('error', (err) => {
         if (state.connection !== conn) return;
-        console.error(`[TikTok] Error @${state.uniqueId}:`, err?.message || 'Unknown error');
+        console.error(`[TikTok] Error @${state.uniqueId}:`, err?.message || 'Unknown error', err);
         handleConnectionFailure(state);
     });
 
