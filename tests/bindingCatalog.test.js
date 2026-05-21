@@ -1,18 +1,27 @@
-// Every SourceCatalog field must have id + path for resolveBinding.
-import { SourceCatalog } from "../src/shared/bindingEngine.ts";
+// Every SourceCatalog field must use id + path (no legacy key: fields).
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-let failed = 0;
-for (const source of SourceCatalog) {
-  for (const field of source.fields) {
-    if (!field.id) {
-      console.error(`[bindingCatalog] ${source.id}: field missing id`, field);
-      failed++;
-    }
-    if (!field.path) {
-      console.error(`[bindingCatalog] ${source.id}.${field.id}: missing path`);
-      failed++;
-    }
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const src = readFileSync(join(root, "src/shared/bindingEngine.ts"), "utf8");
+
+if (/\{\s*key:\s*['"]/.test(src)) {
+  console.error("[bindingCatalog] bindingEngine.ts still contains key: field entries");
+  process.exit(1);
+}
+
+const fieldBlocks = src.matchAll(/\{\s*id:\s*["']([^"']+)["'][^}]*path:\s*["']([^"']+)["']/g);
+let count = 0;
+for (const m of fieldBlocks) {
+  count++;
+  if (!m[1] || !m[2]) {
+    console.error("[bindingCatalog] invalid field", m[0]);
+    process.exit(1);
   }
 }
-if (failed > 0) process.exit(1);
-console.log(`bindingCatalog: ok (${SourceCatalog.length} sources)`);
+if (count < 10) {
+  console.error("[bindingCatalog] expected many id+path fields, found", count);
+  process.exit(1);
+}
+console.log(`bindingCatalog: ok (${count} id+path fields)`);
