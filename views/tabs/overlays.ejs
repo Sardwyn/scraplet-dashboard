@@ -28,19 +28,88 @@
   const SCENE_LABELS = { overlay: 'Overlay', starting_soon: 'Starting Soon', brb: 'BRB', stream_ending: 'Stream Ending' };
 %>
 
-<div class="overlay-library" id="overlayLibrary" data-active-filter="all" data-view-mode="grid" data-empty-state="false">
-  <div class="overlay-library__shell">
-    <aside class="overlay-library__sidebar">
-      <div class="overlay-library__panel">
-        <div class="overlay-library__sidebar-block">
-          <div class="overlay-library__eyebrow">Library</div>
-          <h1 class="overlay-library__title">Overlay workspace</h1>
-          <p class="overlay-library__sidebar-copy">
+<style>
+  /* Neo-Pulp Comic overrides for overlay library cards */
+  body.np .overlay-card {
+    border-radius: 0px !important;
+    border: var(--pc-border-w) solid var(--np-border) !important;
+    background: var(--pc-panel) !important;
+    box-shadow: var(--pc-shadow-hard) !important;
+    overflow: hidden;
+  }
+  
+  body.np .overlay-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 8px 8px 0px 0px var(--np-border) !important;
+  }
+  
+  body.np .overlay-card__preview {
+    border-bottom: var(--pc-border-w) solid var(--np-border) !important;
+    background: var(--oled-bg) !important;
+  }
+  
+  body.np .overlay-card__body {
+    background: var(--pc-panel) !important;
+    color: var(--pc-text) !important;
+  }
+  
+  body.np .overlay-card__footer {
+    border-top: 1px dashed rgba(12, 14, 18, 0.15) !important;
+  }
+
+  body.np .overlay-card__kind,
+  body.np .overlay-card__stamp {
+    color: var(--pc-muted) !important;
+  }
+
+  body.np .overlay-card__name {
+    color: var(--pc-text) !important;
+    font-weight: 900 !important;
+  }
+  
+  /* Sidebar active button style in comic pulp */
+  body.np .overlay-library__nav-btn {
+    border-radius: 0px !important;
+    border: 2px solid transparent;
+    transition: all 0.15s ease;
+  }
+  body.np .overlay-library__nav-btn:hover {
+    background: var(--pc-surface-2) !important;
+    border-color: var(--np-border);
+  }
+  body.np .overlay-library__nav-btn.is-active {
+    background: var(--pc-accent) !important;
+    border-color: var(--np-border) !important;
+    box-shadow: 3px 3px 0px 0px var(--np-border);
+  }
+  body.np .overlay-library__nav-btn.is-active * {
+    color: var(--pc-text) !important;
+  }
+  body.np .overlay-library__count {
+    background: var(--pc-accent-2) !important;
+    border: 2px solid var(--np-border) !important;
+    color: var(--pc-text) !important;
+    border-radius: 0px !important;
+    font-weight: 800 !important;
+  }
+</style>
+
+<div class="w-full" id="overlayLibrary" data-active-filter="all" data-view-mode="grid" data-empty-state="false">
+  <div class="flex flex-col lg:flex-row gap-6">
+    <aside class="w-full lg:w-72 flex-shrink-0 flex flex-col gap-6">
+      
+      <div class="pc-panel">
+        <div class="pc-panel-hd flex items-center justify-between">
+          <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
+        </div>
+        <div class="pc-panel-bd flex flex-col gap-3">
+          <h1 class="text-xl font-bold pc-text-main">Overlay workspace</h1>
+          <p class="text-sm pc-text-muted">
             Browse overlays, lower thirds, and reusable broadcast assets in one quieter surface instead of a raw admin table.
           </p>
 
           <div class="mt-4 flex flex-col gap-2">
-            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary justify-center">
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary w-full justify-center">
               + New overlay
             </a>
             <button type="button" onclick="showCreateCollectionModal()" class="pc-btn pc-btn--secondary justify-center">
@@ -81,10 +150,14 @@
         </div>
       </div>
 
-      <div class="overlay-library__panel">
-        <div class="overlay-library__sidebar-block">
-          <div class="overlay-library__eyebrow">Browse</div>
-          <div class="overlay-library__nav mt-3">
+      </div>
+
+      <div class="pc-panel">
+        <div class="pc-panel-hd flex items-center justify-between">
+          <span class="text-xs tracking-[0.28em] pc-text-muted">BROWSE</span>
+        </div>
+        <div class="pc-panel-bd p-0">
+          <div class="overlay-library__nav flex flex-col">
             <button type="button" class="overlay-library__nav-btn is-active" data-library-filter="all">
               <span class="overlay-library__nav-label">
                 <span class="overlay-library__nav-title">All files</span>
@@ -120,7 +193,11 @@
               </span>
               <span class="overlay-library__count"><%= staticItems.length %></span>
             </button>
-            <div class="overlay-library__eyebrow mt-4 mb-1">Scenes</div>
+            
+            <div class="px-5 py-3 border-t border-b border-white/10 mt-2 mb-2 bg-black/20">
+              <span class="text-xs tracking-[0.28em] pc-text-muted">SCENES</span>
+            </div>
+            
             <button type="button" class="overlay-library__nav-btn" data-library-filter="scene-starting_soon">
               <span class="overlay-library__nav-label">
                 <span class="overlay-library__nav-title">Starting Soon</span>
@@ -146,10 +223,14 @@
         </div>
       </div>
 
-      <div class="overlay-library__panel">
-        <div class="overlay-library__sidebar-block">
-          <div class="overlay-library__eyebrow">Workflow</div>
-          <div class="overlay-library__helper mt-3">
+      </div>
+
+      <div class="pc-panel">
+        <div class="pc-panel-hd flex items-center justify-between">
+          <span class="text-xs tracking-[0.28em] pc-text-muted">WORKFLOW</span>
+        </div>
+        <div class="pc-panel-bd">
+          <div class="flex flex-col gap-3">
             <div class="overlay-library__helper-row">
               <span class="overlay-library__helper-dot"></span>
               <div class="overlay-library__helper-text">Create an overlay here, then move into the editor for geometry, timeline, masking, and effects work.</div>
@@ -167,63 +248,56 @@
       </div>
     </aside>
 
-    <section class="min-w-0">
-      <div class="overlay-library__hero">
-        <div class="overlay-library__hero-grid">
-          <div>
-            <div class="overlay-library__hero-kicker">Creator asset library</div>
-            <div class="overlay-library__hero-title">Build, browse, and reuse your on-stream design system.</div>
-            <div class="overlay-library__hero-copy">
-              This view now behaves more like a real design library: scan recent work fast, jump back into editing, and keep lower thirds close to the overlays they belong with.
-            </div>
+    <section class="flex-1 min-w-0 flex flex-col gap-8">
+      
+      <!-- Top Hero -->
+      <div class="pc-panel">
+        <div class="pc-panel-hd flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
+            <span class="text-xs pc-text-main font-semibold">OVERLAY WORKSPACE</span>
           </div>
-          <div class="overlay-library__hero-actions">
-            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary">New overlay</a>
-            <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost">Widgets</a>
-          </div>
-        </div>
-
-        <div class="overlay-library__stats">
-          <div class="overlay-library__stat">
-            <div class="overlay-library__stat-value"><%= overlayItems.length %></div>
-            <div class="overlay-library__stat-label">Overlay files</div>
-          </div>
-          <div class="overlay-library__stat">
-            <div class="overlay-library__stat-value"><%= templateItems.length %></div>
-            <div class="overlay-library__stat-label">Lower thirds</div>
-          </div>
-          <div class="overlay-library__stat">
-            <div class="overlay-library__stat-value"><%= totalItems %></div>
-            <div class="overlay-library__stat-label">Total library items</div>
+          <div class="flex items-center gap-2">
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary text-xs">New overlay</a>
+            <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost text-xs">Widgets</a>
           </div>
         </div>
+        <div class="pc-panel-bd">
+          <h1 class="text-3xl font-bold pc-text-main">Build, browse, and reuse your on-stream design system.</h1>
+          <p class="pc-text-muted mt-2 max-w-2xl">
+            This view now behaves more like a real design library: scan recent work fast, jump back into editing, and keep lower thirds close to the overlays they belong with.
+          </p>
+        </div>
+      </div>
 
-        <div class="overlay-library__toolbar">
-          <div class="overlay-library__search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7"></circle>
-              <path d="m20 20-3.5-3.5"></path>
-            </svg>
-            <input
-              type="text"
-              id="overlayLibrarySearch"
-              placeholder="Search overlays, slugs, public IDs, or template names"
-              autocomplete="off"
-            />
+      <!-- Metrics (OLEDs) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="pc-oled p-4 flex flex-col justify-between">
+          <span class="text-xs pc-text-muted tracking-widest mb-1">Total Overlays</span>
+          <span class="text-3xl font-bold font-mono"><%= userOverlays.length %></span>
+        </div>
+        <div class="pc-oled p-4 flex flex-col justify-between">
+          <span class="text-xs pc-text-muted tracking-widest mb-1">Total Templates</span>
+          <span class="text-3xl font-bold font-mono"><%= templateItems.length %></span>
+        </div>
+        <div class="pc-oled p-4 flex flex-col justify-between">
+          <span class="text-xs pc-text-muted tracking-widest mb-1">Active Collections</span>
+          <span class="text-3xl font-bold font-mono"><%= typeof collectionItems !== 'undefined' ? collectionItems.length : 0 %></span>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="pc-panel">
+        <div class="pc-panel-bd p-3 flex items-center justify-between gap-4 flex-wrap">
+          <div class="flex items-center gap-2 flex-1 max-w-md relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <input type="text" id="librarySearch" class="pc-input pl-9" placeholder="Search assets...">
           </div>
-
-          <div class="overlay-library__toolbar-group">
-            <div class="overlay-library__segmented" role="tablist" aria-label="Library item type">
-              <button type="button" class="is-active" data-library-filter="all">All</button>
-              <button type="button" data-library-filter="overlay">Overlays</button>
-              <button type="button" data-library-filter="template">Lower thirds</button>
-            </div>
-          </div>
-
-          <div class="overlay-library__toolbar-group">
-            <div class="overlay-library__segmented" role="tablist" aria-label="Library view mode">
-              <button type="button" class="is-active" data-library-view="grid">Grid</button>
-              <button type="button" data-library-view="list">List</button>
+          
+          <div class="flex items-center gap-3">
+            <div class="flex items-center bg-black/40 border border-white/10 rounded-sm p-1">
+              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm is-active" data-view-toggle="grid">Grid</button>
+              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm" data-view-toggle="list">List</button>
             </div>
           </div>
         </div>
@@ -252,7 +326,7 @@
                  const hue = (Number(ov.id) * 37 + index * 23) % 360;
             %>
               <article
-                class="overlay-card"
+                class="pc-panel overlay-card"
                 data-library-item
                 data-kind="overlay"
                 data-scene-type="<%= ov.scene_type || 'overlay' %>"
@@ -324,7 +398,7 @@
                  const overlayCount = collection.overlay_count || 0;
             %>
               <article
-                class="overlay-card overlay-card--collection"
+                class="pc-panel overlay-card overlay-card--collection"
                 data-library-item
                 data-kind="collection"
                 data-search="<%= [collection.name, collection.slug, collection.description || ''].join(' ').toLowerCase() %>"
@@ -392,7 +466,7 @@
                  const hue = (index * 41 + 28) % 360;
             %>
               <article
-                class="overlay-card"
+                class="pc-panel overlay-card"
                 data-library-item
                 data-kind="template"
                 data-search="<%= [tmpl.name, tmpl.public_id].join(' ').toLowerCase() %>"
@@ -458,7 +532,7 @@
                  }[ov.asset_type] || { label: ov.asset_type, sub: '', icon: '?' };
             %>
               <article
-                class="overlay-card"
+                class="pc-panel overlay-card"
                 data-library-item
                 data-kind="static"
                 data-asset-type="<%= ov.asset_type %>"
