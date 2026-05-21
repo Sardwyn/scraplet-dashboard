@@ -228,7 +228,7 @@ function connectUser(state) {
     });
 
     // -- Events --
-    const handle = (type, data) => handleEvent(state.userId, type, data);
+    const handle = (type, data) => handleEvent(state.userId, state.uniqueId, type, data);
 
     conn.on('chat', d => handle('chat', d));
     conn.on('gift', d => handle('gift', d));
@@ -287,12 +287,13 @@ function scheduleReconnect(state) {
 // EVENT HANDLING
 // ─────────────────────────────────────────────
 
-function handleEvent(userId, type, data) {
+function handleEvent(userId, channelUniqueId, type, data) {
     if (isDuplicate(userId, type, data)) return;
 
     try {
         const envelope = buildChatEnvelopeV1FromTikTok({
             ownerUserId: userId,
+            channelSlug: channelUniqueId,
             type,
             data
         });

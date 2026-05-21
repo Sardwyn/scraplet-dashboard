@@ -193,6 +193,7 @@ export function buildChatEnvelopeV1FromYouTube({
  */
 export function buildChatEnvelopeV1FromTikTok({
   ownerUserId,
+  channelSlug,
   type, // 'chat', 'gift', etc.
   data, // raw payload from tiktok-live-connector
   supervisorId = "dashboard:tiktok-connector"
@@ -240,7 +241,7 @@ export function buildChatEnvelopeV1FromTikTok({
     scraplet_user_id: Number(ownerUserId),
 
     channel: {
-      slug: cleanUsername(data.uniqueId) || undefined,
+      slug: cleanUsername(channelSlug) || undefined,
     },
 
     author: {
