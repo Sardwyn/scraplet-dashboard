@@ -4,6 +4,7 @@
 import express from 'express';
 import db from '../db.js';
 import requireAuth from '../utils/requireAuth.js';
+import KickClient from '../services/kick/kickClient.js';
 
 const router = express.Router();
 const WORKER_SECRET = process.env.GENERATION_WORKER_SECRET || '';
@@ -263,22 +264,40 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
 
     const liveMpm = parseFloat((mpmRows[0]?.mpm || 0).toFixed(1));
 
-    // Try to get current CCV from user_stats as a live fallback if peak_ccv is not set yet
+    // Fetch live CCV directly from Kick API and maintain running peak in stream_sessions
     let currentLiveCcv = 0;
     try {
       const { rows: userRows } = await db.query(
-        `SELECT ea.user_id FROM external_accounts ea
+        `SELECT ea.user_id, c.platform FROM external_accounts ea
          JOIN channels c ON c.account_id = ea.id
          WHERE c.channel_slug = $1 LIMIT 1`,
         [channelSlug]
       );
       if (userRows[0]?.user_id) {
-        const { rows: statRows } = await db.query(
-          `SELECT ccv FROM public.user_stats WHERE user_id = $1`,
-          [userRows[0].user_id]
-        );
-        const ccvData = statRows[0]?.ccv || {};
-        currentLiveCcv = Number(ccvData.kick || ccvData.twitch || ccvData.youtube || 0);
+        const { user_id: userId, platform } = userRows[0];
+        if (platform === 'kick') {
+          // Call Kick API directly with the stored OAuth token
+          const kickClient = await KickClient.forUser(userId);
+          const data = await kickClient.api('/public/v1/channels');
+          const ch = Array.isArray(data?.data) ? data.data[0] : data?.data;
+          currentLiveCcv = Number(ch?.livestream?.viewer_count ?? 0);
+        } else {
+          // For other platforms fall back to user_stats cache
+          const { rows: statRows } = await db.query(
+            `SELECT ccv FROM public.user_stats WHERE user_id = $1`,
+            [userId]
+          );
+          const ccvData = statRows[0]?.ccv || {};
+          currentLiveCcv = Number(ccvData.kick || ccvData.twitch || ccvData.youtube || 0);
+        }
+        // Ratchet peak_ccv upward in the DB so it tracks the session max
+        if (s.status === 'live' && currentLiveCcv > (s.peak_ccv || 0)) {
+          await db.query(
+            `UPDATE public.stream_sessions SET peak_ccv = $1 WHERE session_id = $2`,
+            [currentLiveCcv, s.session_id]
+          );
+          s.peak_ccv = currentLiveCcv;
+        }
       }
     } catch (e) {
       console.warn('[channel-stats] live ccv fetch failed:', e.message);
