@@ -2052,10 +2052,7 @@ export function ElementRenderer({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
 
     if (hasBlend || hasEffects || hasOpacity) {
-        (baseStyle as any).willChange = "transform, opacity";
-        if (hasBlend) {
-            (baseStyle as any).isolation = "isolate";
-        }
+        (baseStyle as any).willChange = "transform, opacity, filter";
         const currentTransform = (baseStyle as any).transform;
         const has3DTransform = currentTransform && (
             currentTransform.includes("translateZ") || 
@@ -2762,9 +2759,11 @@ export function ElementRenderer({
         // For parent clipping, don't use overflow:hidden (conflicts with clipPath)
         const useClipPath = el.clip && (el.clip as any).type === "parent";
         
+        const mergedFilter = [cssEffectStyle.filter, adjFilter].filter(Boolean).join(" ");
+        
         return (
             <div data-element-id={el.id} style={imageStyle}>
-                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: adjFilter || undefined }}>
+                <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: mergedFilter || undefined }}>
                     {src && (
                         <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
