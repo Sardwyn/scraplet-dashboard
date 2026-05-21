@@ -260,6 +260,12 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
       unique_chatters: s.unique_chatters,
       messages_per_minute: liveMpm,
       top_chatters: chatters.map(c => c.actor_username),
+      // Scrapbot compatibility aliases
+      dur: Math.round(s.duration_minutes || 0),
+      peak: s.peak_ccv,
+      msgs: s.total_messages,
+      mpm: liveMpm,
+      chatters_count: s.unique_chatters,
     };
 
     return res.json({ ok: true, live: true, stats });
