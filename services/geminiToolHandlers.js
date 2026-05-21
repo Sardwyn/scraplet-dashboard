@@ -24,7 +24,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const initialJson = { elements: [], timeline: { durationMs: 5000, tracks: [] }, settings: { width: 1920, height: 1080 } };
         
         const { rows } = await db.query(
-          `INSERT INTO public.overlay_components (user_id, public_id, name, component_json)
+          `INSERT INTO public.overlays (user_id, public_id, name, config_json)
            VALUES ($1, $2, $3, $4)
            RETURNING id`,
           [Number(userId), newPublicId, name, initialJson]
@@ -36,7 +36,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
       case 'find_overlay_by_name': {
         const { name } = args;
         const { rows } = await db.query(
-          `SELECT id, name FROM public.overlay_components 
+          `SELECT id, name FROM public.overlays 
            WHERE user_id = $1 AND name ILIKE $2
            LIMIT 1`,
           [Number(userId), `%${name}%`]
@@ -230,12 +230,12 @@ async function getOverlay(overlayId, guildId) {
   if (!userId) return null;
 
   const { rows } = await db.query(
-    `SELECT id, component_json FROM public.overlay_components 
+    `SELECT id, config_json FROM public.overlays 
      WHERE id = $1 AND user_id = $2`,
     [Number(overlayId), userId]
   );
   if (rows.length === 0) return null;
-  return { id: rows[0].id, json: rows[0].component_json };
+  return { id: rows[0].id, json: rows[0].config_json };
 }
 
 async function updateOverlay(overlayId, guildId, newJson) {
@@ -243,8 +243,8 @@ async function updateOverlay(overlayId, guildId, newJson) {
   if (!userId) return;
 
   const result = await db.query(
-    `UPDATE public.overlay_components 
-     SET component_json = $1, updated_at = NOW()
+    `UPDATE public.overlays 
+     SET config_json = $1, updated_at = NOW()
      WHERE id = $2 AND user_id = $3
      RETURNING user_id`,
     [newJson, Number(overlayId), userId]

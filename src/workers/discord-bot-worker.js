@@ -654,7 +654,7 @@ client.on("messageCreate", async (msg) => {
     let overlayContextBlock = '';
     try {
       const { rows: overlayRows } = await db.query(
-        `SELECT id, name, component_json FROM public.overlay_components 
+        `SELECT id, name, config_json AS component_json FROM public.overlays 
          WHERE user_id = $1
          ORDER BY updated_at DESC LIMIT 1`,
         [Number(claim.owner_user_id)]
