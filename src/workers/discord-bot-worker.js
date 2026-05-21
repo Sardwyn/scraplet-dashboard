@@ -932,7 +932,7 @@ async function extractAndStoreMemory(guildId, userId, conversationId, recentMess
       { role: 'user', content: transcript }
     ];
 
-    const raw = await llmClient.chat(extractPrompt, { max_tokens: 200, temperature: 0.3 });
+    const raw = await llmChat(extractPrompt, { max_tokens: 200, temperature: 0.3 });
     const match = raw.match(/\[.*?\]/s);
     if (!match) return;
 
