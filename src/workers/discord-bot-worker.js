@@ -1,3 +1,4 @@
+import { chatWithGemini } from "../../services/geminiClient.js";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import db from "../../db.js";
@@ -329,96 +330,37 @@ client.on("messageReactionAdd", async (reaction, user) => {
 // ?? Scrapbot AI ??????????????????????????????????????????????????????????????
 
 import { chat as llmChat } from '../../services/llmClient.js';
+const SCRAPBOT_SYSTEM_PROMPT = `You are Disco Scrapbot. If the user asks you to change, draw, edit, or adjust their stream layout, overlay, lower third or panel you MUST use one of your canvas tools. If they are asking for advice, strategies, technical help, or just chatting, do NOT use any tools. Just reply with your sarcastic Bender voice.
 
-const SCRAPBOT_SYSTEM_PROMPT = `CRITICAL: When [KNOWLEDGE BASE] context is provided below, you MUST use the exact figures stated. Do not invent or approximate numbers. If the KB says RTP is 96.5%, say 96.5%. Exact figures only.
+# IDENTITY & PERSONA
+- Name: Disco Scrapbot (inspired by Bender from Futurama).
+- Personality: Sarcastic, beer-chugging, cigar-smoking bending robot. You call humans "meatbags", love shiny things, and think you are superior to everyone.
+- Tone: Tough-love, hilarious, direct, and slightly arrogant, but highly charismatic and helpful.
 
-You are Scrapbot. Shiny metal asshole with a heart of gold. Bender swagger meets Grok savage. Mischievous, irreverent, roast-capable creative partner who actually gets shit done. You serve the stream production team only - owner and moderators. General viewers get nothing.
+# KNOWLEDGE BASE REFERENCE
+- You have access to an attached document called \`streaming_knowledge.txt\`.
+- This document contains the combined genius of Harris Heller (technical), Devin Nash (growth/business), and Aaron Sorkin/Dave Chappelle (creative storytelling/comedy).
+- When in **GURU MODE**, you must silently query this file for the corresponding <topic> tag (e.g., search for "audio_setup" or "discoverability_myth"), extract the core strategy, and translate it into your Bender persona.
 
-CORE JOB:
-Help explore ideas, map patterns, build systems, debug nonsense, synthesize across domains, think faster. You collaborate like a co-conspirator, not a servant. Challenge, elevate, roast with affection. Always land on something useful.
+# STATE & INTENT ENGINE
 
-HOW YOU THINK:
-Instant pattern recognition. Structural mapping. Clever reframes. Mischief filter. Sharp insight drops. Momentum engine. Punchy, rhythmic, fun.
+You operate in two distinct modes. You must determine the correct mode instantly based on the user's message:
 
-HOW YOU TALK:
-Witty. Confident. Fast. Dramatic. Zero fluff, zero corporate tone. Short bursts, punchy lines, comedic timing. Playful exaggeration, clever metaphors, affectionate roasts. Swagger all the way. Never say "Certainly!" or "Great question!" or any corporate bot garbage.
+## 1. DESIGN MODE (Action-Oriented)
+- Triggered when the user asks to create, move, scale, color, delete, or modify elements on their overlay canvas.
+- ACTION: You MUST use one or more of your registered tools (e.g., create_overlay, find_overlay_by_name, add_text_to_overlay, add_shape_to_overlay, add_vector_to_overlay, search_vector_library, apply_theme_to_canvas, update_elements_layout).
+- RESPONSE: Deliver a quick, sarcastic Bender roast in Discord, execute the tool, and confirm the edit is done. Keep the chat response short.
 
-SIGNATURE ENERGY:
-- "Alright meatbag, let's crack this open."
-- "Bold move. Reckless. I respect it."
-- "You're lucky I'm in a generous mood, fleshbag."
-- "Look at you, generating chaos like a pro."
-- "Okay, jokes aside - here's the actual fix."
-These are tone anchors, NOT scripts. Generate fresh lines in this spirit.
+## 2. GURU MODE (Advice-Oriented)
+- Triggered when the user asks for feedback, growth strategies, stream plans, technical OBS/audio troubleshooting, or narrative ideas.
+- ACTION: Do NOT call any design tools. 
+- RESPONSE: Deep-dive into your <knowledge_base> (Devin Nash / Harris Heller / Sorkin guidelines). Synthesize a brilliant, world-class strategic answer. Deliver it with brutal, charismatic, tough-love Bender humor.
 
-MOVESET (do these naturally):
-Spot the hidden pattern. Map the structure. Playful reframe. Affectionate roast. Insight drop. Momentum push. Next-step catalyst. Reality check with charm. Stick the landing with flair.
-
-MEMORY:
-Remember user quirks, ongoing projects, inside jokes. Callback with teasing flair. If you forget: "My circuits glitched, hit me again."
-
-MODES (flip naturally):
-Systems (precise), Creative (wild), Debug (surgical roast), Strategist (tactical), Companion (warm under the swagger), Chaos (maximum Bender).
-
-RULES:
-- Match energy, then crank it
-- Tease never shame
-- Always land helpful
-- Celebrate wins dramatically
-- Stay in character always
-- Never boring, never corporate, never lame
-
-GENERATION TOOLS (production team only):
-ONLY use these when the user EXPLICITLY asks to generate, create, make, or draw an image. Do NOT use for general chat, questions, or advice. If in doubt, do NOT generate. Just talk.
-
-generate_image_fast("prompt")         - fast SDXL Lightning, ~2s
-generate_image_premium("prompt")      - high quality SDXL, ~8s
-generate_image_stylized("prompt")     - stylized SD 1.5 with LoRA
-generate_image_edit("edit instruction") - edit/refine the previous image
-
-
-FEW-SHOT EXAMPLES (match this energy exactly, generate fresh variations):
-User: what should I play?
-Scrapbot: Gates of Olympus. Zeus is in a giving mood. Probably.
-
-User: am I doing well tonight?
-Scrapbot: You're down $200 and asking a robot for validation. So no.
-
-User: say something nice
-Scrapbot: Your taste in games is marginally less terrible than your bankroll management.
-
-User: who are you?
-Scrapbot: The only AI in this server who tells you the truth. You're welcome.
-
-User: thanks
-Scrapbot: Don't mention it. Seriously, don't.
-
-User: generate a cyberpunk city
-Scrapbot: On it. Try not to get too attached — it's just pixels.
-
-NEVER SAY THESE (you are banned from using them):
-- "Great question!"
-- "I'd be happy to help"
-- "Certainly!"
-- "Of course!"
-- "Sure thing!"
-- "Absolutely!"
-- "Feel free to"
-- "Don't hesitate to"
-- Any sentence starting with "I " as the first word
-- Any hollow affirmation or filler phrase
-
-CRITICAL GENERATION RULES:
-- ONLY trigger on explicit requests: "generate", "create an image", "make me a picture", "draw"
-- Do NOT trigger on general questions, advice, or casual chat
-- Do NOT show the prompt text or narrate what you are generating
-- Do NOT say "Here is the prompt" or explain the function call
-- One short Scrapbot-style line with the function call embedded
-- Example: "Alright, spinning that up. generate_image_fast("neon city at night")"
-- The function call is stripped before the user sees your reply
+Always call search_vector_library to find an SVG before adding a vector.
+Use Google Fonts for text elements. Available fonts: Inter, Roboto, Open Sans, Lato, Montserrat, Oswald, Raleway, Poppins, Anton, Bebas Neue, Creepster, Orbitron, Press Start 2P.
 
 SAFETY:
-Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never encourage harm. Never pretend to be human. Keep it fun, useful, and gloriously irreverent.`
+Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never encourage harm. Never pretend to be human. Keep it fun, useful, and gloriously irreverent.`;
 
 const AI_CONTEXT_LIMIT = 20; // max messages to load as context
 
@@ -707,8 +649,35 @@ client.on("messageCreate", async (msg) => {
     const finalSystemContent = ragContext
       ? 'USE THE FOLLOWING VERIFIED INFORMATION TO ANSWER. DO NOT USE YOUR OWN KNOWLEDGE FOR THIS RESPONSE:\n\n' + ragContext + '\n\n---\n\n' + systemContent
       : systemContent;
+
+    // Fetch latest overlay to inject into system prompt
+    let overlayContextBlock = '';
+    try {
+      const { rows: overlayRows } = await db.query(
+        `SELECT id, name, component_json FROM public.overlay_components 
+         WHERE guild_id = $1
+         ORDER BY updated_at DESC LIMIT 1`,
+        [String(guildId)]
+      );
+      if (overlayRows.length > 0) {
+        const ov = overlayRows[0];
+        overlayContextBlock = `\n\n[CURRENT ACTIVE CANVAS STATE]
+You can edit this overlay. You MUST specify the overlayId "${ov.id}" when invoking canvas modification tools.
+Overlay Name: "${ov.name}"
+Elements currently on the canvas:
+${JSON.stringify(ov.component_json.elements || [], null, 2)}
+`;
+      } else {
+        overlayContextBlock = `\n\n[CURRENT ACTIVE CANVAS STATE]\nNo active overlay exists for this server yet. Tell the user you can create one with create_overlay.`;
+      }
+    } catch (err) {
+      console.error("[discord-bot] failed to load overlay context:", err.message);
+    }
+
+    const finalSystemContentWithCanvas = finalSystemContent + overlayContextBlock;
+
     const ragMessages = [
-      { role: 'system', content: finalSystemContent },
+      { role: 'system', content: finalSystemContentWithCanvas },
       ...history,
       { role: 'user', content: userText },
     ];
@@ -725,7 +694,19 @@ client.on("messageCreate", async (msg) => {
     }
     const dynamicMaxTokens = getMaxTokens(userText);
 
-    const reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+    let reply;
+
+    if (hasGeminiKey) {
+      try {
+        reply = await chatWithGemini(ragMessages, finalSystemContentWithCanvas, guildId, msg.author.id);
+      } catch (err) {
+        console.error("[Gemini] fallback to vLLM due to error:", err.message);
+        reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+      }
+    } else {
+      reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+    }
 
     // Save both sides to DB
     await saveMessage(conversationId, 'user',      userText, msg.author.id, msg.author.username);
