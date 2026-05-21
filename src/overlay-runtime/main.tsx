@@ -494,22 +494,7 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
 
 
 
-        // 2. Find "alertGroup" -> specific reaction?
-        // Or just flash a group if we find one named "Group"
-        const groupEl = elements.find(e => e.type === "group" || e.name === "Group");
-        if (groupEl) {
-          setOverrides(prev => ({
-            ...prev,
-            [groupEl.id]: { opacity: 1, visible: true }
-          }));
-
-          // Hide after 5s
-          setTimeout(() => {
-            setOverrides(prev => ({
-              ...prev,
-            }));
-          }, 5000);
-        }
+        // Group flash on generic packets removed — was a no-op hide and fired on every payload.
       } catch (err) {
         console.error("[OverlayEvents] Parse error:", err);
       }

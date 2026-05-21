@@ -43,9 +43,12 @@ export function BindingPicker({ binding, onUpdate, type }: BindingPickerProps) {
         );
     }
 
-    const source = SourceCatalog.find(s => s.id === binding.sourceId) || SourceCatalog[0];
-    // Allow text bindings to receive numbers too
-    const fields = source.fields.filter(f => f.type === type || (type === 'text' && f.type === 'number'));
+    const bindableSources = SourceCatalog.filter((s) => s.id !== 'custom_variables');
+    const source = bindableSources.find(s => s.id === binding.sourceId) || bindableSources[0];
+    const fieldMatchesBindingType = (f: { type: string }) =>
+      f.type === type ||
+      (type === 'text' && (f.type === 'number' || f.type === 'string'));
+    const fields = source.fields.filter(fieldMatchesBindingType);
 
     return (
         <div className="bg-slate-950 border border-indigo-500/40 rounded p-2.5 space-y-2.5 my-2 shadow-xl shadow-indigo-500/5 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -64,15 +67,15 @@ export function BindingPicker({ binding, onUpdate, type }: BindingPickerProps) {
                         className="w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:border-indigo-500 outline-none"
                         value={binding.sourceId}
                         onChange={(e) => {
-                            const newSource = SourceCatalog.find(s => s.id === e.target.value);
+                            const newSource = bindableSources.find(s => s.id === e.target.value);
                             onUpdate({
                                 ...binding,
                                 sourceId: e.target.value,
-                                fieldId: newSource?.fields.filter(f => f.type === type || (type === 'text' && f.type === 'number'))[0]?.id || ''
+                                fieldId: newSource?.fields.filter(fieldMatchesBindingType)[0]?.id || ''
                             });
                         }}
                     >
-                        {SourceCatalog.map(s => (
+                        {bindableSources.map(s => (
                             <option key={s.id} value={s.id}>{s.label}</option>
                         ))}
                     </select>

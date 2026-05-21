@@ -28,10 +28,6 @@ const bootstrapData = window.__OVERLAY__;
 const urlParams = new URLSearchParams(window.location.search);
 const isTestMode = urlParams.get('test') === 'true';
 
-console.log("[OverlayEditor] container =", container);
-console.log("[OverlayEditor] overlay =", bootstrapData);
-console.log("[OverlayEditor] testMode =", isTestMode);
-
 if (!container) {
   console.error("[OverlayEditor] #overlay-editor-root not found");
 } else if (!bootstrapData && !isTestMode) {
@@ -40,12 +36,8 @@ if (!container) {
   const root = createRoot(container);
   
   if (isTestMode) {
-    // Test mode: wait for test overlay data
-    console.log("[OverlayEditor] Test mode enabled, waiting for overlay data...");
-    
     window.addEventListener('loadTestOverlay', ((event: CustomEvent) => {
       const testData = event.detail;
-      console.log("[OverlayEditor] Loading test overlay:", testData.name);
       
       const testOverlay = {
         id: 0,

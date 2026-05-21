@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test": "node --experimental-vm-modules scripts/run-tests.js",
-    "build:overlays": "npx vite build && BUILD_TARGET=runtime npx vite build",
+    "build:overlays": "vite build --config vite.overlays.config.ts && BUILD_TARGET=runtime vite build --config vite.overlays.config.ts",
     "dev:overlays": "vite --config vite.overlays.config.ts"
   },
   "keywords": [],
@@ -45,6 +45,9 @@
   },
   "devDependencies": {
     "@jest/core": "^29.7.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.3",
     "eslint": "^9.39.0",
     "eslint-plugin-import": "^2.32.0",

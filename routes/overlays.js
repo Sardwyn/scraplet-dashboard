@@ -180,8 +180,7 @@ router.get("/overlays/:id/edit", requireAuth, async (req, res, next) => {
 
     res.render("layout", {
       tabView: "tabs/overlays-edit",
-    currentPage: "overlays",
-    currentPage: "overlays",
+      currentPage: "overlays",
       user: sessionUser,
       overlay: overlay,
       overlayJson: JSON.stringify(overlay),
@@ -229,8 +228,7 @@ router.get("/components/:id/edit", requireAuth, async (req, res, next) => {
 
     res.render("layout", {
       tabView: "tabs/overlays-edit",
-    currentPage: "overlays",
-    currentPage: "overlays",
+      currentPage: "overlays",
       user: sessionUser,
       overlay: fakeOverlay,
       overlayJson: JSON.stringify(fakeOverlay),

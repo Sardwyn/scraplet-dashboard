@@ -47,26 +47,24 @@ export const SourceCatalog: SourceDef[] = [
   {
     id: 'tts_player',
     label: 'TTS Player',
-    description: 'Live TTS message data — sender, message, voice',
     fields: [
-      { key: 'senderUsername', label: 'Sender Username', type: 'string',  fallback: '' },
-      { key: 'messageText',    label: 'Message Text',    type: 'string',  fallback: '' },
-      { key: 'voiceName',      label: 'Voice Name',      type: 'string',  fallback: '' },
-      { key: 'isPlaying',      label: 'Is Playing',      type: 'boolean', fallback: false },
+      { id: 'senderUsername', label: 'Sender Username', type: 'text', path: 'event.senderUsername' },
+      { id: 'messageText', label: 'Message Text', type: 'text', path: 'event.messageText' },
+      { id: 'voiceName', label: 'Voice Name', type: 'text', path: 'event.voiceName' },
+      { id: 'isPlaying', label: 'Is Playing', type: 'text', path: 'event.isPlaying' },
     ],
   },
 
   {
     id: 'stake_monitor',
     label: 'Stake Monitor',
-    description: 'Live Stake.com session data from the Stake Monitor widget',
     fields: [
-      { key: 'gameName',       label: 'Game Name',    type: 'string',  fallback: '—' },
-      { key: 'currentBalance', label: 'Balance',      type: 'number',  fallback: 0 },
-      { key: 'lastWin',        label: 'Last Win',     type: 'number',  fallback: 0 },
-      { key: 'betSize',        label: 'Bet Size',     type: 'number',  fallback: 0 },
-      { key: 'multiplier',     label: 'Multiplier',   type: 'number',  fallback: 0 },
-      { key: 'sessionPnl',     label: 'Session P&L',  type: 'number',  fallback: 0 },
+      { id: 'gameName', label: 'Game Name', type: 'text', path: 'event.gameName' },
+      { id: 'currentBalance', label: 'Balance', type: 'number', path: 'event.currentBalance' },
+      { id: 'lastWin', label: 'Last Win', type: 'number', path: 'event.lastWin' },
+      { id: 'betSize', label: 'Bet Size', type: 'number', path: 'event.betSize' },
+      { id: 'multiplier', label: 'Multiplier', type: 'number', path: 'event.multiplier' },
+      { id: 'sessionPnl', label: 'Session P&L', type: 'number', path: 'event.sessionPnl' },
     ],
   },
   {
@@ -102,7 +100,9 @@ export function resolveBinding(binding: DynamicBinding, data: Record<string, any
     const source = SourceCatalog.find(s => s.id === binding.sourceId);
     if (!source) return binding.fallback;
 
-    const field = source.fields.find(f => f.id === binding.fieldId);
+    const field = source.fields.find(
+      (f) => f.id === binding.fieldId || (f as { key?: string }).key === binding.fieldId
+    );
     if (!field) return binding.fallback;
 
     // Access the canonical path in the flattened data record.
