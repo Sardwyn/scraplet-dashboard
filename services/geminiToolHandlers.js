@@ -31,15 +31,46 @@ function resolveAnchorPlacement(elements, zone, width, height, elementId = null)
   const w = width !== undefined ? width : defaultZone.width;
   const h = height !== undefined ? height : defaultZone.height;
 
-  // Filter existing elements in this same anchor zone
-  const zoneElements = (elements || []).filter(el => el.anchorZone === zone && el.id !== elementId);
+  // Determine alignment based on zone name
+  const isLeft = zone.endsWith('_LEFT');
+  const isRight = zone.endsWith('_RIGHT');
+  const isCenter = zone.endsWith('_CENTER') || zone === 'CENTER_HUD';
 
-  let x = defaultZone.x;
-  let y = defaultZone.y;
+  const isTop = zone.startsWith('TOP_');
+  const isBottom = zone.startsWith('BOTTOM_');
+  const isMiddle = zone.startsWith('MIDDLE_') || zone === 'CENTER_HUD';
+
+  // Calculate dynamic baseline X
+  let x = 50;
+  if (isCenter) {
+    x = Math.round((1920 - w) / 2);
+  } else if (isRight) {
+    x = Math.round(1920 - w - 50);
+  }
+
+  // Clamp X within safe boundary
+  x = Math.max(50, Math.min(1920 - w - 50, x));
+
+  // Calculate dynamic baseline Y (before stacking)
+  let baselineY = 50;
+  if (isMiddle) {
+    baselineY = Math.round((1080 - h) / 2);
+  } else if (isBottom) {
+    baselineY = Math.round(1080 - h - 50);
+  }
+
+  // Filter existing elements in this same anchor zone. Ignore full-bleed background elements (1920x1080) for stacking.
+  const zoneElements = (elements || []).filter(el => 
+    el.anchorZone === zone && 
+    el.id !== elementId && 
+    !(el.width === 1920 && el.height === 1080)
+  );
+
+  let y = baselineY;
 
   if (zoneElements.length > 0) {
     // Stack them vertically. Find the bottom-most boundary in this zone
-    let maxY = defaultZone.y;
+    let maxY = baselineY;
     for (const el of zoneElements) {
       const bottomY = (el.y || 0) + (el.height || 0);
       if (bottomY > maxY) {
