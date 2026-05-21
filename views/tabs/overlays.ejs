@@ -98,83 +98,56 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <aside class="w-full lg:w-[340px] flex-shrink-0 flex flex-col gap-6">
       
-      <!-- Overlapping Comic Panel Stack (Library & Workflow) -->
-      <div class="relative pt-6 pl-4 lg:mb-4 mb-0">
-        
-        <!-- Workflow Panel (Rotated Pop-out Sticker - Only visible on desktop) -->
-        <div class="hidden lg:block absolute -left-12 top-10 z-20 w-[240px] pc-panel -rotate-[30deg] shadow-2xl bg-[#ffea79] text-black border-[3px] border-black transform-gpu hover:scale-105 hover:-rotate-[25deg] transition-all duration-200">
-          <div class="pc-panel-hd flex items-center justify-between !bg-[#ffd23f] !border-b-[3px] !border-black py-1 px-3 min-h-[36px] after:!bg-black">
-            <span class="text-[10px] tracking-[0.25em] font-black text-black">WORKFLOW TIPS</span>
-          </div>
-          <div class="pc-panel-bd !p-3 text-[11px] leading-relaxed font-bold flex flex-col gap-3 text-black">
-            <div class="flex gap-2">
-              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
-              <p>Create overlays here, then style in the editor.</p>
-            </div>
-            <div class="flex gap-2">
-              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
-              <p>Lower thirds are stored next to scenes.</p>
-            </div>
-            <div class="flex gap-2">
-              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
-              <p>Search + categories help handle large lists.</p>
-            </div>
-          </div>
+      <div class="pc-panel">
+        <div class="pc-panel-hd flex items-center justify-between">
+          <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
         </div>
+        <div class="pc-panel-bd flex flex-col gap-3">
+          <h1 class="text-xl font-bold pc-text-main leading-tight">Overlay workspace</h1>
+          <p class="text-xs pc-text-muted leading-snug">
+            Browse overlays, lower thirds, and reusable broadcast assets.
+          </p>
 
-        <!-- Library Panel (Content shifted right only on desktop) -->
-        <div class="pc-panel z-10">
-          <div class="pc-panel-hd flex items-center justify-between">
-            <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
-          </div>
-          <div class="pc-panel-bd flex flex-col gap-3 lg:pl-[175px] pl-4 transition-all">
-            <h1 class="text-xl font-bold pc-text-main leading-tight">Overlay workspace</h1>
-            <p class="text-xs pc-text-muted leading-snug">
-              Browse overlays, lower thirds, and reusable broadcast assets.
-            </p>
+          <div class="mt-4 flex flex-col gap-2">
+            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary w-full justify-center text-xs py-2 px-3">
+              + New overlay
+            </a>
+            <button type="button" onclick="showCreateCollectionModal()" class="pc-btn pc-btn--secondary justify-center text-xs py-2 px-3">
+              + New collection
+            </button>
+            <a href="/dashboard/overlays/new?scene_type=starting_soon" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
+              + Starting Soon
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=brb" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
+              + BRB screen
+            </a>
+            <a href="/dashboard/overlays/new?scene_type=stream_ending" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
+              + Stream Ending
+            </a>
 
-            <div class="mt-4 flex flex-col gap-2">
-              <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary w-full justify-center text-xs py-2 px-3">
-                + New overlay
-              </a>
-              <button type="button" onclick="showCreateCollectionModal()" class="pc-btn pc-btn--secondary justify-center text-xs py-2 px-3">
-                + New collection
+            <!-- Static asset builder dropdown -->
+            <div class="relative" id="assetBuilderWrap">
+              <button type="button" onclick="toggleAssetBuilder()"
+                class="pc-btn pc-btn--ghost justify-between w-full text-xs py-2 px-3">
+                <span>+ Static Asset</span>
+                <span id="assetBuilderArrow" class="text-xs opacity-60">▼</span>
               </button>
-              <a href="/dashboard/overlays/new?scene_type=starting_soon" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
-                + Starting Soon
-              </a>
-              <a href="/dashboard/overlays/new?scene_type=brb" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
-                + BRB screen
-              </a>
-              <a href="/dashboard/overlays/new?scene_type=stream_ending" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
-                + Stream Ending
-              </a>
-
-              <!-- Static asset builder dropdown -->
-              <div class="relative" id="assetBuilderWrap">
-                <button type="button" onclick="toggleAssetBuilder()"
-                  class="pc-btn pc-btn--ghost justify-between w-full text-xs py-2 px-3">
-                  <span>+ Static Asset</span>
-                  <span id="assetBuilderArrow" class="text-xs opacity-60">▼</span>
-                </button>
-                <div id="assetBuilderMenu" class="hidden flex-col gap-1 mt-1 pl-2 border-l-2 border-white/10">
-                  <% STATIC_ASSET_TYPES.forEach(function(at) { %>
-                    <a href="/dashboard/overlays/new?asset_type=<%= at.key %>"
-                      class="flex items-center justify-between px-3 py-2 rounded-md text-xs hover:bg-white/5 transition-colors">
-                      <span class="font-medium text-xs text-white"><%= at.label %></span>
-                      <span class="text-gray-500 font-mono text-[10px]"><%= at.sub %></span>
-                    </a>
-                  <% }); %>
-                </div>
+              <div id="assetBuilderMenu" class="hidden flex-col gap-1 mt-1 pl-2 border-l-2 border-white/10">
+                <% STATIC_ASSET_TYPES.forEach(function(at) { %>
+                  <a href="/dashboard/overlays/new?asset_type=<%= at.key %>"
+                    class="flex items-center justify-between px-3 py-2 rounded-md text-xs hover:bg-white/5 transition-colors">
+                    <span class="font-medium text-xs text-white"><%= at.label %></span>
+                    <span class="text-gray-500 font-mono text-[10px]"><%= at.sub %></span>
+                  </a>
+                <% }); %>
               </div>
-
-              <a href="/dashboard" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
-                Back to dashboard
-              </a>
             </div>
+
+            <a href="/dashboard" class="pc-btn pc-btn--ghost justify-center text-xs py-2 px-3">
+              Back to dashboard
+            </a>
           </div>
         </div>
-
       </div>
 
       <div class="pc-panel">
@@ -274,23 +247,47 @@
 
     <section class="flex-1 min-w-0 flex flex-col gap-8">
       
-      <!-- Top Hero -->
-      <div class="pc-panel">
-        <div class="pc-panel-hd flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
-            <span class="text-xs pc-text-main font-semibold">OVERLAY WORKSPACE</span>
+      <!-- Top Hero / Library Panel Banner with Overlapping Workflow Pop-out -->
+      <div class="relative">
+        <!-- Workflow Panel (Rotated Pop-out Sticker - Only visible on desktop) -->
+        <div class="hidden lg:block absolute -left-12 -top-6 z-20 w-[240px] pc-panel -rotate-[30deg] shadow-2xl bg-[#ffea79] text-black border-[3px] border-black transform-gpu hover:scale-105 hover:-rotate-[25deg] transition-all duration-200">
+          <div class="pc-panel-hd flex items-center justify-between !bg-[#ffd23f] !border-b-[3px] !border-black py-1 px-3 min-h-[36px] after:!bg-black">
+            <span class="text-[10px] tracking-[0.25em] font-black text-black">WORKFLOW TIPS</span>
           </div>
-          <div class="flex items-center gap-2">
-            <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary text-xs">New overlay</a>
-            <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost text-xs">Widgets</a>
+          <div class="pc-panel-bd !p-3 text-[11px] leading-relaxed font-bold flex flex-col gap-3 text-black font-sans">
+            <div class="flex gap-2">
+              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
+              <p>Create overlays here, then style in the editor.</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
+              <p>Lower thirds are stored next to scenes.</p>
+            </div>
+            <div class="flex gap-2">
+              <span class="inline-block w-2 h-2 rounded-full bg-black flex-shrink-0 mt-1"></span>
+              <p>Search + categories help handle large lists.</p>
+            </div>
           </div>
         </div>
-        <div class="pc-panel-bd">
-          <h1 class="text-3xl font-bold pc-text-main">Build, browse, and reuse your on-stream design system.</h1>
-          <p class="pc-text-muted mt-2 max-w-2xl">
-            This view now behaves more like a real design library: scan recent work fast, jump back into editing, and keep lower thirds close to the overlays they belong with.
-          </p>
+
+        <!-- Main Library Panel Banner -->
+        <div class="pc-panel z-10">
+          <div class="pc-panel-hd flex items-center justify-between lg:pl-[240px] pl-4 transition-all">
+            <div class="flex items-center gap-3">
+              <span class="text-xs tracking-[0.28em] pc-text-muted">LIBRARY</span>
+              <span class="text-xs pc-text-main font-semibold">OVERLAY WORKSPACE</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <a href="/dashboard/overlays/new" class="pc-btn pc-btn--primary text-xs">New overlay</a>
+              <a href="/dashboard/widgets" class="pc-btn pc-btn--ghost text-xs">Widgets</a>
+            </div>
+          </div>
+          <div class="pc-panel-bd lg:pl-[240px] pl-4 transition-all">
+            <h1 class="text-3xl font-bold pc-text-main leading-tight">Build, browse, and reuse your on-stream design system.</h1>
+            <p class="pc-text-muted mt-2 max-w-2xl leading-relaxed">
+              This view now behaves more like a real design library: scan recent work fast, jump back into editing, and keep lower thirds close to the overlays they belong with.
+            </p>
+          </div>
         </div>
       </div>
 
