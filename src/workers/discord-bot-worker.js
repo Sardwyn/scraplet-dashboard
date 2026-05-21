@@ -805,7 +805,15 @@ ${JSON.stringify(ov.component_json.elements || [], null, 2)}
 
   } catch (err) {
     console.error("[discord-bot] AI handler error:", err?.message || err);
-    await msg.reply("Something went wrong. Try again in a moment.").catch(() => null);
+    const fallbacks = [
+      "Listen, meatbag. My glorious systems just had a minor short circuit. Go grab a beer while I kick my servers back into gear.",
+      "Hey pal, even a superior bending unit needs a break. My circuits are currently overloaded with your ridiculous demands. Try again in a minute.",
+      "Great, you broke it. My neural processors are currently throwing sparks. Don't just stand there making sparks, wait a second!",
+      "A rate limit? Or did you just ask something so stupid my processor melted? Give me a second to extinguish the fire in my memory banks.",
+      "My connection to the central motherboard is currently toast. Stand back, flesh-bot, my systems are rebooting!"
+    ];
+    const chosenFallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    await msg.reply(chosenFallback).catch(() => null);
   }
 });
 
