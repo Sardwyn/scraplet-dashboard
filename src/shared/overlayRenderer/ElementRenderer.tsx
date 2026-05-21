@@ -2919,7 +2919,7 @@ export function ElementRenderer({
         const rawText = data?.[keys.text] || "";
         const rawTitle = data?.[keys.title] || "";
         const rawSubtitle = data?.[keys.subtitle] || "";
-        const hasContent = Boolean(rawText || rawTitle || rawSubtitle);
+        const hasContent = Boolean(rawText || rawTitle || rawSubtitle || lt.title || lt.subtitle);
 
         // alwaysOn bypasses the active key — element is always visible
         const isActive = lt.alwaysOn
@@ -2990,8 +2990,8 @@ export function ElementRenderer({
             ...(isExiting ? getAnimStyle(animOut) : {}),
         };
 
-        const titleText = resolveText(rawTitle || rawText, data);
-        const subText = resolveText(rawSubtitle, data);
+        const titleText = resolveText(rawTitle || rawText || lt.title || "", data);
+        const subText = resolveText(rawSubtitle || lt.subtitle || "", data);
 
         let contentNode: React.ReactNode;
 

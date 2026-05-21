@@ -706,6 +706,8 @@ export type LowerThirdAnimOut = "slideDown" | "slideRight" | "fade" | "none";
 
 export interface OverlayLowerThirdElement extends OverlayElementBase {
   type: "lower_third";
+  title?: string;
+  subtitle?: string;
   // Anchor removed for V1 per user request - effectively standard x/y positioning used.
 
   layout?: {

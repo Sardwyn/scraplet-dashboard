@@ -1,0 +1,209 @@
+{
+  "structures": {
+    "minimalist": {
+      "fontFamily": "Inter",
+      "borderRadiusPx": 4,
+      "borderWidthPx": 1,
+      "borderStyle": "solid",
+      "paddingPx": 16,
+      "variant": "minimalist"
+    },
+    "pulp_comic": {
+      "fontFamily": "Permanent Marker",
+      "borderRadiusPx": 16,
+      "borderWidthPx": 3,
+      "borderStyle": "solid",
+      "paddingPx": 24,
+      "variant": "pulp-comic"
+    },
+    "retro_cabinet": {
+      "fontFamily": "Press Start 2P",
+      "borderRadiusPx": 0,
+      "borderWidthPx": 4,
+      "borderStyle": "double",
+      "paddingPx": 12,
+      "variant": "retro-arcade"
+    },
+    "modern_techno": {
+      "fontFamily": "Space Grotesk",
+      "borderRadiusPx": 8,
+      "borderWidthPx": 1,
+      "borderStyle": "solid",
+      "paddingPx": 20,
+      "variant": "neon-glow"
+    },
+    "classic_serif": {
+      "fontFamily": "Playfair Display",
+      "borderRadiusPx": 2,
+      "borderWidthPx": 1,
+      "borderStyle": "solid",
+      "paddingPx": 18,
+      "variant": "classic-serif"
+    },
+    "organic_hand": {
+      "fontFamily": "Architects Daughter",
+      "borderRadiusPx": 12,
+      "borderWidthPx": 2,
+      "borderStyle": "dashed",
+      "paddingPx": 22,
+      "variant": "hand-drawn"
+    },
+    "industrial_heavy": {
+      "fontFamily": "Oswald",
+      "borderRadiusPx": 0,
+      "borderWidthPx": 2,
+      "borderStyle": "solid",
+      "paddingPx": 16,
+      "variant": "accent-bar"
+    },
+    "kawaii_soft": {
+      "fontFamily": "Outfit",
+      "borderRadiusPx": 24,
+      "borderWidthPx": 2,
+      "borderStyle": "solid",
+      "paddingPx": 20,
+      "variant": "kawaii"
+    },
+    "tactical_grid": {
+      "fontFamily": "Share Tech Mono",
+      "borderRadiusPx": 0,
+      "borderWidthPx": 2,
+      "borderStyle": "double",
+      "paddingPx": 14,
+      "variant": "tactical-telemetry"
+    }
+  },
+  "palettes": {
+    "carbon_slate": {
+      "bgColor": "#09090b",
+      "panelColor": "#27272a",
+      "accentColor": "#3b82f6",
+      "textColor": "#ffffff",
+      "textMuted": "#a1a1aa",
+      "bgOpacity": 0.95
+    },
+    "neon_sunset": {
+      "bgColor": "#1e1b4b",
+      "panelColor": "#db2777",
+      "accentColor": "#f97316",
+      "textColor": "#ffffff",
+      "textMuted": "#fbcfe8",
+      "bgOpacity": 0.85
+    },
+    "amber_phosphor": {
+      "bgColor": "#110d02",
+      "panelColor": "#451a03",
+      "accentColor": "#fbbf24",
+      "textColor": "#fbbf24",
+      "textMuted": "#b45309",
+      "bgOpacity": 0.98
+    },
+    "kawaii_pastel": {
+      "bgColor": "#faf5ff",
+      "panelColor": "#f3e8ff",
+      "accentColor": "#ec4899",
+      "textColor": "#1e1b4b",
+      "textMuted": "#7e22ce",
+      "bgOpacity": 0.9
+    },
+    "abyssal_glow": {
+      "bgColor": "#020617",
+      "panelColor": "#0f172a",
+      "accentColor": "#14b8a6",
+      "textColor": "#f8fafc",
+      "textMuted": "#64748b",
+      "bgOpacity": 0.9
+    },
+    "manga_contrast": {
+      "bgColor": "#ffffff",
+      "panelColor": "#000000",
+      "accentColor": "#dc2626",
+      "textColor": "#000000",
+      "textMuted": "#4b5563",
+      "bgOpacity": 1.0
+    },
+    "military_olive": {
+      "bgColor": "#1c1d17",
+      "panelColor": "#2d2f24",
+      "accentColor": "#facc15",
+      "textColor": "#facc15",
+      "textMuted": "#65a30d",
+      "bgOpacity": 0.95
+    },
+    "luxury_gold": {
+      "bgColor": "#0a0b1e",
+      "panelColor": "#1e1b4b",
+      "accentColor": "#fbbf24",
+      "textColor": "#ffffff",
+      "textMuted": "#fbbf24",
+      "bgOpacity": 0.95
+    },
+    "industrial_rust": {
+      "bgColor": "#1a0f0a",
+      "panelColor": "#451a03",
+      "accentColor": "#ea580c",
+      "textColor": "#fcd34d",
+      "textMuted": "#78350f",
+      "bgOpacity": 0.9
+    },
+    "matrix_hacker": {
+      "bgColor": "#000000",
+      "panelColor": "#052e16",
+      "accentColor": "#22c55e",
+      "textColor": "#22c55e",
+      "textMuted": "#15803d",
+      "bgOpacity": 1.0
+    },
+    "glacial_frost": {
+      "bgColor": "#f0f9ff",
+      "panelColor": "rgba(255,255,255,0.4)",
+      "accentColor": "#0ea5e9",
+      "textColor": "#0369a1",
+      "textMuted": "#0284c7",
+      "bgOpacity": 0.75
+    },
+    "sunset_vapor": {
+      "bgColor": "#111827",
+      "panelColor": "#f43f5e",
+      "accentColor": "#fb7185",
+      "textColor": "#ffffff",
+      "textMuted": "#fda4af",
+      "bgOpacity": 0.8
+    },
+    "chalkboard_sketch": {
+      "bgColor": "#1e293b",
+      "panelColor": "rgba(255,255,255,0.15)",
+      "accentColor": "#f43f5e",
+      "textColor": "#ffffff",
+      "textMuted": "#94a3b8",
+      "bgOpacity": 0.9
+    },
+    "copper_plate": {
+      "bgColor": "#0f172a",
+      "panelColor": "#475569",
+      "accentColor": "#b45309",
+      "textColor": "#f8fafc",
+      "textMuted": "#d97706",
+      "bgOpacity": 0.9
+    },
+    "midnight_royal": {
+      "bgColor": "#090514",
+      "panelColor": "#2e1065",
+      "accentColor": "#8b5cf6",
+      "textColor": "#f5f3ff",
+      "textMuted": "#c084fc",
+      "bgOpacity": 0.92
+    }
+  },
+  "spacing": {
+    "tight": 0.5,
+    "balanced": 1.0,
+    "loose": 1.5
+  },
+  "grid": {
+    "columns": 12,
+    "rows": 12,
+    "width": 1920,
+    "height": 1080
+  }
+}

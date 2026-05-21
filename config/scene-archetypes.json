@@ -1,0 +1,454 @@
+{
+  "archetypes": {
+    "just_chatting": {
+      "displayName": "Just Chatting",
+      "description": "Optimized for creator-to-audience interaction with large camera views and readable chats.",
+      "variants": {
+        "immersive": {
+          "displayName": "Immersive Floating",
+          "description": "Full-bleed webcam background with semi-transparent widgets floating on top.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Webcam Background Border",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColor": "rgba(0, 0, 0, 0)",
+                "borderWidthPx": 8,
+                "borderColorKey": "accentColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Social Handle Event Banner",
+              "anchorZone": "BOTTOM_LEFT",
+              "widthPct": 30,
+              "heightPct": 12,
+              "style": {
+                "title": "Welcome to the Stream!",
+                "subtitle": "Follow @Sardwyn repos",
+                "alwaysOn": true,
+                "layoutMode": "split",
+                "variant": "accent-bar"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Floating Stream Chat Monitor",
+              "anchorZone": "BOTTOM_RIGHT",
+              "widthPct": 25,
+              "heightPct": 45,
+              "style": {
+                "title": "Live Stream Chat",
+                "subtitle": "Waiting for messages...",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "glass"
+              }
+            }
+          ]
+        },
+        "framed_split": {
+          "displayName": "Cozy Framed Split",
+          "description": "Classic panel-based layout with dedicated spaces for camera, chat, and telemetry.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Wallpaper Backdrop",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "shape",
+              "name": "Camera Framing Box",
+              "anchorZone": "MIDDLE_LEFT",
+              "widthPct": 65,
+              "heightPct": 75,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "panelColor",
+                "borderWidthPx": 4,
+                "borderColorKey": "accentColor"
+              }
+            },
+            {
+              "type": "text",
+              "name": "Webcam Label",
+              "anchorZone": "TOP_LEFT",
+              "widthPct": 30,
+              "heightPct": 8,
+              "style": {
+                "text": "CREATOR FEED",
+                "fontSizePx": 32,
+                "colorKey": "textColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Structured Chat Panel",
+              "anchorZone": "MIDDLE_RIGHT",
+              "widthPct": 28,
+              "heightPct": 75,
+              "style": {
+                "title": "Stream Chat",
+                "subtitle": "Be nice in chat!",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "solid"
+              }
+            },
+            {
+              "type": "progress_bar",
+              "name": "Top Header Goal Tracker",
+              "anchorZone": "TOP_CENTER",
+              "widthPct": 40,
+              "heightPct": 8,
+              "style": {
+                "name": "Subscriber Goal",
+                "bindingSourceId": "custom_variables",
+                "bindingFieldId": "sub_goal_progress",
+                "bindingFallback": 0.75,
+                "direction": "ltr"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "gameplay": {
+      "displayName": "In-Game HUD",
+      "description": "Low-profile layout designed to maximize game screen space without blocking crucial UI elements.",
+      "variants": {
+        "immersive": {
+          "displayName": "Minimal HUD Floating",
+          "description": "Extremely small floating webcam and high-contrast, borderless chat box.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Floating Facecam Frame",
+              "anchorZone": "BOTTOM_RIGHT",
+              "widthPct": 18,
+              "heightPct": 22,
+              "style": {
+                "shapeType": "box",
+                "backgroundColor": "rgba(0,0,0,0.15)",
+                "borderWidthPx": 2,
+                "borderColorKey": "accentColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Borderless Floating Chat",
+              "anchorZone": "MIDDLE_LEFT",
+              "widthPct": 20,
+              "heightPct": 35,
+              "style": {
+                "title": "Chat Overlay",
+                "subtitle": "Type !commands",
+                "alwaysOn": true,
+                "layoutMode": "single",
+                "variant": "minimal"
+              }
+            }
+          ]
+        },
+        "framed_hud": {
+          "displayName": "Structured Gameplay Outer Border",
+          "description": "16:9 gameplay panel with borders containing details like recent activities and timer stats.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Outer Frame Wallpaper",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "shape",
+              "name": "Main Gameplay Box",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 75,
+              "heightPct": 75,
+              "style": {
+                "shapeType": "box",
+                "backgroundColor": "rgba(0,0,0,0.2)",
+                "borderWidthPx": 3,
+                "borderColorKey": "textMuted"
+              }
+            },
+            {
+              "type": "shape",
+              "name": "Co-pilot Cam Frame",
+              "anchorZone": "BOTTOM_RIGHT",
+              "widthPct": 20,
+              "heightPct": 22,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "panelColor",
+                "borderWidthPx": 2,
+                "borderColorKey": "accentColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Recent Subscriber Banner",
+              "anchorZone": "BOTTOM_LEFT",
+              "widthPct": 22,
+              "heightPct": 15,
+              "style": {
+                "title": "New Subscriber",
+                "subtitle": "{{latest_subscriber}}",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "accent-bar"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "starting_soon": {
+      "displayName": "Starting Soon",
+      "description": "Hyping up the broadcast with countdown timers, schedule summaries, and upbeat theme styles.",
+      "variants": {
+        "centered": {
+          "displayName": "Symmetric Centered Countdown",
+          "description": "Bold center title paired with a circular countdown ring and left/right social handle cards.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Symmetric Wallpaper",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "text",
+              "name": "Main Hype Title",
+              "anchorZone": "TOP_CENTER",
+              "widthPct": 50,
+              "heightPct": 15,
+              "style": {
+                "text": "BROADCAST STARTING SOON",
+                "fontSizePx": 64,
+                "colorKey": "textColor"
+              }
+            },
+            {
+              "type": "progress_ring",
+              "name": "Circular Countdown Timer",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 22,
+              "heightPct": 38,
+              "style": {
+                "name": "Time to Stream",
+                "bindingSourceId": "countdown",
+                "bindingFieldId": "remainingSec",
+                "bindingFallback": 0.8,
+                "strokeWidthPx": 16,
+                "startAngleDeg": -90
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Left Social Hook",
+              "anchorZone": "BOTTOM_LEFT",
+              "widthPct": 25,
+              "heightPct": 12,
+              "style": {
+                "title": "TWITTER",
+                "subtitle": "@Sardwyn",
+                "alwaysOn": true,
+                "layoutMode": "split",
+                "variant": "solid"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Right Social Hook",
+              "anchorZone": "BOTTOM_RIGHT",
+              "widthPct": 25,
+              "heightPct": 12,
+              "style": {
+                "title": "YOUTUBE",
+                "subtitle": "/c/SardwynStream",
+                "alwaysOn": true,
+                "layoutMode": "split",
+                "variant": "solid"
+              }
+            }
+          ]
+        },
+        "asymmetrical": {
+          "displayName": "Modern Offset Panel",
+          "description": "Left-leaning bold timer with a structured right-hand side chat monitor panel.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Asymmetrical Wallpaper",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "text",
+              "name": "Asymmetric Hype Title",
+              "anchorZone": "TOP_LEFT",
+              "widthPct": 45,
+              "heightPct": 12,
+              "style": {
+                "text": "STARTING SOON",
+                "fontSizePx": 72,
+                "colorKey": "accentColor"
+              }
+            },
+            {
+              "type": "progress_bar",
+              "name": "Asymmetric Progress Timer",
+              "anchorZone": "MIDDLE_LEFT",
+              "widthPct": 45,
+              "heightPct": 10,
+              "style": {
+                "name": "Stream Warmup",
+                "bindingSourceId": "countdown",
+                "bindingFieldId": "remainingSec",
+                "bindingFallback": 0.5,
+                "direction": "ltr"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Right Sidebar Chat Monitor",
+              "anchorZone": "MIDDLE_RIGHT",
+              "widthPct": 35,
+              "heightPct": 75,
+              "style": {
+                "title": "Pre-Stream Chat",
+                "subtitle": "Say hi while we wait!",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "accent-bar"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "brb": {
+      "displayName": "Be Right Back",
+      "description": "Keeping stream energy alive with structured placeholders and notice banners when away.",
+      "variants": {
+        "centered": {
+          "displayName": "Symmetric Status Panel",
+          "description": "Centralized BRB card with matching left/right status indicator feeds.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "BRB Center Backdrop",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Symmetric BRB Main Card",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 40,
+              "heightPct": 25,
+              "style": {
+                "title": "BE RIGHT BACK",
+                "subtitle": "Grab some snacks - back in a few!",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "solid"
+              }
+            },
+            {
+              "type": "progress_bar",
+              "name": "BRB Center Timer Monitor",
+              "anchorZone": "BOTTOM_CENTER",
+              "widthPct": 50,
+              "heightPct": 8,
+              "style": {
+                "name": "Break Timer",
+                "bindingSourceId": "countdown",
+                "bindingFieldId": "remainingSec",
+                "bindingFallback": 0.4,
+                "direction": "ltr"
+              }
+            }
+          ]
+        },
+        "asymmetrical": {
+          "displayName": "Dynamic Offset BRB Status",
+          "description": "Clean left-hand chat console balanced by a large right-hand notice card.",
+          "elements": [
+            {
+              "type": "shape",
+              "name": "Asymmetric BRB Backdrop",
+              "anchorZone": "CENTER_HUD",
+              "widthPct": 100,
+              "heightPct": 100,
+              "style": {
+                "shapeType": "box",
+                "backgroundColorKey": "bgColor"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Asymmetric Large Notice Card",
+              "anchorZone": "MIDDLE_RIGHT",
+              "widthPct": 45,
+              "heightPct": 40,
+              "style": {
+                "title": "TAKING A BREAK",
+                "subtitle": "Stream will resume shortly. Hold tight!",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "accent-bar"
+              }
+            },
+            {
+              "type": "lower_third",
+              "name": "Asymmetric Chat Console",
+              "anchorZone": "MIDDLE_LEFT",
+              "widthPct": 35,
+              "heightPct": 65,
+              "style": {
+                "title": "Lurk Chat Console",
+                "subtitle": "Chat lurkers active",
+                "alwaysOn": true,
+                "layoutMode": "stacked",
+                "variant": "glass"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

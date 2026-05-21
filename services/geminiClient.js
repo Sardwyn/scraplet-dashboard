@@ -36,6 +36,12 @@ function getInCharacterToolFallback(action) {
         return `I painted the entire overlay with your new theme, but the paint fumes must have fried my transmitters! Check your screen—the theme is applied. You're welcome!`;
       case 'update_elements_layout':
         return `I successfully tidied up the layout and snapped those elements into place. My communication link broke right after, but the canvas is clean!`;
+      case 'add_progress_bar_to_overlay':
+        return `Alright meatbag, I slapped a shiny new progress bar onto your canvas! Its style matches the dominant theme of your overlay perfectly because I actually have taste. My transmitter fried right after, but check your screen, it's there!`;
+      case 'add_progress_ring_to_overlay':
+        return `Behold, flesh-bot! I drew a circular progress ring on your overlay. I styled it to blend in with your active theme because I'm a perfectionist. My connection cut out immediately after, but the canvas is updated!`;
+      case 'add_lower_third_to_overlay':
+        return `I tossed that modular lower third plate onto the bottom of your overlay! It matches the dominant colors and style of your overlay like a glove. My processor overheated right after, but your stream is looking way more professional now!`;
       default:
         return `I successfully executed the '${tool}' tool, but my communication antenna just snapped. Go check your dashboard, the changes should be there, meatbag!`;
     }
@@ -56,6 +62,12 @@ function getInCharacterToolFallback(action) {
         return `I tried to apply that theme, but the paint exploded in my face! Error: '${errText}'.`;
       case 'update_elements_layout':
         return `I tried to tidy up the elements, but the pieces fell off the table! Error: '${errText}'.`;
+      case 'add_progress_bar_to_overlay':
+        return `I tried to build that progress bar for you, but my screwdriver slipped! Error: '${errText}'. Did you break the database?`;
+      case 'add_progress_ring_to_overlay':
+        return `I tried to bend a progress ring onto your screen, but the pipe broke! Error: '${errText}'. Go check if the overlay exists, bonehead!`;
+      case 'add_lower_third_to_overlay':
+        return `I tried to draw that fancy lower third panel, but the template blew up! Error: '${errText}'. Are you sure the overlay ID is correct?`;
       case 'search_vector_library':
         return `Search for '${args?.query || ""}'? Zip! Zero! Nothin'! My grand icon database has never heard of such a ridiculous thing. Try searching for something normal, like a beer or a shiny metal sprocket!`;
       default:
