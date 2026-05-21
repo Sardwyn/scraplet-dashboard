@@ -1,6 +1,7 @@
 import './bootstrap/env.js';
 // import { startChatOutboxWorker } from "./services/chatOutboxDeliver.js";
 import { startKickTokenRefreshWorker } from "./services/kickTokenRefreshWorker.js";
+import { startTwitchTokenRefreshWorker } from "./services/twitchTokenRefreshWorker.js";
 import { startBroadcasterBackfillWorker } from "./services/backfillBroadcasterIds.js";
 import { initTikTokIngestManager } from "./services/tiktokChatIngest.js";
 import { initTwitchChatIngest } from "./services/twitchChatIngest.js";
@@ -10,6 +11,8 @@ import { fileURLToPath } from 'url';
 import ejs from 'ejs';
 import cors from 'cors';
 import session from 'express-session';
+import { createClient as createRedisClient } from 'redis';
+import { RedisStore } from 'connect-redis';
 import kickWebhookRoutes from './routes/kickWebhook.js';
 import twitchWebhookRoutes from './routes/twitchWebhook.js';
 import youtubeWebhookRoutes from './routes/youtubeWebhook.js';
@@ -164,15 +167,24 @@ if (!sessionSecret) {
   );
 }
 
+// 🔴 Redis-backed session store — prevents MemoryStore RAM leak on long-running processes
+const redisClient = createRedisClient({
+  url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+});
+redisClient.on('error', (err) => console.error('[SessionRedis] client error', err));
+await redisClient.connect();
+console.log('[SessionRedis] connected');
+
 app.use(
   session({
     name: 'scraplet.sid',
     secret: sessionSecret || 'change-me',
     resave: false,
     saveUninitialized: false,
+    store: new RedisStore({ client: redisClient, prefix: 'sess:' }),
     cookie: {
       sameSite: 'lax',
-      secure: process.env.APP_MODE === 'local' ? false : 'auto', // Allow HTTP on localhost
+      secure: process.env.APP_MODE === 'local' ? false : 'auto',
       maxAge: 1000 * 60 * 60 * 24 // 1 day
     },
   })
@@ -204,14 +216,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Static assets under /dashboard/* (so Nginx proxy paths can load JS/CSS)
 app.use('/dashboard', express.static(path.join(__dirname, 'public')));
 
-app.use(dashboardMetricsRouter);
-app.use('/api/integrations', kickIntegrationsRouter);
-app.use('/api/integrations', twitchIntegrationsRouter);
-app.use('/api/integrations', tiktokIntegrationsRouter);
-app.use(tiktokIntegrationsRouter);
-app.use(youtubeIntegrationsRouter);
-app.use(youtubeChatDebugRouter);
-
 // Body parsing + JSON with rawBody
 app.use(express.urlencoded({ extended: true }));
 
@@ -223,6 +227,16 @@ app.use(
     type: ['application/json', 'application/*+json'],
   })
 );
+
+app.use(dashboardMetricsRouter);
+app.use('/api/integrations', kickIntegrationsRouter);
+app.use('/api/integrations', twitchIntegrationsRouter);
+app.use('/api/integrations', tiktokIntegrationsRouter);
+app.use(tiktokIntegrationsRouter);
+app.use(youtubeIntegrationsRouter);
+app.use(youtubeChatDebugRouter);
+
+
 
 app.use("/dashboard/api", assetsRouter);
 app.use("/dashboard/api/uploads", uploadsRouter);
@@ -421,5 +435,6 @@ app.listen(port, () => {
 initTikTokIngestManager().catch(console.error);
 initTwitchChatIngest().catch(console.error);
 startKickTokenRefreshWorker();
+startTwitchTokenRefreshWorker();
 startBroadcasterBackfillWorker();
 

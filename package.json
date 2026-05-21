@@ -19,6 +19,7 @@
     "bcrypt": "^6.0.0",
     "cheerio": "^1.1.2",
     "clipper-lib": "^6.4.2",
+    "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "discord.js": "^14.25.1",

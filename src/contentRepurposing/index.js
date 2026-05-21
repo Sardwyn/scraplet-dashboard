@@ -53,10 +53,10 @@ export async function assembleSessionData(sessionId) {
 
     // Highlights
     const { rows: highlights } = await db.query(
-      `SELECT signal, magnitude, detected_at, context_json
+      `SELECT trigger_signal AS signal, magnitude, triggered_at AS detected_at
        FROM stream_highlights
        WHERE session_id = $1
-       ORDER BY detected_at ASC`,
+       ORDER BY triggered_at ASC`,
       [sessionId]
     );
 

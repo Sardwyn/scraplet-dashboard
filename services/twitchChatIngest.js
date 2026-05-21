@@ -184,6 +184,77 @@ function connect(state) {
   });
 }
 
+// ─────────────────────────────────────────────
+// TWITCH EMOTE PARSING
+// ─────────────────────────────────────────────
+/**
+ * Parse the Twitch IRC `emotes` tag and rewrite the message text so it uses
+ * the canonical [emote:ID:name] token format understood by the overlay runtime.
+ *
+ * Twitch emotes tag format:  "25:0-4/302382736:6-15,17-27"
+ * Each entry is  emoteId:start-end[,start-end...]
+ * Multiple emotes are separated by /
+ *
+ * Returns { text, emotes } where:
+ *   text   – rewritten message string with [emote:ID:name] tokens
+ *   emotes – Array<{ id, name, url }> for URL resolution in the overlay
+ */
+function parseTwitchEmotesTag(emoteStr, rawText) {
+  if (!emoteStr || !rawText) return { text: rawText, emotes: [] };
+
+  // Build a list of replacements: { start, end, id, name }
+  const replacements = [];
+
+  for (const part of emoteStr.split('/')) {
+    const colonIdx = part.indexOf(':');
+    if (colonIdx === -1) continue;
+    const id = part.slice(0, colonIdx);
+    const ranges = part.slice(colonIdx + 1).split(',');
+    for (const range of ranges) {
+      const [startStr, endStr] = range.split('-');
+      const start = parseInt(startStr, 10);
+      const end   = parseInt(endStr,   10);
+      if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+      // Extract the emote name from the raw text using the byte positions
+      const name = rawText.slice(start, end + 1);
+      replacements.push({ start, end, id, name });
+    }
+  }
+
+  if (replacements.length === 0) return { text: rawText, emotes: [] };
+
+  // Sort by start position ascending so we can rebuild left-to-right
+  replacements.sort((a, b) => a.start - b.start);
+
+  // Rewrite the text, replacing each range with [emote:ID:name]
+  let rewritten = '';
+  let cursor = 0;
+  const emotesMap = new Map(); // id → { id, name, url }
+
+  for (const { start, end, id, name } of replacements) {
+    if (start > cursor) {
+      rewritten += rawText.slice(cursor, start);
+    }
+    rewritten += `[emote:${id}:${name}]`;
+    cursor = end + 1;
+
+    if (!emotesMap.has(id)) {
+      emotesMap.set(id, {
+        id,
+        name,
+        url: `https://static-cdn.jtvnw.net/emoticons/v2/${id}/default/dark/1.0`,
+      });
+    }
+  }
+
+  // Append any trailing plain text
+  if (cursor < rawText.length) {
+    rewritten += rawText.slice(cursor);
+  }
+
+  return { text: rewritten, emotes: Array.from(emotesMap.values()) };
+}
+
 function handleLine(state, raw) {
   const msg = parseIrcLine(raw);
 
@@ -236,12 +307,16 @@ function handleLine(state, raw) {
                       : badgeStr.includes("vip")         ? "vip"
                       : "viewer";
 
+      // Parse Twitch emotes from the IRC tag and rewrite message text
+      const emoteStr = tags['emotes'] || '';
+      const { text: parsedText, emotes: parsedEmotes } = parseTwitchEmotesTag(emoteStr, text);
+
       const chat_v1 = buildChatEnvelopeV1FromTwitch({
         ownerUserId:          state.userId,
         channelSlug,
         platformChannelId:    channelSlug,
         messageId:            msgId,
-        messageText:          text,
+        messageText:          parsedText,
         messageTs:            new Date().toISOString(),
         authorUsername:       authorLogin,
         authorDisplay,
@@ -250,7 +325,7 @@ function handleLine(state, raw) {
         badges:               badgeStr ? badgeStr.split(",").map(b => ({ text: b.split("/")[0] })) : [],
         ingest:               "irc",
         supervisorId:         "dashboard:twitch-irc",
-        platformPayload:      { tags, channel, raw },
+        platformPayload:      { tags, channel, raw, emotes: parsedEmotes },
         raw,
       });
 

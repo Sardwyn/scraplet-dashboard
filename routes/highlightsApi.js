@@ -43,7 +43,7 @@ router.post('/api/highlights/ingest', requireWorkerAuth, async (req, res) => {
     const { rows } = await db.query(
       `INSERT INTO public.stream_highlights
          (channel_slug, scraplet_user_id, session_id, triggered_at,
-          signal, magnitude, baseline_mpm, peak_mpm)
+          trigger_signal, magnitude, baseline_mpm, peak_mpm)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING id, triggered_at`,
       [channel_slug, Number(scraplet_user_id), session_id,
@@ -96,7 +96,7 @@ router.get('/dashboard/api/highlights', requireAuth, async (req, res) => {
     const sessionId = req.query.session_id || null;
 
     const { rows } = await db.query(
-      `SELECT h.id, h.channel_slug, h.triggered_at, h.signal,
+      `SELECT h.id, h.channel_slug, h.triggered_at, h.trigger_signal, h.trigger_signal AS signal,
               h.magnitude, h.baseline_mpm, h.peak_mpm,
               h.clip_tagged, h.clip_path, h.reviewed, h.session_id
        FROM public.stream_highlights h
