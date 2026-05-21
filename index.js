@@ -86,9 +86,11 @@ import pollsRouter from './routes/pollsApi.js';
 import hypeTrainRouter from './routes/hypeTrainApi.js';
 import { applyStartupMigrations } from './bootstrap/applyMigrations.js';
 import { scheduleInsightEngine } from './services/insightEngine.js';
+import { startPostgresListener } from './services/postgresListener.js';
 
 
 global.studioEventBus = new EventBus();
+startPostgresListener();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

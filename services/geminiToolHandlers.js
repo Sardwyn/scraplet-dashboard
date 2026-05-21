@@ -20,27 +20,29 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
     switch (toolName) {
       case 'create_overlay': {
         const { name } = args;
-        const newId = crypto.randomUUID();
+        const newPublicId = crypto.randomUUID();
         const initialJson = { elements: [], timeline: { durationMs: 5000, tracks: [] }, settings: { width: 1920, height: 1080 } };
         
-        await db.query(
-          `INSERT INTO public.overlay_components (id, guild_id, owner_user_id, name, component_json)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [newId, String(guildId), userId, name, initialJson]
+        const { rows } = await db.query(
+          `INSERT INTO public.overlay_components (user_id, public_id, name, component_json)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id`,
+          [Number(userId), newPublicId, name, initialJson]
         );
-        return { success: true, overlayId: newId, message: `Created overlay '${name}'` };
+        const newId = rows[0].id;
+        return { success: true, overlayId: String(newId), message: `Created overlay '${name}'` };
       }
 
       case 'find_overlay_by_name': {
         const { name } = args;
         const { rows } = await db.query(
           `SELECT id, name FROM public.overlay_components 
-           WHERE guild_id = $1 AND owner_user_id = $2 AND name ILIKE $3
+           WHERE user_id = $1 AND name ILIKE $2
            LIMIT 1`,
-          [String(guildId), userId, `%${name}%`]
+          [Number(userId), `%${name}%`]
         );
         if (rows.length === 0) return { error: `No overlay found matching '${name}'` };
-        return { success: true, overlayId: rows[0].id, name: rows[0].name };
+        return { success: true, overlayId: String(rows[0].id), name: rows[0].name };
       }
 
       case 'search_vector_library': {
@@ -213,31 +215,47 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
   }
 }
 
+async function getUserIdFromGuild(guildId) {
+  const { rows } = await db.query(
+    `SELECT owner_user_id FROM public.discord_guild_integrations
+     WHERE guild_id = $1 AND status = 'active'
+     LIMIT 1`,
+    [String(guildId)]
+  );
+  return rows[0] ? Number(rows[0].owner_user_id) : null;
+}
+
 async function getOverlay(overlayId, guildId) {
+  const userId = await getUserIdFromGuild(guildId);
+  if (!userId) return null;
+
   const { rows } = await db.query(
     `SELECT id, component_json FROM public.overlay_components 
-     WHERE id = $1 AND guild_id = $2`,
-    [overlayId, String(guildId)]
+     WHERE id = $1 AND user_id = $2`,
+    [Number(overlayId), userId]
   );
   if (rows.length === 0) return null;
   return { id: rows[0].id, json: rows[0].component_json };
 }
 
 async function updateOverlay(overlayId, guildId, newJson) {
+  const userId = await getUserIdFromGuild(guildId);
+  if (!userId) return;
+
   const result = await db.query(
     `UPDATE public.overlay_components 
      SET component_json = $1, updated_at = NOW()
-     WHERE id = $2 AND guild_id = $3
-     RETURNING owner_user_id`,
-    [newJson, overlayId, String(guildId)]
+     WHERE id = $2 AND user_id = $3
+     RETURNING user_id`,
+    [newJson, Number(overlayId), userId]
   );
 
   if (result.rows.length > 0) {
-    const ownerUserId = result.rows[0].owner_user_id;
+    const ownerUserId = result.rows[0].user_id;
     // Broadcast via Postgres NOTIFY to the dashboard server
     const payload = JSON.stringify({
       type: 'canvas_updated',
-      overlayId,
+      overlayId: Number(overlayId),
       ownerUserId
     });
     await db.query(`NOTIFY canvas_updated, '${payload}'`);

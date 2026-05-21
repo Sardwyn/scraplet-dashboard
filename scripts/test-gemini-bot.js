@@ -2,6 +2,7 @@ import "dotenv/config";
 import db from "../db.js";
 import { chatWithGemini } from "../services/geminiClient.js";
 import readline from "readline";
+import crypto from "crypto";
 
 const SCRAPBOT_SYSTEM_PROMPT = `You are Disco Scrapbot. If the user asks you to change, draw, edit, or adjust their stream layout, overlay, lower third or panel you MUST use one of your canvas tools. If they are asking for advice, strategies, technical help, or just chatting, do NOT use any tools. Just reply with your sarcastic Bender voice.
 
@@ -38,19 +39,18 @@ Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never 
 async function getLatestOverlayOrCreate() {
   console.log("🔍 Fetching latest overlay from database...");
   const { rows } = await db.query(
-    `SELECT id, guild_id, owner_user_id, name, component_json 
+    `SELECT id, user_id, public_id, name, component_json 
      FROM public.overlay_components 
      ORDER BY updated_at DESC LIMIT 1`
   );
 
   if (rows.length > 0) {
-    console.log(`✅ Using existing overlay: "${rows[0].name}" (ID: ${rows[0].id}) for Guild: ${rows[0].guild_id}`);
-    return rows[0];
+    console.log(`✅ Using existing overlay: "${rows[0].name}" (ID: ${rows[0].id}) for User: ${rows[0].user_id}`);
+    return { ...rows[0], guild_id: "sandbox-test-guild-2222", owner_user_id: rows[0].user_id };
   }
 
   // Create a default sandbox overlay if none exists
   console.log("⚠️ No overlays found in database. Creating a sandbox overlay 'Test Sandbox Overlay'...");
-  const dummyId = "sandbox-test-overlay-1111";
   const dummyGuild = "sandbox-test-guild-2222";
   const dummyOwner = 4; // default admin user_id
   const dummyJson = {
@@ -69,13 +69,14 @@ async function getLatestOverlayOrCreate() {
     settings: { width: 1920, height: 1080 }
   };
 
-  await db.query(
-    `INSERT INTO public.overlay_components (id, guild_id, owner_user_id, name, component_json)
-     VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (id) DO NOTHING`,
-    [dummyId, dummyGuild, dummyOwner, "Test Sandbox Overlay", dummyJson]
+  const { rows: insertRows } = await db.query(
+    `INSERT INTO public.overlay_components (user_id, public_id, name, component_json)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
+    [dummyOwner, crypto.randomUUID(), "Test Sandbox Overlay", dummyJson]
   );
 
+  const dummyId = insertRows[0].id;
   console.log("✅ Sandbox overlay successfully created!");
   return { id: dummyId, guild_id: dummyGuild, owner_user_id: dummyOwner, name: "Test Sandbox Overlay", component_json: dummyJson };
 }

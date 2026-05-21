@@ -655,9 +655,9 @@ client.on("messageCreate", async (msg) => {
     try {
       const { rows: overlayRows } = await db.query(
         `SELECT id, name, component_json FROM public.overlay_components 
-         WHERE guild_id = $1
+         WHERE user_id = $1
          ORDER BY updated_at DESC LIMIT 1`,
-        [String(guildId)]
+        [Number(claim.owner_user_id)]
       );
       if (overlayRows.length > 0) {
         const ov = overlayRows[0];
@@ -694,12 +694,12 @@ ${JSON.stringify(ov.component_json.elements || [], null, 2)}
     }
     const dynamicMaxTokens = getMaxTokens(userText);
 
-    const hasGeminiKey = !!process.env.GEMINI_API_KEY;
+    const hasGemini = !!process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_USE_VERTEXAI === "true";
     let reply;
 
-    if (hasGeminiKey) {
+    if (hasGemini) {
       try {
-        reply = await chatWithGemini(ragMessages, finalSystemContentWithCanvas, guildId, msg.author.id);
+        reply = await chatWithGemini(ragMessages, finalSystemContentWithCanvas, guildId, Number(claim.owner_user_id));
       } catch (err) {
         console.error("[Gemini] fallback to vLLM due to error:", err.message);
         reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });

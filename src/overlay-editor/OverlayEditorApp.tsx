@@ -1389,6 +1389,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       .catch((e: Error) => console.error("Failed to load components:", e));
   }, []);
 
+  // Real-Time Canvas Sync (SSE)
+  useEffect(() => {
+    const es = new EventSource('/dashboard/api/events/stream');
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'canvas_updated' && data.overlayId === initialOverlay.id) {
+          fetch(`/dashboard/api/overlays/${initialOverlay.id}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(updatedOverlay => {
+              if (updatedOverlay && updatedOverlay.config_json) {
+                setConfig(updatedOverlay.config_json);
+                showEditorStatus("Scrapbot AI updated the canvas! ✨");
+              }
+            })
+            .catch(err => console.error("Error fetching updated overlay:", err));
+        }
+      } catch (err) {
+        // ignore parse errors
+      }
+    };
+    return () => es.close();
+  }, [initialOverlay.id, showEditorStatus]);
+
   // (legacy template state removed)
 
   // (legacy template functions removed)
