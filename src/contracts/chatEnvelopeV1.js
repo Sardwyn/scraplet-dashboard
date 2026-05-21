@@ -11,12 +11,14 @@ export const PLATFORM = Object.freeze({
   KICK: "kick",
   YOUTUBE: "youtube",
   TWITCH: "twitch",
+  TIKTOK: "tiktok",
 });
 
 export const INGEST = Object.freeze({
   WS: "ws",
   POLL: "poll",
   API: "api",
+  CONNECTOR: "connector",
 });
 
 export const ROLE = Object.freeze({
