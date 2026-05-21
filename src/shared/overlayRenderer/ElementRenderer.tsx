@@ -2046,6 +2046,33 @@ export function ElementRenderer({
         (baseStyle as any).transformOrigin = 'center center';
     }
 
+    // Promote elements with active blend modes, opacity, or parametric effects to GPU layers in OBS/CEF
+    const hasEffects = _elEffects.length > 0;
+    const hasBlend = elBlendMode && elBlendMode !== "normal";
+    const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
+
+    if (hasBlend || hasEffects || hasOpacity) {
+        (baseStyle as any).willChange = "transform, opacity";
+        if (hasBlend) {
+            (baseStyle as any).isolation = "isolate";
+        }
+        const currentTransform = (baseStyle as any).transform;
+        const has3DTransform = currentTransform && (
+            currentTransform.includes("translateZ") || 
+            currentTransform.includes("translate3d") || 
+            currentTransform.includes("matrix3d") ||
+            currentTransform.includes("scale3d") ||
+            currentTransform.includes("rotate3d") ||
+            currentTransform.includes("rotateX") ||
+            currentTransform.includes("rotateY")
+        );
+        if (!currentTransform || currentTransform === "none") {
+            (baseStyle as any).transform = "translateZ(0)";
+        } else if (!has3DTransform) {
+            (baseStyle as any).transform = `${currentTransform} translateZ(0)`;
+        }
+    }
+
     const effects = getElementEffects(el);
 
     const clipStyle: React.CSSProperties = {};
