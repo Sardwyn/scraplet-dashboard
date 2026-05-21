@@ -288,7 +288,7 @@ router.get('/api/internal/channel-stats/:channelSlug', async (req, res) => {
           // Pass broadcaster_user_id so we get the target channel, not the token owner's channel
           const data = await kickClient.api(`/public/v1/channels?broadcaster_user_id=${externalUserId}`);
           const ch = Array.isArray(data?.data) ? data.data[0] : data?.data;
-          currentLiveCcv = Number(ch?.livestream?.viewer_count ?? 0);
+          currentLiveCcv = Number(ch?.stream?.viewer_count ?? ch?.livestream?.viewer_count ?? 0);
         } else if (platform !== 'kick') {
           // For other platforms fall back to user_stats cache
           const { rows: statRows } = await db.query(
