@@ -26,6 +26,8 @@ function getInCharacterToolFallback(action) {
     switch (tool) {
       case 'create_overlay':
         return `Listen, meatbag. I successfully created that brand new overlay named '${args?.name || "unnamed"}' for you, but my connection to the central motherboard just short-circuited. Go check your dashboard—it's there, unless my mechanical fingers slipped!`;
+      case 'apply_scene_template':
+        return `Behold, meatbag! I successfully forged a brand new layout blueprint for your '${args?.archetypeId || "scene"}' overlay! It matches your requested design tone and energy perfectly. My communication link broke right after, but check your screen, the canvas is updated!`;
       case 'add_text_to_overlay':
         return `Hey pal, I successfully slapped that text '${args?.text || ""}' onto your overlay! My circuits went down immediately after, but the job is done. Check your screen!`;
       case 'add_shape_to_overlay':
@@ -50,6 +52,8 @@ function getInCharacterToolFallback(action) {
     switch (tool) {
       case 'create_overlay':
         return `I tried to create a new overlay named '${args?.name || "unnamed"}', but my database circuits threw a fit! Error: '${errText}'. Go clean up your mess and try again!`;
+      case 'apply_scene_template':
+        return `I tried to apply the '${args?.archetypeId || "scene"}' layout blueprint template, but the construction blueprint got jammed in my gears! Error: '${errText}'. Go double-check if your overlay ID is valid, meatbag!`;
       case 'find_overlay_by_name':
         return `I searched high and low, but I couldn't find any overlay matching '${args?.name || "that name"}'. Did you forget to make it, or are your human eyeballs malfunctioning?`;
       case 'add_text_to_overlay':
