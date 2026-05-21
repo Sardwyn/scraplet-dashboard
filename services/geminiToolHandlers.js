@@ -901,9 +901,12 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
 
           // Construct the concrete canvas element
           const elId = crypto.randomUUID();
+          let targetType = bp.type;
+          if (bp.type === 'progress_bar') targetType = 'progressBar';
+          if (bp.type === 'progress_ring') targetType = 'progressRing';
           const element = {
             id: elId,
-            type: bp.type,
+            type: targetType,
             name: bp.name,
             x: finalX,
             y: finalY,

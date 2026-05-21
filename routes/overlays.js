@@ -192,6 +192,35 @@ router.get("/overlays/:id/edit", requireAuth, async (req, res, next) => {
 });
 
 
+// TEMPORARY UNSECURED ROUTE FOR DEBUGGING
+router.get("/overlays/:id/edit-unsecured", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    const { rows } = await db.query(
+      `SELECT id, name, slug, public_id, config_json, user_id
+       FROM overlays
+       WHERE id = $1`,
+      [id]
+    );
+    if (!rows.length) return res.sendStatus(404);
+    const overlay = rows[0];
+
+    const { rows: uRows } = await db.query("SELECT * FROM users WHERE id = $1", [overlay.user_id]);
+    const sessionUser = uRows[0] || { id: overlay.user_id, email: "sardwyn@fake.com" };
+
+    res.render("layout", {
+      tabView: "tabs/overlays-edit",
+      currentPage: "overlays",
+      user: sessionUser,
+      overlay: overlay,
+      overlayJson: JSON.stringify(overlay),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 // GET /dashboard/components/:id/edit
 router.get("/components/:id/edit", requireAuth, async (req, res, next) => {
   try {
