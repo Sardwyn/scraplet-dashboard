@@ -156,7 +156,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
       case 'create_overlay': {
         const { name } = args;
         const newPublicId = crypto.randomUUID();
-        const initialJson = { elements: [], timeline: { durationMs: 5000, tracks: [] }, settings: { width: 1920, height: 1080 } };
+        const initialJson = { elements: [], timeline: { durationMs: 5000, tracks: [] }, baseResolution: { width: 1920, height: 1080 }, settings: { width: 1920, height: 1080 } };
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + crypto.randomBytes(3).toString('hex');
         
         const { rows } = await db.query(

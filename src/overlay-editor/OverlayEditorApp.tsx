@@ -1454,7 +1454,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([]);
   }
 
-  const { baseResolution } = config;
+  const baseResolution = config.baseResolution || (config as any).settings || { width: 1920, height: 1080 };
   const timeline = useMemo(() => {
     if (activeEventTimeline) {
       const et = (config as any).eventTimelines?.[activeEventTimeline];
