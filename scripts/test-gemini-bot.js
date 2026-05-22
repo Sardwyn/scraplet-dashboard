@@ -46,12 +46,12 @@ async function getLatestOverlayOrCreate() {
 
   if (rows.length > 0) {
     console.log(`✅ Using existing overlay: "${rows[0].name}" (ID: ${rows[0].id}) for User: ${rows[0].user_id}`);
-    return { ...rows[0], guild_id: "sandbox-test-guild-2222", owner_user_id: rows[0].user_id };
+    return { ...rows[0], guild_id: "1087720283286274059", owner_user_id: rows[0].user_id };
   }
 
   // Create a default sandbox overlay if none exists
   console.log("⚠️ No overlays found in database. Creating a sandbox overlay 'Test Sandbox Overlay'...");
-  const dummyGuild = "sandbox-test-guild-2222";
+  const dummyGuild = "1087720283286274059";
   const dummyOwner = 4; // default admin user_id
   const dummyJson = {
     elements: [
@@ -70,10 +70,10 @@ async function getLatestOverlayOrCreate() {
   };
 
   const { rows: insertRows } = await db.query(
-    `INSERT INTO public.overlay_components (user_id, public_id, name, component_json)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO public.overlays (user_id, public_id, name, config_json, slug)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING id`,
-    [dummyOwner, crypto.randomUUID(), "Test Sandbox Overlay", dummyJson]
+    [dummyOwner, crypto.randomUUID(), "Test Sandbox Overlay", dummyJson, "test-sandbox-overlay-" + crypto.randomBytes(3).toString("hex")]
   );
 
   const dummyId = insertRows[0].id;
