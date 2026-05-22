@@ -110,6 +110,24 @@ export const canvasToolsSchema = {
                     },
                     required: ["color", "position"]
                   }
+                },
+                pattern: { 
+                  type: "STRING", 
+                  enum: ["dot-grid", "scanline", "diagonal-stripe", "noise-grain"],
+                  description: "Optional texture pattern preset to layer inside the fill." 
+                },
+                blendMode: { 
+                  type: "STRING", 
+                  enum: ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"],
+                  description: "Optional CSS blend-mode for patterns." 
+                },
+                patternScale: { 
+                  type: "NUMBER", 
+                  description: "Optional scaling factor for texture pattern (0.1 to 3.0)." 
+                },
+                patternOpacity: { 
+                  type: "NUMBER", 
+                  description: "Optional opacity layer for texture pattern (0.0 to 1.0)." 
                 }
               },
               required: ["type"]
@@ -122,7 +140,23 @@ export const canvasToolsSchema = {
           strokeOpacity: { type: "NUMBER", description: "Opacity of the stroke border, from 0.0 to 1.0." },
           cornerRadiusPx: { type: "INTEGER", description: "Corner radius in pixels." },
           cornerType: { type: "STRING", description: "Corner styling type: 'round', 'bevel', or 'square'.", enum: ["round", "bevel", "square"] },
-          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." }
+          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." },
+          compositionVariant: {
+            type: "STRING",
+            enum: [
+              "standard", 
+              "oblong", 
+              "trapezoid_left", 
+              "trapezoid_right", 
+              "skew", 
+              "capsule", 
+              "preset_cyber_notch", 
+              "preset_tactical_beveled", 
+              "preset_sci_fi_asymmetric", 
+              "preset_organic_wave"
+            ],
+            description: "Optional visual styling/geometric shape composition preset matching active theme structural constraints."
+          }
         },
         required: ["overlayId", "shapeType", "x", "y", "width", "height"]
       }
@@ -187,6 +221,24 @@ export const canvasToolsSchema = {
                     },
                     required: ["color", "position"]
                   }
+                },
+                pattern: { 
+                  type: "STRING", 
+                  enum: ["dot-grid", "scanline", "diagonal-stripe", "noise-grain"],
+                  description: "Optional texture pattern preset to layer inside the fill." 
+                },
+                blendMode: { 
+                  type: "STRING", 
+                  enum: ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"],
+                  description: "Optional CSS blend-mode for patterns." 
+                },
+                patternScale: { 
+                  type: "NUMBER", 
+                  description: "Optional scaling factor for texture pattern (0.1 to 3.0)." 
+                },
+                patternOpacity: { 
+                  type: "NUMBER", 
+                  description: "Optional opacity layer for texture pattern (0.0 to 1.0)." 
                 }
               },
               required: ["type"]
@@ -197,7 +249,23 @@ export const canvasToolsSchema = {
           strokeAlign: { type: "STRING", enum: ["inside", "center", "outside"] },
           strokeOpacity: { type: "NUMBER" },
           borderRadiusPx: { type: "INTEGER" },
-          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." }
+          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." },
+          compositionVariant: {
+            type: "STRING",
+            enum: [
+              "standard", 
+              "oblong", 
+              "trapezoid_left", 
+              "trapezoid_right", 
+              "skew", 
+              "capsule", 
+              "preset_cyber_notch", 
+              "preset_tactical_beveled", 
+              "preset_sci_fi_asymmetric", 
+              "preset_organic_wave"
+            ],
+            description: "Optional visual styling/geometric shape composition preset matching active theme structural constraints."
+          }
         },
         required: ["overlayId", "name", "operation"]
       }
@@ -380,6 +448,82 @@ export const canvasToolsSchema = {
           }
         },
         required: ["overlayId", "archetypeId", "variantId"]
+      }
+    },
+    {
+      name: "add_widget_to_overlay",
+      description: "Procedurally adds any of the 19 high-fidelity interactive stream widgets to the overlay canvas with positional boundaries and custom prop styling configurations.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          overlayId: { type: "STRING", description: "The ID of the overlay to modify." },
+          widgetId: { 
+            type: "STRING", 
+            description: "The unique type identifier of the widget.",
+            enum: [
+              "chat-overlay",
+              "alert-box-widget",
+              "sub-counter",
+              "poll",
+              "countdown",
+              "top-supporters",
+              "media-queue",
+              "viewer-count",
+              "ticker",
+              "event-console-widget",
+              "raffle",
+              "hype-train",
+              "subathon-timer",
+              "tts-player",
+              "emote-counter",
+              "emote-wall",
+              "random-number",
+              "sound-visualizer",
+              "top-donators",
+              "stake-monitor"
+            ]
+          },
+          x: { type: "INTEGER", description: "X coordinate in pixels." },
+          y: { type: "INTEGER", description: "Y coordinate in pixels." },
+          width: { type: "INTEGER", description: "Width in pixels." },
+          height: { type: "INTEGER", description: "Height in pixels." },
+          name: { type: "STRING", description: "Optional custom descriptive name for the canvas node." },
+          propOverrides: {
+            type: "OBJECT",
+            description: "Optional key-value parameters to directly override default styles/behaviours of the widget (e.g., custom fonts, theme colors, limits)."
+          },
+          anchorZone: {
+            type: "STRING",
+            description: "Optional vertical/horizontal layout anchoring stack zone: 'TOP_LEFT', 'TOP_CENTER', 'TOP_RIGHT', 'MIDDLE_LEFT', 'CENTER_HUD', 'MIDDLE_RIGHT', 'BOTTOM_LEFT', 'BOTTOM_CENTER', 'BOTTOM_RIGHT'."
+          }
+        },
+        required: ["overlayId", "widgetId"]
+      }
+    },
+    {
+      name: "add_parametric_effect_to_element",
+      description: "Applies real-time hardware-accelerated parametric visual effects (like lightsaber glows, matrix rain, fire, or scanlines) to any existing element on the canvas.",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          overlayId: { type: "STRING", description: "The ID of the overlay to modify." },
+          elementId: { type: "STRING", description: "The target canvas element's ID." },
+          preset: {
+            type: "STRING",
+            description: "The parametric effect style template to apply.",
+            enum: [
+              "lightsaberBorder", "electricBorder", "strokePulse", "hologramFlicker", 
+              "ripple", "lensFlare", "cornerBrackets", "particleEmitter", 
+              "fireEmitter", "lightningArc", "snowfall", "rain", "motionTrail", 
+              "filmGrain", "tapeNoise"
+            ]
+          },
+          params: {
+            type: "OBJECT",
+            description: "Custom configuration properties specific to the chosen preset (colors, speed, density, opacity)."
+          }
+        },
+        required: ["overlayId", "elementId", "preset"]
       }
     }
   ]

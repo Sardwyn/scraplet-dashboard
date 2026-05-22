@@ -140,6 +140,28 @@ function estimateTextDimensions(text, fontSizePx = 48) {
   return { width, height };
 }
 
+function getValidCompositionVariant(variant, structureId) {
+  if (!variant || variant === 'standard') return 'standard';
+
+  const mapping = {
+    modern_techno: ["standard", "oblong", "trapezoid_left", "trapezoid_right", "skew", "preset_cyber_notch", "preset_tactical_beveled", "preset_sci_fi_asymmetric"],
+    tactical_grid: ["standard", "oblong", "trapezoid_left", "trapezoid_right", "skew", "preset_cyber_notch", "preset_tactical_beveled", "preset_sci_fi_asymmetric"],
+    industrial_heavy: ["standard", "oblong", "trapezoid_left", "trapezoid_right", "skew", "preset_tactical_beveled"],
+    kawaii_soft: ["standard", "oblong", "capsule", "preset_organic_wave"],
+    retro_cabinet: ["standard", "oblong", "capsule", "skew"],
+    minimalist: ["standard", "oblong"],
+    classic_serif: ["standard", "oblong"],
+    organic_hand: ["standard", "oblong", "preset_organic_wave"],
+    pulp_comic: ["standard", "oblong", "skew", "trapezoid_left", "trapezoid_right"]
+  };
+
+  const allowed = mapping[structureId] || ["standard", "oblong"];
+  if (allowed.includes(variant)) {
+    return variant;
+  }
+  return 'standard';
+}
+
 function resolveThemeValue(value, paletteId, structureId, componentId) {
   if (typeof value !== 'string') return value;
   if (!value.startsWith('theme.')) return value;
@@ -1071,7 +1093,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           strokeOpacity,
           cornerRadiusPx,
           cornerType,
-          componentId
+          componentId,
+          compositionVariant
         } = args;
 
         const overlay = await getOverlay(overlayId, guildId);
@@ -1132,6 +1155,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         if (cornerType) {
           baseProps.cornerType = cornerType;
         }
+        if (compositionVariant) {
+          baseProps.compositionVariant = getValidCompositionVariant(compositionVariant, structureId);
+        }
 
         overlay.json.elements.push(baseProps);
         await updateOverlay(overlayId, guildId, overlay.json);
@@ -1155,7 +1181,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           strokeAlign,
           strokeOpacity,
           borderRadiusPx,
-          componentId
+          componentId,
+          compositionVariant
         } = args;
 
         const overlay = await getOverlay(overlayId, guildId);
@@ -1233,6 +1260,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           const radius = Number(resolveThemeValue(borderRadiusPx, paletteId, structureId, componentId)) || 0;
           booleanEl.borderRadiusPx = radius;
           booleanEl.cornerRadiusPx = radius;
+        }
+        if (compositionVariant) {
+          booleanEl.compositionVariant = getValidCompositionVariant(compositionVariant, structureId);
         }
 
         overlay.json.elements.push(booleanEl);
@@ -1718,6 +1748,117 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         overlay.json.elements.push(element);
         await updateOverlay(overlayId, guildId, overlay.json);
         return { success: true, message: `Added lower third banner with title '${title || ""}'` };
+      }
+
+      case 'add_widget_to_overlay': {
+        const { overlayId, widgetId, x, y, width, height, name, propOverrides, anchorZone } = args;
+        const overlay = await getOverlay(overlayId, guildId);
+        if (!overlay) return { error: `Overlay not found` };
+
+        // Determine sensible default dimensions based on widgetId if omitted
+        let finalWidth = width;
+        let finalHeight = height;
+        
+        if (!finalWidth || !finalHeight) {
+          if (widgetId === 'chat-overlay') {
+            finalWidth = finalWidth || 420;
+            finalHeight = finalHeight || 650;
+          } else if (widgetId === 'ticker') {
+            finalWidth = finalWidth || 1920;
+            finalHeight = finalHeight || 60;
+          } else if (widgetId === 'alert-box-widget') {
+            finalWidth = finalWidth || 800;
+            finalHeight = finalHeight || 500;
+          } else if (widgetId === 'subathon-timer' || widgetId === 'countdown') {
+            finalWidth = finalWidth || 360;
+            finalHeight = finalHeight || 120;
+          } else if (widgetId === 'viewer-count') {
+            finalWidth = finalWidth || 250;
+            finalHeight = finalHeight || 80;
+          } else if (widgetId === 'poll') {
+            finalWidth = finalWidth || 400;
+            finalHeight = finalHeight || 300;
+          } else if (widgetId === 'sub-counter') {
+            finalWidth = finalWidth || 380;
+            finalHeight = finalHeight || 120;
+          } else {
+            finalWidth = finalWidth || 400;
+            finalHeight = finalHeight || 300;
+          }
+        }
+
+        let finalX = x !== undefined ? x : null;
+        let finalY = y !== undefined ? y : null;
+
+        if (anchorZone) {
+          // Calculate layout position using the dynamic stack zone
+          const placement = resolveAnchorPlacement(overlay.json.elements, anchorZone, finalWidth, finalHeight);
+          finalX = placement.x;
+          finalY = placement.y;
+          finalWidth = placement.width;
+          finalHeight = placement.height;
+        } else {
+          // Standard center/arbitrary fallback positioning
+          if (finalX === null) {
+            finalX = Math.max(0, Math.floor((1920 - finalWidth) / 2));
+          }
+          if (finalY === null) {
+            finalY = Math.max(0, Math.floor((1080 - finalHeight) / 2));
+          }
+        }
+
+        const elId = crypto.randomUUID();
+        const element = {
+          id: elId,
+          type: 'widget',
+          widgetId: widgetId,
+          name: name || `${widgetId.charAt(0).toUpperCase() + widgetId.slice(1).replace(/-/g, ' ')}`,
+          x: finalX,
+          y: finalY,
+          width: finalWidth,
+          height: finalHeight,
+          visible: true,
+          locked: false,
+          liveDataSource: { sseEventType: null },
+          propOverrides: propOverrides || {}
+        };
+
+        const structureId = overlay.json.structureId;
+        const paletteId = overlay.json.paletteId;
+        if (structureId) element.structureId = structureId;
+        if (paletteId) element.paletteId = paletteId;
+        if (anchorZone) element.anchorZone = anchorZone;
+
+        overlay.json.elements.push(element);
+        await updateOverlay(overlayId, guildId, overlay.json);
+        return { success: true, message: `Added widget '${element.name}' to the canvas.` };
+      }
+
+      case 'add_parametric_effect_to_element': {
+        const { overlayId, elementId, preset, params } = args;
+        const overlay = await getOverlay(overlayId, guildId);
+        if (!overlay) return { error: `Overlay not found` };
+
+        const element = overlay.json.elements.find(el => el.id === elementId);
+        if (!element) return { error: `Element with ID '${elementId}' not found in overlay` };
+
+        if (!element.effects) {
+          element.effects = [];
+        }
+
+        const effectId = crypto.randomUUID();
+        const newEffect = {
+          id: effectId,
+          type: 'parametric',
+          preset: preset,
+          enabled: true,
+          params: params || {}
+        };
+
+        element.effects.push(newEffect);
+
+        await updateOverlay(overlayId, guildId, overlay.json);
+        return { success: true, message: `Successfully applied parametric effect '${preset}' to element '${element.name || element.id}'` };
       }
 
       case 'apply_scene_template': {
