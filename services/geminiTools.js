@@ -55,15 +55,125 @@ export const canvasToolsSchema = {
         type: "OBJECT",
         properties: {
           overlayId: { type: "STRING" },
+          name: { type: "STRING", description: "Optional name of the shape element." },
           shapeType: { type: "STRING", description: "Must be 'box' or 'shape'" },
           shape: { type: "STRING", description: "If shapeType is 'shape', specify 'rect', 'circle', 'triangle', 'star', etc." },
-          backgroundColor: { type: "STRING", description: "Hex color code." },
+          backgroundColor: { type: "STRING", description: "Hex color code or theme token reference (e.g., 'theme.panelColor')." },
           x: { type: "INTEGER" },
           y: { type: "INTEGER" },
           width: { type: "INTEGER" },
-          height: { type: "INTEGER" }
+          height: { type: "INTEGER" },
+          fills: {
+            type: "ARRAY",
+            description: "Optional advanced fill configurations (solids or linear/radial gradients). Can use theme variable references like 'theme.bgColor'.",
+            items: {
+              type: "OBJECT",
+              properties: {
+                type: { type: "STRING", description: "Fill type: 'solid', 'linear', or 'radial'." },
+                color: { type: "STRING", description: "Hex color or token string for solid fills." },
+                opacity: { type: "NUMBER", description: "Fill opacity (0.0 to 1.0)." },
+                angleDeg: { type: "NUMBER", description: "Angle in degrees for gradient fills." },
+                stops: {
+                  type: "ARRAY",
+                  description: "Gradient stops array.",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      color: { type: "STRING", description: "Hex color code or theme reference." },
+                      position: { type: "NUMBER", description: "Stop position (0.0 to 1.0)." }
+                    },
+                    required: ["color", "position"]
+                  }
+                }
+              },
+              required: ["type"]
+            }
+          },
+          strokeColor: { type: "STRING", description: "Border stroke hex color or theme token, e.g. 'theme.accentColor'." },
+          strokeWidthPx: { type: "INTEGER", description: "Border stroke thickness in pixels." },
+          strokeAlign: { type: "STRING", description: "Stroke alignment relative to shape edge: 'inside', 'center', or 'outside'.", enum: ["inside", "center", "outside"] },
+          strokeDash: { type: "STRING", description: "Border style: 'solid', 'dashed', or 'dotted'." },
+          strokeOpacity: { type: "NUMBER", description: "Opacity of the stroke border, from 0.0 to 1.0." },
+          cornerRadiusPx: { type: "INTEGER", description: "Corner radius in pixels." },
+          cornerType: { type: "STRING", description: "Corner styling type: 'round', 'bevel', or 'square'.", enum: ["round", "bevel", "square"] },
+          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." }
         },
         required: ["overlayId", "shapeType", "x", "y", "width", "height"]
+      }
+    },
+    {
+      name: "add_boolean_shape_to_overlay",
+      description: "Creates a composite/hollow shape on the canvas using boolean operations (e.g., subtraction to create a camera frame).",
+      parameters: {
+        type: "OBJECT",
+        properties: {
+          overlayId: { type: "STRING", description: "The ID of the overlay to modify." },
+          name: { type: "STRING", description: "Descriptive name for the composite shape, e.g. 'Camera Frame'." },
+          operation: { type: "STRING", description: "The boolean combination operation.", enum: ["union", "subtract", "intersect", "exclude"] },
+          childIds: {
+            type: "ARRAY",
+            description: "Optional array of existing element IDs to combine.",
+            items: { type: "STRING" }
+          },
+          childPrimitives: {
+            type: "ARRAY",
+            description: "Optional array of inlined shape primitives to construct and combine.",
+            items: {
+              type: "OBJECT",
+              properties: {
+                name: { type: "STRING" },
+                type: { type: "STRING", description: "Usually 'shape' or 'mask' or 'box'." },
+                shape: { type: "STRING", description: "Shape type: 'rect', 'circle', etc." },
+                shapeType: { type: "STRING", description: "Element type: 'shape' or 'box' or 'mask'." },
+                x: { type: "INTEGER" },
+                y: { type: "INTEGER" },
+                width: { type: "INTEGER" },
+                height: { type: "INTEGER" },
+                x_offset: { type: "INTEGER", description: "Offset x coordinate inside the parent frame." },
+                y_offset: { type: "INTEGER", description: "Offset y coordinate inside the parent frame." },
+                operation: { type: "STRING", description: "Boolean operation for this child: 'union', 'subtract', etc." },
+                borderRadiusPx: { type: "INTEGER" }
+              },
+              required: ["shape", "width", "height"]
+            }
+          },
+          x: { type: "INTEGER" },
+          y: { type: "INTEGER" },
+          width: { type: "INTEGER" },
+          height: { type: "INTEGER" },
+          fills: {
+            type: "ARRAY",
+            description: "Optional fills for the resulting composite shape.",
+            items: {
+              type: "OBJECT",
+              properties: {
+                type: { type: "STRING" },
+                color: { type: "STRING" },
+                opacity: { type: "NUMBER" },
+                angleDeg: { type: "NUMBER" },
+                stops: {
+                  type: "ARRAY",
+                  items: {
+                    type: "OBJECT",
+                    properties: {
+                      color: { type: "STRING" },
+                      position: { type: "NUMBER" }
+                    },
+                    required: ["color", "position"]
+                  }
+                }
+              },
+              required: ["type"]
+            }
+          },
+          strokeColor: { type: "STRING" },
+          strokeWidthPx: { type: "INTEGER" },
+          strokeAlign: { type: "STRING", enum: ["inside", "center", "outside"] },
+          strokeOpacity: { type: "NUMBER" },
+          borderRadiusPx: { type: "INTEGER" },
+          componentId: { type: "STRING", description: "Optional canonical component ID reference (e.g., 'webcam_frame_16_9') to fetch component-specific theme overrides." }
+        },
+        required: ["overlayId", "name", "operation"]
       }
     },
     {

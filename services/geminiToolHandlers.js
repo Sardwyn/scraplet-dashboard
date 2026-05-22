@@ -140,6 +140,357 @@ function estimateTextDimensions(text, fontSizePx = 48) {
   return { width, height };
 }
 
+function resolveThemeValue(value, paletteId, structureId, componentId) {
+  if (typeof value !== 'string') return value;
+  if (!value.startsWith('theme.')) return value;
+
+  const key = value.substring(6); // e.g., 'bgColor', 'borderRadiusPx'
+
+  // 1. Try component-specific override in active palette
+  if (componentId && paletteId && tokens.palettes[paletteId]) {
+    const pal = tokens.palettes[paletteId];
+    if (pal.components && pal.components[componentId] && pal.components[componentId][key] !== undefined) {
+      return pal.components[componentId][key];
+    }
+  }
+
+  // 2. Try component-specific override in active structure
+  if (componentId && structureId && tokens.structures[structureId]) {
+    const struct = tokens.structures[structureId];
+    if (struct.components && struct.components[componentId] && struct.components[componentId][key] !== undefined) {
+      return struct.components[componentId][key];
+    }
+  }
+
+  // 3. Try to find in standard palette
+  if (paletteId && tokens.palettes[paletteId]) {
+    const pal = tokens.palettes[paletteId];
+    if (pal[key] !== undefined) return pal[key];
+  }
+  
+  // 4. Try to find in standard structure
+  if (structureId && tokens.structures[structureId]) {
+    const struct = tokens.structures[structureId];
+    if (struct[key] !== undefined) return struct[key];
+  }
+
+  // Fallback to carbon_slate and minimalist
+  const fallbackPal = tokens.palettes['carbon_slate'] || {};
+  const fallbackStruct = tokens.structures['minimalist'] || {};
+  if (fallbackPal[key] !== undefined) return fallbackPal[key];
+  if (fallbackStruct[key] !== undefined) return fallbackStruct[key];
+
+  return value;
+}
+
+function resolveThemeReferences(obj, paletteId, structureId, componentId) {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') {
+    return resolveThemeValue(obj, paletteId, structureId, componentId);
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => resolveThemeReferences(item, paletteId, structureId, componentId));
+  }
+  if (typeof obj === 'object') {
+    const resolved = {};
+    for (const [key, val] of Object.entries(obj)) {
+      resolved[key] = resolveThemeReferences(val, paletteId, structureId, componentId);
+    }
+    return resolved;
+  }
+  return obj;
+}
+
+function resolveVisualTokens(element, paletteId, structureId, paletteToken, structToken) {
+  if (!paletteToken) return;
+
+  const nameLower = (element.name || "").toLowerCase();
+  const isBackground = nameLower.includes("wallpaper") || nameLower.includes("backdrop") || nameLower.includes("background") || (element.width >= 1920 && element.height >= 1080);
+  const isShape = element.type === "shape";
+
+  // Initialize effects array if not present
+  if (!element.effects) {
+    element.effects = [];
+  }
+
+  // Handle Palette Custom configurations first
+  if (paletteToken.fills && (isShape || isBackground)) {
+    element.fills = JSON.parse(JSON.stringify(paletteToken.fills));
+  }
+  if (paletteToken.effects) {
+    element.effects.push(...JSON.parse(JSON.stringify(paletteToken.effects)));
+  }
+
+  // Programmatic mappings for high-fidelity aesthetics
+  if (!element.fills || element.fills.length === 0) {
+    if (isBackground) {
+      if (paletteId === "neon_sunset" || paletteId === "sunset_vapor") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 135,
+            stops: [
+              { color: "#1e1b4b", position: 0 },
+              { color: "#db2777", position: 1 }
+            ]
+          }
+        ];
+      } else if (paletteId === "abyssal_glow") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 180,
+            stops: [
+              { color: "#020617", position: 0 },
+              { color: "#0f172a", position: 1 }
+            ]
+          }
+        ];
+      } else if (paletteId === "matrix_hacker") {
+        element.fills = [
+          {
+            type: "solid",
+            color: "#000000",
+            opacity: 1
+          }
+        ];
+      } else if (paletteId === "luxury_gold") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 135,
+            stops: [
+              { color: "#0a0b1e", position: 0 },
+              { color: "#1e1b4b", position: 1 }
+            ]
+          }
+        ];
+      } else if (paletteId === "midnight_royal") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 135,
+            stops: [
+              { color: "#090514", position: 0 },
+              { color: "#2e1065", position: 1 }
+            ]
+          }
+        ];
+      } else if (paletteId === "glacial_frost") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 135,
+            stops: [
+              { color: "#f0f9ff", position: 0 },
+              { color: "#e0f2fe", position: 1 }
+            ]
+          }
+        ];
+      } else {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 1,
+            angleDeg: 180,
+            stops: [
+              { color: paletteToken.bgColor || "#09090b", position: 0 },
+              { color: paletteToken.panelColor || "#27272a", position: 1 }
+            ]
+          }
+        ];
+      }
+    } else if (isShape && (element.shapeType === "box" || element.shape === "rect")) {
+      if (paletteId === "neon_sunset") {
+        element.fills = [
+          {
+            type: "linear",
+            opacity: 0.85,
+            angleDeg: 90,
+            stops: [
+              { color: "#1e1b4b", position: 0 },
+              { color: "#2e1065", position: 1 }
+            ]
+          }
+        ];
+      } else if (paletteId === "abyssal_glow") {
+        element.fills = [
+          {
+            type: "solid",
+            color: "#0f172a",
+            opacity: 0.9
+          }
+        ];
+      } else if (paletteId === "matrix_hacker") {
+        element.fills = [
+          {
+            type: "solid",
+            color: "#052e16",
+            opacity: 0.85
+          }
+        ];
+      } else if (paletteId === "luxury_gold") {
+        element.fills = [
+          {
+            type: "solid",
+            color: "#1e1b4b",
+            opacity: 0.92
+          }
+        ];
+      } else if (paletteId === "glacial_frost") {
+        element.fills = [
+          {
+            type: "solid",
+            color: "rgba(255,255,255,0.45)",
+            opacity: 0.8
+          }
+        ];
+      } else {
+        element.fills = [
+          {
+            type: "solid",
+            color: paletteToken.panelColor || "#27272a",
+            opacity: paletteToken.bgOpacity !== undefined ? paletteToken.bgOpacity : 0.9
+          }
+        ];
+      }
+    }
+  }
+
+  // Inject beautiful theme effects (like outer glows and parametric sheen/sweeps)
+  if (isShape && (element.shapeType === "box" || element.shape === "rect") && !isBackground) {
+    if (paletteId === "neon_sunset") {
+      element.effects = element.effects.filter(e => e.type !== "outerGlow" && e.preset !== "gradientSweep");
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "outerGlow",
+        color: "#db2777",
+        blur: 15,
+        spread: 3,
+        enabled: true
+      });
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "parametric",
+        preset: "gradientSweep",
+        enabled: true,
+        duration: 2500,
+        params: {
+          color: "#ffffff",
+          width: 0.35,
+          angle: 45,
+          speed: 1.2,
+          opacity: 0.4,
+          repeat: true
+        }
+      });
+
+      element.strokeColor = "#db2777";
+      element.strokeWidthPx = 2;
+      element.strokeOpacity = 0.9;
+      element.strokeAlign = "inside";
+      
+      if (element.style) {
+        element.style.borderColor = "#db2777";
+        element.style.borderWidthPx = 2;
+        element.style.strokeAlign = "inside";
+      }
+    } else if (paletteId === "abyssal_glow") {
+      element.effects = element.effects.filter(e => e.type !== "outerGlow");
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "outerGlow",
+        color: "#14b8a6",
+        blur: 15,
+        spread: 2,
+        enabled: true
+      });
+      element.strokeColor = "#14b8a6";
+      element.strokeWidthPx = 2;
+      element.strokeOpacity = 0.95;
+      element.strokeAlign = "inside";
+
+      if (element.style) {
+        element.style.borderColor = "#14b8a6";
+        element.style.borderWidthPx = 2;
+        element.style.strokeAlign = "inside";
+      }
+    } else if (paletteId === "matrix_hacker") {
+      element.effects = element.effects.filter(e => e.type !== "outerGlow");
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "outerGlow",
+        color: "#22c55e",
+        blur: 10,
+        spread: 1,
+        enabled: true
+      });
+      element.strokeColor = "#22c55e";
+      element.strokeWidthPx = 2;
+      element.strokeOpacity = 0.9;
+      element.strokeDash = [4, 4];
+      element.strokeAlign = "inside";
+
+      if (element.style) {
+        element.style.borderColor = "#22c55e";
+        element.style.borderWidthPx = 2;
+        element.style.strokeDash = [4, 4];
+        element.style.strokeAlign = "inside";
+      }
+    } else if (paletteId === "luxury_gold") {
+      element.effects = element.effects.filter(e => e.type !== "dropShadow");
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "dropShadow",
+        color: "rgba(251, 191, 36, 0.45)",
+        blur: 12,
+        x: 0,
+        y: 4,
+        enabled: true
+      });
+      element.strokeColor = "#fbbf24";
+      element.strokeWidthPx = 1.5;
+      element.strokeOpacity = 0.9;
+      element.strokeAlign = "inside";
+
+      if (element.style) {
+        element.style.borderColor = "#fbbf24";
+        element.style.borderWidthPx = 1.5;
+        element.style.strokeAlign = "inside";
+      }
+    } else if (paletteId === "sunset_vapor") {
+      element.effects = element.effects.filter(e => e.type !== "outerGlow");
+      element.effects.push({
+        id: crypto.randomUUID(),
+        type: "outerGlow",
+        color: "#fb7185",
+        blur: 12,
+        spread: 2,
+        enabled: true
+      });
+      element.strokeColor = "#fb7185";
+      element.strokeWidthPx = 2;
+      element.strokeOpacity = 0.9;
+      element.strokeAlign = "inside";
+
+      if (element.style) {
+        element.style.borderColor = "#fb7185";
+        element.style.borderWidthPx = 2;
+        element.style.strokeAlign = "inside";
+      }
+    }
+  }
+
+  if (element.effects && element.effects.length === 0) {
+    delete element.effects;
+  }
+}
+
 function getDominantTheme(elements) {
   const theme = {
     fontFamily: 'Inter',
@@ -324,9 +675,32 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
       }
 
       case 'add_shape_to_overlay': {
-        const { overlayId, shapeType, shape, backgroundColor, x, y, width, height } = args;
+        const {
+          overlayId,
+          name,
+          shapeType,
+          shape,
+          backgroundColor,
+          x,
+          y,
+          width,
+          height,
+          fills,
+          strokeColor,
+          strokeWidthPx,
+          strokeAlign,
+          strokeDash,
+          strokeOpacity,
+          cornerRadiusPx,
+          cornerType,
+          componentId
+        } = args;
+
         const overlay = await getOverlay(overlayId, guildId);
         if (!overlay) return { error: `Overlay not found` };
+
+        const paletteId = overlay.json.paletteId;
+        const structureId = overlay.json.structureId;
 
         const elId = crypto.randomUUID();
         const baseProps = {
@@ -337,18 +711,155 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           visible: true
         };
 
+        if (name) {
+          baseProps.name = name;
+        }
+
         if (shapeType === 'box') {
-          baseProps.backgroundColor = backgroundColor || '#ff0000';
+          baseProps.backgroundColor = resolveThemeValue(backgroundColor, paletteId, structureId, componentId) || '#ff0000';
           baseProps.borderRadiusPx = 8;
         } else if (shapeType === 'shape') {
           baseProps.shape = shape || 'rect';
-          baseProps.fillColor = backgroundColor || '#ff0000';
+          baseProps.fillColor = resolveThemeValue(backgroundColor, paletteId, structureId, componentId) || '#ff0000';
           baseProps.fillOpacity = 1;
+        }
+
+        // Apply advanced properties and theme variable resolutions
+        if (fills) {
+          baseProps.fills = resolveThemeReferences(fills, paletteId, structureId, componentId);
+        }
+        if (strokeColor) {
+          baseProps.strokeColor = resolveThemeValue(strokeColor, paletteId, structureId, componentId);
+        }
+        if (strokeWidthPx !== undefined) {
+          baseProps.strokeWidthPx = Number(resolveThemeValue(strokeWidthPx, paletteId, structureId, componentId)) || 0;
+        }
+        if (strokeAlign) {
+          baseProps.strokeAlign = strokeAlign;
+        }
+        if (strokeDash) {
+          if (strokeDash === 'dashed') baseProps.strokeDash = [8, 4];
+          else if (strokeDash === 'dotted') baseProps.strokeDash = [2, 2];
+          else if (strokeDash === 'solid') baseProps.strokeDash = [];
+          else if (Array.isArray(strokeDash)) baseProps.strokeDash = strokeDash;
+        }
+        if (strokeOpacity !== undefined) {
+          baseProps.strokeOpacity = Number(resolveThemeValue(strokeOpacity, paletteId, structureId, componentId)) || 1;
+        }
+        if (cornerRadiusPx !== undefined) {
+          const radius = Number(resolveThemeValue(cornerRadiusPx, paletteId, structureId, componentId)) || 0;
+          baseProps.borderRadiusPx = radius;
+          baseProps.cornerRadiusPx = radius;
+        }
+        if (cornerType) {
+          baseProps.cornerType = cornerType;
         }
 
         overlay.json.elements.push(baseProps);
         await updateOverlay(overlayId, guildId, overlay.json);
-        return { success: true, message: `Added ${shapeType}` };
+        return { success: true, message: `Added shape: ${name || shapeType}` };
+      }
+
+      case 'add_boolean_shape_to_overlay': {
+        const {
+          overlayId,
+          name,
+          operation,
+          childIds,
+          childPrimitives,
+          x,
+          y,
+          width,
+          height,
+          fills,
+          strokeColor,
+          strokeWidthPx,
+          strokeAlign,
+          strokeOpacity,
+          borderRadiusPx,
+          componentId
+        } = args;
+
+        const overlay = await getOverlay(overlayId, guildId);
+        if (!overlay) return { error: `Overlay not found` };
+
+        const paletteId = overlay.json.paletteId;
+        const structureId = overlay.json.structureId;
+
+        const resolvedChildIds = [];
+        if (childIds && childIds.length > 0) {
+          resolvedChildIds.push(...childIds);
+        }
+
+        if (childPrimitives && childPrimitives.length > 0) {
+          for (const prim of childPrimitives) {
+            const childId = crypto.randomUUID();
+            resolvedChildIds.push(childId);
+
+            const childX = (x || 0) + (prim.x_offset !== undefined ? prim.x_offset : (prim.x || 0));
+            const childY = (y || 0) + (prim.y_offset !== undefined ? prim.y_offset : (prim.y || 0));
+
+            const childEl = {
+              id: childId,
+              type: prim.shapeType || prim.type || 'shape',
+              name: prim.name || `Child of ${name}`,
+              shape: prim.shape || 'rect',
+              x: childX,
+              y: childY,
+              width: prim.width || 100,
+              height: prim.height || 100,
+              locked: false,
+              visible: false
+            };
+
+            if (prim.borderRadiusPx !== undefined) {
+              const radius = Number(resolveThemeValue(prim.borderRadiusPx, paletteId, structureId, componentId)) || 0;
+              childEl.borderRadiusPx = radius;
+              childEl.cornerRadiusPx = radius;
+            }
+
+            overlay.json.elements.push(childEl);
+          }
+        }
+
+        const booleanEl = {
+          id: crypto.randomUUID(),
+          type: 'boolean',
+          name: name,
+          operation: operation || 'subtract',
+          childIds: resolvedChildIds,
+          x: x || 0,
+          y: y || 0,
+          width: width || 360,
+          height: height || 240,
+          locked: false,
+          visible: true
+        };
+
+        if (fills) {
+          booleanEl.fills = resolveThemeReferences(fills, paletteId, structureId, componentId);
+        }
+        if (strokeColor) {
+          booleanEl.strokeColor = resolveThemeValue(strokeColor, paletteId, structureId, componentId);
+        }
+        if (strokeWidthPx !== undefined) {
+          booleanEl.strokeWidthPx = Number(resolveThemeValue(strokeWidthPx, paletteId, structureId, componentId)) || 0;
+        }
+        if (strokeAlign) {
+          booleanEl.strokeAlign = strokeAlign;
+        }
+        if (strokeOpacity !== undefined) {
+          booleanEl.strokeOpacity = Number(resolveThemeValue(strokeOpacity, paletteId, structureId, componentId)) || 1;
+        }
+        if (borderRadiusPx !== undefined) {
+          const radius = Number(resolveThemeValue(borderRadiusPx, paletteId, structureId, componentId)) || 0;
+          booleanEl.borderRadiusPx = radius;
+          booleanEl.cornerRadiusPx = radius;
+        }
+
+        overlay.json.elements.push(booleanEl);
+        await updateOverlay(overlayId, guildId, overlay.json);
+        return { success: true, message: `Added composite boolean shape: ${name}` };
       }
 
       case 'apply_theme_to_canvas': {
@@ -394,6 +905,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           resVariant = struct.variant;
         }
 
+        const palToken = (paletteId && tokens.palettes[paletteId]) ? tokens.palettes[paletteId] : null;
+        const structToken = (structureId && tokens.structures[structureId]) ? tokens.structures[structureId] : null;
+
         for (const el of overlay.json.elements) {
           if (el.type === 'text') {
             if (resTextColor) el.color = resTextColor;
@@ -436,6 +950,15 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             }
             if (structureId) el.structureId = structureId;
             if (paletteId) el.paletteId = paletteId;
+          }
+
+          // Apply rich styling from the skin/bones tokens dynamically
+          const elPaletteId = paletteId || el.paletteId;
+          const elStructureId = structureId || el.structureId;
+          const elPalToken = elPaletteId ? (tokens.palettes[elPaletteId] || palToken) : palToken;
+          const elStructToken = elStructureId ? (tokens.structures[elStructureId] || structToken) : structToken;
+          if (elPaletteId && elPalToken) {
+            resolveVisualTokens(el, elPaletteId, elStructureId, elPalToken, elStructToken);
           }
         }
 
@@ -896,20 +1419,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         }
 
         // 4. Synthesize styles from design tokens with intent overrides
-        const finalFont = structToken.fontFamily;
-        const finalRadius = globalRadiusOverride !== null ? globalRadiusOverride : structToken.borderRadiusPx;
-        const finalBorderWidth = borderWidthOverride !== null ? borderWidthOverride : structToken.borderWidthPx;
-        const finalBorderStyle = structToken.borderStyle;
-        const finalPadding = Math.round(structToken.paddingPx * spacingMultiplier);
-
-        const activeColors = {
-          bgColor: paletteToken.bgColor,
-          panelColor: paletteToken.panelColor,
-          accentColor: paletteToken.accentColor,
-          textColor: paletteToken.textColor,
-          textMuted: paletteToken.textMuted,
-          bgOpacity: paletteToken.bgOpacity
-        };
+        // (Moved inside the element blueprint loop below to support per-element componentId overrides)
 
         // 5. Generate and composite blueprint elements
         for (const bp of variant.elements) {
@@ -966,14 +1476,38 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           }
 
 
+          const compId = bp.componentId || null;
+
+          const elemFont = resolveThemeValue("theme.fontFamily", pId, sId, compId);
+          const elemRadius = globalRadiusOverride !== null ? globalRadiusOverride : resolveThemeValue("theme.borderRadiusPx", pId, sId, compId);
+          const elemBorderWidth = borderWidthOverride !== null ? borderWidthOverride : resolveThemeValue("theme.borderWidthPx", pId, sId, compId);
+          const elemBorderStyle = resolveThemeValue("theme.borderStyle", pId, sId, compId);
+          const elemPadding = Math.round(resolveThemeValue("theme.paddingPx", pId, sId, compId) * spacingMultiplier);
+
+          const elemColors = {
+            bgColor: resolveThemeValue("theme.bgColor", pId, sId, compId),
+            panelColor: resolveThemeValue("theme.panelColor", pId, sId, compId),
+            accentColor: resolveThemeValue("theme.accentColor", pId, sId, compId),
+            textColor: resolveThemeValue("theme.textColor", pId, sId, compId),
+            textMuted: resolveThemeValue("theme.textMuted", pId, sId, compId),
+            bgOpacity: resolveThemeValue("theme.bgOpacity", pId, sId, compId)
+          };
+
           // Resolve visual keys (map keys to token values if dynamic)
           const resolvedStyles = { ...bp.style };
           for (const key of Object.keys(bp.style || {})) {
             if (key.endsWith('Key')) {
               const targetProp = key.slice(0, -3); // e.g. "backgroundColor"
               const tokenColorKey = bp.style[key]; // e.g. "bgColor"
-              resolvedStyles[targetProp] = activeColors[tokenColorKey] || tokenColorKey;
+              resolvedStyles[targetProp] = elemColors[tokenColorKey] || tokenColorKey;
               delete resolvedStyles[key]; // remove the Key suffix property
+            }
+          }
+
+          // If some styling properties are explicit theme paths, resolve them
+          for (const [key, val] of Object.entries(resolvedStyles)) {
+            if (typeof val === 'string' && val.startsWith('theme.')) {
+              resolvedStyles[key] = resolveThemeValue(val, pId, sId, compId);
             }
           }
 
@@ -990,6 +1524,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             y: finalY,
             width: w,
             height: h,
+            componentId: compId,
             visible: true,
             locked: false
           };
@@ -998,18 +1533,18 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           if (bp.type === 'shape') {
             element.shapeType = resolvedStyles.shapeType || 'box';
             element.shape = resolvedStyles.shape || 'rect';
-            element.backgroundColor = resolvedStyles.backgroundColor || activeColors.panelColor;
+            element.backgroundColor = resolvedStyles.backgroundColor || elemColors.panelColor;
             element.style = {
-              borderRadiusPx: finalRadius,
-              borderWidthPx: finalBorderWidth,
-              borderStyle: finalBorderStyle,
-              borderColor: resolvedStyles.borderColor || activeColors.accentColor,
-              bgOpacity: activeColors.bgOpacity
+              borderRadiusPx: elemRadius,
+              borderWidthPx: elemBorderWidth,
+              borderStyle: elemBorderStyle,
+              borderColor: resolvedStyles.borderColor || elemColors.accentColor,
+              bgOpacity: elemColors.bgOpacity
             };
           } else if (bp.type === 'text') {
             element.text = resolvedStyles.text || bp.name;
-            element.fontFamily = finalFont;
-            element.color = resolvedStyles.color || activeColors.textColor;
+            element.fontFamily = elemFont;
+            element.color = resolvedStyles.color || elemColors.textColor;
             element.fontSizePx = resolvedStyles.fontSizePx || 32;
           } else if (bp.type === 'widget') {
             element.widgetId = bp.widgetId;
@@ -1021,9 +1556,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             element.bindingFallback = resolvedStyles.bindingFallback !== undefined ? resolvedStyles.bindingFallback : 0.5;
             element.direction = resolvedStyles.direction || 'ltr';
             element.style = {
-              borderRadiusPx: finalRadius,
-              backgroundColor: resolvedStyles.backgroundColor || activeColors.panelColor,
-              fillColor: resolvedStyles.fillColor || activeColors.accentColor
+              borderRadiusPx: elemRadius,
+              backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
+              fillColor: resolvedStyles.fillColor || elemColors.accentColor
             };
           } else if (bp.type === 'progress_ring') {
             element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
@@ -1032,8 +1567,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             element.strokeWidthPx = resolvedStyles.strokeWidthPx || 12;
             element.startAngleDeg = resolvedStyles.startAngleDeg !== undefined ? resolvedStyles.startAngleDeg : -90;
             element.style = {
-              backgroundColor: resolvedStyles.backgroundColor || activeColors.panelColor,
-              fillColor: resolvedStyles.fillColor || activeColors.accentColor
+              backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
+              fillColor: resolvedStyles.fillColor || elemColors.accentColor
             };
           } else if (bp.type === 'lower_third') {
             element.title = resolvedStyles.title || bp.name;
@@ -1045,14 +1580,14 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             };
             element.style = {
               variant: resolvedStyles.variant || 'solid',
-              paddingPx: finalPadding,
-              cornerRadiusPx: finalRadius,
-              bgColor: resolvedStyles.bgColor || activeColors.panelColor,
-              bgOpacity: resolvedStyles.bgOpacity !== undefined ? resolvedStyles.bgOpacity : activeColors.bgOpacity,
-              accentColor: resolvedStyles.accentColor || activeColors.accentColor,
-              fontFamily: finalFont,
-              titleColor: activeColors.textColor,
-              subtitleColor: activeColors.textMuted,
+              paddingPx: elemPadding,
+              cornerRadiusPx: elemRadius,
+              bgColor: resolvedStyles.bgColor || elemColors.panelColor,
+              bgOpacity: resolvedStyles.bgOpacity !== undefined ? resolvedStyles.bgOpacity : elemColors.bgOpacity,
+              accentColor: resolvedStyles.accentColor || elemColors.accentColor,
+              fontFamily: elemFont,
+              titleColor: elemColors.textColor,
+              subtitleColor: elemColors.textMuted,
               titleSizePx: 36,
               subtitleSizePx: 22,
               titleWeight: 'bold'
@@ -1065,7 +1600,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
               element.style.transition = transitionStyle;
             }
             if (pulsingGlow) {
-              element.style.boxShadow = `0 0 15px ${activeColors.accentColor}`;
+              element.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
               element.style.animation = 'pulse 2s infinite ease-in-out';
             }
           }
@@ -1074,6 +1609,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           element.structureId = sId;
           element.paletteId = pId;
           element.anchorZone = bp.anchorZone;
+
+          resolveVisualTokens(element, pId, sId, paletteToken, structToken);
 
           overlay.json.elements.push(element);
         }

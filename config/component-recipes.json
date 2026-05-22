@@ -1,0 +1,562 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scraplet Component Recipes",
+  "description": "Exhaustive recipes mapping Scraplet Vector Components to native vector primitives, styled via design tokens.",
+  "components": {
+    "background_layer": {
+      "id": "background_layer",
+      "name": "Background Layer",
+      "category": "Structural Components",
+      "description": "Full canvas backdrop spanning the entire 1920x1080 stream workspace",
+      "primitives": [
+        {
+          "name": "Backdrop Wallpaper",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "fills": [
+            {
+              "type": "linear",
+              "angleDeg": 135,
+              "stops": [
+                { "color": "theme.bgColor", "position": 0 },
+                { "color": "theme.panelColor", "position": 1 }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "backdrop_plate": {
+      "id": "backdrop_plate",
+      "name": "Backdrop Plate",
+      "category": "Structural Components",
+      "description": "Modular container panel with custom background fills, corner curves, and border boundaries to hold text and content",
+      "primitives": [
+        {
+          "name": "Panel Background",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "webcam_frame_16_9": {
+      "id": "webcam_frame_16_9",
+      "name": "Webcam Frame (16:9)",
+      "category": "Structural Components",
+      "description": "Standard 16:9 webcam overlay border constructed by subtracting a viewing aperture from an outer plate",
+      "primitives": [
+        {
+          "name": "Camera Border Outline",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "width": 360,
+          "height": 230,
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        },
+        {
+          "name": "Camera Screen Hole",
+          "type": "mask",
+          "shape": "rect",
+          "width": 340,
+          "height": 210,
+          "x_offset": 10,
+          "y_offset": 10,
+          "operation": "subtract",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "accent_line": {
+      "id": "accent_line",
+      "name": "Accent Line / Section Divider",
+      "category": "Decorative Components",
+      "description": "Vector divider line used to accent container boundaries or visually segment telemetry statistics",
+      "primitives": [
+        {
+          "name": "Divider Stroke",
+          "type": "shape",
+          "shape": "line",
+          "shapeType": "shape",
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx"
+        }
+      ]
+    },
+    "sidebar_plate": {
+      "id": "sidebar_plate",
+      "name": "Sidebar Plate",
+      "category": "Structural Components",
+      "description": "Elongated vertical panel placed along the left or right edge of the screen to stack widgets, schedules, or event feeds.",
+      "primitives": [
+        {
+          "name": "Sidebar Body",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "sponsor_panel": {
+      "id": "sponsor_panel",
+      "name": "Sponsor Panel",
+      "category": "Structural Components",
+      "description": "Compact horizontal bar or container placed in margins to highlight sponsors or social handles.",
+      "primitives": [
+        {
+          "name": "Sponsor Plate Backdrop",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "hud_element": {
+      "id": "hud_element",
+      "name": "HUD Info Plate",
+      "category": "Decorative Components",
+      "description": "High-tech panel featuring dual borders or colored indicator tabs.",
+      "primitives": [
+        {
+          "name": "HUD Inner Plate",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": 0.4
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": 1,
+          "strokeAlign": "inside"
+        },
+        {
+          "name": "HUD Accent Tab",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.accentColor"
+            }
+          ],
+          "width": 10,
+          "height": 40,
+          "x_offset": 0,
+          "y_offset": 0
+        }
+      ]
+    },
+    "corner_brackets": {
+      "id": "corner_brackets",
+      "name": "Corner Brackets",
+      "category": "Decorative Components",
+      "description": "Decorative corner bracket frames that anchor on viewport margins or containers to frame content.",
+      "primitives": [
+        {
+          "name": "Bracket Frame Outline",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": 0
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside"
+        }
+      ]
+    },
+    "content_window_frame": {
+      "id": "content_window_frame",
+      "name": "Content Window Frame",
+      "category": "Structural Components",
+      "description": "Standard container for web widgets or capture feeds, featuring subtracted screen aperture and subtle border highlight.",
+      "primitives": [
+        {
+          "name": "Window Frame Outline",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "width": 640,
+          "height": 380,
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        },
+        {
+          "name": "Window Frame Hole",
+          "type": "mask",
+          "shape": "rect",
+          "width": 620,
+          "height": 360,
+          "x_offset": 10,
+          "y_offset": 10,
+          "operation": "subtract",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "lower_third_backing": {
+      "id": "lower_third_backing",
+      "name": "Lower Third Backing Plate",
+      "category": "Structural Components",
+      "description": "Asymmetrical overlay bar positioned at the bottom left for name tags or ticker headers, including a vertical accent strip.",
+      "primitives": [
+        {
+          "name": "Name Tag Plate",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "linear",
+              "angleDeg": 90,
+              "stops": [
+                { "color": "theme.panelColor", "position": 0 },
+                { "color": "theme.bgColor", "position": 1 }
+              ]
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "strokeAlign": "inside",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        },
+        {
+          "name": "Left Accent Stripe",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.accentColor"
+            }
+          ],
+          "width": 8,
+          "height": "100%",
+          "x_offset": 0,
+          "y_offset": 0
+        }
+      ]
+    },
+    "full_width_header": {
+      "id": "full_width_header",
+      "name": "Full-Width Header Bar",
+      "category": "Structural Components",
+      "description": "Top-bar design container running horizontally to host stream titles, tickers, or general branding.",
+      "primitives": [
+        {
+          "name": "Header Backdrop",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "width": "100%",
+          "height": 60
+        },
+        {
+          "name": "Header Bottom Trim",
+          "type": "shape",
+          "shape": "line",
+          "shapeType": "shape",
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "y_offset": 60
+        }
+      ]
+    },
+    "full_width_footer": {
+      "id": "full_width_footer",
+      "name": "Full-Width Footer Bar",
+      "category": "Structural Components",
+      "description": "Bottom-bar ticker plate designed to display event streams, social schedules, or sponsor reels.",
+      "primitives": [
+        {
+          "name": "Footer Backdrop",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "width": "100%",
+          "height": 40
+        },
+        {
+          "name": "Footer Top Trim",
+          "type": "shape",
+          "shape": "line",
+          "shapeType": "shape",
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "y_offset": 0
+        }
+      ]
+    },
+    "split_screen_divider": {
+      "id": "split_screen_divider",
+      "name": "Split-Screen Divider",
+      "category": "Structural Components",
+      "description": "Visual division element with dual offset lines or a center pill used to split layouts.",
+      "primitives": [
+        {
+          "name": "Center Division Line",
+          "type": "shape",
+          "shape": "line",
+          "shapeType": "shape",
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx"
+        },
+        {
+          "name": "Center Accent Notch",
+          "type": "shape",
+          "shape": "circle",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.accentColor"
+            }
+          ],
+          "width": 20,
+          "height": 20
+        }
+      ]
+    },
+    "card_tile_backing": {
+      "id": "card_tile_backing",
+      "name": "Card / Tile Backing",
+      "category": "Structural Components",
+      "description": "A high-fidelity tile backdrop featuring a subtle linear glassmorphic gradient fill and corner radius.",
+      "primitives": [
+        {
+          "name": "Card Plate",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "linear",
+              "angleDeg": 180,
+              "stops": [
+                { "color": "theme.panelColor", "position": 0 },
+                { "color": "theme.bgColor", "position": 1 }
+              ]
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "floating_pane": {
+      "id": "floating_pane",
+      "name": "Floating Pane",
+      "category": "Structural Components",
+      "description": "An elevated container designed for overlays, popups, or special warnings, showing dynamic borders.",
+      "primitives": [
+        {
+          "name": "Pane Backdrop",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": 0.95
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "alert_bezel": {
+      "id": "alert_bezel",
+      "name": "Alert Bezel Frame",
+      "category": "Decorative Components",
+      "description": "High-attention frame template with stylized bracket offsets designed to house popup alert content.",
+      "primitives": [
+        {
+          "name": "Alert Outline Frame",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.bgColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        },
+        {
+          "name": "Left Alert Highlight",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.accentColor"
+            }
+          ],
+          "width": 6,
+          "height": "100%",
+          "x_offset": -3,
+          "y_offset": 0
+        }
+      ]
+    },
+    "progress_bar_bezel": {
+      "id": "progress_bar_bezel",
+      "name": "Goal Progress Bar Track",
+      "category": "Decorative Components",
+      "description": "Vector track container with stylized fill layer to represent subscription, follow, or donation goal progress.",
+      "primitives": [
+        {
+          "name": "Progress Track Background",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": 0.5
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": 1,
+          "borderRadiusPx": "theme.borderRadiusPx"
+        },
+        {
+          "name": "Progress Active Fill",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "shape",
+          "fills": [
+            {
+              "type": "linear",
+              "angleDeg": 90,
+              "stops": [
+                { "color": "theme.accentColor", "position": 0 },
+                { "color": "theme.panelColor", "position": 1 }
+              ]
+            }
+          ],
+          "width": "75%",
+          "height": "100%",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    },
+    "chat_bubble_bezel": {
+      "id": "chat_bubble_bezel",
+      "name": "Chat Bubble Callout Bezel",
+      "category": "Decorative Components",
+      "description": "Styled comment callout box featuring custom border radius and an offset triangular speech bubble tip.",
+      "primitives": [
+        {
+          "name": "Bubble Body Plate",
+          "type": "shape",
+          "shape": "rect",
+          "shapeType": "box",
+          "fills": [
+            {
+              "type": "solid",
+              "color": "theme.panelColor",
+              "opacity": "theme.bgOpacity"
+            }
+          ],
+          "strokeColor": "theme.accentColor",
+          "strokeWidthPx": "theme.borderWidthPx",
+          "borderRadiusPx": "theme.borderRadiusPx"
+        }
+      ]
+    }
+  }
+}

@@ -88,7 +88,19 @@
       "accentColor": "#f97316",
       "textColor": "#ffffff",
       "textMuted": "#fbcfe8",
-      "bgOpacity": 0.85
+      "bgOpacity": 0.85,
+      "components": {
+        "webcam_frame_16_9": {
+          "accentColor": "#ec4899",
+          "borderWidthPx": 4
+        },
+        "hud_element": {
+          "accentColor": "#a855f7"
+        },
+        "background_layer": {
+          "panelColor": "#4c1d95"
+        }
+      }
     },
     "amber_phosphor": {
       "bgColor": "#110d02",
@@ -112,7 +124,20 @@
       "accentColor": "#14b8a6",
       "textColor": "#f8fafc",
       "textMuted": "#64748b",
-      "bgOpacity": 0.9
+      "bgOpacity": 0.9,
+      "components": {
+        "webcam_frame_16_9": {
+          "accentColor": "#06b6d4",
+          "borderWidthPx": 2
+        },
+        "hud_element": {
+          "accentColor": "#f43f5e"
+        },
+        "alert_bezel": {
+          "accentColor": "#f43f5e",
+          "bgOpacity": 0.95
+        }
+      }
     },
     "manga_contrast": {
       "bgColor": "#ffffff",
@@ -152,7 +177,19 @@
       "accentColor": "#22c55e",
       "textColor": "#22c55e",
       "textMuted": "#15803d",
-      "bgOpacity": 1.0
+      "bgOpacity": 1.0,
+      "components": {
+        "webcam_frame_16_9": {
+          "accentColor": "#86efac",
+          "borderWidthPx": 1
+        },
+        "hud_element": {
+          "accentColor": "#34d399"
+        },
+        "alert_bezel": {
+          "accentColor": "#ef4444"
+        }
+      }
     },
     "glacial_frost": {
       "bgColor": "#f0f9ff",

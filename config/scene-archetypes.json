@@ -11,6 +11,7 @@
             {
               "type": "shape",
               "name": "Webcam Background Border",
+              "componentId": "webcam_frame_16_9",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -24,6 +25,7 @@
             {
               "type": "lower_third",
               "name": "Social Handle Event Banner",
+              "componentId": "lower_third_banner",
               "anchorZone": "BOTTOM_LEFT",
               "widthPct": 30,
               "heightPct": 12,
@@ -39,6 +41,7 @@
               "type": "widget",
               "widgetId": "chat-overlay",
               "name": "Floating Stream Chat Monitor",
+              "componentId": "chat_box",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 25,
               "heightPct": 45,
@@ -53,6 +56,7 @@
             {
               "type": "shape",
               "name": "Wallpaper Backdrop",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -64,6 +68,7 @@
             {
               "type": "shape",
               "name": "Camera Framing Box",
+              "componentId": "webcam_frame_16_9",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 65,
               "heightPct": 75,
@@ -77,6 +82,7 @@
             {
               "type": "text",
               "name": "Webcam Label",
+              "componentId": "label_plate",
               "anchorZone": "TOP_LEFT",
               "widthPct": 30,
               "heightPct": 8,
@@ -90,6 +96,7 @@
               "type": "widget",
               "widgetId": "chat-overlay",
               "name": "Structured Chat Panel",
+              "componentId": "chat_box",
               "anchorZone": "MIDDLE_RIGHT",
               "widthPct": 28,
               "heightPct": 75,
@@ -98,6 +105,7 @@
             {
               "type": "progress_bar",
               "name": "Top Header Goal Tracker",
+              "componentId": "hud_element",
               "anchorZone": "TOP_CENTER",
               "widthPct": 40,
               "heightPct": 8,
@@ -124,6 +132,7 @@
             {
               "type": "shape",
               "name": "Floating Facecam Frame",
+              "componentId": "webcam_frame_16_9",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 18,
               "heightPct": 22,
@@ -138,6 +147,7 @@
               "type": "widget",
               "widgetId": "chat-overlay",
               "name": "Borderless Floating Chat",
+              "componentId": "chat_box",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 20,
               "heightPct": 35,
@@ -152,6 +162,7 @@
             {
               "type": "shape",
               "name": "Outer Frame Wallpaper",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -163,6 +174,7 @@
             {
               "type": "shape",
               "name": "Main Gameplay Box",
+              "componentId": "backdrop_plate",
               "anchorZone": "CENTER_HUD",
               "widthPct": 75,
               "heightPct": 75,
@@ -176,6 +188,7 @@
             {
               "type": "shape",
               "name": "Co-pilot Cam Frame",
+              "componentId": "webcam_frame_16_9",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 20,
               "heightPct": 22,
@@ -189,6 +202,7 @@
             {
               "type": "lower_third",
               "name": "Recent Subscriber Banner",
+              "componentId": "lower_third_banner",
               "anchorZone": "BOTTOM_LEFT",
               "widthPct": 22,
               "heightPct": 15,
@@ -215,6 +229,7 @@
             {
               "type": "shape",
               "name": "Symmetric Wallpaper",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -226,6 +241,7 @@
             {
               "type": "text",
               "name": "Main Hype Title",
+              "componentId": "label_plate",
               "anchorZone": "TOP_CENTER",
               "widthPct": 50,
               "heightPct": 15,
@@ -238,6 +254,7 @@
             {
               "type": "progress_ring",
               "name": "Circular Countdown Timer",
+              "componentId": "progress_ring",
               "anchorZone": "CENTER_HUD",
               "widthPct": 22,
               "heightPct": 38,
@@ -253,6 +270,7 @@
             {
               "type": "lower_third",
               "name": "Left Social Hook",
+              "componentId": "lower_third_banner",
               "anchorZone": "BOTTOM_LEFT",
               "widthPct": 25,
               "heightPct": 12,
@@ -267,6 +285,7 @@
             {
               "type": "lower_third",
               "name": "Right Social Hook",
+              "componentId": "lower_third_banner",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 25,
               "heightPct": 12,
@@ -287,6 +306,7 @@
             {
               "type": "shape",
               "name": "Asymmetrical Wallpaper",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -298,6 +318,7 @@
             {
               "type": "text",
               "name": "Asymmetric Hype Title",
+              "componentId": "label_plate",
               "anchorZone": "TOP_LEFT",
               "widthPct": 45,
               "heightPct": 12,
@@ -310,6 +331,7 @@
             {
               "type": "progress_bar",
               "name": "Asymmetric Progress Timer",
+              "componentId": "hud_element",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 45,
               "heightPct": 10,
@@ -325,6 +347,7 @@
               "type": "widget",
               "widgetId": "chat-overlay",
               "name": "Right Sidebar Chat Monitor",
+              "componentId": "chat_box",
               "anchorZone": "MIDDLE_RIGHT",
               "widthPct": 35,
               "heightPct": 75,
@@ -345,6 +368,7 @@
             {
               "type": "shape",
               "name": "BRB Center Backdrop",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -356,6 +380,7 @@
             {
               "type": "lower_third",
               "name": "Symmetric BRB Main Card",
+              "componentId": "backdrop_plate",
               "anchorZone": "CENTER_HUD",
               "widthPct": 40,
               "heightPct": 25,
@@ -370,6 +395,7 @@
             {
               "type": "progress_bar",
               "name": "BRB Center Timer Monitor",
+              "componentId": "hud_element",
               "anchorZone": "BOTTOM_CENTER",
               "widthPct": 50,
               "heightPct": 8,
@@ -390,6 +416,7 @@
             {
               "type": "shape",
               "name": "Asymmetric BRB Backdrop",
+              "componentId": "background_layer",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
@@ -401,6 +428,7 @@
             {
               "type": "lower_third",
               "name": "Asymmetric Large Notice Card",
+              "componentId": "backdrop_plate",
               "anchorZone": "MIDDLE_RIGHT",
               "widthPct": 45,
               "heightPct": 40,
@@ -416,6 +444,7 @@
               "type": "widget",
               "widgetId": "chat-overlay",
               "name": "Asymmetric Chat Console",
+              "componentId": "chat_box",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 35,
               "heightPct": 65,
