@@ -5,13 +5,39 @@ export const canvasToolsSchema = {
   functionDeclarations: [
     {
       name: "create_overlay",
-      description: "Creates a new empty stream overlay from scratch. CRITICAL: You MUST immediately follow this up with apply_scene_template in the same turn to populate it, otherwise the user will see a blank screen.",
+      description: "Creates a new stream overlay from scratch. Can optionally take layout, theme structure, palette, and intent parameters to populate the canvas atomically in a single execution turn, avoiding empty/blank screens.",
       parameters: {
         type: "OBJECT",
         properties: {
           name: {
             type: "STRING",
             description: "The name of the new overlay, e.g. 'Cyberpunk Main Layout'"
+          },
+          archetypeId: {
+            type: "STRING",
+            description: "Optional. The high-level stream scene type to apply immediately: 'just_chatting', 'gameplay', 'starting_soon', 'brb'."
+          },
+          variantId: {
+            type: "STRING",
+            description: "Optional. The structural layout variant to apply immediately: 'immersive', 'framed_split', 'centered', 'asymmetrical', 'framed_hud'."
+          },
+          structureId: {
+            type: "STRING",
+            description: "Optional. Design token structure/bones ID, e.g. 'minimalist', 'pulp_comic', 'retro_cabinet', 'modern_techno', 'classic_serif', 'organic_hand', 'industrial_heavy', 'kawaii_soft', 'tactical_grid'."
+          },
+          paletteId: {
+            type: "STRING",
+            description: "Optional. Design token color palette/skin ID, e.g. 'carbon_slate', 'neon_sunset', 'amber_phosphor', 'kawaii_pastel', 'abyssal_glow', 'manga_contrast', 'military_olive', 'luxury_gold', 'industrial_rust', 'matrix_hacker', 'glacial_frost', 'sunset_vapor', 'chalkboard_sketch', 'copper_plate', 'midnight_royal'."
+          },
+          sceneIntent: {
+            type: "OBJECT",
+            description: "Optional. Intent parameters to dynamically adjust layout dimensions, density, spacing, animations and styling parameters.",
+            properties: {
+              energy: { type: "STRING", description: "Stream energy level: 'high' (active CSS pulsing, animations) or 'calm' (relaxed static transitions)." },
+              focus: { type: "STRING", description: "Layout scale focus: 'creator' (webcam scaled up), 'chat' (chat expanded), or 'gameplay' (game space prioritized)." },
+              density: { type: "STRING", description: "Layout padding density: 'minimal' (loose margins, filtered widgets) or 'packed' (compact, dense layouts)." },
+              tone: { type: "STRING", description: "Styling tone: 'competitive' (sharp corners, heavy borders) or 'cozy' (large rounded corners, translucent panels)." }
+            }
           }
         },
         required: ["name"]

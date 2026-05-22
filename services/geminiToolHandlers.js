@@ -570,6 +570,367 @@ function getDominantTheme(elements) {
   return theme;
 }
 
+export async function applySceneTemplateInternal(overlayId, guildId, { archetypeId, variantId, structureId, paletteId, sceneIntent }) {
+  const overlay = await getOverlay(overlayId, guildId);
+  if (!overlay) return { error: `Overlay not found` };
+
+  const arch = archetypesData.archetypes[archetypeId];
+  if (!arch) return { error: `Invalid archetypeId: '${archetypeId}'` };
+
+  const variant = arch.variants[variantId];
+  if (!variant) return { error: `Invalid variantId: '${variantId}' for archetype '${archetypeId}'` };
+
+  // 1. Reset canvas elements for the new template blueprint
+  overlay.json.elements = [];
+
+  // 2. Resolve default/neutral structural and palette tokens
+  const sId = structureId || 'minimalist';
+  const pId = paletteId || 'carbon_slate';
+
+  const structToken = tokens.structures[sId] || tokens.structures.minimalist;
+  const paletteToken = tokens.palettes[pId] || tokens.palettes.carbon_slate;
+
+  const baseW = overlay.json.baseResolution?.width || 1920;
+  const baseH = overlay.json.baseResolution?.height || 1080;
+
+  // 3. Process Scene Intent Multipliers
+  let spacingMultiplier = 1.0;
+  let webcamScale = 1.0;
+  let chatScale = 1.0;
+  let gameScale = 1.0;
+  let globalRadiusOverride = null;
+  let borderWidthOverride = null;
+  let transitionStyle = null;
+  let pulsingGlow = false;
+
+  if (sceneIntent) {
+    const { energy, focus, density, tone } = sceneIntent;
+
+    // Energy Level Animation settings
+    if (energy === 'high') {
+      transitionStyle = '0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+      pulsingGlow = true;
+    } else if (energy === 'calm') {
+      transitionStyle = '0.8s ease-in-out';
+    }
+
+    // Focus scale multipliers
+    if (focus === 'creator') {
+      webcamScale = 1.2;
+      chatScale = 0.8;
+      gameScale = 0.8;
+    } else if (focus === 'chat') {
+      chatScale = 1.25;
+      webcamScale = 0.8;
+    } else if (focus === 'gameplay') {
+      gameScale = 1.15;
+      webcamScale = 0.85;
+      chatScale = 0.85;
+    }
+
+    // Density Spacing
+    if (density === 'minimal') {
+      spacingMultiplier = 1.5;
+    } else if (density === 'packed') {
+      spacingMultiplier = 0.7;
+    }
+
+    // Visual Tone Style overrides
+    if (tone === 'competitive') {
+      globalRadiusOverride = 0;
+      borderWidthOverride = 3;
+    } else if (tone === 'cozy') {
+      globalRadiusOverride = 24;
+      borderWidthOverride = 1;
+    }
+  }
+
+  // 4. Synthesize styles from design tokens with intent overrides
+  // (Moved inside the element blueprint loop below to support per-element componentId overrides)
+
+  // 5. Generate and composite blueprint elements
+  for (const bp of variant.elements) {
+    const bpNameLower = bp.name.toLowerCase();
+
+    // If density is minimalist, filter out minor auxiliary widgets
+    if (sceneIntent && sceneIntent.density === 'minimal') {
+      if (bpNameLower.includes('goal') || bpNameLower.includes('tracker') || bpNameLower.includes('social') || bpNameLower.includes('label')) {
+        continue; // Skip optional items for minimal density
+      }
+    }
+
+    // Calculate raw pixel dimensions from percentages
+    let w = Math.round(baseW * (bp.widthPct / 100));
+    let h = Math.round(baseH * (bp.heightPct / 100));
+    let finalX, finalY;
+
+    if (bp.widthPct === 100 && bp.heightPct === 100) {
+      // Full bleed elements (e.g. wallpapers, background camera backdrops)
+      // bypass scaling, boundary clamps, and grid stacking, positioning perfectly at X=0, Y=0
+      w = baseW;
+      h = baseH;
+      finalX = 0;
+      finalY = 0;
+    } else {
+      // Apply Focus Multipliers
+      if (bpNameLower.includes('cam') || bpNameLower.includes('facecam') || bpNameLower.includes('webcam')) {
+        w = Math.round(w * webcamScale);
+        h = Math.round(h * webcamScale);
+      } else if (bpNameLower.includes('chat')) {
+        w = Math.round(w * chatScale);
+        h = Math.round(h * chatScale);
+      } else if (bpNameLower.includes('game') || bpNameLower.includes('gameplay')) {
+        w = Math.round(w * gameScale);
+        h = Math.round(h * gameScale);
+      }
+
+      // Safety limits to clamp within standard frame boundaries
+      w = Math.min(baseW - 100, Math.max(100, w));
+      h = Math.min(baseH - 100, Math.max(50, h));
+
+      // Calculate safe non-overlapping coordinates inside anchor zone
+      const placement = resolveAnchorPlacement(
+        overlay.json.elements,
+        bp.anchorZone,
+        w,
+        h,
+        null,
+        baseW,
+        baseH
+      );
+      finalX = placement.x;
+      finalY = placement.y;
+      w = placement.width;
+      h = placement.height;
+    }
+
+    const compId = bp.componentId || null;
+
+    const elemFont = resolveThemeValue("theme.fontFamily", pId, sId, compId);
+    const elemRadius = globalRadiusOverride !== null ? globalRadiusOverride : resolveThemeValue("theme.borderRadiusPx", pId, sId, compId);
+    const elemBorderWidth = borderWidthOverride !== null ? borderWidthOverride : resolveThemeValue("theme.borderWidthPx", pId, sId, compId);
+    const elemBorderStyle = resolveThemeValue("theme.borderStyle", pId, sId, compId);
+    const elemPadding = Math.round(resolveThemeValue("theme.paddingPx", pId, sId, compId) * spacingMultiplier);
+
+    const elemColors = {
+      bgColor: resolveThemeValue("theme.bgColor", pId, sId, compId),
+      panelColor: resolveThemeValue("theme.panelColor", pId, sId, compId),
+      accentColor: resolveThemeValue("theme.accentColor", pId, sId, compId),
+      textColor: resolveThemeValue("theme.textColor", pId, sId, compId),
+      textMuted: resolveThemeValue("theme.textMuted", pId, sId, compId),
+      bgOpacity: resolveThemeValue("theme.bgOpacity", pId, sId, compId)
+    };
+
+    // Resolve visual keys (map keys to token values if dynamic)
+    const resolvedStyles = { ...bp.style };
+    for (const key of Object.keys(bp.style || {})) {
+      if (key.endsWith('Key')) {
+        const targetProp = key.slice(0, -3); // e.g. "backgroundColor"
+        const tokenColorKey = bp.style[key]; // e.g. "bgColor"
+        resolvedStyles[targetProp] = elemColors[tokenColorKey] || tokenColorKey;
+        delete resolvedStyles[key]; // remove the Key suffix property
+      }
+    }
+
+    // If some styling properties are explicit theme paths, resolve them
+    for (const [key, val] of Object.entries(resolvedStyles)) {
+      if (typeof val === 'string' && val.startsWith('theme.')) {
+        resolvedStyles[key] = resolveThemeValue(val, pId, sId, compId);
+      }
+    }
+
+    // Construct the concrete canvas element
+    const elId = crypto.randomUUID();
+
+    // Intercept webcam frame to generate a composite hollow subtract shape
+    if (bp.type === 'shape' && compId === 'webcam_frame_16_9') {
+      const outerId = crypto.randomUUID();
+      const innerId = crypto.randomUUID();
+      const borderThickness = 12; // Sleek frame border width
+
+      // 1. Outer shape (hidden helper)
+      const outerElement = {
+        id: outerId,
+        type: 'shape',
+        shapeType: 'box',
+        shape: 'rect',
+        name: `${bp.name} (Outer)`,
+        x: finalX,
+        y: finalY,
+        width: w,
+        height: h,
+        cornerRadiusPx: elemRadius,
+        visible: false,
+        locked: false
+      };
+
+      // 2. Inner shape (hidden cutout)
+      const innerElement = {
+        id: innerId,
+        type: 'shape',
+        shapeType: 'box',
+        shape: 'rect',
+        name: `${bp.name} (Cutout)`,
+        x: finalX + borderThickness,
+        y: finalY + borderThickness,
+        width: Math.max(10, w - borderThickness * 2),
+        height: Math.max(10, h - borderThickness * 2),
+        cornerRadiusPx: Math.max(0, elemRadius - borderThickness),
+        visible: false,
+        locked: false
+      };
+
+      // 3. Parent boolean subtract shape (visible, gets styles and effects)
+      const parentElement = {
+        id: elId,
+        type: 'boolean',
+        operation: 'subtract',
+        childIds: [outerId, innerId],
+        name: bp.name,
+        x: finalX,
+        y: finalY,
+        width: w,
+        height: h,
+        componentId: compId,
+        visible: true,
+        locked: false,
+        fillColor: elemColors.panelColor || '#111111',
+        fillOpacity: elemColors.bgOpacity !== undefined ? elemColors.bgOpacity : 1,
+        strokeColor: elemColors.accentColor || '#4f46e5',
+        strokeWidthPx: elemBorderWidth || 2,
+        strokeAlign: 'center',
+        style: {},
+        structureId: sId,
+        paletteId: pId,
+        anchorZone: bp.anchorZone
+      };
+
+      if (transitionStyle) {
+        parentElement.style.transition = transitionStyle;
+      }
+      if (pulsingGlow) {
+        parentElement.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
+        parentElement.style.animation = 'pulse 2s infinite ease-in-out';
+      }
+
+      resolveVisualTokens(parentElement, pId, sId, paletteToken, structToken);
+
+      overlay.json.elements.push(outerElement);
+      overlay.json.elements.push(innerElement);
+      overlay.json.elements.push(parentElement);
+      continue;
+    }
+
+    let targetType = bp.type;
+    if (bp.type === 'progress_bar') targetType = 'progressBar';
+    if (bp.type === 'progress_ring') targetType = 'progressRing';
+    const element = {
+      id: elId,
+      type: targetType,
+      name: bp.name,
+      x: finalX,
+      y: finalY,
+      width: w,
+      height: h,
+      componentId: compId,
+      visible: true,
+      locked: false
+    };
+
+    // Apply specific widget structures
+    if (bp.type === 'shape') {
+      element.shapeType = resolvedStyles.shapeType || 'box';
+      element.shape = resolvedStyles.shape || 'rect';
+      element.backgroundColor = resolvedStyles.backgroundColor || elemColors.panelColor;
+      element.style = {
+        borderRadiusPx: elemRadius,
+        borderWidthPx: elemBorderWidth,
+        borderStyle: elemBorderStyle,
+        borderColor: resolvedStyles.borderColor || elemColors.accentColor,
+        bgOpacity: elemColors.bgOpacity
+      };
+    } else if (bp.type === 'text') {
+      element.text = resolvedStyles.text || bp.name;
+      element.fontFamily = elemFont;
+      element.color = resolvedStyles.color || elemColors.textColor;
+      element.fontSizePx = resolvedStyles.fontSizePx || 32;
+    } else if (bp.type === 'widget') {
+      element.widgetId = bp.widgetId;
+      element.liveDataSource = { sseEventType: null };
+      element.propOverrides = {};
+    } else if (bp.type === 'progress_bar') {
+      element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
+      element.bindingFieldId = resolvedStyles.bindingFieldId || 'progress';
+      element.bindingFallback = resolvedStyles.bindingFallback !== undefined ? resolvedStyles.bindingFallback : 0.5;
+      element.direction = resolvedStyles.direction || 'ltr';
+      element.style = {
+        borderRadiusPx: elemRadius,
+        backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
+        fillColor: resolvedStyles.fillColor || elemColors.accentColor
+      };
+    } else if (bp.type === 'progress_ring') {
+      element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
+      element.bindingFieldId = resolvedStyles.bindingFieldId || 'progress';
+      element.bindingFallback = resolvedStyles.bindingFallback !== undefined ? resolvedStyles.bindingFallback : 0.5;
+      element.strokeWidthPx = resolvedStyles.strokeWidthPx || 12;
+      element.startAngleDeg = resolvedStyles.startAngleDeg !== undefined ? resolvedStyles.startAngleDeg : -90;
+      element.style = {
+        backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
+        fillColor: resolvedStyles.fillColor || elemColors.accentColor
+      };
+    } else if (bp.type === 'lower_third') {
+      element.title = resolvedStyles.title || bp.name;
+      element.subtitle = resolvedStyles.subtitle || '';
+      element.alwaysOn = resolvedStyles.alwaysOn !== undefined ? resolvedStyles.alwaysOn : true;
+      element.layout = {
+        mode: resolvedStyles.layoutMode || 'stacked',
+        splitRatio: 0.6
+      };
+      element.style = {
+        variant: resolvedStyles.variant || 'solid',
+        paddingPx: elemPadding,
+        cornerRadiusPx: elemRadius,
+        bgColor: resolvedStyles.bgColor || elemColors.panelColor,
+        bgOpacity: resolvedStyles.bgOpacity !== undefined ? resolvedStyles.bgOpacity : elemColors.bgOpacity,
+        accentColor: resolvedStyles.accentColor || elemColors.accentColor,
+        fontFamily: elemFont,
+        titleColor: elemColors.textColor,
+        subtitleColor: elemColors.textMuted,
+        titleSizePx: 36,
+        subtitleSizePx: 22,
+        titleWeight: 'bold'
+      };
+    }
+
+    // Inject Scene Intent style modifiers (transitions, glow effects)
+    if (element.style) {
+      if (transitionStyle) {
+        element.style.transition = transitionStyle;
+      }
+      if (pulsingGlow) {
+        element.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
+        element.style.animation = 'pulse 2s infinite ease-in-out';
+      }
+    }
+
+    // Persist token references in elements for live token refreshes
+    element.structureId = sId;
+    element.paletteId = pId;
+    element.anchorZone = bp.anchorZone;
+
+    resolveVisualTokens(element, pId, sId, paletteToken, structToken);
+
+    overlay.json.elements.push(element);
+  }
+
+  await updateOverlay(overlayId, guildId, overlay.json);
+  return {
+    success: true,
+    overlayId,
+    message: `Successfully applied scene archetype '${arch.displayName}' (${variant.displayName}) to overlay with ${sId} structures and ${pId} colors.`
+  };
+}
+
 /**
  * Handles the execution of a Gemini tool call.
  */
@@ -577,7 +938,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
   try {
     switch (toolName) {
       case 'create_overlay': {
-        const { name } = args;
+        const { name, archetypeId, variantId, structureId, paletteId, sceneIntent } = args;
         const newPublicId = crypto.randomUUID();
         const initialJson = { elements: [], timeline: { durationMs: 5000, tracks: [] }, baseResolution: { width: 1920, height: 1080 }, settings: { width: 1920, height: 1080 } };
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + crypto.randomBytes(3).toString('hex');
@@ -589,7 +950,23 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           [Number(userId), newPublicId, name, initialJson, slug]
         );
         const newId = rows[0].id;
-        return { success: true, overlayId: String(newId), message: `Created overlay '${name}'` };
+        
+        let message = `Created overlay '${name}'`;
+        if (archetypeId && variantId) {
+          const templateResult = await applySceneTemplateInternal(String(newId), guildId, {
+            archetypeId,
+            variantId,
+            structureId,
+            paletteId,
+            sceneIntent
+          });
+          if (templateResult.error) {
+            return { success: true, overlayId: String(newId), message: `Created overlay '${name}', but failed to apply template: ${templateResult.error}` };
+          }
+          message += ` and applied archetype '${archetypeId}' with variant '${variantId}'`;
+        }
+        
+        return { success: true, overlayId: String(newId), message };
       }
 
       case 'find_overlay_by_name': {
@@ -1344,365 +1721,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
 
       case 'apply_scene_template': {
         const { overlayId, archetypeId, variantId, structureId, paletteId, sceneIntent } = args;
-        const overlay = await getOverlay(overlayId, guildId);
-        if (!overlay) return { error: `Overlay not found` };
-
-        const arch = archetypesData.archetypes[archetypeId];
-        if (!arch) return { error: `Invalid archetypeId: '${archetypeId}'` };
-
-        const variant = arch.variants[variantId];
-        if (!variant) return { error: `Invalid variantId: '${variantId}' for archetype '${archetypeId}'` };
-
-        // 1. Reset canvas elements for the new template blueprint
-        overlay.json.elements = [];
-
-        // 2. Resolve default/neutral structural and palette tokens
-        const sId = structureId || 'minimalist';
-        const pId = paletteId || 'carbon_slate';
-
-        const structToken = tokens.structures[sId] || tokens.structures.minimalist;
-        const paletteToken = tokens.palettes[pId] || tokens.palettes.carbon_slate;
-
-        const baseW = overlay.json.baseResolution?.width || 1920;
-        const baseH = overlay.json.baseResolution?.height || 1080;
-
-        // 3. Process Scene Intent Multipliers
-        let spacingMultiplier = 1.0;
-        let webcamScale = 1.0;
-        let chatScale = 1.0;
-        let gameScale = 1.0;
-        let globalRadiusOverride = null;
-        let borderWidthOverride = null;
-        let transitionStyle = null;
-        let pulsingGlow = false;
-
-        if (sceneIntent) {
-          const { energy, focus, density, tone } = sceneIntent;
-
-          // Energy Level Animation settings
-          if (energy === 'high') {
-            transitionStyle = '0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            pulsingGlow = true;
-          } else if (energy === 'calm') {
-            transitionStyle = '0.8s ease-in-out';
-          }
-
-          // Focus scale multipliers
-          if (focus === 'creator') {
-            webcamScale = 1.2;
-            chatScale = 0.8;
-            gameScale = 0.8;
-          } else if (focus === 'chat') {
-            chatScale = 1.25;
-            webcamScale = 0.8;
-          } else if (focus === 'gameplay') {
-            gameScale = 1.15;
-            webcamScale = 0.85;
-            chatScale = 0.85;
-          }
-
-          // Density Spacing
-          if (density === 'minimal') {
-            spacingMultiplier = 1.5;
-          } else if (density === 'packed') {
-            spacingMultiplier = 0.7;
-          }
-
-          // Visual Tone Style overrides
-          if (tone === 'competitive') {
-            globalRadiusOverride = 0;
-            borderWidthOverride = 3;
-          } else if (tone === 'cozy') {
-            globalRadiusOverride = 24;
-            borderWidthOverride = 1;
-          }
-        }
-
-        // 4. Synthesize styles from design tokens with intent overrides
-        // (Moved inside the element blueprint loop below to support per-element componentId overrides)
-
-        // 5. Generate and composite blueprint elements
-        for (const bp of variant.elements) {
-          const bpNameLower = bp.name.toLowerCase();
-
-          // If density is minimalist, filter out minor auxiliary widgets
-          if (sceneIntent && sceneIntent.density === 'minimal') {
-            if (bpNameLower.includes('goal') || bpNameLower.includes('tracker') || bpNameLower.includes('social') || bpNameLower.includes('label')) {
-              continue; // Skip optional items for minimal density
-            }
-          }
-
-          // Calculate raw pixel dimensions from percentages
-          let w = Math.round(baseW * (bp.widthPct / 100));
-          let h = Math.round(baseH * (bp.heightPct / 100));
-          let finalX, finalY;
-
-          if (bp.widthPct === 100 && bp.heightPct === 100) {
-            // Full bleed elements (e.g. wallpapers, background camera backdrops)
-            // bypass scaling, boundary clamps, and grid stacking, positioning perfectly at X=0, Y=0
-            w = baseW;
-            h = baseH;
-            finalX = 0;
-            finalY = 0;
-          } else {
-            // Apply Focus Multipliers
-            if (bpNameLower.includes('cam') || bpNameLower.includes('facecam') || bpNameLower.includes('webcam')) {
-              w = Math.round(w * webcamScale);
-              h = Math.round(h * webcamScale);
-            } else if (bpNameLower.includes('chat')) {
-              w = Math.round(w * chatScale);
-              h = Math.round(h * chatScale);
-            } else if (bpNameLower.includes('game') || bpNameLower.includes('gameplay')) {
-              w = Math.round(w * gameScale);
-              h = Math.round(h * gameScale);
-            }
-
-            // Safety limits to clamp within standard frame boundaries
-            w = Math.min(baseW - 100, Math.max(100, w));
-            h = Math.min(baseH - 100, Math.max(50, h));
-
-            // Calculate safe non-overlapping coordinates inside anchor zone
-            const placement = resolveAnchorPlacement(
-              overlay.json.elements,
-              bp.anchorZone,
-              w,
-              h,
-              null,
-              baseW,
-              baseH
-            );
-            finalX = placement.x;
-            finalY = placement.y;
-            w = placement.width;
-            h = placement.height;
-          }
-
-
-          const compId = bp.componentId || null;
-
-          const elemFont = resolveThemeValue("theme.fontFamily", pId, sId, compId);
-          const elemRadius = globalRadiusOverride !== null ? globalRadiusOverride : resolveThemeValue("theme.borderRadiusPx", pId, sId, compId);
-          const elemBorderWidth = borderWidthOverride !== null ? borderWidthOverride : resolveThemeValue("theme.borderWidthPx", pId, sId, compId);
-          const elemBorderStyle = resolveThemeValue("theme.borderStyle", pId, sId, compId);
-          const elemPadding = Math.round(resolveThemeValue("theme.paddingPx", pId, sId, compId) * spacingMultiplier);
-
-          const elemColors = {
-            bgColor: resolveThemeValue("theme.bgColor", pId, sId, compId),
-            panelColor: resolveThemeValue("theme.panelColor", pId, sId, compId),
-            accentColor: resolveThemeValue("theme.accentColor", pId, sId, compId),
-            textColor: resolveThemeValue("theme.textColor", pId, sId, compId),
-            textMuted: resolveThemeValue("theme.textMuted", pId, sId, compId),
-            bgOpacity: resolveThemeValue("theme.bgOpacity", pId, sId, compId)
-          };
-
-          // Resolve visual keys (map keys to token values if dynamic)
-          const resolvedStyles = { ...bp.style };
-          for (const key of Object.keys(bp.style || {})) {
-            if (key.endsWith('Key')) {
-              const targetProp = key.slice(0, -3); // e.g. "backgroundColor"
-              const tokenColorKey = bp.style[key]; // e.g. "bgColor"
-              resolvedStyles[targetProp] = elemColors[tokenColorKey] || tokenColorKey;
-              delete resolvedStyles[key]; // remove the Key suffix property
-            }
-          }
-
-          // If some styling properties are explicit theme paths, resolve them
-          for (const [key, val] of Object.entries(resolvedStyles)) {
-            if (typeof val === 'string' && val.startsWith('theme.')) {
-              resolvedStyles[key] = resolveThemeValue(val, pId, sId, compId);
-            }
-          }
-
-          // Construct the concrete canvas element
-          const elId = crypto.randomUUID();
-
-          // Intercept webcam frame to generate a composite hollow subtract shape
-          if (bp.type === 'shape' && compId === 'webcam_frame_16_9') {
-            const outerId = crypto.randomUUID();
-            const innerId = crypto.randomUUID();
-            const borderThickness = 12; // Sleek frame border width
-
-            // 1. Outer shape (hidden helper)
-            const outerElement = {
-              id: outerId,
-              type: 'shape',
-              shapeType: 'box',
-              shape: 'rect',
-              name: `${bp.name} (Outer)`,
-              x: finalX,
-              y: finalY,
-              width: w,
-              height: h,
-              cornerRadiusPx: elemRadius,
-              visible: false,
-              locked: false
-            };
-
-            // 2. Inner shape (hidden cutout)
-            const innerElement = {
-              id: innerId,
-              type: 'shape',
-              shapeType: 'box',
-              shape: 'rect',
-              name: `${bp.name} (Cutout)`,
-              x: finalX + borderThickness,
-              y: finalY + borderThickness,
-              width: Math.max(10, w - borderThickness * 2),
-              height: Math.max(10, h - borderThickness * 2),
-              cornerRadiusPx: Math.max(0, elemRadius - borderThickness),
-              visible: false,
-              locked: false
-            };
-
-            // 3. Parent boolean subtract shape (visible, gets styles and effects)
-            const parentElement = {
-              id: elId,
-              type: 'boolean',
-              operation: 'subtract',
-              childIds: [outerId, innerId],
-              name: bp.name,
-              x: finalX,
-              y: finalY,
-              width: w,
-              height: h,
-              componentId: compId,
-              visible: true,
-              locked: false,
-              fillColor: elemColors.panelColor || '#111111',
-              fillOpacity: elemColors.bgOpacity !== undefined ? elemColors.bgOpacity : 1,
-              strokeColor: elemColors.accentColor || '#4f46e5',
-              strokeWidthPx: elemBorderWidth || 2,
-              strokeAlign: 'center',
-              style: {},
-              structureId: sId,
-              paletteId: pId,
-              anchorZone: bp.anchorZone
-            };
-
-            if (transitionStyle) {
-              parentElement.style.transition = transitionStyle;
-            }
-            if (pulsingGlow) {
-              parentElement.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
-              parentElement.style.animation = 'pulse 2s infinite ease-in-out';
-            }
-
-            resolveVisualTokens(parentElement, pId, sId, paletteToken, structToken);
-
-            overlay.json.elements.push(outerElement);
-            overlay.json.elements.push(innerElement);
-            overlay.json.elements.push(parentElement);
-            continue;
-          }
-
-          let targetType = bp.type;
-          if (bp.type === 'progress_bar') targetType = 'progressBar';
-          if (bp.type === 'progress_ring') targetType = 'progressRing';
-          const element = {
-            id: elId,
-            type: targetType,
-            name: bp.name,
-            x: finalX,
-            y: finalY,
-            width: w,
-            height: h,
-            componentId: compId,
-            visible: true,
-            locked: false
-          };
-
-          // Apply specific widget structures
-          if (bp.type === 'shape') {
-            element.shapeType = resolvedStyles.shapeType || 'box';
-            element.shape = resolvedStyles.shape || 'rect';
-            element.backgroundColor = resolvedStyles.backgroundColor || elemColors.panelColor;
-            element.style = {
-              borderRadiusPx: elemRadius,
-              borderWidthPx: elemBorderWidth,
-              borderStyle: elemBorderStyle,
-              borderColor: resolvedStyles.borderColor || elemColors.accentColor,
-              bgOpacity: elemColors.bgOpacity
-            };
-          } else if (bp.type === 'text') {
-            element.text = resolvedStyles.text || bp.name;
-            element.fontFamily = elemFont;
-            element.color = resolvedStyles.color || elemColors.textColor;
-            element.fontSizePx = resolvedStyles.fontSizePx || 32;
-          } else if (bp.type === 'widget') {
-            element.widgetId = bp.widgetId;
-            element.liveDataSource = { sseEventType: null };
-            element.propOverrides = {};
-          } else if (bp.type === 'progress_bar') {
-            element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
-            element.bindingFieldId = resolvedStyles.bindingFieldId || 'progress';
-            element.bindingFallback = resolvedStyles.bindingFallback !== undefined ? resolvedStyles.bindingFallback : 0.5;
-            element.direction = resolvedStyles.direction || 'ltr';
-            element.style = {
-              borderRadiusPx: elemRadius,
-              backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
-              fillColor: resolvedStyles.fillColor || elemColors.accentColor
-            };
-          } else if (bp.type === 'progress_ring') {
-            element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
-            element.bindingFieldId = resolvedStyles.bindingFieldId || 'progress';
-            element.bindingFallback = resolvedStyles.bindingFallback !== undefined ? resolvedStyles.bindingFallback : 0.5;
-            element.strokeWidthPx = resolvedStyles.strokeWidthPx || 12;
-            element.startAngleDeg = resolvedStyles.startAngleDeg !== undefined ? resolvedStyles.startAngleDeg : -90;
-            element.style = {
-              backgroundColor: resolvedStyles.backgroundColor || elemColors.panelColor,
-              fillColor: resolvedStyles.fillColor || elemColors.accentColor
-            };
-          } else if (bp.type === 'lower_third') {
-            element.title = resolvedStyles.title || bp.name;
-            element.subtitle = resolvedStyles.subtitle || '';
-            element.alwaysOn = resolvedStyles.alwaysOn !== undefined ? resolvedStyles.alwaysOn : true;
-            element.layout = {
-              mode: resolvedStyles.layoutMode || 'stacked',
-              splitRatio: 0.6
-            };
-            element.style = {
-              variant: resolvedStyles.variant || 'solid',
-              paddingPx: elemPadding,
-              cornerRadiusPx: elemRadius,
-              bgColor: resolvedStyles.bgColor || elemColors.panelColor,
-              bgOpacity: resolvedStyles.bgOpacity !== undefined ? resolvedStyles.bgOpacity : elemColors.bgOpacity,
-              accentColor: resolvedStyles.accentColor || elemColors.accentColor,
-              fontFamily: elemFont,
-              titleColor: elemColors.textColor,
-              subtitleColor: elemColors.textMuted,
-              titleSizePx: 36,
-              subtitleSizePx: 22,
-              titleWeight: 'bold'
-            };
-          }
-
-          // Inject Scene Intent style modifiers (transitions, glow effects)
-          if (element.style) {
-            if (transitionStyle) {
-              element.style.transition = transitionStyle;
-            }
-            if (pulsingGlow) {
-              element.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
-              element.style.animation = 'pulse 2s infinite ease-in-out';
-            }
-          }
-
-          // Persist token references in elements for live token refreshes
-          element.structureId = sId;
-          element.paletteId = pId;
-          element.anchorZone = bp.anchorZone;
-
-          resolveVisualTokens(element, pId, sId, paletteToken, structToken);
-
-          overlay.json.elements.push(element);
-        }
-
-        await updateOverlay(overlayId, guildId, overlay.json);
-        return {
-          success: true,
-          overlayId,
-          message: `Successfully applied scene archetype '${arch.displayName}' (${variant.displayName}) to overlay with ${sId} structures and ${pId} colors.`
-        };
+        const result = await applySceneTemplateInternal(overlayId, guildId, { archetypeId, variantId, structureId, paletteId, sceneIntent });
+        return result;
       }
 
       default:

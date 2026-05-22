@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { canvasToolsSchema } from "./geminiTools.js";
-import { executeCanvasTool } from "./geminiToolHandlers.js";
+import { executeCanvasTool, applySceneTemplateInternal } from "./geminiToolHandlers.js";
+import db from "../db.js";
 
 function getGenAIClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -142,7 +143,13 @@ export async function chatWithGemini(messages, systemInstruction, guildId, userI
 
         if (executionResult && typeof executionResult === 'object') {
           if (executionResult.success) {
-            actionsPerformed.push({ tool: fn.name, args: fn.args, success: true, message: executionResult.message });
+            actionsPerformed.push({ 
+              tool: fn.name, 
+              args: fn.args, 
+              success: true, 
+              message: executionResult.message,
+              overlayId: executionResult.overlayId
+            });
           } else if (executionResult.error) {
             actionsPerformed.push({ tool: fn.name, args: fn.args, success: false, error: executionResult.error });
           }
@@ -159,6 +166,30 @@ export async function chatWithGemini(messages, systemInstruction, guildId, userI
       console.log("[GeminiClient] Submitting tool feedback to Gemini...");
       result = await chat.sendMessage({ message: functionResponses });
       call = result.functionCalls;
+    }
+
+    // Guardrail: if create_overlay was run successfully during this turn,
+    // verify that the overlay is not left with an empty elements array.
+    const createOverlayAction = actionsPerformed.find(a => a.tool === 'create_overlay' && a.success);
+    if (createOverlayAction && createOverlayAction.overlayId) {
+      const overlayId = createOverlayAction.overlayId;
+      const { rows } = await db.query(
+        `SELECT config_json FROM public.overlays WHERE id = $1`,
+        [Number(overlayId)]
+      );
+      if (rows.length > 0) {
+        const configJson = rows[0].config_json;
+        if (!configJson.elements || configJson.elements.length === 0) {
+          console.warn(`[GeminiClient] GUARDRAIL: Overlay ${overlayId} was created but has 0 elements! Force-applying fallback gameplay minimalist layout.`);
+          // Force apply standard minimalist template
+          await applySceneTemplateInternal(String(overlayId), guildId, {
+            archetypeId: 'gameplay',
+            variantId: 'immersive',
+            structureId: 'minimalist',
+            paletteId: 'carbon_slate'
+          });
+        }
+      }
     }
 
     return result.text;
