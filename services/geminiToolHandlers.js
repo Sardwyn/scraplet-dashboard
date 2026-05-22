@@ -952,10 +952,11 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const newId = rows[0].id;
         
         let message = `Created overlay '${name}'`;
-        if (archetypeId && variantId) {
+        if (archetypeId) {
+          const actualVariantId = variantId || 'immersive';
           const templateResult = await applySceneTemplateInternal(String(newId), guildId, {
             archetypeId,
-            variantId,
+            variantId: actualVariantId,
             structureId,
             paletteId,
             sceneIntent
@@ -963,7 +964,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           if (templateResult.error) {
             return { success: true, overlayId: String(newId), message: `Created overlay '${name}', but failed to apply template: ${templateResult.error}` };
           }
-          message += ` and applied archetype '${archetypeId}' with variant '${variantId}'`;
+          message += ` and applied archetype '${archetypeId}' with variant '${actualVariantId}'`;
         }
         
         return { success: true, overlayId: String(newId), message };
