@@ -5,7 +5,7 @@ export const canvasToolsSchema = {
   functionDeclarations: [
     {
       name: "create_overlay",
-      description: "Creates a new stream overlay from scratch.",
+      description: "Creates a new empty stream overlay from scratch. CRITICAL: You MUST immediately follow this up with apply_scene_template in the same turn to populate it, otherwise the user will see a blank screen.",
       parameters: {
         type: "OBJECT",
         properties: {

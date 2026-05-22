@@ -1253,8 +1253,7 @@ function renderAlignedPathStroke(
                     <clipPath id={`${pathId}-inside-clip`}>
                         <path d={pathD} />
                     </clipPath>
-                                {renderParentClipPaths(elements, elementsById)}
-</defs>
+                </defs>
                 <path
                     d={pathD}
                     fill="none"

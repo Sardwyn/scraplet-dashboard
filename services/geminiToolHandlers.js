@@ -206,7 +206,7 @@ function resolveVisualTokens(element, paletteId, structureId, paletteToken, stru
 
   const nameLower = (element.name || "").toLowerCase();
   const isBackground = nameLower.includes("wallpaper") || nameLower.includes("backdrop") || nameLower.includes("background") || (element.width >= 1920 && element.height >= 1080);
-  const isShape = element.type === "shape";
+  const isShape = element.type === "shape" || element.type === "boolean";
 
   // Initialize effects array if not present
   if (!element.effects) {
@@ -1473,6 +1473,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             );
             finalX = placement.x;
             finalY = placement.y;
+            w = placement.width;
+            h = placement.height;
           }
 
 
@@ -1513,6 +1515,86 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
 
           // Construct the concrete canvas element
           const elId = crypto.randomUUID();
+
+          // Intercept webcam frame to generate a composite hollow subtract shape
+          if (bp.type === 'shape' && compId === 'webcam_frame_16_9') {
+            const outerId = crypto.randomUUID();
+            const innerId = crypto.randomUUID();
+            const borderThickness = 12; // Sleek frame border width
+
+            // 1. Outer shape (hidden helper)
+            const outerElement = {
+              id: outerId,
+              type: 'shape',
+              shapeType: 'box',
+              shape: 'rect',
+              name: `${bp.name} (Outer)`,
+              x: finalX,
+              y: finalY,
+              width: w,
+              height: h,
+              cornerRadiusPx: elemRadius,
+              visible: false,
+              locked: false
+            };
+
+            // 2. Inner shape (hidden cutout)
+            const innerElement = {
+              id: innerId,
+              type: 'shape',
+              shapeType: 'box',
+              shape: 'rect',
+              name: `${bp.name} (Cutout)`,
+              x: finalX + borderThickness,
+              y: finalY + borderThickness,
+              width: Math.max(10, w - borderThickness * 2),
+              height: Math.max(10, h - borderThickness * 2),
+              cornerRadiusPx: Math.max(0, elemRadius - borderThickness),
+              visible: false,
+              locked: false
+            };
+
+            // 3. Parent boolean subtract shape (visible, gets styles and effects)
+            const parentElement = {
+              id: elId,
+              type: 'boolean',
+              operation: 'subtract',
+              childIds: [outerId, innerId],
+              name: bp.name,
+              x: finalX,
+              y: finalY,
+              width: w,
+              height: h,
+              componentId: compId,
+              visible: true,
+              locked: false,
+              fillColor: elemColors.panelColor || '#111111',
+              fillOpacity: elemColors.bgOpacity !== undefined ? elemColors.bgOpacity : 1,
+              strokeColor: elemColors.accentColor || '#4f46e5',
+              strokeWidthPx: elemBorderWidth || 2,
+              strokeAlign: 'center',
+              style: {},
+              structureId: sId,
+              paletteId: pId,
+              anchorZone: bp.anchorZone
+            };
+
+            if (transitionStyle) {
+              parentElement.style.transition = transitionStyle;
+            }
+            if (pulsingGlow) {
+              parentElement.style.boxShadow = `0 0 15px ${elemColors.accentColor}`;
+              parentElement.style.animation = 'pulse 2s infinite ease-in-out';
+            }
+
+            resolveVisualTokens(parentElement, pId, sId, paletteToken, structToken);
+
+            overlay.json.elements.push(outerElement);
+            overlay.json.elements.push(innerElement);
+            overlay.json.elements.push(parentElement);
+            continue;
+          }
+
           let targetType = bp.type;
           if (bp.type === 'progress_bar') targetType = 'progressBar';
           if (bp.type === 'progress_ring') targetType = 'progressRing';
