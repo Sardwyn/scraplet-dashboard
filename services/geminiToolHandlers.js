@@ -26,10 +26,10 @@ const ZONE_COORDINATES = {
   BOTTOM_RIGHT: { x: 1470, y: 900, width: 400, height: 100 }
 };
 
-function resolveAnchorPlacement(elements, zone, width, height, elementId = null) {
+function resolveAnchorPlacement(elements, zone, width, height, elementId = null, baseW = 1920, baseH = 1080) {
   const defaultZone = ZONE_COORDINATES[zone] || ZONE_COORDINATES.BOTTOM_LEFT;
-  const w = width !== undefined ? width : defaultZone.width;
-  const h = height !== undefined ? height : defaultZone.height;
+  let w = width !== undefined ? width : defaultZone.width;
+  let h = height !== undefined ? height : defaultZone.height;
 
   // Determine alignment based on zone name
   const isLeft = zone.endsWith('_LEFT');
@@ -43,27 +43,27 @@ function resolveAnchorPlacement(elements, zone, width, height, elementId = null)
   // Calculate dynamic baseline X
   let x = 50;
   if (isCenter) {
-    x = Math.round((1920 - w) / 2);
+    x = Math.round((baseW - w) / 2);
   } else if (isRight) {
-    x = Math.round(1920 - w - 50);
+    x = Math.round(baseW - w - 50);
   }
 
   // Clamp X within safe boundary
-  x = Math.max(50, Math.min(1920 - w - 50, x));
+  x = Math.max(50, Math.min(baseW - w - 50, x));
 
   // Calculate dynamic baseline Y (before stacking)
   let baselineY = 50;
   if (isMiddle) {
-    baselineY = Math.round((1080 - h) / 2);
+    baselineY = Math.round((baseH - h) / 2);
   } else if (isBottom) {
-    baselineY = Math.round(1080 - h - 50);
+    baselineY = Math.round(baseH - h - 50);
   }
 
-  // Filter existing elements in this same anchor zone. Ignore full-bleed background elements (1920x1080) for stacking.
+  // Filter existing elements in this same anchor zone. Ignore full-bleed background elements for stacking.
   const zoneElements = (elements || []).filter(el => 
     el.anchorZone === zone && 
     el.id !== elementId && 
-    !(el.width === 1920 && el.height === 1080)
+    !(el.width >= baseW - 100 && el.height >= baseH - 100)
   );
 
   let y = baselineY;
@@ -81,9 +81,50 @@ function resolveAnchorPlacement(elements, zone, width, height, elementId = null)
     y = maxY + 20;
   }
 
-  // Handle canvas boundaries (1920x1080)
-  if (y + h > 1080) {
-    y = Math.max(50, 1080 - h - 50);
+  // Cross-Zone Overlap Prevention
+  const allOtherElements = (elements || []).filter(el => 
+    el.id !== elementId && 
+    !(el.width >= baseW - 100 && el.height >= baseH - 100) &&
+    el.anchorZone !== zone
+  );
+
+  for (const el of allOtherElements) {
+    const elX = el.x || 0;
+    const elW = el.width || 0;
+    const elRight = elX + elW;
+    const right = x + w;
+
+    const elY = el.y || 0;
+    const elH = el.height || 0;
+    const elBottom = elY + elH;
+    const bottom = y + h;
+
+    const yOverlap = (y < elBottom && bottom > elY);
+    const xOverlap = (x < elRight && right > elX);
+
+    if (xOverlap && yOverlap) {
+      if (isLeft && (el.anchorZone || '').endsWith('_RIGHT')) {
+        // We are on the left, el is on the right. Shrink width.
+        const maxW = elX - x - 20;
+        if (maxW > 100) {
+          w = maxW;
+        }
+      } else if (isRight && (el.anchorZone || '').endsWith('_LEFT')) {
+        // We are on the right, el is on the left.
+        // Push our X rightward and shrink width.
+        const newX = elRight + 20;
+        const maxW = baseW - newX - 50;
+        if (maxW > 100) {
+          x = newX;
+          w = maxW;
+        }
+      }
+    }
+  }
+
+  // Handle canvas boundaries
+  if (y + h > baseH) {
+    y = Math.max(50, baseH - h - 50);
   }
 
   return { x, y, width: w, height: h };
@@ -799,6 +840,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const structToken = tokens.structures[sId] || tokens.structures.minimalist;
         const paletteToken = tokens.palettes[pId] || tokens.palettes.carbon_slate;
 
+        const baseW = overlay.json.baseResolution?.width || 1920;
+        const baseH = overlay.json.baseResolution?.height || 1080;
+
         // 3. Process Scene Intent Multipliers
         let spacingMultiplier = 1.0;
         let webcamScale = 1.0;
@@ -879,15 +923,15 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           }
 
           // Calculate raw pixel dimensions from percentages
-          let w = Math.round(1920 * (bp.widthPct / 100));
-          let h = Math.round(1080 * (bp.heightPct / 100));
+          let w = Math.round(baseW * (bp.widthPct / 100));
+          let h = Math.round(baseH * (bp.heightPct / 100));
           let finalX, finalY;
 
           if (bp.widthPct === 100 && bp.heightPct === 100) {
             // Full bleed elements (e.g. wallpapers, background camera backdrops)
             // bypass scaling, boundary clamps, and grid stacking, positioning perfectly at X=0, Y=0
-            w = 1920;
-            h = 1080;
+            w = baseW;
+            h = baseH;
             finalX = 0;
             finalY = 0;
           } else {
@@ -903,16 +947,19 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
               h = Math.round(h * gameScale);
             }
 
-            // Safety limits to clamp within standard 1920x1080 frame boundaries
-            w = Math.min(1920 - 100, Math.max(100, w));
-            h = Math.min(1080 - 100, Math.max(50, h));
+            // Safety limits to clamp within standard frame boundaries
+            w = Math.min(baseW - 100, Math.max(100, w));
+            h = Math.min(baseH - 100, Math.max(50, h));
 
             // Calculate safe non-overlapping coordinates inside anchor zone
             const placement = resolveAnchorPlacement(
               overlay.json.elements,
               bp.anchorZone,
               w,
-              h
+              h,
+              null,
+              baseW,
+              baseH
             );
             finalX = placement.x;
             finalY = placement.y;
@@ -964,6 +1011,10 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             element.fontFamily = finalFont;
             element.color = resolvedStyles.color || activeColors.textColor;
             element.fontSizePx = resolvedStyles.fontSizePx || 32;
+          } else if (bp.type === 'widget') {
+            element.widgetId = bp.widgetId;
+            element.liveDataSource = { sseEventType: null };
+            element.propOverrides = {};
           } else if (bp.type === 'progress_bar') {
             element.bindingSourceId = resolvedStyles.bindingSourceId || 'custom_variables';
             element.bindingFieldId = resolvedStyles.bindingFieldId || 'progress';

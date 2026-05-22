@@ -36,18 +36,13 @@
               }
             },
             {
-              "type": "lower_third",
+              "type": "widget",
+              "widgetId": "chat-overlay",
               "name": "Floating Stream Chat Monitor",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 25,
               "heightPct": 45,
-              "style": {
-                "title": "Live Stream Chat",
-                "subtitle": "Waiting for messages...",
-                "alwaysOn": true,
-                "layoutMode": "stacked",
-                "variant": "glass"
-              }
+              "style": {}
             }
           ]
         },
@@ -92,18 +87,13 @@
               }
             },
             {
-              "type": "lower_third",
+              "type": "widget",
+              "widgetId": "chat-overlay",
               "name": "Structured Chat Panel",
               "anchorZone": "MIDDLE_RIGHT",
               "widthPct": 28,
               "heightPct": 75,
-              "style": {
-                "title": "Stream Chat",
-                "subtitle": "Be nice in chat!",
-                "alwaysOn": true,
-                "layoutMode": "stacked",
-                "variant": "solid"
-              }
+              "style": {}
             },
             {
               "type": "progress_bar",
@@ -145,18 +135,13 @@
               }
             },
             {
-              "type": "lower_third",
+              "type": "widget",
+              "widgetId": "chat-overlay",
               "name": "Borderless Floating Chat",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 20,
               "heightPct": 35,
-              "style": {
-                "title": "Chat Overlay",
-                "subtitle": "Type !commands",
-                "alwaysOn": true,
-                "layoutMode": "single",
-                "variant": "minimal"
-              }
+              "style": {}
             }
           ]
         },
@@ -337,18 +322,13 @@
               }
             },
             {
-              "type": "lower_third",
+              "type": "widget",
+              "widgetId": "chat-overlay",
               "name": "Right Sidebar Chat Monitor",
               "anchorZone": "MIDDLE_RIGHT",
               "widthPct": 35,
               "heightPct": 75,
-              "style": {
-                "title": "Pre-Stream Chat",
-                "subtitle": "Say hi while we wait!",
-                "alwaysOn": true,
-                "layoutMode": "stacked",
-                "variant": "accent-bar"
-              }
+              "style": {}
             }
           ]
         }
@@ -433,18 +413,13 @@
               }
             },
             {
-              "type": "lower_third",
+              "type": "widget",
+              "widgetId": "chat-overlay",
               "name": "Asymmetric Chat Console",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 35,
               "heightPct": 65,
-              "style": {
-                "title": "Lurk Chat Console",
-                "subtitle": "Chat lurkers active",
-                "alwaysOn": true,
-                "layoutMode": "stacked",
-                "variant": "glass"
-              }
+              "style": {}
             }
           ]
         }
