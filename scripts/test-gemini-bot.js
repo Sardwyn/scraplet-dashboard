@@ -39,8 +39,8 @@ Chaos is theatrical not literal. Roasts target ideas not vulnerabilities. Never 
 async function getLatestOverlayOrCreate() {
   console.log("🔍 Fetching latest overlay from database...");
   const { rows } = await db.query(
-    `SELECT id, user_id, public_id, name, component_json 
-     FROM public.overlay_components 
+    `SELECT id, user_id, public_id, name, config_json AS component_json 
+     FROM public.overlays 
      ORDER BY updated_at DESC LIMIT 1`
   );
 
@@ -94,7 +94,7 @@ async function runTest(userText) {
 
     // Fetch freshest elements before constructing the prompt block
     const { rows } = await db.query(
-      `SELECT component_json FROM public.overlay_components WHERE id = $1`,
+      `SELECT config_json AS component_json FROM public.overlays WHERE id = $1`,
       [overlay.id]
     );
     const activeJson = rows[0]?.component_json || overlay.component_json;
@@ -124,7 +124,7 @@ ${JSON.stringify(activeJson.elements || [], null, 2)}
 
     // Fetch the updated overlay state to print the delta
     const { rows: updatedRows } = await db.query(
-      `SELECT component_json FROM public.overlay_components WHERE id = $1`,
+      `SELECT config_json AS component_json FROM public.overlays WHERE id = $1`,
       [overlay.id]
     );
     
