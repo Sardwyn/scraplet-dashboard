@@ -83,8 +83,8 @@ async function getLatestOverlayOrCreate() {
 
 async function runTest(userText) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("❌ ERROR: GEMINI_API_KEY environment variable is not set.");
+    if (!process.env.GEMINI_API_KEY && process.env.GOOGLE_GENAI_USE_VERTEXAI !== "true") {
+      console.error("❌ ERROR: Neither GEMINI_API_KEY nor GOOGLE_GENAI_USE_VERTEXAI=true is set.");
       process.exit(1);
     }
 
