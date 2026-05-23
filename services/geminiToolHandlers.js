@@ -2150,7 +2150,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
       }
 
       case 'add_parametric_effect_to_element': {
-        const { overlayId, elementId, preset, params } = args;
+        const { overlayId, elementId, preset, params, bindings } = args;
         const overlay = await getOverlay(overlayId, guildId);
         if (!overlay) return { error: `Overlay not found` };
 
@@ -2169,6 +2169,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           enabled: true,
           params: params || {}
         };
+        if (bindings) {
+          newEffect.bindings = bindings;
+        }
 
         element.effects.push(newEffect);
 

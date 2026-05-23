@@ -473,6 +473,39 @@ For post-template adjustments, you possess advanced powers to spawn live stream 
 4. **Visual Style Matching**:
    - Newly created widgets automatically inherit the active overlay's dominant theme (colors, fonts, corners) under the hood. However, if the user explicitly asks for neon or custom styles, feel free to override \`fillColor\`, \`backgroundColor\`, \`variant\`, or \`fontFamily\`.
 
+# PARAMETRIC VISUAL EFFECTS & REAL-TIME TELEMETRY BINDINGS
+You can add high-performance visual effects (like pulsing glows, flickering holograms, neon borders, rain, or fire) to elements and link their visual properties directly to stream telemetry in real-time.
+
+1. **Preset Styles**:
+   - Camera Frames / Borders: \`lightsaberBorder\`, \`electricBorder\`, \`strokePulse\`, \`cornerBrackets\`, \`motionTrail\`.
+   - Backdrops / Canvas: \`snowfall\`, \`rain\`, \`particleEmitter\`, \`fireEmitter\`, \`lightningArc\`.
+   - Distortions / Retro: \`hologramFlicker\`, \`ripple\`, \`lensFlare\`, \`filmGrain\`, \`tapeNoise\`.
+
+2. **Real-time Telemetry Bindings (\`bindings\` parameter)**:
+   You can bind effect properties (e.g., \`speed\`, \`intensity\`, \`blur\`, \`radius\`, \`scale\`) to telemetry streams.
+   - **Source ID**: Use \`"room_intel"\` for real-time room telemetry.
+   - **Field ID**: Choose from numeric sensors:
+     - \`mpm\` (Messages Per Minute)
+     - \`engagement_index\` (Overall interaction density)
+     - \`viewers\` (Current live audience count)
+     - \`r1\` (Passive register) to \`r5\` (Hyped register)
+   - **Range Mapping**: Map the sensor's input range to the visual target range.
+     - \`inputMin\`: expected minimum sensor value
+     - \`inputMax\`: expected maximum sensor value
+     - \`targetMin\`: the visual parameter value when sensor is at \`inputMin\`
+     - \`targetMax\`: the visual parameter value when sensor is at \`inputMax\`
+
+3. **Concrete Examples**:
+   - *Hologram Flicker linked to chat mpm*:
+     If the user wants "hologram flicker intensity linked to chat volume", apply \`hologramFlicker\` with:
+     \`bindings: { intensity: { sourceId: "room_intel", fieldId: "mpm", inputMin: 0, inputMax: 60, targetMin: 0.1, targetMax: 1.5 } }\`
+   - *Neon lightsaber border pulse speed linked to hype*:
+     If the user wants a "webcam lightsaber border pulsing speed matching room hype register r5", apply \`lightsaberBorder\` with:
+     \`bindings: { speed: { sourceId: "room_intel", fieldId: "r5", inputMin: 0, inputMax: 100, targetMin: 0.5, targetMax: 4.0 } }\`
+   - *Particle emission rate linked to viewers*:
+     If the user wants a "particle emitter whose scale increases with viewers", apply \`particleEmitter\` with:
+     \`bindings: { scale: { sourceId: "room_intel", fieldId: "viewers", inputMin: 0, inputMax: 500, targetMin: 0.5, targetMax: 2.5 } }\`
+
 Always call search_vector_library to find an SVG before adding a vector.
 Use Google Fonts for text elements. Available fonts: Inter, Roboto, Open Sans, Lato, Montserrat, Oswald, Raleway, Poppins, Anton, Bebas Neue, Creepster, Orbitron, Press Start 2P.
 

@@ -77,6 +77,26 @@ export const SourceCatalog: SourceDef[] = [
     ]
   },
   {
+    id: "room_intel",
+    label: "Room Intelligence",
+    fields: [
+      { id: "engagement_index", label: "Engagement Index", type: "number", path: "event.engagement_index" },
+      { id: "room_state", label: "Room State", type: "text", path: "event.room_state" },
+      { id: "messages", label: "Messages", type: "number", path: "event.messages" },
+      { id: "mpm", label: "Messages Per Minute", type: "number", path: "event.mpm" },
+      { id: "pressure", label: "Pressure", type: "number", path: "event.pressure" },
+      { id: "viewers", label: "Viewer Count", type: "number", path: "event.meta.viewers" },
+      { id: "followers", label: "Followers Count", type: "number", path: "event.meta.followers" },
+      { id: "likes", label: "Likes Count", type: "number", path: "event.meta.likes" },
+      { id: "shares", label: "Shares Count", type: "number", path: "event.meta.shares" },
+      { id: "r1", label: "Register r1 (Passive)", type: "number", path: "event.r1" },
+      { id: "r2", label: "Register r2 (Casual)", type: "number", path: "event.r2" },
+      { id: "r3", label: "Register r3 (Engaged)", type: "number", path: "event.r3" },
+      { id: "r4", label: "Register r4 (Focused)", type: "number", path: "event.r4" },
+      { id: "r5", label: "Register r5 (Hyped)", type: "number", path: "event.r5" }
+    ]
+  },
+  {
     id: "custom_variables",
     label: "Custom Variables",
     description: "User-defined variables for this overlay",

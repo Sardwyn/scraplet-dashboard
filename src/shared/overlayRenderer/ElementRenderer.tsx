@@ -1,6 +1,6 @@
 import React, { useId, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getWidgetRenderer } from './widgetContract';
-import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS } from "../effects/parametricEffects";
+import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS, resolveEffectParams } from "../effects/parametricEffects";
 import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderMotionTrail, cleanupTrailState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
 import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
 import { globalEffectCoordinator } from "./globalEffectCoordinator";
@@ -384,7 +384,7 @@ function buildParametricCssStyle(effects: OverlayEffect[], t: number): React.CSS
     return result;
 }
 
-function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: number) {
+function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: number, data?: Record<string, any>) {
     const nonParametric = effects.filter((effect) => effect.enabled !== false && (effect as any).type !== "parametric");
     const svgFilterParametric = effects.filter((e: any) =>
         e.type === "parametric" && e.enabled !== false &&
@@ -566,9 +566,7 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
     // Parametric svgFilter effects — inject primitives into the filter
     const now2 = t ?? performance.now();
     svgFilterParametric.forEach((e: any, pi: number) => {
-        const params = e.keyframes?.length
-            ? interpolateParams(e.params, e.keyframes, now2, e.duration ?? 1000)
-            : e.params;
+        const params = resolveEffectParams(e, now2, data);
         const speed = Number(params.speed ?? 1);
         const intensity = Number(params.intensity ?? 4);
         const angle = Number(params.angle ?? 0) * Math.PI / 180;
@@ -1295,12 +1293,14 @@ function renderAlignedPathStroke(
 // ── Parametric Effect Overlay ─────────────────────────────────────────────────
 // Hook: animated CSS style for parametric effects
 // Uses a ref to store current style so it's always up-to-date without state lag
-function useParametricCss(effects: OverlayEffect[]): React.CSSProperties {
+function useParametricCss(effects: OverlayEffect[], data?: Record<string, any>): React.CSSProperties {
     const styleRef = React.useRef<React.CSSProperties>({});
     const [, forceUpdate] = React.useState(0);
     const rafRef = React.useRef<number | null>(null);
     const effectsRef = React.useRef(effects);
     effectsRef.current = effects;
+    const dataRef = React.useRef(data);
+    dataRef.current = data;
 
     React.useEffect(() => {
         const getCssEffects = () => (effectsRef.current ?? []).filter((e: any) =>
@@ -1324,9 +1324,7 @@ function useParametricCss(effects: OverlayEffect[]): React.CSSProperties {
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
             for (const e of active) {
-                const params = e.keyframes?.length
-                    ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000)
-                    : e.params;
+                const params = resolveEffectParams(e, t, dataRef.current);
                 const css = renderParametricEffectCSS(e.preset, params, t);
                 const _effOpacity = Number(params.opacity ?? 1);
                 if (css.filter) filterParts.push(css.filter as string);
@@ -1342,7 +1340,7 @@ function useParametricCss(effects: OverlayEffect[]): React.CSSProperties {
         };
         rafRef.current = requestAnimationFrame(loop);
         return () => { if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; } styleRef.current = {}; };
-    }, []); // Run once, reads effects via ref
+    }, []); // Run once, reads effects and data via refs
 
     return styleRef.current;
 }
@@ -1539,10 +1537,11 @@ function useTextShapePath(
 }
 
 function ParametricEffectOverlay({
-    effects, width, height, elementId, borderRadius = 0, shapePath = "",
+    effects, width, height, elementId, borderRadius = 0, shapePath = "", data,
 }: {
     effects: OverlayEffect[]; width: number; height: number;
     elementId: string; borderRadius?: number; shapePath?: string;
+    data?: Record<string, any>;
 }) {
     const { isPerformanceMode } = usePerformanceMode();
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1557,6 +1556,8 @@ function ParametricEffectOverlay({
     const cssEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("css"));
     const svgEffectsRef = useRef(svgEffects);
     svgEffectsRef.current = svgEffects;
+    const dataRef = useRef(data);
+    dataRef.current = data;
 
     // CSS effects: animate via React state, rendered as overlay
     useEffect(() => {
@@ -1567,9 +1568,7 @@ function ParametricEffectOverlay({
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
             for (const e of cssEffects) {
-                const params = e.keyframes?.length
-                    ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000)
-                    : e.params;
+                const params = resolveEffectParams(e, t, dataRef.current);
                 const css = renderParametricEffectCSS(e.preset, params, t);
                 const _effOpacity = Number(params.opacity ?? 1);
                 if (css.filter) filterParts.push(css.filter as string);
@@ -1603,7 +1602,7 @@ function ParametricEffectOverlay({
             ctx.clearRect(0, 0, width, height);
 
             for (const e of canvasEffects) {
-                const params = e.keyframes?.length ? interpolateParams(e.params, e.keyframes, t, e.duration ?? 1000) : e.params;
+                const params = resolveEffectParams(e, t, dataRef.current);
                 const clipMode = String(params.clipMode ?? "none");
                 ctx.save();
                 if (shapePath && clipMode !== "none") {
@@ -1710,7 +1709,7 @@ function ParametricEffectOverlay({
                         <clipPath id={`peo-bbox-${elementId}`}><rect x="0" y="0" width={width} height={height} /></clipPath>
                     </defs>
                     {svgEffects.map((e: any, i: number) => {
-                        const params = e.keyframes?.length ? interpolateParams(e.params, e.keyframes, now, e.duration ?? 1000) : e.params;
+                        const params = resolveEffectParams(e, now, data);
                         // clipMode: "surface" = clip to shape path (positive material only)
                         //           "space"   = clip to bounding box (fills holes too)
                         const clipMode = String(params.clipMode ?? "surface");
@@ -1970,7 +1969,7 @@ export function ElementRenderer({
       ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric' } as any))
       : [];
     const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects];
-    const _paramCss = useParametricCss(_elEffects);
+    const _paramCss = useParametricCss(_elEffects, data);
     useParametricRafTick(_elEffects); // drives re-renders for svgFilter/svgOverlay effects
     if (Object.keys(_paramCss).length > 0) {
         // Only apply safe properties that won't break layout
@@ -2389,7 +2388,7 @@ export function ElementRenderer({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
                         <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
@@ -2428,6 +2427,7 @@ export function ElementRenderer({
                         elementId={box.id}
                         borderRadius={box.borderRadiusPx ?? (box as any).borderRadius ?? 0}
                         shapePath={pathD}
+                        data={data}
                     />
                 </div>
             </div>
@@ -2452,7 +2452,7 @@ export function ElementRenderer({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
                         <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
@@ -2479,6 +2479,7 @@ export function ElementRenderer({
                         height={h}
                         elementId={pathEl.id}
                         shapePath={pathD}
+                        data={data}
                     />
                 </div>
             </div>
@@ -2580,6 +2581,7 @@ export function ElementRenderer({
                     height={_textH}
                     elementId={textEl.id}
                     shapePath={_textShapePath || undefined}
+                    data={data}
                 />
             </div>
         );
@@ -2603,7 +2605,7 @@ export function ElementRenderer({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
                         <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
@@ -2630,6 +2632,7 @@ export function ElementRenderer({
                         height={h}
                         elementId={booleanEl.id}
                         shapePath={pathD}
+                        data={data}
                     />
                 </div>
             </div>
@@ -2685,7 +2688,7 @@ export function ElementRenderer({
                     >
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now())}
+                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
                         <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
@@ -2724,6 +2727,7 @@ export function ElementRenderer({
                         height={h}
                         elementId={s.id}
                         shapePath={pathD}
+                        data={data}
                     />
                 </div>
             </div>
@@ -2772,6 +2776,7 @@ export function ElementRenderer({
                     width={img.width ?? 100}
                     height={img.height ?? 100}
                     elementId={img.id}
+                    data={data}
                 />
             </div>
         );
@@ -2813,6 +2818,7 @@ export function ElementRenderer({
                     width={vid.width ?? 100}
                     height={vid.height ?? 100}
                     elementId={vid.id}
+                    data={data}
                 />
             </div>
         );

@@ -521,6 +521,10 @@ export const canvasToolsSchema = {
           params: {
             type: "object",
             description: "Custom configuration properties specific to the chosen preset (colors, speed, density, opacity)."
+          },
+          bindings: {
+            type: "object",
+            description: "Optional real-time telemetry bindings mapping parameter keys to live sensors. Each key is the parameter name (e.g., 'speed', 'intensity', 'blur', 'radius', 'scale'). The value is an object containing: sourceId (string, e.g., 'room_intel'), fieldId (string, e.g., 'mpm', 'viewers', 'r1', 'engagement_index'), inputMin (number, expected lower telemetry bound), inputMax (number, expected upper telemetry bound), targetMin (number, value at inputMin), targetMax (number, value at inputMax)."
           }
         },
         required: ["overlayId", "elementId", "preset"]

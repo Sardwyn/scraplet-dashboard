@@ -1,4 +1,6 @@
 import type React from 'react';
+import { SourceCatalog } from "../bindingEngine";
+
 // src/shared/effects/parametricEffects.ts
 // Parametric animated effect system
 // Each preset is a pure function: (params, t, element) => { css?, svgFilter?, canvasRenderer? }
@@ -14,6 +16,15 @@ export interface EffectKeyframe {
   params: Partial<EffectParams>;
 }
 
+export interface ParametricBinding {
+  sourceId: string;
+  fieldId: string;
+  inputMin: number;
+  inputMax: number;
+  targetMin: number;
+  targetMax: number;
+}
+
 export interface ParametricEffectDef {
   id?: string;
   type: "parametric";
@@ -24,6 +35,8 @@ export interface ParametricEffectDef {
   keyframes?: EffectKeyframe[];
   // Duration for looping effects (ms). 0 = no loop
   duration?: number;
+  // Dynamic telemetry bindings
+  bindings?: Record<string, ParametricBinding>;
 }
 
 // ── Param schema for editor UI ────────────────────────────────────────────────
@@ -841,6 +854,59 @@ export function interpolateParams(
   }
 
   return result;
+}
+
+// ── Resolve bindings over interpolated keyframes ─────────────────────────────
+export function resolveEffectParams(
+  effect: ParametricEffectDef,
+  t: number,
+  liveData?: Record<string, any>
+): EffectParams {
+  // 1. First interpolate keyframes to get the active baseline params
+  const interpolated = interpolateParams(
+    effect.params,
+    effect.keyframes || [],
+    t,
+    effect.duration || 0
+  );
+
+  // If no bindings or no liveData, return interpolated params
+  if (!effect.bindings || !liveData) return interpolated;
+
+  const resolved = { ...interpolated };
+
+  for (const [paramKey, binding] of Object.entries(effect.bindings)) {
+    if (!binding || !binding.sourceId || !binding.fieldId) continue;
+
+    // Resolve the value from SourceCatalog & liveData
+    const source = SourceCatalog.find(s => s.id === binding.sourceId);
+    if (!source) continue;
+
+    const field = source.fields.find(f => f.id === binding.fieldId || (f as any).key === binding.fieldId);
+    if (!field) continue;
+
+    const rawVal = liveData[field.path];
+    if (rawVal === undefined || rawVal === null) continue;
+
+    const val = Number(rawVal);
+    if (isNaN(val)) continue;
+
+    // Linear mapping solver with strict [0, 1] percentage clamping
+    const inputMin = Number(binding.inputMin);
+    const inputMax = Number(binding.inputMax);
+    const targetMin = Number(binding.targetMin);
+    const targetMax = Number(binding.targetMax);
+
+    if (isNaN(inputMin) || isNaN(inputMax) || isNaN(targetMin) || isNaN(targetMax)) continue;
+
+    const denom = inputMax - inputMin;
+    const norm = denom === 0 ? 0 : Math.max(0, Math.min(1, (val - inputMin) / denom));
+    const scaled = targetMin + norm * (targetMax - targetMin);
+
+    resolved[paramKey] = scaled;
+  }
+
+  return resolved;
 }
 
 // ── CSS effect renderers ──────────────────────────────────────────────────────

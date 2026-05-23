@@ -1449,6 +1449,34 @@ export async function kickIngestHandler(req, res) {
       `[kick-ingest] ${row.kind} ${row.channel_slug} ${row.actor_username || "-"} → user_id ${userId || "null"}`
     );
 
+    if (row.kind === "room_intel" && userId) {
+      try {
+        const { rows: overlays } = await db.query(
+          `SELECT public_id FROM overlays WHERE user_id = $1`,
+          [userId]
+        );
+        for (const overlay of overlays) {
+          const packet = {
+            header: {
+              id: row.id || crypto.randomUUID(),
+              type: "room_intel",
+              ts: Date.now(),
+              producer: "scrapbot",
+              platform: row.source || "kick",
+              scope: {
+                tenantId: userId,
+                overlayPublicId: overlay.public_id
+              }
+            },
+            payload: row.payload || {}
+          };
+          await overlayGate.publish(userId, overlay.public_id, packet);
+        }
+      } catch (err) {
+        console.error("[kick-ingest] Failed to publish room_intel to overlayGate:", err);
+      }
+    }
+
     return res.json({ ok: true });
   } catch (err) {
     console.error("[kick-ingest] error", err);

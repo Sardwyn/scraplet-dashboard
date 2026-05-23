@@ -8953,6 +8953,230 @@ function EffectsStackControls({
                 )}
               </div>
             ))}
+
+            {/* Dynamic Bindings */}
+            <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dynamic Bindings</span>
+                <span className="text-[9px] text-slate-500">Bind params to live telemetry</span>
+              </div>
+              
+              {presetDef.params.filter((p: any) => p.type === 'number').map((param: any) => {
+                const binding = pe.bindings?.[param.key];
+                const isBound = !!binding;
+                
+                return (
+                  <div key={param.key} className="bg-slate-900/40 rounded border border-[rgba(255,255,255,0.04)] p-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-semibold ${isBound ? 'text-indigo-400' : 'text-slate-400'}`}>
+                          {param.label}
+                        </span>
+                        {isBound && <span className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1 rounded font-mono uppercase tracking-tighter">Live</span>}
+                      </div>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                            if (i === index) {
+                              const bindings = { ...(ef.bindings || {}) };
+                              if (isBound) {
+                                delete bindings[param.key];
+                              } else {
+                                bindings[param.key] = {
+                                  sourceId: 'room_intel',
+                                  fieldId: 'mpm',
+                                  inputMin: 0,
+                                  inputMax: 100,
+                                  targetMin: param.min ?? 0,
+                                  targetMax: param.max ?? 10
+                                };
+                              }
+                              return { ...ef, bindings };
+                            }
+                            return ef;
+                          });
+                          onChange({ parametricEffects: next } as any);
+                        }}
+                        className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                          isBound 
+                            ? 'text-rose-400 bg-rose-500/10 hover:bg-rose-500/20' 
+                            : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-indigo-300'
+                        }`}
+                      >
+                        <span>{isBound ? 'Unbind' : 'Bind'}</span>
+                      </button>
+                    </div>
+                    
+                    {isBound && (
+                      <div className="space-y-2 pt-1 border-t border-[rgba(255,255,255,0.03)] text-[10px]">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-0.5">
+                            <label className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Source</label>
+                            <select
+                              value={binding.sourceId}
+                              onChange={(e) => {
+                                const sourceId = e.target.value;
+                                const src = SourceCatalog.find(s => s.id === sourceId);
+                                const firstFieldId = src?.fields.filter(f => f.type === 'number')[0]?.id || '';
+                                const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                  if (i === index) {
+                                    const bindings = { ...(ef.bindings || {}) };
+                                    bindings[param.key] = {
+                                      ...bindings[param.key],
+                                      sourceId,
+                                      fieldId: firstFieldId
+                                    };
+                                    return { ...ef, bindings };
+                                  }
+                                  return ef;
+                                });
+                                onChange({ parametricEffects: next } as any);
+                              }}
+                              className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5`}
+                            >
+                              {SourceCatalog.filter(s => s.id !== 'custom_variables').map(s => (
+                                <option key={s.id} value={s.id}>{s.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="space-y-0.5">
+                            <label className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Field</label>
+                            <select
+                              value={binding.fieldId}
+                              onChange={(e) => {
+                                const fieldId = e.target.value;
+                                const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                  if (i === index) {
+                                    const bindings = { ...(ef.bindings || {}) };
+                                    bindings[param.key] = {
+                                      ...bindings[param.key],
+                                      fieldId
+                                    };
+                                    return { ...ef, bindings };
+                                  }
+                                  return ef;
+                                });
+                                onChange({ parametricEffects: next } as any);
+                              }}
+                              className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5`}
+                            >
+                              {(SourceCatalog.find(s => s.id === binding.sourceId)?.fields.filter(f => f.type === 'number') || []).map(f => (
+                                <option key={f.id} value={f.id}>{f.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <div className="space-y-1">
+                            <div className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Input Telemetry Range</div>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                placeholder="Min"
+                                value={binding.inputMin}
+                                onChange={(e) => {
+                                  const inputMin = Number(e.target.value);
+                                  const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        inputMin
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ parametricEffects: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                              />
+                              <span className="text-slate-600">to</span>
+                              <input
+                                type="number"
+                                placeholder="Max"
+                                value={binding.inputMax}
+                                onChange={(e) => {
+                                  const inputMax = Number(e.target.value);
+                                  const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        inputMax
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ parametricEffects: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <div className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Target Value Range</div>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step={param.step ?? 0.1}
+                                placeholder="Min"
+                                value={binding.targetMin}
+                                onChange={(e) => {
+                                  const targetMin = Number(e.target.value);
+                                  const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        targetMin
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ parametricEffects: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                              />
+                              <span className="text-slate-600">to</span>
+                              <input
+                                type="number"
+                                step={param.step ?? 0.1}
+                                placeholder="Max"
+                                value={binding.targetMax}
+                                onChange={(e) => {
+                                  const targetMax = Number(e.target.value);
+                                  const next = (element as any).parametricEffects.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        targetMax
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ parametricEffects: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })}
