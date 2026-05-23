@@ -8,6 +8,8 @@ import { Client, GatewayIntentBits, Partials, PermissionsBitField } from "discor
 dotenv.config({ path: "/var/www/scraplet/scraplet-dashboard/.env" });
 
 
+const contentPackMessages = new Map();
+
 const ENABLED = String(process.env.DISCORD_BOT_ENABLED || "true").toLowerCase() === "true";
 let TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 // Aggressively strip quotes and trailing spaces just in case the .env was copy-pasted weirdly

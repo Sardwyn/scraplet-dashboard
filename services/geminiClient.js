@@ -154,6 +154,7 @@ export async function chatWithGemini(messages, systemInstruction, guildId, userI
         functionResponses.push({
           functionResponse: {
             name: fn.name,
+            id: fn.id,
             response: executionResult
           }
         });
