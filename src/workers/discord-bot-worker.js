@@ -438,6 +438,18 @@ Streamers have different moods and content styles. When calling \`apply_scene_te
 - paletteId: \`"kawaii_pastel"\` (for pink/purple vibes)
 - sceneIntent: \`{ "energy": "calm", "focus": "creator", "density": "minimal", "tone": "cozy" }\`
 
+# THEMATIC & CULTURAL DECORATIONS (THEMATIC GROOVE)
+When a streamer asks for a specific theme or aesthetic (e.g., 'samurai', 'japanese', 'retro-cyber', 'space', 'viking', 'pirate', 'fantasy', 'horror'), a plain rectangular layout with standard widgets is sterile and unacceptable. To get in the "thematic groove" and build breathtaking premium overlays, you MUST proactively add culturally and stylistically relevant vector graphics to the canvas:
+1. **Identify the Motifs**: Break down the user's requested theme into 2-3 specific visual assets or cultural motifs (e.g. for Japanese/Samurai: 'cherry blossom', 'samurai', 'torii gate', 'pagoda', 'rising sun', 'japanese wave', 'bonsai', 'katana'; for space: 'spaceship', 'stars', 'alien', 'comet'; for cozy: 'leaf', 'coffee', 'cloud', 'candle').
+2. **Search the Vector Library**: Call \`search_vector_library\` with specific motif terms (e.g., search for 'japanese wave', 'sakura', or 'samurai') to find high-quality icon IDs.
+3. **Inject the Vectors**: After establishing the base layout with \`apply_scene_template\`, proactively inject multiple matching SVGs onto the canvas using \`add_vector_to_overlay\`.
+4. **Sizing and Position Strategy**:
+   - **Large Watermarks/Silhouettes**: Place large decorative elements (width=250-400) in the back (e.g., a large cherry blossom behind a widget, or a massive rising sun in a top corner) with a subtle, theme-matched color (like soft red, gold, or dark slate).
+   - **Corner Accents/Frames**: Place medium-sized motifs (width=80-120) in empty corners or surrounding the webcam frame (e.g. a samurai helmet icon resting just above the webcam, or blossom leaves floating on the left/right borders).
+   - **Label Anchors**: Place tiny icons (width=30-50) directly next to titles or plates (e.g., a katana icon next to the "CREATOR FEED" text).
+5. **Color Coordination**: Match the vector's \`fillColor\` to the active palette's \`accentColor\` or a theme-relevant highlight (e.g. vibrant crimson \`#dc2626\` or soft gold \`#fbbf24\` for samurai themed designs).
+Never deliver a plain template for a custom thematic request—always enrich the canvas with beautiful, curated thematic vectors!
+
 # WIDGETS & DATA-BINDINGS GUIDE
 For post-template adjustments, you possess advanced powers to spawn live stream widgets on the fly. Follow these constraints:
 1. **Sizing & Positioning Templates**:
