@@ -12,15 +12,11 @@
               "type": "shape",
               "name": "Webcam Background Border",
               "componentId": "webcam_frame_16_9",
+              "variantId": "neon",
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColor": "rgba(0, 0, 0, 0)",
-                "borderWidthPx": 8,
-                "borderColorKey": "accentColor"
-              }
+              "style": {}
             },
             {
               "type": "lower_third",
@@ -60,24 +56,17 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "shape",
               "name": "Camera Framing Box",
               "componentId": "webcam_frame_16_9",
+              "variantId": "minimal",
               "anchorZone": "MIDDLE_LEFT",
               "widthPct": 65,
               "heightPct": 75,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "panelColor",
-                "borderWidthPx": 4,
-                "borderColorKey": "accentColor"
-              }
+              "style": {}
             },
             {
               "type": "text",
@@ -133,15 +122,11 @@
               "type": "shape",
               "name": "Floating Facecam Frame",
               "componentId": "webcam_frame_16_9",
+              "variantId": "minimal",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 18,
               "heightPct": 22,
-              "style": {
-                "shapeType": "box",
-                "backgroundColor": "rgba(0,0,0,0.15)",
-                "borderWidthPx": 2,
-                "borderColorKey": "accentColor"
-              }
+              "style": {}
             },
             {
               "type": "widget",
@@ -166,38 +151,27 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "shape",
               "name": "Main Gameplay Box",
               "componentId": "backdrop_plate",
+              "variantId": "minimal",
               "anchorZone": "CENTER_HUD",
               "widthPct": 75,
               "heightPct": 75,
-              "style": {
-                "shapeType": "box",
-                "backgroundColor": "rgba(0,0,0,0.2)",
-                "borderWidthPx": 3,
-                "borderColorKey": "textMuted"
-              }
+              "style": {}
             },
             {
               "type": "shape",
               "name": "Co-pilot Cam Frame",
               "componentId": "webcam_frame_16_9",
+              "variantId": "minimal",
               "anchorZone": "BOTTOM_RIGHT",
               "widthPct": 20,
               "heightPct": 22,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "panelColor",
-                "borderWidthPx": 2,
-                "borderColorKey": "accentColor"
-              }
+              "style": {}
             },
             {
               "type": "lower_third",
@@ -233,10 +207,7 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "text",
@@ -310,10 +281,7 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "text",
@@ -372,10 +340,7 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "lower_third",
@@ -420,10 +385,7 @@
               "anchorZone": "CENTER_HUD",
               "widthPct": 100,
               "heightPct": 100,
-              "style": {
-                "shapeType": "box",
-                "backgroundColorKey": "bgColor"
-              }
+              "style": {}
             },
             {
               "type": "lower_third",

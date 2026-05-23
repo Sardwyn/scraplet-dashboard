@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scraplet Primitive Geometries",
+  "description": "Standard mathematical and vector primitives serving as the structural atoms (Layer 1) of the Scraplet design engine.",
+  "primitives": {
+    "rect": {
+      "type": "shape",
+      "shape": "rect",
+      "shapeType": "shape"
+    },
+    "circle": {
+      "type": "shape",
+      "shape": "circle",
+      "shapeType": "shape"
+    },
+    "line": {
+      "type": "shape",
+      "shape": "line",
+      "shapeType": "shape"
+    },
+    "subtract_mask": {
+      "type": "mask",
+      "shape": "rect",
+      "operation": "subtract"
+    }
+  }
+}

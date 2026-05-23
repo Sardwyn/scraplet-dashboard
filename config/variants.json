@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Scraplet Component Variants",
+  "description": "Visual expressions (adjectives) for components (nouns) that override geometry, structure, or decoration (Layer 3).",
+  "variants": {
+    "minimal": {
+      "default": {
+        "borderWidthPx": 1,
+        "borderRadiusPx": 4,
+        "bgOpacity": 0.8
+      },
+      "webcam_frame_16_9": {
+        "borderThickness": 4,
+        "borderRadiusPx": 2
+      }
+    },
+    "neon": {
+      "default": {
+        "borderWidthPx": 2,
+        "borderRadiusPx": 8,
+        "effects": [
+          {
+            "id": "lightsaber-glow-effect",
+            "type": "parametric",
+            "preset": "lightsaberBorder",
+            "enabled": true,
+            "params": { "pulse": true, "speed": 1.5, "intensity": 0.8 }
+          }
+        ]
+      },
+      "webcam_frame_16_9": {
+        "borderThickness": 6,
+        "effects": [
+          {
+            "id": "electric-glow-effect",
+            "type": "parametric",
+            "preset": "electricBorder",
+            "enabled": true,
+            "params": { "speed": 2.0, "intensity": 0.9 }
+          }
+        ]
+      }
+    },
+    "hud": {
+      "default": {
+        "borderWidthPx": 2,
+        "borderRadiusPx": 0,
+        "effects": [
+          {
+            "id": "corner-bracket-effect",
+            "type": "parametric",
+            "preset": "cornerBrackets",
+            "enabled": true,
+            "params": { "size": 16, "thickness": 2 }
+          }
+        ]
+      },
+      "webcam_frame_16_9": {
+        "borderThickness": 10,
+        "compositionVariant": "preset_tactical_beveled"
+      }
+    },
+    "glass": {
+      "default": {
+        "bgOpacity": 0.35,
+        "borderRadiusPx": 16,
+        "borderWidthPx": 1,
+        "effects": [
+          {
+            "id": "glass-hologram-effect",
+            "type": "parametric",
+            "preset": "hologramFlicker",
+            "enabled": true,
+            "params": { "opacity": 0.4, "speed": 0.5 }
+          }
+        ]
+      },
+      "backdrop_plate": {
+        "bgOpacity": 0.25,
+        "borderRadiusPx": 24
+      }
+    },
+    "cyber_notch": {
+      "default": {
+        "borderWidthPx": 2,
+        "borderRadiusPx": 0
+      },
+      "webcam_frame_16_9": {
+        "borderThickness": 12,
+        "compositionVariant": "preset_cyber_notch",
+        "effects": [
+          {
+            "id": "cyber-glow-effect",
+            "type": "parametric",
+            "preset": "lightsaberBorder",
+            "enabled": true,
+            "params": { "pulse": false, "speed": 1.0 }
+          }
+        ]
+      }
+    },
+    "organic_wave": {
+      "default": {
+        "borderRadiusPx": 24
+      },
+      "backdrop_plate": {
+        "compositionVariant": "preset_organic_wave"
+      }
+    }
+  }
+}
