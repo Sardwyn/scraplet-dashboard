@@ -559,6 +559,13 @@ client.on("messageCreate", async (msg) => {
     // Load conversation context
     const conversationId = await getOrCreateConversation(guildId, channelId);
 
+    // ── /forget, /reset, /clear memory wipe command ───────────────────────
+    if (/^[!/]?(forget|reset|clear)\b/i.test(userText.trim())) {
+      await db.query(`DELETE FROM public.discord_ai_messages WHERE conversation_id = $1`, [conversationId]);
+      await msg.reply("Memory wiped, meatbag! What were we talking about? Oh right, I don't care.");
+      return;
+    }
+
     // ── /status or !status command ───────────────────────────────────────────
     if (/^[!/]status\b/i.test(userText.trim())) {
       try {

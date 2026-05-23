@@ -317,8 +317,8 @@
           
           <div class="flex items-center gap-3">
             <div class="flex items-center bg-black/40 border border-white/10 rounded-sm p-1">
-              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm is-active" data-view-toggle="grid">Grid</button>
-              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm" data-view-toggle="list">List</button>
+              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm is-active" data-library-view="grid">Grid</button>
+              <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-sm" data-library-view="list">List</button>
             </div>
           </div>
         </div>
@@ -608,7 +608,7 @@
     const root = document.getElementById("overlayLibrary");
     if (!root) return;
 
-    const searchInput = document.getElementById("overlayLibrarySearch");
+    const searchInput = document.getElementById("librarySearch");
     const filterButtons = Array.from(root.querySelectorAll("[data-library-filter]"));
     const viewButtons = Array.from(root.querySelectorAll("[data-library-view]"));
     const sections = Array.from(root.querySelectorAll("[data-library-section]"));
