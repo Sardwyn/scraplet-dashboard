@@ -1309,7 +1309,20 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const scale = w / svgData.viewBox.width;
         const h = svgData.viewBox.height * scale;
 
-        // Create Path Elements for each parsed path
+        // If no explicit fillColor is passed, bind to theme.accentColor
+        const finalColor = fillColor || 'theme.accentColor';
+        const initialFills = [{
+          type: 'solid',
+          color: finalColor,
+          opacity: 1
+        }];
+
+        const activePaletteId = overlay.json.paletteId || 'carbon_slate';
+        const activeStructureId = overlay.json.structureId || 'minimalist';
+        const resolvedFills = resolveThemeReferences(initialFills, activePaletteId, activeStructureId, 'vector_library');
+        const resolvedColor = resolvedFills[0]?.color || '#ffffff';
+
+        // Create Path Elements for each parsed path with first-class primitive properties
         for (const p of svgData.paths) {
           const elId = crypto.randomUUID();
           overlay.json.elements.push({
@@ -1320,7 +1333,11 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             y: y || 0,
             width: w,
             height: h,
-            fillColor: fillColor || '#ffffff',
+            componentId: 'vector_library',
+            iconId: iconId,
+            source: 'vectorLibrary',
+            fills: initialFills,
+            fillColor: resolvedColor,
             fillOpacity: 1,
             locked: false,
             visible: true
@@ -1614,7 +1631,14 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
             if (resPanelColor) el.fillColor = resPanelColor;
             if (resAccentColor && el.strokeColor) el.strokeColor = resAccentColor;
           } else if (el.type === 'path') {
-            if (resAccentColor) el.fillColor = resAccentColor;
+            if (el.fills && el.fills.length > 0) {
+              el.fills = resolveThemeReferences(el.fills, paletteId, structureId, el.componentId || 'vector_library');
+              if (el.fills[0] && el.fills[0].color) {
+                el.fillColor = el.fills[0].color;
+              }
+            } else {
+              if (resAccentColor) el.fillColor = resAccentColor;
+            }
             if (resTextColor && el.strokeColor) el.strokeColor = resTextColor;
           } else if (el.type === 'progressBar') {
             if (resAccentColor) el.fillColor = resAccentColor;
