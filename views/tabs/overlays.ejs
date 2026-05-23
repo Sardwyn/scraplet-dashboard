@@ -350,6 +350,7 @@
                 class="pc-panel overlay-card"
                 data-library-item
                 data-kind="overlay"
+                id="overlay-card-<%= ov.id %>"
                 data-scene-type="<%= ov.scene_type || 'overlay' %>"
                 data-search="<%= [ov.name, ov.slug, ov.public_id, ov.scene_type || 'overlay'].join(' ').toLowerCase() %>"
                 style="--card-hue: <%= hue %>;"
@@ -387,6 +388,7 @@
                     <a href="/o/<%= ov.public_id %>" target="_blank" rel="noopener" class="pc-btn pc-btn--ghost">Preview</a>
                     <button type="button" class="pc-btn pc-btn--ghost" data-copy-url="/o/<%= ov.public_id %>">Copy URL</button>
                     <button type="button" class="pc-btn pc-btn--ghost" data-duplicate-id="<%= ov.id %>" data-duplicate-name="<%= ov.name %>">Duplicate</button>
+                    <button type="button" class="pc-btn pc-btn--ghost text-red-400 hover:text-red-300" data-delete-overlay="<%= ov.id %>">Delete</button>
                   </div>
                 </div>
               </article>
@@ -556,6 +558,7 @@
                 class="pc-panel overlay-card"
                 data-library-item
                 data-kind="static"
+                id="overlay-card-<%= ov.id %>"
                 data-asset-type="<%= ov.asset_type %>"
                 data-search="<%= [ov.name, ov.asset_type, ov.public_id].join(' ').toLowerCase() %>"
                 style="--card-hue: <%= hue %>;"
@@ -582,6 +585,7 @@
                   </div>
                   <div class="overlay-card__footer">
                     <a href="/dashboard/overlays/<%= ov.id %>/edit" class="pc-btn pc-btn--primary">Open editor</a>
+                    <button type="button" class="pc-btn pc-btn--ghost text-red-400 hover:text-red-300" data-delete-overlay="<%= ov.id %>">Delete</button>
                   </div>
                 </div>
               </article>
@@ -747,6 +751,33 @@
         } catch (err) {
           console.error(err);
           alert(err.message || "Failed to delete template");
+        }
+      }
+
+      const deleteOverlayBtn = target.closest("[data-delete-overlay]");
+      if (deleteOverlayBtn instanceof HTMLElement) {
+        const overlayId = deleteOverlayBtn.dataset.deleteOverlay;
+        if (!overlayId) return;
+        if (!confirm("Are you sure you want to delete this overlay? This action is permanent!")) return;
+
+        try {
+          const res = await fetch(`/dashboard/overlays/${overlayId}`, {
+            method: "DELETE"
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Failed to delete overlay");
+          }
+
+          const card = document.getElementById(`overlay-card-${overlayId}`);
+          if (card) {
+            card.remove();
+            applyLibraryFilters();
+          }
+        } catch (err) {
+          console.error(err);
+          alert(err.message || "Failed to delete overlay");
         }
       }
     });

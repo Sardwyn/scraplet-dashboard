@@ -792,6 +792,31 @@ ${JSON.stringify(ov.component_json.elements || [], null, 2)}
     }
     const dynamicMaxTokens = getMaxTokens(userText);
 
+    function isDesignRequest(text) {
+      const lower = text.toLowerCase();
+      
+      const designKeywords = [
+        "layout", "overlay", "scene", "canvas", "template", "theme", "widget", "progress bar", 
+        "progress ring", "lower third", "text element", "shape", "vector", "camera frame", "webcam frame"
+      ];
+      
+      const actionVerbs = [
+        "create", "add", "make", "design", "apply", "change", "modify", "update", "delete", "remove", 
+        "style", "scale", "position", "move", "resize", "align", "put"
+      ];
+
+      const hasAction = actionVerbs.some(verb => new RegExp(`\\b${verb}\\b`).test(lower));
+      const hasDesignKeyword = designKeywords.some(keyword => lower.includes(keyword));
+
+      const directKeywords = [
+        "apply theme", "apply template", "add text", "add progress", "add shape", "add vector", "add lower third",
+        "create overlay", "change theme", "change layout", "update layout"
+      ];
+      const hasDirect = directKeywords.some(k => lower.includes(k));
+
+      return (hasAction && hasDesignKeyword) || hasDirect;
+    }
+
     const hasGemini = !!process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_USE_VERTEXAI === "true";
     let reply;
 
@@ -799,8 +824,20 @@ ${JSON.stringify(ov.component_json.elements || [], null, 2)}
       try {
         reply = await chatWithGemini(ragMessages, finalSystemContentWithCanvas, guildId, Number(claim.owner_user_id));
       } catch (err) {
-        console.error("[Gemini] fallback to vLLM due to error:", err.message);
-        reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+        console.error("[Gemini] fallback evaluation due to error:", err.message);
+        if (isDesignRequest(userText)) {
+          console.log("[Gemini] Design query detected. Blocking vLLM fallback to prevent hallucinations.");
+          const designErrors = [
+            "My design processors just timed out, meatbag! Try again in a second, and make sure your database isn't jammed!",
+            "I tried to forge that shiny new design, but my database circuits just went on strike! Try again, flesh-bot!",
+            "A glitch in my layout matrix! My mechanical fingers slipped and the request timed out. Run that query again!",
+            "Error: Bending unit overloaded! I can't write to the database right now. Grab me a cold beer while I reboot my design processors!"
+          ];
+          reply = designErrors[Math.floor(Math.random() * designErrors.length)];
+        } else {
+          console.log("[Gemini] Non-design query. Falling back to vLLM.");
+          reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });
+        }
       }
     } else {
       reply = await llmChat(ragMessages, { max_tokens: dynamicMaxTokens, temperature: 0.82, top_p: 0.92, repetition_penalty: 1.12 });

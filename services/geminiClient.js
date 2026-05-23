@@ -13,7 +13,9 @@ function getGenAIClient() {
   } else if (useVertex) {
     console.log("[GeminiClient] Initializing Google Cloud Vertex AI client (via Application Default Credentials)");
     return new GoogleGenAI({
-      apiKey: null // Forces client to use Google Application Default Credentials
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT || "project-051fb637-39b3-4630-ad9",
+      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1"
     });
   }
   
@@ -110,13 +112,7 @@ export async function chatWithGemini(messages, systemInstruction, guildId, userI
     tools: [canvasToolsSchema]
   };
 
-  // Provide explicit Vertex context if running on Vertex AI
-  if (isVertex) {
-    chatConfig.vertexContext = {
-      project: process.env.GOOGLE_CLOUD_PROJECT || "project-051fb637-39b3-4630-ad9",
-      location: process.env.GOOGLE_CLOUD_LOCATION || "us-central1"
-    };
-  }
+
 
   const chat = ai.chats.create({
     model: modelName,

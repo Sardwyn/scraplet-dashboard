@@ -301,6 +301,30 @@ router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
 });
 
 
+// DELETE /dashboard/overlays/:id - delete overlay or static asset cleanly
+router.delete("/overlays/:id", requireAuth, async (req, res, next) => {
+  try {
+    const userId = req.session.user.id;
+    const id = Number(req.params.id);
+
+    const { rowCount } = await db.query(
+      `DELETE FROM overlays
+       WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (!rowCount) {
+      return res.status(404).json({ error: "Overlay not found or unauthorized" });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[DeleteOverlay] Error deleting overlay:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 export default router;
 
 
