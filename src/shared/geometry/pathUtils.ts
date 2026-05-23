@@ -354,7 +354,7 @@ export function elementToOverlayPath(element: OverlayElement): OverlayPath | nul
     const pathEl = element as OverlayPathElement;
     return scalePathToBounds(pathEl.path, pathEl.width ?? 0, pathEl.height ?? 0);
   }
-  if (element.type === "shape") return shapeElementToPath(element as OverlayShapeElement);
+  if (element.type === "shape" || element.type === "mask") return shapeElementToPath(element as OverlayShapeElement);
   if (element.type === "box") return boxElementToPath(element as OverlayBoxElement);
   return null;
 }
