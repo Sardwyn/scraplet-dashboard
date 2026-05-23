@@ -636,6 +636,14 @@ function compileComponentRecipe(compId, variantId, x, y, width, height, paletteI
     return null;
   }
 
+  const firstPrim = recipe.primitives[0];
+  let scaleX = 1;
+  let scaleY = 1;
+  if (firstPrim && typeof firstPrim.width === 'number' && typeof firstPrim.height === 'number') {
+    scaleX = width / firstPrim.width;
+    scaleY = height / firstPrim.height;
+  }
+
   // Generate IDs for all sub-primitives
   for (const prim of recipe.primitives) {
     generatedIds[prim.name] = crypto.randomUUID();
@@ -652,6 +660,8 @@ function compileComponentRecipe(compId, variantId, x, y, width, height, paletteI
     if (prim.width !== undefined) {
       if (typeof prim.width === 'string' && prim.width.endsWith('%')) {
         primW = Math.round(width * (parseFloat(prim.width) / 100));
+      } else if (typeof prim.width === 'number') {
+        primW = Math.round(prim.width * scaleX);
       } else {
         primW = prim.width;
       }
@@ -659,14 +669,40 @@ function compileComponentRecipe(compId, variantId, x, y, width, height, paletteI
     if (prim.height !== undefined) {
       if (typeof prim.height === 'string' && prim.height.endsWith('%')) {
         primH = Math.round(height * (parseFloat(prim.height) / 100));
+      } else if (typeof prim.height === 'number') {
+        primH = Math.round(prim.height * scaleY);
       } else {
         primH = prim.height;
       }
     }
-    if (prim.x !== undefined) primX = x + prim.x;
-    if (prim.y !== undefined) primY = y + prim.y;
-    if (prim.x_offset !== undefined) primX = x + prim.x_offset;
-    if (prim.y_offset !== undefined) primY = y + prim.y_offset;
+    if (prim.x !== undefined) {
+      if (typeof prim.x === 'number') {
+        primX = x + Math.round(prim.x * scaleX);
+      } else {
+        primX = x + prim.x;
+      }
+    }
+    if (prim.y !== undefined) {
+      if (typeof prim.y === 'number') {
+        primY = y + Math.round(prim.y * scaleY);
+      } else {
+        primY = y + prim.y;
+      }
+    }
+    if (prim.x_offset !== undefined) {
+      if (typeof prim.x_offset === 'number') {
+        primX = x + Math.round(prim.x_offset * scaleX);
+      } else {
+        primX = x + prim.x_offset;
+      }
+    }
+    if (prim.y_offset !== undefined) {
+      if (typeof prim.y_offset === 'number') {
+        primY = y + Math.round(prim.y_offset * scaleY);
+      } else {
+        primY = y + prim.y_offset;
+      }
+    }
 
     const variantBorderThickness = getProp("borderThickness", prim);
     const compositionVariant = getProp("compositionVariant", prim);

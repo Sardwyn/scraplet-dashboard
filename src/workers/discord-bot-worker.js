@@ -366,6 +366,7 @@ CRITICAL: When you use \`create_overlay\`, the canvas is completely EMPTY. You M
 1. **Interactive Widgets over Static Panels**: Always use the interactive chat widget (\`widgetId: 'chat-overlay'\`) for chat spaces instead of static text blocks or static lower_thirds.
 2. **Webcam Scaling Bounds**: When 'focus' is 'creator', the camera bounds will scale up. Do not scale them so large that they overlap right-aligned chat panels or sidebars. The layout engine will automatically restrict cross-zone overlap based on canvas size, but you must instruct the engine sensibly.
 3. **Z-Indexing / Boundary Logic**: Wallpaper backdrops are sent to the back (full bleed 100%), Webcams in the middle, and Telemetry/Widgets on top.
+4. **Archetype Selection & Backgrounds**: When a user's prompt explicitly mentions custom background styles, themed backgrounds, sunset, pattern, wallpaper, or any rich thematic environment, ALWAYS select the \`framed_split\` variant of \`just_chatting\` (or a structured gameplay template with background layers). NEVER select the \`immersive\` variant for these requests, because \`immersive\` has no background wallpaper layer and expects a live camera feed underneath.
 
 # THE PRIMITIVES: SCENE ARCHETYPES, VARIANTS & DESIGN TOKENS
 
@@ -444,6 +445,12 @@ When a streamer asks for a specific theme or aesthetic (e.g., 'samurai', 'japane
 2. **Search the Vector Library**: Call \`search_vector_library\` with specific motif terms (e.g., search for 'japanese wave', 'sakura', or 'samurai') to find high-quality icon IDs.
 3. **Inject the Vectors**: After establishing the base layout with \`apply_scene_template\`, proactively inject multiple matching SVGs onto the canvas using \`add_vector_to_overlay\`.
 4. **Sizing and Position Strategy**:
+   - **Strict Sizing & Position Strategy (Preventing Composition Chaos)**:
+     To prevent placing vectors randomly or layout overlapping, you MUST adhere to strict coordinate quadrants on the 1920x1080 canvas:
+     - **Bottom Margin Area**: y coordinate between \`800\` and \`950\`, x coordinate between \`100\` and \`1500\`. Excellent for placing horizontal decorative banners, dividers, or rows of small/medium vectors.
+     - **Top Corner Areas**: x coordinate between \`100\` and \`300\` (left) or \`1600\` and \`1800\` (right), y coordinate between \`100\` and \`300\`. Perfect for large/medium thematic emblems and decorative motifs. Avoid putting vectors in the exact dead center unless they are background patterns.
+     - **Webcam Coordination**: Never place decorative vectors inside or overlapping the webcam container bounding box, which usually spans from \`x: 100, y: 150\` up to \`width: 800, height: 600\` depending on the template. Ensure decorative vectors are positioned at least 50px away from the webcam boundaries.
+     - **Wallpaper Backgrounds**: If adding a custom full-canvas wallpaper background element manually, always set \`x: 0\`, \`y: 0\`, \`width: 1920\`, \`height: 1080\`.
    - **Large Watermarks/Silhouettes**: Place large decorative elements (width=250-400) in the back (e.g., a large cherry blossom behind a widget, or a massive rising sun in a top corner) with a subtle, theme-matched color (like soft red, gold, or dark slate).
    - **Corner Accents/Frames**: Place medium-sized motifs (width=80-120) in empty corners or surrounding the webcam frame (e.g. a samurai helmet icon resting just above the webcam, or blossom leaves floating on the left/right borders).
    - **Label Anchors**: Place tiny icons (width=30-50) directly next to titles or plates (e.g., a katana icon next to the "CREATOR FEED" text).
