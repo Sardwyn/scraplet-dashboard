@@ -2989,6 +2989,99 @@ export function ElementRenderer({
             ...(isExiting ? getAnimStyle(animOut) : {}),
         };
 
+        // Helpers for parsing social platform keywords, logos, and brand colors
+        const getSocialIconAndColor = (text: string): { icon: React.ReactNode; color: string; cleanText: string } | null => {
+            if (!text) return null;
+            const lower = text.toLowerCase().trim();
+
+            const svgStyles: React.CSSProperties = {
+                verticalAlign: "middle",
+                marginRight: "8px",
+                display: "inline-block",
+                width: "1.1em",
+                height: "1.1em",
+                fill: "currentColor",
+                flexShrink: 0
+            };
+
+            const twitchIcon = (
+                <svg style={svgStyles} viewBox="0 0 24 24">
+                    <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                </svg>
+            );
+
+            const twitterXIcon = (
+                <svg style={svgStyles} viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 7.56 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.085L1.254 2.25h6.7l4.757 6.286zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+            );
+
+            const youtubeIcon = (
+                <svg style={svgStyles} viewBox="0 0 24 24">
+                    <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+            );
+
+            const discordIcon = (
+                <svg style={svgStyles} viewBox="0 0 24 24">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.03c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.03A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.111a13.994 13.994 0 0 1-1.875-.894.083.083 0 0 1-.008-.136c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.075 0 0 1 .078.009c.12.099.246.195.373.289a.083.083 0 0 1-.006.134 14.113 14.113 0 0 1-1.875.89.08.08 0 0 0-.025.11c.361.7.772 1.365 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z"/>
+                </svg>
+            );
+
+            // Clean prefixes if explicitly present
+            const twitchRegex = /^(?:twitch(?:\.tv)?(?:\s*:\s*|\s+)?|@twitch\s*)/i;
+            const twitterRegex = /^(?:twitter(?:\.com)?(?:\s*:\s*|\s+)?|x(?:\.com)?(?:\s*:\s*|\s+)?|@x\s+|@twitter\s*)/i;
+            const youtubeRegex = /^(?:youtube(?:\.com)?(?:\s*:\s*|\s+)?|yt(?:\s*:\s*|\s+)?|@youtube\s*)/i;
+            const discordRegex = /^(?:discord(?:\.gg)?(?:\s*:\s*|\s+)?|@discord\s*)/i;
+
+            if (twitchRegex.test(text)) {
+                return { icon: twitchIcon, color: "#a970ff", cleanText: text.replace(twitchRegex, "").trim() };
+            }
+            if (twitterRegex.test(text)) {
+                return { icon: twitterXIcon, color: "#ffffff", cleanText: text.replace(twitterRegex, "").trim() };
+            }
+            if (youtubeRegex.test(text)) {
+                return { icon: youtubeIcon, color: "#ff4e4e", cleanText: text.replace(youtubeRegex, "").trim() };
+            }
+            if (discordRegex.test(text)) {
+                return { icon: discordIcon, color: "#7289da", cleanText: text.replace(discordRegex, "").trim() };
+            }
+
+            // General keyword checks
+            if (lower.includes("twitch")) {
+                return { icon: twitchIcon, color: "#a970ff", cleanText: text };
+            }
+            if (lower.includes("twitter") || lower.includes("x.com") || lower.startsWith("x:") || lower.includes(" @x")) {
+                return { icon: twitterXIcon, color: "#ffffff", cleanText: text };
+            }
+            if (lower.includes("youtube") || lower.includes("yt:")) {
+                return { icon: youtubeIcon, color: "#ff4e4e", cleanText: text };
+            }
+            if (lower.includes("discord")) {
+                return { icon: discordIcon, color: "#7289da", cleanText: text };
+            }
+
+            return null;
+        };
+
+        const renderSocialText = (text: string, defaultColor: string, defaultSize: number, weight: any) => {
+            if (!text) return null;
+            const social = getSocialIconAndColor(text);
+            if (social) {
+                return (
+                    <span style={{ display: "inline-flex", alignItems: "center", color: social.color, fontSize: defaultSize, fontWeight: weight }}>
+                        {social.icon}
+                        <span>{social.cleanText}</span>
+                    </span>
+                );
+            }
+            return (
+                <span style={{ color: defaultColor, fontSize: defaultSize, fontWeight: weight }}>
+                    {text}
+                </span>
+            );
+        };
+
         const titleText = resolveText(rawTitle || rawText || lt.title || "", data);
         const subText = resolveText(rawSubtitle || lt.subtitle || "", data);
 
@@ -2996,8 +3089,8 @@ export function ElementRenderer({
 
         if (layoutMode === "single") {
             contentNode = (
-                <div style={{ fontSize: titleSize, fontWeight: titleWeight, color: titleColor }}>
-                    {titleText}
+                <div style={{ display: "flex", alignItems: "center", width: "100%", height: "100%" }}>
+                    {renderSocialText(titleText, titleColor, titleSize, titleWeight)}
                 </div>
             );
         } else if (layoutMode === "split") {
@@ -3015,15 +3108,22 @@ export function ElementRenderer({
                             paddingRight: padding,
                             textAlign: "right",
                             borderRight: `2px solid ${accent}`,
-                            fontSize: leftSize,
-                            fontWeight: titleWeight,
-                            color: titleColor,
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center"
                         }}
                     >
-                        {titleText}
+                        {renderSocialText(titleText, titleColor, leftSize, titleWeight)}
                     </div>
-                    <div style={{ width: rightW, paddingLeft: padding, fontSize: rightSize, color: subtitleColor }}>
-                        {subText}
+                    <div
+                        style={{
+                            width: rightW,
+                            paddingLeft: padding,
+                            display: "flex",
+                            alignItems: "center"
+                        }}
+                    >
+                        {renderSocialText(subText, subtitleColor, rightSize, "normal")}
                     </div>
                 </div>
             );
@@ -3033,13 +3133,13 @@ export function ElementRenderer({
             contentNode = (
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     {titleText && (
-                        <div style={{ fontSize: titleSize, fontWeight: titleWeight, color: titleColor }}>
-                            {titleText}
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                            {renderSocialText(titleText, titleColor, titleSize, titleWeight)}
                         </div>
                     )}
                     {subText && (
-                        <div style={{ fontSize: subSize, color: subtitleColor, marginTop: 4 }}>
-                            {subText}
+                        <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
+                            {renderSocialText(subText, subtitleColor, subSize, "normal")}
                         </div>
                     )}
                     {extraLines.map((line, i) => {
@@ -3050,15 +3150,12 @@ export function ElementRenderer({
                             <div
                                 key={i}
                                 style={{
-                                    fontSize: line.sizePx ?? 20,
-                                    color: line.color ?? subtitleColor,
-                                    fontWeight: lineWeight,
-                                    fontStyle: line.italic ? "italic" : "normal",
-                                    opacity: line.opacity ?? 1,
+                                    display: "flex",
+                                    alignItems: "center",
                                     marginTop: 3,
                                 }}
                             >
-                                {lineText}
+                                {renderSocialText(lineText, line.color ?? subtitleColor, line.sizePx ?? 20, lineWeight)}
                             </div>
                         );
                     })}
@@ -3081,25 +3178,63 @@ export function ElementRenderer({
         };
 
         if (variant === "glass") {
-            containerStyle.backgroundColor = `rgba(30,30,30, ${bgOpacity * 0.5})`;
+            containerStyle.background = `linear-gradient(135deg, rgba(30,30,30, ${bgOpacity * 0.45}) 0%, rgba(30,30,30, ${bgOpacity * 0.6}) 60%, ${hexToRgba(accent, 0.12)} 100%)`;
             containerStyle.backdropFilter = "blur(12px)";
-            containerStyle.border = "1px solid rgba(255,255,255,0.1)";
+            containerStyle.border = `1px solid ${hexToRgba(accent, 0.25)}`;
+            containerStyle.boxShadow = `inset 0 0 16px ${hexToRgba(accent, 0.08)}, 0 8px 32px rgba(0,0,0,0.45)`;
         } else if (variant === "minimal") {
             containerStyle.backgroundColor = "transparent";
             containerStyle.padding = 0;
         } else {
-            containerStyle.backgroundColor = hexToRgba(bgColor, bgOpacity);
+            // Premium Gradient Backing with Glows
+            const safeBgColor = bgColor || "#111";
+            const safeBgOpacity = bgOpacity ?? 0.75;
+            containerStyle.background = `linear-gradient(135deg, ${hexToRgba(safeBgColor, safeBgOpacity)} 0%, ${hexToRgba(safeBgColor, safeBgOpacity * 1.15)} 60%, ${hexToRgba(accent, 0.18)} 100%)`;
+            containerStyle.boxShadow = `inset 0 0 20px ${hexToRgba(accent, 0.12)}, 0 8px 32px rgba(0,0,0,0.5)`;
+            containerStyle.border = `1px solid ${hexToRgba(accent, 0.25)}`;
             if (variant === "accent-bar") {
                 containerStyle.borderLeft = `6px solid ${accent}`;
             }
         }
+
+        // Decorative corner brackets for esports/sci-fi style
+        const bracketOffset = Math.max(4, radius - 4);
+        const renderBrackets = variant !== "minimal" && (
+            <>
+                <div style={{ position: "absolute", top: bracketOffset, left: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", top: bracketOffset, right: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: bracketOffset, left: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" }} />
+                <div style={{ position: "absolute", bottom: bracketOffset, right: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" }} />
+            </>
+        );
+
+        // Tech Grid Overlay
+        const renderGrid = variant !== "minimal" && (
+            <div
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: `linear-gradient(0deg, transparent 24%, ${hexToRgba(accent, 0.02)} 25%, ${hexToRgba(accent, 0.02)} 26%, transparent 27%, transparent 74%, ${hexToRgba(accent, 0.02)} 75%, ${hexToRgba(accent, 0.02)} 76%, transparent 77%), linear-gradient(90deg, transparent 24%, ${hexToRgba(accent, 0.02)} 25%, ${hexToRgba(accent, 0.02)} 26%, transparent 27%, transparent 74%, ${hexToRgba(accent, 0.02)} 75%, ${hexToRgba(accent, 0.02)} 76%, transparent 77%)`,
+                    backgroundSize: "20px 20px",
+                    pointerEvents: "none",
+                    opacity: 0.7,
+                }}
+            />
+        );
 
         return (
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ width: "100%", height: "100%", ...combinedAnimStyle }}>
                     <div style={innerStyle}>
                         <div style={containerStyle}>
-                            {contentNode}
+                            {renderGrid}
+                            {renderBrackets}
+                            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", height: "100%" }}>
+                                {contentNode}
+                            </div>
                             {lt.ticker?.enabled && (() => {
                                 const tickerText = resolveText(data?.[lt.ticker.key] ?? "", data);
                                 const displayText = tickerText || (overlayPublicId ? "Ticker text — set via lower_third.ticker data key" : "");

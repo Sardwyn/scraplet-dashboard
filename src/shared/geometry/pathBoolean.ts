@@ -120,6 +120,21 @@ export function applyBooleanOperation(operation: OverlayBooleanOperation, childr
   let current = ringsToMartinez(resolveElementRings(children[0]));
   for (let i = 1; i < children.length; i += 1) {
     const next = ringsToMartinez(resolveElementRings(children[i]));
+
+    // Safety bypass if either array is empty to prevent Martinez TypeError crashes:
+    if (!current.length) {
+      if (operation === "union" || operation === "exclude") {
+        current = next;
+      }
+      continue;
+    }
+    if (!next.length) {
+      if (operation === "intersect") {
+        current = [];
+      }
+      continue;
+    }
+
     switch (operation) {
       case "subtract":
         current = (martinez as any).diff(current, next) ?? [];
@@ -160,6 +175,14 @@ export function expandStrokePath(path: OverlayPath, strokeWidth: number) {
 
   const outer = ringsToMartinez(offsetRings(rings, distance, true));
   const inner = ringsToMartinez(offsetRings(rings, -distance, true));
-  const result = (martinez as any).xor(outer, inner) ?? outer;
+  
+  let result;
+  if (!outer.length) {
+    result = inner;
+  } else if (!inner.length) {
+    result = outer;
+  } else {
+    result = (martinez as any).xor(outer, inner) ?? outer;
+  }
   return normalizePathToBounds(ringsToOverlayPath(martinezToRings(result)));
 }

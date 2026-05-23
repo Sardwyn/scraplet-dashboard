@@ -813,6 +813,13 @@ function compileComponentRecipe(compId, variantId, x, y, width, height, paletteI
       const parentId = crypto.randomUUID();
       const childIds = recipe.primitives.map(p => generatedIds[p.name]);
 
+      // Hide child primitives of a subtract boolean parent by default
+      for (const el of compiledElements) {
+        if (childIds.includes(el.id)) {
+          el.visible = false;
+        }
+      }
+
       const parentElement = {
         id: parentId,
         type: "boolean",
@@ -1322,27 +1329,26 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const resolvedFills = resolveThemeReferences(initialFills, activePaletteId, activeStructureId, 'vector_library');
         const resolvedColor = resolvedFills[0]?.color || '#ffffff';
 
-        // Create Path Elements for each parsed path with first-class primitive properties
-        for (const p of svgData.paths) {
-          const elId = crypto.randomUUID();
-          overlay.json.elements.push({
-            id: elId,
-            type: 'path',
-            path: p,
-            x: x || 0,
-            y: y || 0,
-            width: w,
-            height: h,
-            componentId: 'vector_library',
-            iconId: iconId,
-            source: 'vectorLibrary',
-            fills: initialFills,
-            fillColor: resolvedColor,
-            fillOpacity: 1,
-            locked: false,
-            visible: true
-          });
-        }
+        // Create a single unified Path Element combining all sub-path commands for proportional scaling
+        const combinedCommands = svgData.paths.flatMap(p => p.commands);
+        const elId = crypto.randomUUID();
+        overlay.json.elements.push({
+          id: elId,
+          type: 'path',
+          path: { commands: combinedCommands },
+          x: x || 0,
+          y: y || 0,
+          width: w,
+          height: h,
+          componentId: 'vector_library',
+          iconId: iconId,
+          source: 'vectorLibrary',
+          fills: initialFills,
+          fillColor: resolvedColor,
+          fillOpacity: 1,
+          locked: false,
+          visible: true
+        });
 
         await updateOverlay(overlayId, guildId, overlay.json);
         return { success: true, message: `Added vector ${iconId}` };
