@@ -9618,20 +9618,19 @@ const CanvasElement = React.memo(function CanvasElement({
         ...(isSelected ? selectionStyle : {}),
       }}
     >
-      {(!canvasInitialized || !['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'].includes(renderedEl.type)) && (
-        <ElementRenderer
-          element={renderedElNoTransform as any}
-          layout="fill"
-          elementsById={previewElementsById}
-          overlayComponents={overlayComponents}
-          animationPhase={animationPhase}
-          animationPhases={animationPhases}
-          data={renderData}
-          visited={new Set()}
-          overlayPublicId={overlayPublicId}
-          canvasInitialized={canvasInitialized}
-        />
-      )}
+      <ElementRenderer
+        element={renderedElNoTransform as any}
+        layout="fill"
+        elementsById={previewElementsById}
+        overlayComponents={overlayComponents}
+        animationPhase={animationPhase}
+        animationPhases={animationPhases}
+        data={renderData}
+        visited={new Set()}
+        overlayPublicId={overlayPublicId}
+        canvasInitialized={canvasInitialized}
+        isCanvasDrawn={canvasInitialized}
+      />
 
       {isPrimary && (
         <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
