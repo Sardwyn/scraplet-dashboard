@@ -1582,8 +1582,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const type = el.type;
 
-      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape)
-      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text') {
+      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape, image)
+      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -1610,6 +1610,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             const h = s.height ?? 100;
             properties.pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
           }
+        } else if (type === 'image') {
+          drawType = 'rect';
         } else {
           drawType = type as any;
         }
@@ -9616,7 +9618,7 @@ const CanvasElement = React.memo(function CanvasElement({
         ...(isSelected ? selectionStyle : {}),
       }}
     >
-      {(!canvasInitialized || !['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video'].includes(renderedEl.type)) && (
+      {(!canvasInitialized || !['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'].includes(renderedEl.type)) && (
         <ElementRenderer
           element={renderedElNoTransform as any}
           layout="fill"
@@ -9627,6 +9629,7 @@ const CanvasElement = React.memo(function CanvasElement({
           data={renderData}
           visited={new Set()}
           overlayPublicId={overlayPublicId}
+          canvasInitialized={canvasInitialized}
         />
       )}
 

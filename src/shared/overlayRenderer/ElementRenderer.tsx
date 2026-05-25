@@ -1898,6 +1898,7 @@ export function ElementRenderer({
     elementIndex,
     widgetStates,
     canvasInitialized,
+    isCanvasDrawn,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -1912,6 +1913,7 @@ export function ElementRenderer({
     elementIndex?: number;
     widgetStates?: Record<string, any>;
     canvasInitialized?: boolean;
+    isCanvasDrawn?: boolean;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
@@ -1932,9 +1934,7 @@ export function ElementRenderer({
     }
 
     const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
-    if (canvasInitialized && canvasTypes.includes(el.type)) {
-        return null;
-    }
+    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type);
 
     const effectiveAnimationPhase =
         animationPhase ?? (el.visible === false ? "hidden" : "visible");
@@ -2185,10 +2185,6 @@ export function ElementRenderer({
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
                     {roots.map((child) => {
-                        const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
-                        if (canvasInitialized && canvasTypes.includes(child.type)) {
-                            return null;
-                        }
                         return (
                             <ElementRenderer
                                 key={child.id}
@@ -2360,11 +2356,6 @@ export function ElementRenderer({
                         const child = elementsById?.[childId];
                         if (!child) return null;
 
-                        const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
-                        if (canvasInitialized && canvasTypes.includes(child.type)) {
-                            return null;
-                        }
-
                         const relX = (child.x ?? 0) - (el.x ?? 0);
                         const relY = (child.y ?? 0) - (el.y ?? 0);
 
@@ -2475,6 +2466,7 @@ export function ElementRenderer({
         return (
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, opacity: undefined, position: "relative" }}>
+                    {!hideInnerContent && (
                     <div style={{ position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1 }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
@@ -2500,6 +2492,7 @@ export function ElementRenderer({
                         </g>
                     </svg>
                     </div>
+                    )}
                     <ParametricEffectOverlay
                         effects={effects}
                         width={w}
@@ -2535,6 +2528,7 @@ export function ElementRenderer({
                 const offset = textEl.textOnPathOffset ?? 0;
                 return (
                     <div data-element-id={el.id} style={baseStyle}>
+                    {!hideInnerContent && (
                         <svg width="100%" height="100%" overflow="visible" style={{ position: 'absolute', inset: 0 }}>
                             <defs>
                                 <path id={pathId} d={pathD} />
@@ -2551,6 +2545,7 @@ export function ElementRenderer({
                                 </textPath>
                             </text>
                         </svg>
+                    )}
                     </div>
                 );
             }
@@ -2573,6 +2568,7 @@ export function ElementRenderer({
         );
         return (
             <div data-element-id={el.id} style={baseStyle}>
+                {!hideInnerContent && (
                 <div
                     style={{
                         ...innerStyle,
@@ -2602,6 +2598,7 @@ export function ElementRenderer({
                 >
                     {content}
                 </div>
+                )}
                 <ParametricEffectOverlay
                     effects={effects}
                     width={_textW}
@@ -2705,6 +2702,7 @@ export function ElementRenderer({
         return (
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, opacity: undefined, position: 'relative' }}>
+                    {!hideInnerContent && (
                     <div style={{ position: 'absolute', inset: 0, opacity: typeof el.opacity === 'number' ? el.opacity : 1 }}>
                     {!_hasOnlyCanvasEffects && <svg
                         width="100%"
@@ -2748,6 +2746,7 @@ export function ElementRenderer({
                         </g>
                     </svg>}
                     </div>
+                    )}
                     <ParametricEffectOverlay
                         effects={effects}
                         width={w}
@@ -2794,7 +2793,7 @@ export function ElementRenderer({
         return (
             <div data-element-id={el.id} style={imageStyle}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: mergedFilter || undefined }}>
-                    {src && (
+                    {!hideInnerContent && src && (
                         <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
                     )}
                 </div>
@@ -2826,7 +2825,7 @@ export function ElementRenderer({
         return (
             <div data-element-id={el.id} style={videoStyle}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
-                    {src && (
+                    {!hideInnerContent && src && (
                         <KeyedMedia
                             kind="video"
                             src={src}

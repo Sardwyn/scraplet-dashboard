@@ -1,4 +1,5 @@
 import { Leafer, Rect, Ellipse, Path, Text, UI } from 'leafer-ui';
+import { elementToOverlayPath, svgPathFromCommands } from '../shared/geometry/pathUtils';
 
 export interface LeaferGraphicConfig {
   canvas: HTMLCanvasElement;
@@ -105,26 +106,33 @@ export class LeaferGraphicCore {
     };
 
     if (type === 'rect') {
-      mappedProps.fill = properties.fillColor || '#ffffff';
-      mappedProps.cornerRadius = properties.cornerRadiusPx || 0;
+      mappedProps.fill = this.resolveLeaferFill(properties);
+      mappedProps.cornerRadius = properties.cornerRadiusPx || properties.borderRadius || 0;
       if (properties.strokeColor) {
         mappedProps.stroke = properties.strokeColor;
         mappedProps.strokeWidth = properties.strokeWidthPx || 1;
       }
     } else if (type === 'ellipse' || type === 'circle') {
-      mappedProps.fill = properties.fillColor || '#ffffff';
+      mappedProps.fill = this.resolveLeaferFill(properties);
       if (type === 'circle') {
         const radius = properties.radius || Math.min(mappedProps.width, mappedProps.height) / 2 || 50;
         mappedProps.width = radius * 2;
         mappedProps.height = radius * 2;
       }
     } else if (type === 'path') {
-      mappedProps.fill = properties.fillColor || '#ffffff';
-      mappedProps.path = properties.pathData || ''; // SVG Path string (commands)
+      mappedProps.fill = this.resolveLeaferFill(properties);
+      let pathStr = properties.pathData || '';
+      if (!pathStr) {
+        const overlayPath = elementToOverlayPath(properties as any);
+        if (overlayPath) {
+          pathStr = svgPathFromCommands(overlayPath);
+        }
+      }
+      mappedProps.path = pathStr;
     } else if (type === 'text') {
       mappedProps.text = properties.text || '';
-      mappedProps.fill = properties.textColor || '#ffffff';
-      mappedProps.fontSize = properties.fontSizePx || 24;
+      mappedProps.fill = properties.textColor || properties.color || '#ffffff';
+      mappedProps.fontSize = properties.fontSizePx || properties.fontSize || 24;
       mappedProps.fontFamily = properties.fontFamily || 'Inter, sans-serif';
       mappedProps.fontWeight = properties.fontWeight || 'normal';
       mappedProps.textAlign = properties.textAlign || 'left';
@@ -174,5 +182,146 @@ export class LeaferGraphicCore {
       node.remove();
       this.elementsMap.delete(id);
     }
+  }
+
+  /**
+   * Helper to append alpha component to a hex/rgb color string
+   */
+  private resolveColorWithOpacity(colorStr: string, opacity: number): string {
+    if (opacity === 1 || opacity === undefined) return colorStr;
+    let color = colorStr.trim();
+    if (color.startsWith('#')) {
+      if (color.length === 4) {
+        const r = parseInt(color[1] + color[1], 16);
+        const g = parseInt(color[2] + color[2], 16);
+        const b = parseInt(color[3] + color[3], 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      } else if (color.length === 7) {
+        const r = parseInt(color.substring(1, 3), 16);
+        const g = parseInt(color.substring(3, 5), 16);
+        const b = parseInt(color.substring(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+      }
+    } else if (color.startsWith('rgb(')) {
+      return color.replace('rgb(', 'rgba(').replace(')', `, ${opacity})`);
+    }
+    return color;
+  }
+
+  /**
+   * Recreates the legacy fill stack for an element to match ElementRenderer.tsx fallback behavior
+   */
+  private getLegacyFillStack(properties: Record<string, any>): any[] {
+    if (Array.isArray(properties.fills) && properties.fills.length > 0) {
+      return properties.fills;
+    }
+
+    if (properties.type === 'box') {
+      const fills: any[] = [];
+      if (properties.backgroundColor) {
+        fills.push({
+          type: 'solid',
+          color: properties.backgroundColor,
+          opacity: 1,
+          id: `${properties.id}-fill-solid`
+        });
+      }
+      if (properties.pattern?.src) {
+        fills.push({
+          ...properties.pattern,
+          type: 'pattern',
+          id: `${properties.id}-fill-pattern`
+        });
+      }
+      return fills;
+    }
+
+    const fills: any[] = [];
+    if (properties.type === 'image' && properties.src) {
+      fills.push({
+        type: 'pattern',
+        src: properties.src,
+        fit: properties.fit || 'cover',
+        opacity: properties.opacity ?? 1,
+        id: `${properties.id}-fill-image`
+      });
+    }
+    if (properties.fillColor) {
+      fills.push({
+        type: 'solid',
+        color: properties.fillColor,
+        opacity: typeof properties.fillOpacity === 'number' ? properties.fillOpacity : 1,
+        id: `${properties.id}-fill-solid`,
+      });
+    }
+    if (properties.pattern?.src) {
+      fills.push({
+        ...properties.pattern,
+        type: 'pattern',
+        id: `${properties.id}-fill-pattern`
+      });
+    }
+    return fills;
+  }
+
+  /**
+   * Resolves fill color, patterns, images, linear, and radial gradients into LeaferJS fill structure
+   */
+  private resolveLeaferFill(properties: Record<string, any>): any {
+    const fills = this.getLegacyFillStack(properties);
+    if (!fills || fills.length === 0) {
+      return '#ffffff';
+    }
+
+    const mappedFills = fills.map((fill) => {
+      if (fill.type === 'solid') {
+        return this.resolveColorWithOpacity(fill.color || '#ffffff', fill.opacity ?? 1);
+      }
+      if (fill.type === 'linear') {
+        return {
+          type: 'linear',
+          rotation: fill.angleDeg ?? 0,
+          stops: (fill.stops || []).map((stop: any, index: number) => {
+            const offset = stop.position !== undefined ? stop.position / 100 : (fill.stops.length <= 1 ? 0 : index / (fill.stops.length - 1));
+            const stopOpacity = stop.opacity ?? 1;
+            const color = this.resolveColorWithOpacity(stop.color || '#ffffff', stopOpacity);
+            return { offset, color };
+          })
+        };
+      }
+      if (fill.type === 'radial') {
+        return {
+          type: 'radial',
+          stops: (fill.stops || []).map((stop: any, index: number) => {
+            const offset = stop.position !== undefined ? stop.position / 100 : (fill.stops.length <= 1 ? 0 : index / (fill.stops.length - 1));
+            const stopOpacity = stop.opacity ?? 1;
+            const color = this.resolveColorWithOpacity(stop.color || '#ffffff', stopOpacity);
+            return { offset, color };
+          })
+        };
+      }
+      if (fill.type === 'pattern' || fill.type === 'texture') {
+        const url = fill.src || fill.url;
+        if (!url) return 'transparent';
+        const fit = fill.fit ?? 'tile';
+        let mode: 'repeat' | 'cover' | 'fit' | 'stretch' = 'repeat';
+        if (fit === 'cover') mode = 'cover';
+        else if (fit === 'contain') mode = 'fit';
+        else if (fit === 'stretch' || fit === 'fill') mode = 'stretch';
+
+        return {
+          type: 'image',
+          url,
+          mode,
+          opacity: fill.opacity ?? 1,
+          crossOrigin: 'anonymous'
+        };
+      }
+      return 'transparent';
+    }).filter(f => f !== 'transparent');
+
+    if (mappedFills.length === 0) return '#ffffff';
+    if (mappedFills.length === 1) return mappedFills[0];
+    return mappedFills;
   }
 }

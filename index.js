@@ -218,6 +218,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Static assets under /dashboard/* (so Nginx proxy paths can load JS/CSS)
 app.use('/dashboard', express.static(path.join(__dirname, 'public')));
 
+// Local development fallback to serve uploaded assets without Nginx
+app.use('/uploads', express.static(process.env.SCRAPLET_UPLOADS_ROOT || '/var/www/scraplet-uploads', {
+    setHeaders: (res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    }
+}));
+
 // Body parsing + JSON with rawBody
 app.use(express.urlencoded({ extended: true }));
 
