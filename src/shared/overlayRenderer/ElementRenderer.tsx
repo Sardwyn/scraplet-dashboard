@@ -2196,6 +2196,9 @@ export function ElementRenderer({
                                 layout="absolute"
                                 visited={nextVisited}
                                 canvasInitialized={canvasInitialized}
+                                isCanvasDrawn={isCanvasDrawn}
+                                widgetStates={widgetStates}
+                                overlayPublicId={overlayPublicId}
                             />
                         );
                     })}
@@ -2313,6 +2316,9 @@ export function ElementRenderer({
                                         layout="fill"
                                         visited={nextVisited}
                                         canvasInitialized={canvasInitialized}
+                                        isCanvasDrawn={isCanvasDrawn}
+                                        widgetStates={widgetStates}
+                                        overlayPublicId={overlayPublicId}
                                     />
                                 </div>
                             </div>
@@ -2377,6 +2383,9 @@ export function ElementRenderer({
                                 layout="absolute"
                                 visited={nextVisited}
                                 canvasInitialized={canvasInitialized}
+                                isCanvasDrawn={isCanvasDrawn}
+                                widgetStates={widgetStates}
+                                overlayPublicId={overlayPublicId}
                             />
                         );
                     })}
