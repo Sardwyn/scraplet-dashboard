@@ -174,35 +174,6 @@ export function BotLayerRoot({ publicId, isEditorMode, pixiCanvasRef, leaferCanv
         transform: 'translateZ(0)'
       }}
     >
-      {/* WebGL Canvas (PixiJS - Layer 1) */}
-      <canvas
-        ref={pixiCanvasRef}
-        id="pixi-media-canvas"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 10,
-        }}
-      />
-      
-      {/* Canvas 2D Layer (LeaferJS - Layer 2) */}
-      <canvas
-        ref={leaferCanvasRef}
-        id="leafer-graphics-canvas"
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 20,
-          pointerEvents: 'none',
-        }}
-      />
-
       {/* Absolute HTML Layer (React DOM Widgets - Layer 3) */}
       <div 
         id="html-widget-layer" 

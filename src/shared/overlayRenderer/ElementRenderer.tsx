@@ -1897,6 +1897,7 @@ export function ElementRenderer({
     overlayPublicId,
     elementIndex,
     widgetStates,
+    canvasInitialized,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -1910,6 +1911,7 @@ export function ElementRenderer({
     overlayPublicId?: string;
     elementIndex?: number;
     widgetStates?: Record<string, any>;
+    canvasInitialized?: boolean;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
@@ -1927,6 +1929,11 @@ export function ElementRenderer({
         if (Object.keys(overrides).length > 0) {
             el = { ...el, ...overrides };
         }
+    }
+
+    const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
+    if (canvasInitialized && canvasTypes.includes(el.type)) {
+        return null;
     }
 
     const effectiveAnimationPhase =
@@ -2047,7 +2054,7 @@ export function ElementRenderer({
     // Promote elements with active blend modes, opacity, or parametric effects to GPU layers in OBS/CEF.
     // Always assign a distinct 3D depth layer based on elementIndex to avoid the OBS Chromium 75 compositing bug
     // where multiple absolute-positioned coplanar GPU-accelerated elements fail to render.
-    const zDepth = elementIndex ?? 0;
+    const zDepth = (elementIndex ?? 0) * 10;
     const currentTransform = (baseStyle as any).transform;
     const hasEffects = _elEffects.length > 0;
     const hasBlend = elBlendMode && elBlendMode !== "normal";
@@ -2177,18 +2184,25 @@ export function ElementRenderer({
         return (
             <div data-element-id={el.id} style={baseStyle}>
                 <div style={{ ...innerStyle, position: "relative" }}>
-                    {roots.map((child) => (
-                        <ElementRenderer
-                            key={child.id}
-                            element={child}
-                            elementsById={masterElementsById}
-                            overlayComponents={overlayComponents}
-                            animationPhase={undefined}
-                            data={mergedData}
-                            layout="absolute"
-                            visited={nextVisited}
-                        />
-                    ))}
+                    {roots.map((child) => {
+                        const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
+                        if (canvasInitialized && canvasTypes.includes(child.type)) {
+                            return null;
+                        }
+                        return (
+                            <ElementRenderer
+                                key={child.id}
+                                element={child}
+                                elementsById={masterElementsById}
+                                overlayComponents={overlayComponents}
+                                animationPhase={undefined}
+                                data={mergedData}
+                                layout="absolute"
+                                visited={nextVisited}
+                                canvasInitialized={canvasInitialized}
+                            />
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -2302,6 +2316,7 @@ export function ElementRenderer({
                                         data={data}
                                         layout="fill"
                                         visited={nextVisited}
+                                        canvasInitialized={canvasInitialized}
                                     />
                                 </div>
                             </div>
@@ -2330,14 +2345,25 @@ export function ElementRenderer({
             position: "relative",
             overflow: el.type === "frame" && (group as OverlayFrameElement).clipContent !== false && !has3D ? "hidden" : undefined,
             mixBlendMode: (group as any).blendMode && (group as any).blendMode !== "normal" ? (group as any).blendMode as any : undefined,
+            transformStyle: "preserve-3d",
+        };
+
+        const extendedBaseStyle: React.CSSProperties = {
+            ...baseStyle,
+            transformStyle: "preserve-3d",
         };
 
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <div data-element-id={el.id} style={extendedBaseStyle}>
                 <div style={groupStyle}>
                     {group.childIds?.map((childId) => {
                         const child = elementsById?.[childId];
                         if (!child) return null;
+
+                        const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
+                        if (canvasInitialized && canvasTypes.includes(child.type)) {
+                            return null;
+                        }
 
                         const relX = (child.x ?? 0) - (el.x ?? 0);
                         const relY = (child.y ?? 0) - (el.y ?? 0);
@@ -2359,6 +2385,7 @@ export function ElementRenderer({
                                 data={data}
                                 layout="absolute"
                                 visited={nextVisited}
+                                canvasInitialized={canvasInitialized}
                             />
                         );
                     })}

@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 
 const isRuntime = process.env.BUILD_TARGET === "runtime";
+const isEditor = process.env.BUILD_TARGET === "editor";
 
 export default defineConfig({
   plugins: [
@@ -38,6 +39,18 @@ export default defineConfig({
           output: {
             format: "iife",
             name: "OverlayRuntime",
+            entryFileNames: "[name].bundle.js",
+            assetFileNames: "[name].[ext]",
+            inlineDynamicImports: true,
+          },
+        }
+      : isEditor
+      ? {
+          input: {
+            "overlay-editor": path.resolve(__dirname, "src/overlay-editor/main.tsx"),
+          },
+          output: {
+            format: "es",
             entryFileNames: "[name].bundle.js",
             assetFileNames: "[name].[ext]",
             inlineDynamicImports: true,

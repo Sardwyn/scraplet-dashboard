@@ -7,7 +7,7 @@ import {
   OverlayVariable,
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
-import { FontLoader } from "../shared/FontManager";
+import { FontLoader, getGoogleFontsUrl } from "../shared/FontManager";
 import { useElementAnimationPhases } from "./useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
 import { widgetRegistry } from './widgetRegistry';
@@ -740,6 +740,40 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const animationPhases = useElementAnimationPhases(elements);
 
+  const [imageTrigger, setImageTrigger] = useState(0);
+
+  const imageUrls = useMemo(() => {
+    const urls = new Set<string>();
+    elements.forEach(el => {
+      if (el.visible === false) return;
+      if (el.type === 'image' && el.src) urls.add(el.src);
+      if (el.pattern?.src) urls.add(el.pattern.src);
+      if (Array.isArray(el.fills)) {
+        el.fills.forEach((f: any) => {
+          if ((f.type === 'pattern' || f.type === 'texture') && f.src) urls.add(f.src);
+        });
+      }
+    });
+    return Array.from(urls);
+  }, [elements]);
+
+  useEffect(() => {
+    if (imageUrls.length === 0) return;
+    let cancelled = false;
+    Promise.all(imageUrls.map(url => {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(url);
+        img.onerror = () => resolve(url);
+        img.src = url;
+      });
+    })).then(() => {
+      if (!cancelled) setImageTrigger(prev => prev + 1);
+    });
+    return () => { cancelled = true; };
+  }, [imageUrls.join(",")]);
+
   // Initialize Dual Canvas core engines
   useEffect(() => {
     const pixiCanvas = pixiCanvasRef.current;
@@ -781,6 +815,9 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   useLayoutEffect(() => {
     if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
 
+    // Completely clear Leafer elements before redraw to prevent stale font metrics/layout caching
+    leaferCoreRef.current.clearAll();
+
     const activeLeaferIds = new Set<string>();
     const activePixiIds = new Set<string>();
 
@@ -789,8 +826,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
       const type = el.type;
 
-      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape)
-      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text') {
+      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape, image)
+      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -817,6 +854,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             const h = s.height ?? 100;
             properties.pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
           }
+        } else if (type === 'image') {
+          drawType = 'rect';
         } else {
           drawType = type as any;
         }
@@ -909,7 +948,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         pixiCoreRef.current?.removeVideoElement(id);
       }
     });
-  }, [elements, canvasInitialized, fontTrigger]);
+  }, [elements, canvasInitialized, fontTrigger, imageTrigger]);
 
   // Load config and refresh it periodically so persistent OBS browser sources
   // pick up saved timeline changes without needing a manual source refresh.
@@ -1126,7 +1165,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const normalElementsToRender = React.useMemo(() => {
     if (!canvasInitialized) return normalElements;
-    const canvasTypes = new Set(['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video']);
+    const canvasTypes = new Set(['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image']);
     return normalElements.filter(el => !canvasTypes.has(el.type));
   }, [normalElements, canvasInitialized]);
 
@@ -1173,6 +1212,57 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     }
     return Array.from(set);
   }, [elements]);
+
+  const usedFontsKey = usedFonts.join(",");
+
+  // Immediately request and preload custom Google Fonts to avoid browser font face loading race conditions
+  useEffect(() => {
+    if (!canvasInitialized || usedFonts.length === 0) return;
+
+    const url = getGoogleFontsUrl(usedFonts);
+    if (!url) return;
+
+    const id = "scraplet-google-fonts";
+    let link = document.getElementById(id) as HTMLLinkElement;
+
+    if (!link) {
+      link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      document.head.appendChild(link);
+    }
+
+    if (link.href !== url) {
+      link.href = url;
+    }
+
+    // Programmatically load all fonts via Font Loading API
+    let cancelled = false;
+    const preload = async () => {
+      try {
+        await Promise.all(
+          usedFonts.map((font) =>
+            document.fonts.load(`1em "${font}"`).catch((err) => {
+              console.warn(`[OverlayRuntime] Failed to preload font: ${font}`, err);
+            })
+          )
+        );
+        if (!cancelled) {
+          console.log("[OverlayRuntime] Custom fonts preloaded successfully:", usedFonts);
+          // Increment font trigger to invalidate and redraw
+          setFontTrigger((prev) => prev + 1);
+        }
+      } catch (err) {
+        console.warn("[OverlayRuntime] Font preloading error:", err);
+      }
+    };
+
+    preload();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [usedFontsKey, canvasInitialized]);
 
   // Measure pinned block height in overlay coordinate space (unscaled)
   useLayoutEffect(() => {
@@ -1234,8 +1324,39 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             top: 0,
             width: baseW,
             height: baseH,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
           }}
         >
+          {/* WebGL Canvas (PixiJS - Layer 1) */}
+          <canvas
+            ref={pixiCanvasRef}
+            id="pixi-media-canvas"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 10,
+              pointerEvents: 'none',
+            }}
+          />
+          
+          {/* Canvas 2D Layer (LeaferJS - Layer 2) */}
+          <canvas
+            ref={leaferCanvasRef}
+            id="leafer-graphics-canvas"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 20,
+              pointerEvents: 'none',
+            }}
+          />
           {/* PINNED LAYER */}
           {pinnedElements.length > 0 && (
             <div
@@ -1247,6 +1368,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 right: 0,
                 zIndex: 20,
                 pointerEvents: "none",
+                transformStyle: "preserve-3d",
               }}
             >
               {pinnedElements.map((el: any) => (
@@ -1263,6 +1385,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   animationPhases={animationPhases}
                   data={{}} // Test data placeholder
                   visited={new Set()}
+                  elementIndex={elements.indexOf(el) + 1}
+                  canvasInitialized={canvasInitialized}
                 />
               ))}
             </div>
@@ -1272,7 +1396,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                zIndex on each element (from elementIndex = config order) handles stacking.
                No separate layer containers — they caused z-order bugs in OBS CEF. */}
           {overlay && normalElementsToRender.length > 0 && (
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: 'preserve-3d' }}>
               {normalElementsToRender.map((el: any) => (
                 <ElementRenderer
                   key={el.id}
@@ -1287,6 +1411,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   visited={new Set()}
                   elementIndex={elements.indexOf(el) + 1}
                   widgetStates={unifiedState.widgetStates}
+                  canvasInitialized={canvasInitialized}
                 />
               ))}
             </div>

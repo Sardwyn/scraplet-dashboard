@@ -756,7 +756,10 @@ function compileComponentRecipe(compId, variantId, x, y, width, height, paletteI
       style: {}
     };
 
-    if (anchorZone) {
+    // Only set anchorZone on the primitive if there are no subtract masks and this is the first primitive.
+    // Otherwise, if there are subtract masks, the parentElement (type="boolean") will receive the anchorZone instead.
+    const hasMasks = recipe.primitives.some(p => p.type === "mask" && p.operation === "subtract");
+    if (anchorZone && !hasMasks && compiledElements.length === 0) {
       concreteElement.anchorZone = anchorZone;
     }
 

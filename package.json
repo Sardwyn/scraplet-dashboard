@@ -8,7 +8,7 @@
     "dev": "nodemon index.js",
     "start": "node index.js",
     "test": "node --experimental-vm-modules scripts/run-tests.js",
-    "build:overlays": "vite build --config vite.overlays.config.ts && BUILD_TARGET=runtime vite build --config vite.overlays.config.ts",
+    "build:overlays": "BUILD_TARGET=editor vite build --config vite.overlays.config.ts && BUILD_TARGET=runtime vite build --config vite.overlays.config.ts",
     "dev:overlays": "vite --config vite.overlays.config.ts"
   },
   "keywords": [],
