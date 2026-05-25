@@ -10,6 +10,7 @@ export class PixiMediaCore {
   private app: Application | null = null;
   private rootContainer: Container | null = null;
   private videoSprites = new Map<string, Sprite>();
+  private initialized = false;
 
   /**
    * Initializes the PixiJS v8 Application asynchronously on the target canvas
@@ -20,6 +21,7 @@ export class PixiMediaCore {
       return;
     }
 
+    this.initialized = false;
     try {
       this.app = new Application();
       
@@ -40,14 +42,17 @@ export class PixiMediaCore {
       this.app.stage.addChild(this.rootContainer);
 
       // Bind WebGL context loss listeners for OBS CEF stability
-      const gl = this.app.renderer.gl;
+      const gl = this.app.renderer?.gl;
       if (gl) {
         config.canvas.addEventListener('webglcontextlost', this.handleContextLost, false);
         config.canvas.addEventListener('webglcontextrestored', this.handleContextRestored, false);
       }
 
+      this.initialized = true;
       console.log('[PixiMediaCore] Successfully initialized PixiJS v8 engine');
     } catch (err) {
+      this.app = null;
+      this.initialized = false;
       console.error('[PixiMediaCore] Initialization failed:', err);
       throw err;
     }
@@ -57,25 +62,40 @@ export class PixiMediaCore {
    * Clears all assets and stops the rendering ticker
    */
   public destroy(): void {
-    if (this.app) {
-      const gl = this.app.renderer.gl;
-      if (gl && this.app.canvas) {
-        this.app.canvas.removeEventListener('webglcontextlost', this.handleContextLost);
-        this.app.canvas.removeEventListener('webglcontextrestored', this.handleContextRestored);
+    const appInstance = this.app;
+    this.app = null;
+    this.rootContainer = null;
+    const wasInitialized = this.initialized;
+    this.initialized = false;
+
+    if (appInstance) {
+      // Safely remove listeners if renderer, gl and canvas exist
+      if (appInstance.renderer?.gl && appInstance.canvas) {
+        appInstance.canvas.removeEventListener('webglcontextlost', this.handleContextLost);
+        appInstance.canvas.removeEventListener('webglcontextrestored', this.handleContextRestored);
       }
 
       // Cleanup videos and sprites
       this.videoSprites.forEach(sprite => {
         if (sprite.texture) {
-          sprite.texture.destroy(true);
+          try {
+            sprite.texture.destroy(true);
+          } catch (_) {}
         }
-        sprite.destroy();
+        try {
+          sprite.destroy();
+        } catch (_) {}
       });
       this.videoSprites.clear();
 
-      this.app.destroy(true, { children: true, texture: true });
-      this.app = null;
-      this.rootContainer = null;
+      // Only destroy if fully initialized or a renderer exists to avoid uninitialized crashes
+      if (wasInitialized || appInstance.renderer) {
+        try {
+          appInstance.destroy(true, { children: true, texture: true });
+        } catch (e) {
+          console.warn('[PixiMediaCore] Error during PixiJS App destroy:', e);
+        }
+      }
       console.log('[PixiMediaCore] Destroyed PixiJS Application');
     }
   }
@@ -87,9 +107,13 @@ export class PixiMediaCore {
     const sprite = this.videoSprites.get(id);
     if (sprite) {
       if (sprite.texture) {
-        sprite.texture.destroy(true);
+        try {
+          sprite.texture.destroy(true);
+        } catch (_) {}
       }
-      sprite.destroy();
+      try {
+        sprite.destroy();
+      } catch (_) {}
       this.videoSprites.delete(id);
       console.log(`[PixiMediaCore] Removed video sprite: ${id}`);
     }
@@ -104,7 +128,7 @@ export class PixiMediaCore {
     layout: { x: number; y: number; width: number; height: number },
     chromaConfig?: { keyColor: [number, number, number]; similarity: number; smoothness: number }
   ): void {
-    if (!this.app || !this.rootContainer) return;
+    if (!this.app || !this.initialized || !this.rootContainer) return;
 
     let sprite = this.videoSprites.get(id);
 
@@ -138,7 +162,7 @@ export class PixiMediaCore {
     sprite: Sprite,
     config: { keyColor: [number, number, number]; similarity: number; smoothness: number }
   ): void {
-    // PixiJS v8 customized Filter model using GlProgram and資源 uniform structure
+    // PixiJS v8 customized Filter model using GlProgram and resources uniform structure
     const vertex = `
       in vec2 aPosition;
       out vec2 vTextureCoord;
@@ -213,12 +237,14 @@ export class PixiMediaCore {
    * Toggles the rendering ticker on/off to conserve CPU/GPU cycles during heavy interactions
    */
   public setTickerActive(active: boolean): void {
-    if (!this.app) return;
-    if (active) {
-      this.app.ticker.start();
-    } else {
-      this.app.ticker.stop();
-    }
+    if (!this.app || !this.initialized || !this.app.ticker) return;
+    try {
+      if (active) {
+        this.app.ticker.start();
+      } else {
+        this.app.ticker.stop();
+      }
+    } catch (_) {}
   }
 
   /**
@@ -227,21 +253,27 @@ export class PixiMediaCore {
   private handleContextLost = (e: Event): void => {
     e.preventDefault();
     console.warn('[PixiMediaCore] WebGL Context lost. Pausing tickers and preserving source states.');
-    if (this.app) {
-      this.app.ticker.stop();
+    if (this.app && this.initialized && this.app.ticker) {
+      try {
+        this.app.ticker.stop();
+      } catch (_) {}
     }
   };
 
   private handleContextRestored = (): void => {
     console.log('[PixiMediaCore] WebGL Context restored. Re-initializing GPU pipelines.');
-    if (this.app) {
+    if (this.app && this.initialized && this.app.ticker) {
       // Force all video texture sources to re-upload to the GPU
       this.videoSprites.forEach(sprite => {
         if (sprite.texture && sprite.texture.source) {
-          sprite.texture.source.unload(); // Unload stale WebGL handle
+          try {
+            sprite.texture.source.unload(); // Unload stale WebGL handle
+          } catch (_) {}
         }
       });
-      this.app.ticker.start();
+      try {
+        this.app.ticker.start();
+      } catch (_) {}
     }
   };
 }
