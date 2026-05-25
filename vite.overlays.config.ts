@@ -24,6 +24,7 @@ export default defineConfig({
   base: "/static/overlays/",
 
   build: {
+    target: "chrome75",
     outDir: path.resolve(__dirname, "public/static/overlays"),
     emptyOutDir: false,
     minify: false,
@@ -35,9 +36,11 @@ export default defineConfig({
             "overlay-runtime": path.resolve(__dirname, "src/overlay-runtime/main.tsx"),
           },
           output: {
+            format: "iife",
+            name: "OverlayRuntime",
             entryFileNames: "[name].bundle.js",
             assetFileNames: "[name].[ext]",
-            manualChunks: () => "overlay-runtime",
+            inlineDynamicImports: true,
           },
         }
       : {

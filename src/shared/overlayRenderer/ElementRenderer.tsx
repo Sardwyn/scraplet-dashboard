@@ -2044,27 +2044,27 @@ export function ElementRenderer({
         (baseStyle as any).transformOrigin = 'center center';
     }
 
-    // Promote elements with active blend modes, opacity, or parametric effects to GPU layers in OBS/CEF
+    // Promote elements with active blend modes, opacity, or parametric effects to GPU layers in OBS/CEF.
+    // Always assign a distinct 3D depth layer based on elementIndex to avoid the OBS Chromium 75 compositing bug
+    // where multiple absolute-positioned coplanar GPU-accelerated elements fail to render.
+    const zDepth = elementIndex ?? 0;
+    const currentTransform = (baseStyle as any).transform;
     const hasEffects = _elEffects.length > 0;
     const hasBlend = elBlendMode && elBlendMode !== "normal";
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
+    const isMedia = el.type === "image" || el.type === "video";
 
-    if (hasBlend || hasEffects || hasOpacity) {
-        (baseStyle as any).willChange = "transform, opacity, filter";
-        const currentTransform = (baseStyle as any).transform;
-        const has3DTransform = currentTransform && (
-            currentTransform.includes("translateZ") || 
-            currentTransform.includes("translate3d") || 
-            currentTransform.includes("matrix3d") ||
-            currentTransform.includes("scale3d") ||
-            currentTransform.includes("rotate3d") ||
-            currentTransform.includes("rotateX") ||
-            currentTransform.includes("rotateY")
-        );
+    if (hasBlend || hasEffects || hasOpacity || isMedia) {
+        if (hasBlend || hasEffects || hasOpacity) {
+            (baseStyle as any).willChange = "transform, opacity, filter";
+        } else {
+            (baseStyle as any).willChange = "transform";
+        }
+
         if (!currentTransform || currentTransform === "none") {
-            (baseStyle as any).transform = "translateZ(0)";
-        } else if (!has3DTransform) {
-            (baseStyle as any).transform = `${currentTransform} translateZ(0)`;
+            (baseStyle as any).transform = `translate3d(0, 0, ${zDepth}px)`;
+        } else {
+            (baseStyle as any).transform = `${currentTransform} translate3d(0, 0, ${zDepth}px)`;
         }
     }
 

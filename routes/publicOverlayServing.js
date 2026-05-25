@@ -220,7 +220,7 @@ router.get('/o/:slug', async (req, res) => {
         window.__OVERLAY_CHANNEL_SLUG__ = ${JSON.stringify(channelSlug)};
         window.__OVERLAY_INITIAL_STATE__ = ${JSON.stringify(initialState)};
     </script>
-    <script type="module" src="${ASSET_BASE}/overlay-runtime.bundle.js?v=${getBuildStamp()}"></script>
+    <script src="${ASSET_BASE}/overlay-runtime.bundle.js?v=${getBuildStamp()}"></script>
 </body>
 </html>`;
 

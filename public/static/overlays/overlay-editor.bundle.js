@@ -1,4 +1,4 @@
-import { K as requireReact, N as requireReactDom, O as getDefaultExportFromCjs, r as reactExports, j as jsxDevRuntimeExports, Q as SourceCatalog, V as GOOGLE_FONTS, W as getFontStack, R as React, X as elementToOverlayPath, Y as resolveElementTransform, d as ElementRenderer, P as PixiMediaCore, L as LeaferGraphicCore, e as evaluateTimeline, b as useElementAnimationPhases, F as FontLoader, Z as svgPathFromCommands, _ as isClosedPath, $ as EFFECT_PRESETS, a0 as normalizePathToBounds, a1 as resolveElementGeometry, a2 as offsetOverlayPath, a3 as usePerformanceMode, a4 as booleanContainerBounds, a5 as translateOverlayPath, a6 as expandStrokePath, a7 as joinOpenOverlayPaths, a8 as reverseOpenPath, a9 as splitOverlayPathAtAnchor, aa as setMediaDragging, ab as PerformanceModeProvider, c as clientExports } from "./chunks/LeaferGraphicCore-VnsSxrJU.js";
+import { K as requireReact, N as requireReactDom, O as getDefaultExportFromCjs, r as reactExports, j as jsxDevRuntimeExports, Q as SourceCatalog, V as GOOGLE_FONTS, W as getFontStack, R as React, X as elementToOverlayPath, Y as resolveElementTransform, d as ElementRenderer, P as PixiMediaCore, L as LeaferGraphicCore, e as evaluateTimeline, b as useElementAnimationPhases, F as FontLoader, Z as svgPathFromCommands, _ as isClosedPath, $ as EFFECT_PRESETS, a0 as normalizePathToBounds, a1 as resolveElementGeometry, a2 as offsetOverlayPath, a3 as usePerformanceMode, a4 as booleanContainerBounds, a5 as translateOverlayPath, a6 as expandStrokePath, a7 as joinOpenOverlayPaths, a8 as reverseOpenPath, a9 as splitOverlayPathAtAnchor, aa as setMediaDragging, ab as PerformanceModeProvider, c as clientExports } from "./chunks/LeaferGraphicCore-BvlVNDdq.js";
 var cjs = { exports: {} };
 var Draggable$1 = {};
 var propTypes = { exports: {} };
@@ -840,9 +840,10 @@ function requireGetPrefix() {
   getPrefix.getPrefix = getPrefix$1;
   const prefixes = ["Moz", "Webkit", "O", "ms"];
   function getPrefix$1() {
+    var _a, _b;
     let prop = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : "transform";
     if (typeof window === "undefined") return "";
-    const style = window.document?.documentElement?.style;
+    const style = (_b = (_a = window.document) == null ? void 0 : _a.documentElement) == null ? void 0 : _b.style;
     if (!style) return "";
     if (prop in style) return "";
     for (let i = 0; i < prefixes.length; i++) {
@@ -1439,7 +1440,8 @@ function requireDraggableCore() {
     // React Strict Mode compatibility: if `nodeRef` is passed, we will use it instead of trying to find
     // the underlying DOM node ourselves. See the README for more information.
     findDOMNode() {
-      return this.props?.nodeRef ? this.props?.nodeRef?.current : _reactDom.default.findDOMNode(this);
+      var _a, _b, _c;
+      return ((_a = this.props) == null ? void 0 : _a.nodeRef) ? (_c = (_b = this.props) == null ? void 0 : _b.nodeRef) == null ? void 0 : _c.current : _reactDom.default.findDOMNode(this);
     }
     render() {
       return /* @__PURE__ */ React2.cloneElement(React2.Children.only(this.props.children), {
@@ -1799,7 +1801,8 @@ function requireDraggable() {
       // React Strict Mode compatibility: if `nodeRef` is passed, we will use it instead of trying to find
       // the underlying DOM node ourselves. See the README for more information.
       findDOMNode() {
-        return this.props?.nodeRef?.current ?? _reactDom.default.findDOMNode(this);
+        var _a, _b, _c;
+        return (_c = (_b = (_a = this.props) == null ? void 0 : _a.nodeRef) == null ? void 0 : _b.current) != null ? _c : _reactDom.default.findDOMNode(this);
       }
       render() {
         const {
@@ -3519,6 +3522,7 @@ var Rnd = (
   })(reactExports.PureComponent)
 );
 function BindingPicker({ binding, onUpdate, type }) {
+  var _a, _b, _c;
   const isDynamic = !!binding;
   const toggle = (e) => {
     e.preventDefault();
@@ -3610,11 +3614,12 @@ function BindingPicker({ binding, onUpdate, type }) {
             className: "w-full bg-slate-900 border border-slate-800 rounded px-1.5 py-1 text-[10px] text-slate-200 focus:border-indigo-500 outline-none",
             value: binding.sourceId,
             onChange: (e) => {
+              var _a2;
               const newSource = bindableSources.find((s) => s.id === e.target.value);
               onUpdate({
                 ...binding,
                 sourceId: e.target.value,
-                fieldId: newSource?.fields.filter(fieldMatchesBindingType)[0]?.id || ""
+                fieldId: ((_a2 = newSource == null ? void 0 : newSource.fields.filter(fieldMatchesBindingType)[0]) == null ? void 0 : _a2.id) || ""
               });
             },
             children: bindableSources.map((s) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: s.id, children: s.label }, s.id, false, {
@@ -3685,7 +3690,7 @@ function BindingPicker({ binding, onUpdate, type }) {
         {
           type: "text",
           className: "w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-[10px] font-mono text-slate-300 focus:border-indigo-500 outline-none",
-          value: binding.fallback ?? "",
+          value: (_a = binding.fallback) != null ? _a : "",
           onChange: (e) => onUpdate({ ...binding, fallback: e.target.value }),
           placeholder: "e.target.value..."
         },
@@ -3715,7 +3720,7 @@ function BindingPicker({ binding, onUpdate, type }) {
           {
             type: "text",
             className: "w-full bg-slate-900/50 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-400",
-            value: binding.format?.prefix || "",
+            value: ((_b = binding.format) == null ? void 0 : _b.prefix) || "",
             onChange: (e) => onUpdate({ ...binding, format: { ...binding.format || { type: "text" }, prefix: e.target.value } }),
             placeholder: "@"
           },
@@ -3744,7 +3749,7 @@ function BindingPicker({ binding, onUpdate, type }) {
           {
             type: "text",
             className: "w-full bg-slate-900/50 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-slate-400",
-            value: binding.format?.suffix || "",
+            value: ((_c = binding.format) == null ? void 0 : _c.suffix) || "",
             onChange: (e) => onUpdate({ ...binding, format: { ...binding.format || { type: "text" }, suffix: e.target.value } }),
             placeholder: "!"
           },
@@ -4269,6 +4274,7 @@ function TimelineTrackRow({
   onDuplicateKeyframe,
   onAddKeyframeAtTime
 }) {
+  var _a;
   const laneRef = reactExports.useRef(null);
   const [draggingId, setDraggingId] = reactExports.useState(null);
   const totalWidth = durationMs / 1e3 * pxPerSec;
@@ -4280,6 +4286,7 @@ function TimelineTrackRow({
     return Math.max(0, Math.min(durationMs, px / totalWidth * durationMs));
   };
   const onMouseDown = (keyframeId) => (e) => {
+    var _a2;
     e.preventDefault();
     e.stopPropagation();
     const additive = e.shiftKey || e.metaKey || e.ctrlKey;
@@ -4290,7 +4297,7 @@ function TimelineTrackRow({
     let activeId = keyframeId;
     if (e.altKey) {
       const t = msFromClientX(e.clientX);
-      activeId = onDuplicateKeyframe(track.id, keyframeId, t) ?? keyframeId;
+      activeId = (_a2 = onDuplicateKeyframe(track.id, keyframeId, t)) != null ? _a2 : keyframeId;
     }
     const onMove = (me) => {
       if (isMulti) {
@@ -4324,7 +4331,7 @@ function TimelineTrackRow({
       {
         className: "flex-none truncate px-3 text-[11px] leading-[1.4] text-slate-400 uppercase tracking-[0.05em]",
         style: { width: HEADER_WIDTH },
-        children: PROPERTY_LABELS[track.property] ?? track.property
+        children: (_a = PROPERTY_LABELS[track.property]) != null ? _a : track.property
       },
       void 0,
       false,
@@ -4412,6 +4419,7 @@ function TimelineRuler({
   playheadMs,
   onScrub
 }) {
+  var _a;
   const ref = reactExports.useRef(null);
   const totalWidth = durationMs / 1e3 * pxPerSec;
   const msFromClientX = (clientX) => {
@@ -4433,7 +4441,7 @@ function TimelineRuler({
   const targetTickPx = 60;
   const targetTickMs = targetTickPx / pxPerSec * 1e3;
   const niceIntervals = [50, 100, 200, 250, 500, 1e3, 2e3, 5e3];
-  const tickIntervalMs = niceIntervals.find((n) => n >= targetTickMs) ?? 5e3;
+  const tickIntervalMs = (_a = niceIntervals.find((n) => n >= targetTickMs)) != null ? _a : 5e3;
   const ticks = [];
   for (let t = 0; t <= durationMs; t += tickIntervalMs) ticks.push(t);
   const playheadPx = playheadMs / Math.max(1, durationMs) * totalWidth - scrollLeft;
@@ -4553,7 +4561,8 @@ function TimelinePanel({
   eventTimelines,
   onSetActiveEventTimeline
 }) {
-  const activeColor = activeEventTimeline ? EVENT_COLORS[activeEventTimeline] ?? "#6366f1" : null;
+  var _a, _b, _c;
+  const activeColor = activeEventTimeline ? (_a = EVENT_COLORS[activeEventTimeline]) != null ? _a : "#6366f1" : null;
   const [pxPerSec, setPxPerSec] = reactExports.useState(DEFAULT_PX_PER_SEC);
   const [scrollLeft, setScrollLeft] = reactExports.useState(0);
   const scrollRef = reactExports.useRef(null);
@@ -4608,25 +4617,28 @@ function TimelinePanel({
     onMoveMultipleKeyframes(moves);
   };
   const onTrackAreaMouseDown = (e) => {
+    var _a2, _b2, _c2, _d, _e, _f;
     if (e.button !== 0) return;
     const target = e.target;
     if (target.closest("button") || target.closest("[data-keyframe]")) return;
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left + (scrollRef.current?.scrollLeft ?? 0);
-    const y = e.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
-    marqueeRef.current = { startX: x, startY: y, scrollLeft: scrollRef.current?.scrollLeft ?? 0 };
+    const x = e.clientX - rect.left + ((_b2 = (_a2 = scrollRef.current) == null ? void 0 : _a2.scrollLeft) != null ? _b2 : 0);
+    const y = e.clientY - rect.top + ((_d = (_c2 = scrollRef.current) == null ? void 0 : _c2.scrollTop) != null ? _d : 0);
+    marqueeRef.current = { startX: x, startY: y, scrollLeft: (_f = (_e = scrollRef.current) == null ? void 0 : _e.scrollLeft) != null ? _f : 0 };
     setMarquee({ startX: x, startY: y, endX: x, endY: y });
     const onMove = (ev) => {
+      var _a3, _b3, _c3, _d2;
       if (!marqueeRef.current) return;
-      const ex = ev.clientX - rect.left + (scrollRef.current?.scrollLeft ?? 0);
-      const ey = ev.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
+      const ex = ev.clientX - rect.left + ((_b3 = (_a3 = scrollRef.current) == null ? void 0 : _a3.scrollLeft) != null ? _b3 : 0);
+      const ey = ev.clientY - rect.top + ((_d2 = (_c3 = scrollRef.current) == null ? void 0 : _c3.scrollTop) != null ? _d2 : 0);
       setMarquee({ startX: marqueeRef.current.startX, startY: marqueeRef.current.startY, endX: ex, endY: ey });
     };
     const onUp = (ev) => {
+      var _a3, _b3, _c3, _d2;
       if (!marqueeRef.current) return;
-      const ex = ev.clientX - rect.left + (scrollRef.current?.scrollLeft ?? 0);
-      const ey = ev.clientY - rect.top + (scrollRef.current?.scrollTop ?? 0);
+      const ex = ev.clientX - rect.left + ((_b3 = (_a3 = scrollRef.current) == null ? void 0 : _a3.scrollLeft) != null ? _b3 : 0);
+      const ey = ev.clientY - rect.top + ((_d2 = (_c3 = scrollRef.current) == null ? void 0 : _c3.scrollTop) != null ? _d2 : 0);
       const mx0 = Math.min(marqueeRef.current.startX, ex);
       const mx1 = Math.max(marqueeRef.current.startX, ex);
       const my0 = Math.min(marqueeRef.current.startY, ey);
@@ -4710,19 +4722,21 @@ function TimelinePanel({
     return () => window.removeEventListener("keydown", onKey);
   }, [selectedKfIds, copiedKeyframes, playheadMs]);
   const selectedKf = reactExports.useMemo(() => {
+    var _a2;
     if (!selectedTrackId || !selectedKeyframeId) return null;
     const track = timeline.tracks.find((t) => t.id === selectedTrackId);
-    return track?.keyframes.find((k) => k.id === selectedKeyframeId) ?? null;
+    return (_a2 = track == null ? void 0 : track.keyframes.find((k) => k.id === selectedKeyframeId)) != null ? _a2 : null;
   }, [selectedTrackId, selectedKeyframeId, timeline.tracks]);
   const bezierValue = reactExports.useMemo(() => {
-    const easing = selectedKf?.easing ?? selectedKeyframeEasing;
-    return BEZIER_PRESETS[easing] ?? BEZIER_PRESETS["ease-in-out"];
+    var _a2, _b2;
+    const easing = (_a2 = selectedKf == null ? void 0 : selectedKf.easing) != null ? _a2 : selectedKeyframeEasing;
+    return (_b2 = BEZIER_PRESETS[easing]) != null ? _b2 : BEZIER_PRESETS["ease-in-out"];
   }, [selectedKf, selectedKeyframeEasing]);
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
     "div",
     {
       className: "flex h-72 flex-col border-t bg-[#111113]",
-      style: { borderTopColor: activeColor ?? "rgba(255,255,255,0.08)", borderTopWidth: activeColor ? 2 : 1 },
+      style: { borderTopColor: activeColor != null ? activeColor : "rgba(255,255,255,0.08)", borderTopWidth: activeColor ? 2 : 1 },
       onWheel,
       children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex h-8 flex-none items-center gap-1 border-b border-[rgba(255,255,255,0.08)] px-2", children: [
@@ -4769,7 +4783,7 @@ function TimelinePanel({
             "button",
             {
               type: "button",
-              onClick: () => onSetActiveEventTimeline?.(null),
+              onClick: () => onSetActiveEventTimeline == null ? void 0 : onSetActiveEventTimeline(null),
               className: `h-6 rounded border px-1.5 text-[10px] leading-none font-semibold flex-shrink-0 transition-colors ${!activeEventTimeline ? "border-slate-400/40 bg-slate-500/15 text-slate-200" : "border-[rgba(255,255,255,0.08)] bg-[#161618] text-slate-500 hover:text-slate-300"}`,
               children: "Base"
             },
@@ -4783,14 +4797,15 @@ function TimelinePanel({
             this
           ),
           EVENT_TIMELINE_NAMES.map((name) => {
+            var _a2, _b2;
             const color = EVENT_COLORS[name];
             const isActive = activeEventTimeline === name;
-            const hasData = !!eventTimelines?.[name]?.tracks?.length;
+            const hasData = !!((_b2 = (_a2 = eventTimelines == null ? void 0 : eventTimelines[name]) == null ? void 0 : _a2.tracks) == null ? void 0 : _b2.length);
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "button",
               {
                 type: "button",
-                onClick: () => onSetActiveEventTimeline?.(isActive ? null : name),
+                onClick: () => onSetActiveEventTimeline == null ? void 0 : onSetActiveEventTimeline(isActive ? null : name),
                 className: "h-6 rounded border px-1.5 text-[10px] leading-none font-semibold flex-shrink-0 transition-colors capitalize",
                 style: {
                   borderColor: isActive ? color : hasData ? `${color}40` : "rgba(255,255,255,0.08)",
@@ -4857,8 +4872,11 @@ function TimelinePanel({
             "button",
             {
               type: "button",
-              onClick: () => onSetPlayback({ loop: !(timeline.playback?.loop ?? false) }),
-              className: `h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-none font-medium text-slate-200 transition-colors hover:bg-[#1d1d20] flex-shrink-0 ${timeline.playback?.loop ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-200" : ""}`,
+              onClick: () => {
+                var _a2, _b2;
+                return onSetPlayback({ loop: !((_b2 = (_a2 = timeline.playback) == null ? void 0 : _a2.loop) != null ? _b2 : false) });
+              },
+              className: `h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-none font-medium text-slate-200 transition-colors hover:bg-[#1d1d20] flex-shrink-0 ${((_b = timeline.playback) == null ? void 0 : _b.loop) ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-200" : ""}`,
               children: "Loop"
             },
             void 0,
@@ -4874,8 +4892,11 @@ function TimelinePanel({
             "button",
             {
               type: "button",
-              onClick: () => onSetPlayback({ reverse: !(timeline.playback?.reverse ?? false) }),
-              className: `h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-none font-medium text-slate-200 transition-colors hover:bg-[#1d1d20] flex-shrink-0 ${timeline.playback?.reverse ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-200" : ""}`,
+              onClick: () => {
+                var _a2, _b2;
+                return onSetPlayback({ reverse: !((_b2 = (_a2 = timeline.playback) == null ? void 0 : _a2.reverse) != null ? _b2 : false) });
+              },
+              className: `h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[11px] leading-none font-medium text-slate-200 transition-colors hover:bg-[#1d1d20] flex-shrink-0 ${((_c = timeline.playback) == null ? void 0 : _c.reverse) ? "border-indigo-400/30 bg-indigo-500/12 text-indigo-200" : ""}`,
               children: "Rev"
             },
             void 0,
@@ -5089,8 +5110,9 @@ function TimelinePanel({
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: scrollRef, className: "flex-1 overflow-auto", onScroll: syncScroll, children: [
             marquee && (() => {
-              const x = Math.min(marquee.startX, marquee.endX) - (scrollRef.current?.scrollLeft ?? 0);
-              const y = Math.min(marquee.startY, marquee.endY) - (scrollRef.current?.scrollTop ?? 0);
+              var _a2, _b2, _c2, _d;
+              const x = Math.min(marquee.startX, marquee.endX) - ((_b2 = (_a2 = scrollRef.current) == null ? void 0 : _a2.scrollLeft) != null ? _b2 : 0);
+              const y = Math.min(marquee.startY, marquee.endY) - ((_d = (_c2 = scrollRef.current) == null ? void 0 : _c2.scrollTop) != null ? _d : 0);
               const w = Math.abs(marquee.endX - marquee.startX);
               const h = Math.abs(marquee.endY - marquee.startY);
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: {
@@ -5343,7 +5365,10 @@ function AssetsPanel({ onAddToCanvas }) {
         onDrop: handleDrop,
         onDragOver: handleDragOver,
         onDragLeave: handleDragLeave,
-        onClick: () => fileInputRef.current?.click(),
+        onClick: () => {
+          var _a;
+          return (_a = fileInputRef.current) == null ? void 0 : _a.click();
+        },
         className: `mx-2 mt-2 mb-1 flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed cursor-pointer transition-colors py-3
           ${draggingOver ? "border-indigo-400 bg-indigo-900/20" : "border-[rgba(255,255,255,0.12)] hover:border-indigo-500/50 hover:bg-[rgba(255,255,255,0.03)]"}`,
         children: [
@@ -5716,13 +5741,18 @@ const keyLabels = {
   A: "A"
 };
 function getShortcutDef(id) {
-  return shortcutRegistry.find((shortcut) => shortcut.id === id) ?? null;
+  var _a;
+  return (_a = shortcutRegistry.find((shortcut) => shortcut.id === id)) != null ? _a : null;
 }
 function formatShortcutTooltip(id, fallbackLabel) {
+  var _a;
   const shortcut = getShortcutDef(id);
-  const label = fallbackLabel ?? shortcut?.label ?? "";
+  const label = (_a = fallbackLabel != null ? fallbackLabel : shortcut == null ? void 0 : shortcut.label) != null ? _a : "";
   if (!shortcut || shortcut.showInTooltip === false) return label;
-  const combo = shortcut.keys.map((key) => keyLabels[key] ?? key).join(" + ");
+  const combo = shortcut.keys.map((key) => {
+    var _a2;
+    return (_a2 = keyLabels[key]) != null ? _a2 : key;
+  }).join(" + ");
   return combo ? `${label}
 ${combo}` : label;
 }
@@ -5738,11 +5768,12 @@ function getCheatsheetGroups() {
   })).filter((group) => group.shortcuts.length > 0);
 }
 function getKeycapLabel(key) {
-  return keyLabels[key] ?? key;
+  var _a;
+  return (_a = keyLabels[key]) != null ? _a : key;
 }
 function shortcutMatchesEvent(id, event) {
   const shortcut = getShortcutDef(id);
-  if (!shortcut?.match) return false;
+  if (!(shortcut == null ? void 0 : shortcut.match)) return false;
   const candidates = Array.isArray(shortcut.match) ? shortcut.match : [shortcut.match];
   return candidates.some((candidate) => {
     if (candidate.key && event.key.toLowerCase() !== candidate.key.toLowerCase()) return false;
@@ -6734,12 +6765,13 @@ const SPACING_SPECS = [
   spacing: SPACING_SPECS.map((spec) => spec.type)
 });
 function deriveStyleProfile(metadata, elements) {
-  const fromMeta = metadata?.styleProfile || metadata?.panelStyleProfile || {};
+  var _a;
+  const fromMeta = (metadata == null ? void 0 : metadata.styleProfile) || (metadata == null ? void 0 : metadata.panelStyleProfile) || {};
   const baseColor = normalizeColor(fromMeta.baseColor) || findFirstFillColor(elements) || "#111111";
   const accentColor = normalizeColor(fromMeta.accentColor) || findLowerThirdAccent(elements) || "#4f46e5";
   const textColor = normalizeColor(fromMeta.textColor) || findFirstTextColor(elements) || "#f8fafc";
   const fontFamily = fromMeta.fontFamily || findFirstFontFamily(elements) || "Inter";
-  const baseRadius = typeof fromMeta.baseRadius === "number" ? fromMeta.baseRadius : findFirstRadius(elements) ?? 12;
+  const baseRadius = typeof fromMeta.baseRadius === "number" ? fromMeta.baseRadius : (_a = findFirstRadius(elements)) != null ? _a : 12;
   return {
     baseColor,
     accentColor,
@@ -6749,8 +6781,9 @@ function deriveStyleProfile(metadata, elements) {
   };
 }
 function findLowerThirdAccent(elements) {
+  var _a;
   const lt = elements.find((el) => el.type === "lower_third");
-  const accent = lt?.style?.accentColor;
+  const accent = (_a = lt == null ? void 0 : lt.style) == null ? void 0 : _a.accentColor;
   return normalizeColor(accent) || null;
 }
 function findFirstTextColor(elements) {
@@ -6773,19 +6806,20 @@ function findFirstFontFamily(elements) {
   return null;
 }
 function findFirstRadius(elements) {
+  var _a, _b, _c, _d, _e, _f;
   for (const el of elements) {
     if (el.type === "box") {
       const radius = el.borderRadiusPx;
       if (typeof radius === "number") return radius;
       const corners = el.cornerRadii;
-      const corner = corners?.topLeft ?? corners?.topRight ?? corners?.bottomLeft ?? corners?.bottomRight;
+      const corner = (_c = (_b = (_a = corners == null ? void 0 : corners.topLeft) != null ? _a : corners == null ? void 0 : corners.topRight) != null ? _b : corners == null ? void 0 : corners.bottomLeft) != null ? _c : corners == null ? void 0 : corners.bottomRight;
       if (typeof corner === "number") return corner;
     }
     if (el.type === "shape") {
       const radius = el.cornerRadiusPx;
       if (typeof radius === "number") return radius;
       const corners = el.cornerRadii;
-      const corner = corners?.topLeft ?? corners?.topRight ?? corners?.bottomLeft ?? corners?.bottomRight;
+      const corner = (_f = (_e = (_d = corners == null ? void 0 : corners.topLeft) != null ? _d : corners == null ? void 0 : corners.topRight) != null ? _e : corners == null ? void 0 : corners.bottomLeft) != null ? _f : corners == null ? void 0 : corners.bottomRight;
       if (typeof corner === "number") return corner;
     }
   }
@@ -6802,11 +6836,12 @@ function findFirstFillColor(elements) {
   return null;
 }
 function resolveFillColor(el) {
+  var _a, _b;
   if (Array.isArray(el.fills) && el.fills.length) {
     const fill = el.fills[0];
-    if (fill?.type === "solid" && typeof fill.color === "string") return fill.color;
-    if ((fill?.type === "linear" || fill?.type === "radial" || fill?.type === "conic") && fill.stops?.length) {
-      return fill.stops[0]?.color || null;
+    if ((fill == null ? void 0 : fill.type) === "solid" && typeof fill.color === "string") return fill.color;
+    if (((fill == null ? void 0 : fill.type) === "linear" || (fill == null ? void 0 : fill.type) === "radial" || (fill == null ? void 0 : fill.type) === "conic") && ((_a = fill.stops) == null ? void 0 : _a.length)) {
+      return ((_b = fill.stops[0]) == null ? void 0 : _b.color) || null;
     }
   }
   if (el.backgroundColor) return el.backgroundColor;
@@ -6836,7 +6871,8 @@ function clamp$1(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 function getNodes(effect, key) {
-  return (effect.keyframes ?? []).filter((kf) => kf.params && key in kf.params).map((kf) => ({ t: kf.t, value: kf.params[key] })).sort((a, b) => a.t - b.t);
+  var _a;
+  return ((_a = effect.keyframes) != null ? _a : []).filter((kf) => kf.params && key in kf.params).map((kf) => ({ t: kf.t, value: kf.params[key] })).sort((a, b) => a.t - b.t);
 }
 function buildPath(nodes, duration, fallback, toX, toY) {
   const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback }, { t: duration, value: fallback }];
@@ -6848,10 +6884,11 @@ function buildPath(nodes, duration, fallback, toX, toY) {
   return full.map((n, i) => `${i === 0 ? "M" : "L"} ${toX(n.t).toFixed(1)} ${toY(n.value).toFixed(1)}`).join(" ");
 }
 function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
+  var _a, _b, _c;
   const animatable = presetDef.params.filter((p) => p.animatable && p.type === "number");
   const statics = presetDef.params.filter((p) => !p.animatable || p.type !== "number");
-  const [selParam, setSelParam] = reactExports.useState(animatable[0]?.key ?? "");
-  const [duration, setDuration] = reactExports.useState(effect.duration ?? 0);
+  const [selParam, setSelParam] = reactExports.useState((_b = (_a = animatable[0]) == null ? void 0 : _a.key) != null ? _b : "");
+  const [duration, setDuration] = reactExports.useState((_c = effect.duration) != null ? _c : 0);
   const [durInput, setDurInput] = reactExports.useState(effect.duration ? String(effect.duration) : "");
   const [dragging, setDragging] = reactExports.useState(null);
   const svgRef = reactExports.useRef(null);
@@ -6860,23 +6897,29 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
   const IW = GW - PL - PR, IH = GH - PT - PB;
   const effDur = duration > 0 ? duration : 4e3;
   const toX = (t) => PL + t / effDur * IW;
-  const toY = (v, p) => PT + IH - (v - (p.min ?? 0)) / ((p.max ?? 1) - (p.min ?? 0)) * IH;
+  const toY = (v, p) => {
+    var _a2, _b2, _c2;
+    return PT + IH - (v - ((_a2 = p.min) != null ? _a2 : 0)) / (((_b2 = p.max) != null ? _b2 : 1) - ((_c2 = p.min) != null ? _c2 : 0)) * IH;
+  };
   const fromX = (x) => clamp$1(Math.round((x - PL) / IW * effDur / 10) * 10, 0, effDur);
   const fromY = (y, p) => {
-    const min = p.min ?? 0, max = p.max ?? 1, step = p.step ?? 0.1;
+    var _a2, _b2, _c2;
+    const min = (_a2 = p.min) != null ? _a2 : 0, max = (_b2 = p.max) != null ? _b2 : 1, step = (_c2 = p.step) != null ? _c2 : 0.1;
     return clamp$1(Math.round((min + (PT + IH - y) / IH * (max - min)) / step) * step, min, max);
   };
   const svgPos = (e) => {
-    const r = svgRef.current?.getBoundingClientRect();
+    var _a2;
+    const r = (_a2 = svgRef.current) == null ? void 0 : _a2.getBoundingClientRect();
     return r ? { x: e.clientX - r.left, y: e.clientY - r.top } : { x: 0, y: 0 };
   };
   const handleContextMenu = reactExports.useCallback((e) => {
+    var _a2;
     e.preventDefault();
     const param = animatable.find((p) => p.key === selParam);
     if (!param) return;
     const { x, y } = svgPos(e);
     const t = fromX(x), value = fromY(y, param);
-    const others = (effect.keyframes ?? []).filter((kf) => !(kf.params && selParam in kf.params));
+    const others = ((_a2 = effect.keyframes) != null ? _a2 : []).filter((kf) => !(kf.params && selParam in kf.params));
     const existing = getNodes(effect, selParam);
     const merged = [...existing, { t, value }].sort((a, b) => a.t - b.t);
     onUpdate({ ...effect, keyframes: [...others, ...merged.map((n) => ({ t: n.t, params: { [selParam]: n.value } }))] });
@@ -6888,10 +6931,11 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
     setSelParam(key);
   }, []);
   const handleNodeDblClick = reactExports.useCallback((e, key, idx) => {
+    var _a2;
     e.preventDefault();
     e.stopPropagation();
     const nodes = getNodes(effect, key).filter((_, i) => i !== idx);
-    const others = (effect.keyframes ?? []).filter((kf) => !(kf.params && key in kf.params));
+    const others = ((_a2 = effect.keyframes) != null ? _a2 : []).filter((kf) => !(kf.params && key in kf.params));
     onUpdate({ ...effect, keyframes: [...others, ...nodes.map((n) => ({ t: n.t, params: { [key]: n.value } }))] });
   }, [effect]);
   reactExports.useEffect(() => {
@@ -6899,11 +6943,12 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
     const param = animatable.find((p) => p.key === dragging.key);
     if (!param) return;
     const onMove = (e) => {
+      var _a2;
       const { x, y } = svgPos(e);
       const nodes = getNodes(effect, dragging.key).map(
         (n, i) => i === dragging.idx ? { t: fromX(x), value: fromY(y, param) } : n
       );
-      const others = (effect.keyframes ?? []).filter((kf) => !(kf.params && dragging.key in kf.params));
+      const others = ((_a2 = effect.keyframes) != null ? _a2 : []).filter((kf) => !(kf.params && dragging.key in kf.params));
       onUpdate({ ...effect, keyframes: [...others, ...nodes.map((n) => ({ t: n.t, params: { [dragging.key]: n.value } }))] });
     };
     const onUp = () => setDragging(null);
@@ -7060,10 +7105,11 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
               columnNumber: 13
             }, this)),
             animatable.map((param, idx) => {
+              var _a2;
               const color = COLORS[idx % COLORS.length];
               const sel = selParam === param.key;
               const nodes = getNodes(effect, param.key);
-              const fallback = Number(effect.params[param.key] ?? param.default);
+              const fallback = Number((_a2 = effect.params[param.key]) != null ? _a2 : param.default);
               const d = buildPath(nodes, effDur, fallback, toX, (v) => toY(v, param));
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
                 sel && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d, fill: "none", stroke: color, strokeWidth: 6, strokeOpacity: 0.08 }, void 0, false, {
@@ -7092,7 +7138,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                 ),
                 nodes.map((node, ni) => {
                   const x = toX(node.t), y = toY(node.value, param);
-                  const active = dragging?.key === param.key && dragging?.idx === ni;
+                  const active = (dragging == null ? void 0 : dragging.key) === param.key && (dragging == null ? void 0 : dragging.idx) === ni;
                   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                       "circle",
@@ -7249,80 +7295,83 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
         lineNumber: 277,
         columnNumber: 11
       }, this),
-      statics.map((param) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }, children: [
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { style: { fontSize: 11, color: "#64748b", width: 72, flexShrink: 0 }, children: param.label }, void 0, false, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 280,
-          columnNumber: 15
-        }, this),
-        param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-          "input",
-          {
-            type: "color",
-            value: String(effect.params[param.key] ?? param.default),
-            onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.value } }),
-            style: { width: 32, height: 22, borderRadius: 4, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", cursor: "pointer" }
-          },
-          void 0,
-          false,
-          {
+      statics.map((param) => {
+        var _a2, _b2, _c2, _d, _e, _f, _g;
+        return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }, children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { style: { fontSize: 11, color: "#64748b", width: 72, flexShrink: 0 }, children: param.label }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 282,
-            columnNumber: 17
-          },
-          this
-        ) : param.type === "boolean" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-          "input",
-          {
-            type: "checkbox",
-            checked: Boolean(effect.params[param.key] ?? param.default),
-            onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.checked } }),
-            style: { accentColor: "#6366f1" }
-          },
-          void 0,
-          false,
-          {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 287,
-            columnNumber: 17
-          },
-          this
-        ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+            lineNumber: 280,
+            columnNumber: 15
+          }, this),
+          param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "input",
             {
-              type: "range",
-              min: param.min ?? 0,
-              max: param.max ?? 10,
-              step: param.step ?? 0.1,
-              value: Number(effect.params[param.key] ?? param.default),
-              onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: Number(e.target.value) } }),
-              style: { flex: 1, accentColor: "#6366f1", height: 3 }
+              type: "color",
+              value: String((_a2 = effect.params[param.key]) != null ? _a2 : param.default),
+              onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.value } }),
+              style: { width: 32, height: 22, borderRadius: 4, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", cursor: "pointer" }
             },
             void 0,
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 293,
-              columnNumber: 19
+              lineNumber: 282,
+              columnNumber: 17
             },
             this
-          ),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 11, color: "#94a3b8", width: 36, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: Number(effect.params[param.key] ?? param.default).toFixed(param.step && param.step < 1 ? 1 : 0) }, void 0, false, {
+          ) : param.type === "boolean" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+            "input",
+            {
+              type: "checkbox",
+              checked: Boolean((_b2 = effect.params[param.key]) != null ? _b2 : param.default),
+              onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.checked } }),
+              style: { accentColor: "#6366f1" }
+            },
+            void 0,
+            false,
+            {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
+              lineNumber: 287,
+              columnNumber: 17
+            },
+            this
+          ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "input",
+              {
+                type: "range",
+                min: (_c2 = param.min) != null ? _c2 : 0,
+                max: (_d = param.max) != null ? _d : 10,
+                step: (_e = param.step) != null ? _e : 0.1,
+                value: Number((_f = effect.params[param.key]) != null ? _f : param.default),
+                onChange: (e) => onUpdate({ ...effect, params: { ...effect.params, [param.key]: Number(e.target.value) } }),
+                style: { flex: 1, accentColor: "#6366f1", height: 3 }
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
+                lineNumber: 293,
+                columnNumber: 19
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 11, color: "#94a3b8", width: 36, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: Number((_g = effect.params[param.key]) != null ? _g : param.default).toFixed(param.step && param.step < 1 ? 1 : 0) }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
+              lineNumber: 298,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 298,
-            columnNumber: 19
+            lineNumber: 292,
+            columnNumber: 17
           }, this)
-        ] }, void 0, true, {
+        ] }, param.key, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 292,
-          columnNumber: 17
-        }, this)
-      ] }, param.key, true, {
-        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 279,
-        columnNumber: 13
-      }, this))
+          lineNumber: 279,
+          columnNumber: 13
+        }, this);
+      })
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
       lineNumber: 276,
@@ -7371,8 +7420,9 @@ function roundToGrid(n, grid) {
   return Math.round(n / grid) * grid;
 }
 function isTypingTarget(el) {
+  var _a;
   if (!el) return false;
-  const tag = el.tagName?.toLowerCase();
+  const tag = (_a = el.tagName) == null ? void 0 : _a.toLowerCase();
   if (tag === "input" || tag === "textarea" || tag === "select") return true;
   if (el.isContentEditable) return true;
   return false;
@@ -7381,12 +7431,13 @@ function uniq(arr) {
   return Array.from(new Set(arr));
 }
 function ensureTimeline(timeline) {
+  var _a, _b, _c, _d, _e, _f;
   return {
-    durationMs: Math.max(100, timeline?.durationMs ?? DEFAULT_TIMELINE_DURATION_MS),
-    tracks: [...timeline?.tracks ?? []],
+    durationMs: Math.max(100, (_a = timeline == null ? void 0 : timeline.durationMs) != null ? _a : DEFAULT_TIMELINE_DURATION_MS),
+    tracks: [...(_b = timeline == null ? void 0 : timeline.tracks) != null ? _b : []],
     playback: {
-      loop: timeline?.playback?.loop ?? false,
-      reverse: timeline?.playback?.reverse ?? false
+      loop: (_d = (_c = timeline == null ? void 0 : timeline.playback) == null ? void 0 : _c.loop) != null ? _d : false,
+      reverse: (_f = (_e = timeline == null ? void 0 : timeline.playback) == null ? void 0 : _e.reverse) != null ? _f : false
     }
   };
 }
@@ -7446,15 +7497,16 @@ function getResizeCursor(handle, rotationDeg) {
   return cursors[index];
 }
 function getElementRadiusValue(el) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
   if (el.type === "box") {
     const corners = el.cornerRadii;
-    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
-    return Number(el.borderRadiusPx ?? el.borderRadius ?? 0);
+    if (corners) return Math.max((_a = corners.topLeft) != null ? _a : 0, (_b = corners.topRight) != null ? _b : 0, (_c = corners.bottomRight) != null ? _c : 0, (_d = corners.bottomLeft) != null ? _d : 0);
+    return Number((_f = (_e = el.borderRadiusPx) != null ? _e : el.borderRadius) != null ? _f : 0);
   }
   if (el.type === "shape" && el.shape === "rect") {
     const corners = el.cornerRadii;
-    if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
-    return Number(el.cornerRadiusPx ?? el.cornerRadius ?? 0);
+    if (corners) return Math.max((_g = corners.topLeft) != null ? _g : 0, (_h = corners.topRight) != null ? _h : 0, (_i = corners.bottomRight) != null ? _i : 0, (_j = corners.bottomLeft) != null ? _j : 0);
+    return Number((_l = (_k = el.cornerRadiusPx) != null ? _k : el.cornerRadius) != null ? _l : 0);
   }
   return 0;
 }
@@ -7561,10 +7613,11 @@ function computeResizeDraft(origin, handle, deltaWorld, options) {
   };
 }
 function collectDescendantIds(elementsById, id, acc = /* @__PURE__ */ new Set()) {
+  var _a;
   const el = elementsById[id];
   if (!el) return acc;
   if (el.type !== "group" && el.type !== "frame" && el.type !== "mask" && el.type !== "boolean") return acc;
-  for (const childId of el.childIds ?? []) {
+  for (const childId of (_a = el.childIds) != null ? _a : []) {
     if (acc.has(childId)) continue;
     acc.add(childId);
     collectDescendantIds(elementsById, childId, acc);
@@ -7590,6 +7643,7 @@ function isPathCapableElement(el) {
   return !!el && (el.type === "shape" || el.type === "path" || el.type === "box" || el.type === "boolean");
 }
 function getScaledTextPatch(el, origin, next) {
+  var _a, _b, _c, _d;
   if (el.type !== "text") return {};
   const scaleX = next.width / Math.max(origin.width, 1);
   const scaleY = next.height / Math.max(origin.height, 1);
@@ -7607,39 +7661,40 @@ function getScaledTextPatch(el, origin, next) {
     const shadow = el.shadow;
     patch.shadow = {
       ...shadow,
-      blur: scaleNumericValue(shadow.blur, textScale) ?? shadow.blur,
-      x: scaleNumericValue(shadow.x, textScale) ?? shadow.x,
-      y: scaleNumericValue(shadow.y, textScale) ?? shadow.y,
-      spread: scaleNumericValue(shadow.spread, textScale) ?? shadow.spread
+      blur: (_a = scaleNumericValue(shadow.blur, textScale)) != null ? _a : shadow.blur,
+      x: (_b = scaleNumericValue(shadow.x, textScale)) != null ? _b : shadow.x,
+      y: (_c = scaleNumericValue(shadow.y, textScale)) != null ? _c : shadow.y,
+      spread: (_d = scaleNumericValue(shadow.spread, textScale)) != null ? _d : shadow.spread
     };
   }
   if (Array.isArray(el.effects)) {
     patch.effects = el.effects.map((effect) => {
+      var _a2, _b2, _c2, _d2, _e, _f, _g, _h;
       if (effect.type === "dropShadow" || effect.type === "innerShadow") {
         return {
           ...effect,
-          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
-          x: scaleNumericValue(effect.x, textScale) ?? effect.x,
-          y: scaleNumericValue(effect.y, textScale) ?? effect.y,
-          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread
+          blur: (_a2 = scaleNumericValue(effect.blur, textScale)) != null ? _a2 : effect.blur,
+          x: (_b2 = scaleNumericValue(effect.x, textScale)) != null ? _b2 : effect.x,
+          y: (_c2 = scaleNumericValue(effect.y, textScale)) != null ? _c2 : effect.y,
+          spread: (_d2 = scaleNumericValue(effect.spread, textScale)) != null ? _d2 : effect.spread
         };
       }
       if (effect.type === "outerGlow" || effect.type === "innerGlow") {
         return {
           ...effect,
-          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur,
-          spread: scaleNumericValue(effect.spread, textScale) ?? effect.spread
+          blur: (_e = scaleNumericValue(effect.blur, textScale)) != null ? _e : effect.blur,
+          spread: (_f = scaleNumericValue(effect.spread, textScale)) != null ? _f : effect.spread
         };
       }
       if (effect.type === "layerBlur") {
         return {
           ...effect,
-          blur: scaleNumericValue(effect.blur, textScale) ?? effect.blur
+          blur: (_g = scaleNumericValue(effect.blur, textScale)) != null ? _g : effect.blur
         };
       }
       return effect.type === "noise" ? {
         ...effect,
-        scale: scaleNumericValue(effect.scale, textScale) ?? effect.scale
+        scale: (_h = scaleNumericValue(effect.scale, textScale)) != null ? _h : effect.scale
       } : effect;
     });
   }
@@ -7699,12 +7754,12 @@ function updatePathAnchor(path, commandIndex, nextPoint) {
     current.y2 += dy;
   }
   const nextCurve = commands[commandIndex + 1];
-  if (nextCurve?.type === "curve") {
+  if ((nextCurve == null ? void 0 : nextCurve.type) === "curve") {
     nextCurve.x1 += dx;
     nextCurve.y1 += dy;
   }
   const prevCurve = commands[commandIndex - 1];
-  if (prevCurve?.type === "curve") {
+  if ((prevCurve == null ? void 0 : prevCurve.type) === "curve") {
     prevCurve.x2 += dx;
     prevCurve.y2 += dy;
   }
@@ -7738,13 +7793,14 @@ function updatePathHandle(path, curveCommandIndex, role, nextPoint, mirrorHandle
   return { commands };
 }
 function convertLineSegmentToCurve(path, commandIndex) {
+  var _a, _b;
   const commands = path.commands.map((command2) => ({ ...command2 }));
   const command = commands[commandIndex];
   if (!command || command.type !== "line") return path;
   const prevCommand = commands[commandIndex - 1];
   if (!prevCommand) return path;
-  const prevX = prevCommand.x ?? 0;
-  const prevY = prevCommand.y ?? 0;
+  const prevX = (_a = prevCommand.x) != null ? _a : 0;
+  const prevY = (_b = prevCommand.y) != null ? _b : 0;
   const curX = command.x;
   const curY = command.y;
   const dx = curX - prevX;
@@ -7771,12 +7827,13 @@ function removePathAnchor(path, commandIndex) {
   return { commands };
 }
 function addPathAnchorAfterSelection(path, commandIndex) {
+  var _a;
   const anchors = getPathAnchors(path);
   const currentAnchorIndex = anchors.findIndex((anchor) => anchor.commandIndex === commandIndex);
   if (currentAnchorIndex === -1) return path;
   const currentAnchor = anchors[currentAnchorIndex];
   const isClosed = path.commands.some((command) => command.type === "close");
-  const nextAnchor = anchors[currentAnchorIndex + 1] ?? (isClosed ? anchors[0] : void 0);
+  const nextAnchor = (_a = anchors[currentAnchorIndex + 1]) != null ? _a : isClosed ? anchors[0] : void 0;
   if (!nextAnchor) return path;
   const midpoint = {
     x: (currentAnchor.x + nextAnchor.x) / 2,
@@ -7824,15 +7881,16 @@ function computeEqualSpacingGuides(rect, others, threshold) {
   return guides;
 }
 function rectFromEl(el) {
-  const x = el.x ?? 0;
-  const y = el.y ?? 0;
-  const rawW = el.width ?? 0;
-  const rawH = el.height ?? 0;
-  const sx = el.scaleX ?? 1;
-  const sy = el.scaleY ?? 1;
+  var _a, _b, _c, _d, _e, _f, _g;
+  const x = (_a = el.x) != null ? _a : 0;
+  const y = (_b = el.y) != null ? _b : 0;
+  const rawW = (_c = el.width) != null ? _c : 0;
+  const rawH = (_d = el.height) != null ? _d : 0;
+  const sx = (_e = el.scaleX) != null ? _e : 1;
+  const sy = (_f = el.scaleY) != null ? _f : 1;
   const w = rawW * Math.abs(sx);
   const h = rawH * Math.abs(sy);
-  const rot = Number(el.rotationDeg ?? 0);
+  const rot = Number((_g = el.rotationDeg) != null ? _g : 0);
   const cx = x + rawW / 2;
   const cy = y + rawH / 2;
   if (rot === 0) {
@@ -8001,10 +8059,11 @@ async function uploadAssetFile(file, scope, kind) {
   });
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
   const data = await res.json();
-  if (!data?.ok || typeof data.url !== "string") throw new Error("Upload failed: invalid response");
+  if (!(data == null ? void 0 : data.ok) || typeof data.url !== "string") throw new Error("Upload failed: invalid response");
   return { url: data.url };
 }
 function DraggableFlyout({ children, initialRight }) {
+  var _a, _b;
   const [pos, setPos] = React.useState(null);
   const dragRef = React.useRef(null);
   const elRef = React.useRef(null);
@@ -8017,16 +8076,18 @@ function DraggableFlyout({ children, initialRight }) {
     });
   }, [initialRight]);
   const onMouseDown = (e) => {
+    var _a2;
     if (e.target.closest("input,select,button,svg")) return;
     e.preventDefault();
-    const rect = elRef.current?.getBoundingClientRect();
+    const rect = (_a2 = elRef.current) == null ? void 0 : _a2.getBoundingClientRect();
     if (!rect) return;
     dragRef.current = { startX: e.clientX, startY: e.clientY, origX: rect.left, origY: rect.top };
     const onMove = (ev) => {
+      var _a3, _b2, _c, _d;
       if (!dragRef.current) return;
       setPos({
-        x: Math.max(0, Math.min(window.innerWidth - (elRef.current?.offsetWidth ?? 480), dragRef.current.origX + ev.clientX - dragRef.current.startX)),
-        y: Math.max(0, Math.min(window.innerHeight - (elRef.current?.offsetHeight ?? 400), dragRef.current.origY + ev.clientY - dragRef.current.startY))
+        x: Math.max(0, Math.min(window.innerWidth - ((_b2 = (_a3 = elRef.current) == null ? void 0 : _a3.offsetWidth) != null ? _b2 : 480), dragRef.current.origX + ev.clientX - dragRef.current.startX)),
+        y: Math.max(0, Math.min(window.innerHeight - ((_d = (_c = elRef.current) == null ? void 0 : _c.offsetHeight) != null ? _d : 400), dragRef.current.origY + ev.clientY - dragRef.current.startY))
       });
     };
     const onUp = () => {
@@ -8044,8 +8105,8 @@ function DraggableFlyout({ children, initialRight }) {
       onMouseDown,
       style: {
         position: "fixed",
-        left: pos?.x ?? -9999,
-        top: pos?.y ?? -9999,
+        left: (_a = pos == null ? void 0 : pos.x) != null ? _a : -9999,
+        top: (_b = pos == null ? void 0 : pos.y) != null ? _b : -9999,
         zIndex: 200,
         cursor: "default",
         userSelect: "none"
@@ -8117,6 +8178,7 @@ function PerformanceModeToggleButton() {
   );
 }
 function OverlayEditorApp({ initialOverlay }) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r;
   const [name, setName] = reactExports.useState(initialOverlay.name || "Untitled Overlay");
   const [slug, setSlug] = reactExports.useState(initialOverlay.slug || "");
   const [config, setConfig] = reactExports.useState(
@@ -8185,10 +8247,11 @@ function OverlayEditorApp({ initialOverlay }) {
   const [propsSchema, setPropsSchema] = reactExports.useState(initialOverlay.propsSchema || {});
   const [metadata, setMetadata] = reactExports.useState(initialOverlay.metadata || {});
   const [selectedIds, setSelectedIds] = reactExports.useState(() => {
-    const last = config.elements?.[config.elements.length - 1]?.id ?? null;
+    var _a2, _b2, _c2;
+    const last = (_c2 = (_b2 = (_a2 = config.elements) == null ? void 0 : _a2[config.elements.length - 1]) == null ? void 0 : _b2.id) != null ? _c2 : null;
     return last ? [last] : [];
   });
-  const primarySelectedId = selectedIds[selectedIds.length - 1] ?? null;
+  const primarySelectedId = (_a = selectedIds[selectedIds.length - 1]) != null ? _a : null;
   const [resizeStatus, setResizeStatus] = reactExports.useState(null);
   const [draftRects, setDraftRects] = reactExports.useState({});
   const [saving, setSaving] = reactExports.useState(false);
@@ -8290,14 +8353,17 @@ function OverlayEditorApp({ initialOverlay }) {
   }, []);
   reactExports.useEffect(() => {
     fetch("/dashboard/api/overlay-components").then((r) => r.ok ? r.json() : []).then((rows) => {
-      const defs = rows.map((r) => ({
-        id: r.public_id,
-        name: r.name,
-        schemaVersion: r.schema_version,
-        elements: r.component_json?.elements || [],
-        propsSchema: r.component_json?.propsSchema || {},
-        metadata: r.component_json?.metadata || {}
-      }));
+      const defs = rows.map((r) => {
+        var _a2, _b2, _c2;
+        return {
+          id: r.public_id,
+          name: r.name,
+          schemaVersion: r.schema_version,
+          elements: ((_a2 = r.component_json) == null ? void 0 : _a2.elements) || [],
+          propsSchema: ((_b2 = r.component_json) == null ? void 0 : _b2.propsSchema) || {},
+          metadata: ((_c2 = r.component_json) == null ? void 0 : _c2.metadata) || {}
+        };
+      });
       setOverlayComponents(defs);
     }).catch((e) => console.error("Failed to load components:", e));
   }, []);
@@ -8392,8 +8458,9 @@ function OverlayEditorApp({ initialOverlay }) {
     };
   }, [baseW, baseH]);
   const timeline = reactExports.useMemo(() => {
+    var _a2;
     if (activeEventTimeline) {
-      const et = config.eventTimelines?.[activeEventTimeline];
+      const et = (_a2 = config.eventTimelines) == null ? void 0 : _a2[activeEventTimeline];
       return ensureTimeline(et);
     }
     return ensureTimeline(config.timeline);
@@ -8444,11 +8511,13 @@ function OverlayEditorApp({ initialOverlay }) {
     }
   }, [isActivelyDragging]);
   React.useLayoutEffect(() => {
+    var _a2;
     if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
     const activeLeaferIds = /* @__PURE__ */ new Set();
     const activePixiIds = /* @__PURE__ */ new Set();
     const elementsToSync = Object.values(previewElementsById);
     elementsToSync.forEach((el) => {
+      var _a3, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2;
       if (el.visible === false) return;
       const type = el.type;
       if (type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text") {
@@ -8462,8 +8531,8 @@ function OverlayEditorApp({ initialOverlay }) {
           else if (s.shape === "ellipse") drawType = "ellipse";
           else if (s.shape === "line") {
             drawType = "path";
-            const w = s.width ?? 100;
-            const h = s.height ?? 100;
+            const w = (_a3 = s.width) != null ? _a3 : 100;
+            const h = (_b2 = s.height) != null ? _b2 : 100;
             const x1 = s.line ? s.line.x1 * w : 0;
             const y1 = s.line ? s.line.y1 * h : h / 2;
             const x2 = s.line ? s.line.x2 * w : w;
@@ -8471,17 +8540,17 @@ function OverlayEditorApp({ initialOverlay }) {
             properties.pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
           } else {
             drawType = "path";
-            const w = s.width ?? 100;
-            const h = s.height ?? 100;
+            const w = (_c2 = s.width) != null ? _c2 : 100;
+            const h = (_d2 = s.height) != null ? _d2 : 100;
             properties.pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
           }
         } else {
           drawType = type;
         }
         if (drawType === "text" && properties.fontFamily) {
-          leaferCoreRef.current?.preloadFonts([properties.fontFamily]);
+          (_e2 = leaferCoreRef.current) == null ? void 0 : _e2.preloadFonts([properties.fontFamily]);
         }
-        leaferCoreRef.current?.drawElement(el.id, drawType, properties);
+        (_f2 = leaferCoreRef.current) == null ? void 0 : _f2.drawElement(el.id, drawType, properties);
       }
       if (type === "video") {
         activePixiIds.add(el.id);
@@ -8519,32 +8588,33 @@ function OverlayEditorApp({ initialOverlay }) {
           const b = (parseInt(cleanHex.substring(4, 6), 16) || 0) / 255;
           chromaConfig = {
             keyColor: [r, g, b],
-            similarity: el.keying.similarity ?? 0.4,
-            smoothness: el.keying.smoothness ?? 0.08
+            similarity: (_g2 = el.keying.similarity) != null ? _g2 : 0.4,
+            smoothness: (_h2 = el.keying.smoothness) != null ? _h2 : 0.08
           };
         }
-        pixiCoreRef.current?.updateVideoElement(
+        (_m2 = pixiCoreRef.current) == null ? void 0 : _m2.updateVideoElement(
           el.id,
           videoEl,
           {
-            x: el.x ?? 0,
-            y: el.y ?? 0,
-            width: el.width ?? 100,
-            height: el.height ?? 100
+            x: (_i2 = el.x) != null ? _i2 : 0,
+            y: (_j2 = el.y) != null ? _j2 : 0,
+            width: (_k2 = el.width) != null ? _k2 : 100,
+            height: (_l2 = el.height) != null ? _l2 : 100
           },
           chromaConfig
         );
       }
     });
-    leaferCoreRef.current?.cleanupOrphanedElements(activeLeaferIds);
+    (_a2 = leaferCoreRef.current) == null ? void 0 : _a2.cleanupOrphanedElements(activeLeaferIds);
     videoElementsRef.current.forEach((videoEl, id) => {
+      var _a3;
       if (!activePixiIds.has(id)) {
         videoEl.pause();
         videoEl.src = "";
         videoEl.load();
         videoEl.remove();
         videoElementsRef.current.delete(id);
-        pixiCoreRef.current?.removeVideoElement(id);
+        (_a3 = pixiCoreRef.current) == null ? void 0 : _a3.removeVideoElement(id);
       }
     });
   }, [previewElementsById, canvasInitialized]);
@@ -8578,19 +8648,21 @@ function OverlayEditorApp({ initialOverlay }) {
     setTimelinePlayheadMs((prev) => clamp(prev, 0, durationMs));
   }, [timeline.durationMs]);
   reactExports.useEffect(() => {
+    var _a2, _b2;
     if (!isTimelinePlaying) return;
     const durationMs = Math.max(0, timeline.durationMs);
     if (durationMs <= 0) {
       setIsTimelinePlaying(false);
       return;
     }
-    const reverse = timeline.playback?.reverse === true;
-    const loop = timeline.playback?.loop === true;
+    const reverse = ((_a2 = timeline.playback) == null ? void 0 : _a2.reverse) === true;
+    const loop = ((_b2 = timeline.playback) == null ? void 0 : _b2.loop) === true;
     let frameId = 0;
     const startOffset = reverse ? durationMs - timelinePlayheadMs : timelinePlayheadMs;
     timelinePlaybackStartRef.current = performance.now() - startOffset;
     const tick = (now) => {
-      const startedAt = timelinePlaybackStartRef.current ?? now;
+      var _a3;
+      const startedAt = (_a3 = timelinePlaybackStartRef.current) != null ? _a3 : now;
       const elapsed = Math.max(0, now - startedAt);
       const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
       const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
@@ -8610,7 +8682,7 @@ function OverlayEditorApp({ initialOverlay }) {
       window.cancelAnimationFrame(frameId);
       timelinePlaybackStartRef.current = null;
     };
-  }, [isTimelinePlaying, timeline.durationMs, timeline.playback?.loop, timeline.playback?.reverse, timelinePlayheadMs]);
+  }, [isTimelinePlaying, timeline.durationMs, (_b = timeline.playback) == null ? void 0 : _b.loop, (_c = timeline.playback) == null ? void 0 : _c.reverse, timelinePlayheadMs]);
   const [testData, setTestData] = reactExports.useState({
     name: "User",
     count: "42"
@@ -8624,12 +8696,13 @@ function OverlayEditorApp({ initialOverlay }) {
   });
   const [ltPinned, setLtPinned] = reactExports.useState(false);
   const renderData = reactExports.useMemo(() => {
-    const isLtSelected = primarySelectedId && config.elements.find((e) => e.id === primarySelectedId)?.type === "lower_third";
+    var _a2, _b2, _c2;
+    const isLtSelected = primarySelectedId && ((_a2 = config.elements.find((e) => e.id === primarySelectedId)) == null ? void 0 : _a2.type) === "lower_third";
     const hasLtElement = config.elements.some((e) => e.type === "lower_third");
     if (!isLtSelected && !ltPinned) return testData;
     if (ltPinned && !hasLtElement) return testData;
     const ltEl = isLtSelected ? config.elements.find((e) => e.id === primarySelectedId) : config.elements.find((e) => e.type === "lower_third");
-    const tickerKey = ltEl?.ticker?.key ?? "lower_third.ticker";
+    const tickerKey = (_c2 = (_b2 = ltEl == null ? void 0 : ltEl.ticker) == null ? void 0 : _b2.key) != null ? _c2 : "lower_third.ticker";
     return {
       ...testData,
       "lower_third.active": "1",
@@ -8660,10 +8733,11 @@ function OverlayEditorApp({ initialOverlay }) {
     lastGuideRef.current = next;
     if (rafRef.current != null) return;
     rafRef.current = window.requestAnimationFrame(() => {
+      var _a2;
       rafRef.current = null;
       const g = lastGuideRef.current;
       if (!g) return;
-      setGuides({ show: true, v: g.v, h: g.h, spacing: g.spacing ?? [] });
+      setGuides({ show: true, v: g.v, h: g.h, spacing: (_a2 = g.spacing) != null ? _a2 : [] });
     });
   }, []);
   const pendingDraftRectsRef = reactExports.useRef(null);
@@ -8693,11 +8767,13 @@ function OverlayEditorApp({ initialOverlay }) {
     draftRafRef.current = window.requestAnimationFrame(flushDraftUpdates);
   }, [flushDraftUpdates]);
   const setDraftRectsThrottled = reactExports.useCallback((rects) => {
-    pendingDraftRectsRef.current = { ...pendingDraftRectsRef.current ?? {}, ...rects };
+    var _a2;
+    pendingDraftRectsRef.current = { ...(_a2 = pendingDraftRectsRef.current) != null ? _a2 : {}, ...rects };
     scheduleDraftFlush();
   }, [scheduleDraftFlush]);
   const setDraftPatchesThrottled = reactExports.useCallback((patches) => {
-    pendingDraftPatchesRef.current = { ...pendingDraftPatchesRef.current ?? {}, ...patches };
+    var _a2;
+    pendingDraftPatchesRef.current = { ...(_a2 = pendingDraftPatchesRef.current) != null ? _a2 : {}, ...patches };
     scheduleDraftFlush();
   }, [scheduleDraftFlush]);
   const setResizeStatusThrottled = reactExports.useCallback((status) => {
@@ -8745,12 +8821,13 @@ function OverlayEditorApp({ initialOverlay }) {
     });
   }, [elementsAny, selectedIds, draftRects]);
   const primarySelectedEl = reactExports.useMemo(() => {
+    var _a2;
     if (!primarySelectedId) return null;
-    return elementsAny.find((el) => el.id === primarySelectedId) ?? null;
+    return (_a2 = elementsAny.find((el) => el.id === primarySelectedId)) != null ? _a2 : null;
   }, [elementsAny, primarySelectedId]);
   reactExports.useEffect(() => {
     if (!selectedPathAnchor) return;
-    if (primarySelectedEl?.type !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
+    if ((primarySelectedEl == null ? void 0 : primarySelectedEl.type) !== "path" || primarySelectedEl.id !== selectedPathAnchor.elementId) {
       setSelectedPathAnchor(null);
     }
   }, [primarySelectedEl, selectedPathAnchor]);
@@ -8776,23 +8853,27 @@ function OverlayEditorApp({ initialOverlay }) {
     return { playheadMs: timelinePlayheadMs, hasAnimatedProperties, properties };
   }, [primarySelectedId, timeline.tracks, timelinePlayheadMs]);
   const selectedTimelineKeyframe = reactExports.useMemo(() => {
+    var _a2;
     if (!selectedTimelineTrackId || !selectedTimelineKeyframeId) return null;
     const track = timeline.tracks.find((candidate) => candidate.id === selectedTimelineTrackId);
     if (!track) return null;
-    return track.keyframes.find((candidate) => candidate.id === selectedTimelineKeyframeId) ?? null;
+    return (_a2 = track.keyframes.find((candidate) => candidate.id === selectedTimelineKeyframeId)) != null ? _a2 : null;
   }, [selectedTimelineKeyframeId, selectedTimelineTrackId, timeline.tracks]);
   const canGroup = selectedIds.length > 0;
   const canUngroup = !!primarySelectedEl && (primarySelectedEl.type === "group" || primarySelectedEl.type === "frame" || primarySelectedEl.type === "boolean");
   const selectedPathElements = reactExports.useMemo(() => selectedEls.filter(isPathCapableElement), [selectedEls]);
   const canBooleanSelection = selectedPathElements.length >= 2;
   const canOffsetSelection = !!primarySelectedEl && isPathCapableElement(primarySelectedEl);
-  const canFlattenBoolean = primarySelectedEl?.type === "boolean";
+  const canFlattenBoolean = (primarySelectedEl == null ? void 0 : primarySelectedEl.type) === "boolean";
   const canFlattenCompound = selectedEls.length === 2 && selectedEls.every((el) => isPathCapableElement(el));
   const canConvertSelectionToPath = !!primarySelectedEl && (primarySelectedEl.type === "shape" || primarySelectedEl.type === "box");
   const selectedParentFrame = reactExports.useMemo(
-    () => selectedIds[0] ? config.elements.find(
-      (candidate) => candidate.type === "frame" && Array.isArray(candidate.childIds) && candidate.childIds.includes(selectedIds[0])
-    ) ?? null : null,
+    () => {
+      var _a2;
+      return selectedIds[0] ? (_a2 = config.elements.find(
+        (candidate) => candidate.type === "frame" && Array.isArray(candidate.childIds) && candidate.childIds.includes(selectedIds[0])
+      )) != null ? _a2 : null : null;
+    },
     [config.elements, selectedIds]
   );
   const selectionBounds = reactExports.useMemo(() => computeSelectionBounds(selectedEls), [selectedEls]);
@@ -8820,21 +8901,23 @@ function OverlayEditorApp({ initialOverlay }) {
   const allChildIds = reactExports.useMemo(() => {
     const s = /* @__PURE__ */ new Set();
     previewElements.forEach((e) => {
+      var _a2;
       if (isContainerElement(e)) {
-        e.childIds?.forEach((cid) => s.add(cid));
+        (_a2 = e.childIds) == null ? void 0 : _a2.forEach((cid) => s.add(cid));
       }
     });
     return s;
   }, [previewElements]);
   function setTimeline(nextTimelineOrUpdater) {
     setConfig((prev) => {
+      var _a2, _b2;
       if (activeEventTimeline) {
-        const currentTimeline2 = ensureTimeline(prev.eventTimelines?.[activeEventTimeline]);
+        const currentTimeline2 = ensureTimeline((_a2 = prev.eventTimelines) == null ? void 0 : _a2[activeEventTimeline]);
         const nextTimeline2 = typeof nextTimelineOrUpdater === "function" ? nextTimelineOrUpdater(currentTimeline2) : nextTimelineOrUpdater;
         return {
           ...prev,
           eventTimelines: {
-            ...prev.eventTimelines ?? {},
+            ...(_b2 = prev.eventTimelines) != null ? _b2 : {},
             [activeEventTimeline]: nextTimeline2
           }
         };
@@ -8906,13 +8989,14 @@ function OverlayEditorApp({ initialOverlay }) {
     const element = previewElementsById[elementId];
     if (!element) return;
     setConfig((prev) => {
-      const currentEventTl = activeEventTimeline ? prev.eventTimelines?.[activeEventTimeline] : null;
-      const ensured = ensureTimeline(currentEventTl ?? prev.timeline);
+      var _a2, _b2, _c2;
+      const currentEventTl = activeEventTimeline ? (_a2 = prev.eventTimelines) == null ? void 0 : _a2[activeEventTimeline] : null;
+      const ensured = ensureTimeline(currentEventTl != null ? currentEventTl : prev.timeline);
       if (ensured.tracks.some((track) => track.elementId === elementId && track.property === property)) {
         return prev;
       }
       const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
-      const value = Number(element[property] ?? fallbackValue);
+      const value = Number((_b2 = element[property]) != null ? _b2 : fallbackValue);
       const keyframe = {
         id: genId("kf"),
         t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
@@ -8937,7 +9021,7 @@ function OverlayEditorApp({ initialOverlay }) {
         return {
           ...prev,
           eventTimelines: {
-            ...prev.eventTimelines ?? {},
+            ...(_c2 = prev.eventTimelines) != null ? _c2 : {},
             [activeEventTimeline]: nextTimeline
           }
         };
@@ -8965,10 +9049,11 @@ function OverlayEditorApp({ initialOverlay }) {
       return {
         ...ensured,
         tracks: ensured.tracks.map((track) => {
+          var _a2, _b2;
           if (track.id !== trackId) return track;
           const sorted = [...track.keyframes].sort((a, b) => a.t - b.t);
           const clampedTime = clamp(Math.round(timeMs), 0, ensured.durationMs);
-          let value = sorted[0]?.value ?? 0;
+          let value = (_b2 = (_a2 = sorted[0]) == null ? void 0 : _a2.value) != null ? _b2 : 0;
           for (const keyframe of sorted) {
             if (keyframe.t <= clampedTime) value = keyframe.value;
           }
@@ -9046,6 +9131,7 @@ function OverlayEditorApp({ initialOverlay }) {
   function updateElement(id, patch) {
     const touchedTimelineProperties = TIMELINE_PROPERTIES.filter((property) => patch[property] !== void 0);
     setConfig((prev) => {
+      var _a2, _b2, _c2;
       const nextEls = [...prev.elements];
       const idx = nextEls.findIndex((e) => e.id === id);
       if (idx === -1) return prev;
@@ -9072,14 +9158,15 @@ function OverlayEditorApp({ initialOverlay }) {
         }
       }
       if ((oldEl.type === "group" || oldEl.type === "frame" || oldEl.type === "boolean") && (patch.x !== void 0 || patch.y !== void 0)) {
-        const dx = (patch.x ?? oldEl.x) - oldEl.x;
-        const dy = (patch.y ?? oldEl.y) - oldEl.y;
+        const dx = ((_a2 = patch.x) != null ? _a2 : oldEl.x) - oldEl.x;
+        const dy = ((_b2 = patch.y) != null ? _b2 : oldEl.y) - oldEl.y;
         if (dx !== 0 || dy !== 0) {
           const toMove = /* @__PURE__ */ new Set();
           const collect = (pid) => {
+            var _a3;
             const p = nextEls.find((e) => e.id === pid);
             if (p && (p.type === "group" || p.type === "frame" || p.type === "boolean")) {
-              p.childIds?.forEach((cid) => {
+              (_a3 = p.childIds) == null ? void 0 : _a3.forEach((cid) => {
                 if (!toMove.has(cid)) {
                   toMove.add(cid);
                   collect(cid);
@@ -9097,7 +9184,7 @@ function OverlayEditorApp({ initialOverlay }) {
           });
         }
       }
-      if (nextEls[idx]?.type === "frame") {
+      if (((_c2 = nextEls[idx]) == null ? void 0 : _c2.type) === "frame") {
         nextEls.splice(0, nextEls.length, ...reflowFrameInElementList(id, nextEls));
       }
       if (timelineKeyframeId) {
@@ -9137,7 +9224,10 @@ function OverlayEditorApp({ initialOverlay }) {
       return;
     }
     setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: false }));
-    setPreviewAnimationResetKeys((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }));
+    setPreviewAnimationResetKeys((prev) => {
+      var _a2;
+      return { ...prev, [id]: ((_a2 = prev[id]) != null ? _a2 : 0) + 1 };
+    });
     const frameTimer = window.setTimeout(() => {
       const startTimer = window.setTimeout(() => {
         setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: true }));
@@ -9270,32 +9360,33 @@ function OverlayEditorApp({ initialOverlay }) {
     setSelectedIds([id]);
   }
   function createResolvedPathElement(source, options) {
+    var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2;
     const resolved = resolveElementGeometry(source, elementsById);
     if (!resolved) return null;
     const pathId = genId("path");
     const pathEl = {
       id: pathId,
       type: "path",
-      name: options?.name ?? `${source.name || defaultElementLabel(source)} Path`,
+      name: (_a2 = options == null ? void 0 : options.name) != null ? _a2 : `${source.name || defaultElementLabel(source)} Path`,
       x: Math.round(resolved.bounds.x),
       y: Math.round(resolved.bounds.y),
       width: Math.max(1, Math.round(resolved.bounds.width)),
       height: Math.max(1, Math.round(resolved.bounds.height)),
       visible: source.visible !== false,
       locked: source.locked === true,
-      opacity: source.opacity ?? 1,
-      rotationDeg: source.rotationDeg ?? 0,
-      fillColor: source.fillColor ?? "#ffffff",
-      fillOpacity: source.fillOpacity ?? 1,
-      strokeColor: source.strokeColor ?? "#000000",
-      strokeWidthPx: source.strokeWidthPx ?? 2,
-      strokeOpacity: source.strokeOpacity ?? 1,
+      opacity: (_b2 = source.opacity) != null ? _b2 : 1,
+      rotationDeg: (_c2 = source.rotationDeg) != null ? _c2 : 0,
+      fillColor: (_d2 = source.fillColor) != null ? _d2 : "#ffffff",
+      fillOpacity: (_e2 = source.fillOpacity) != null ? _e2 : 1,
+      strokeColor: (_f2 = source.strokeColor) != null ? _f2 : "#000000",
+      strokeWidthPx: (_g2 = source.strokeWidthPx) != null ? _g2 : 2,
+      strokeOpacity: (_h2 = source.strokeOpacity) != null ? _h2 : 1,
       strokeDash: Array.isArray(source.strokeDash) ? [...source.strokeDash] : [],
       path: resolved.path
     };
-    const removeIds = new Set(options?.removeIds ?? []);
+    const removeIds = new Set((_i2 = options == null ? void 0 : options.removeIds) != null ? _i2 : []);
     setConfig((prev) => {
-      const insertAtIdx = options?.insertAtId ? prev.elements.findIndex((candidate) => candidate.id === options.insertAtId) : -1;
+      const insertAtIdx = (options == null ? void 0 : options.insertAtId) ? prev.elements.findIndex((candidate) => candidate.id === options.insertAtId) : -1;
       const kept = prev.elements.filter((candidate) => !removeIds.has(candidate.id));
       if (insertAtIdx < 0) {
         return { ...prev, elements: [...kept, pathEl] };
@@ -9308,15 +9399,16 @@ function OverlayEditorApp({ initialOverlay }) {
     return pathId;
   }
   function createOffsetPath(distance) {
+    var _a2, _b2, _c2, _d2, _e2, _f2;
     const source = primarySelectedEl;
     if (!isPathCapableElement(source)) return;
     if (source.type === "shape" && source.shape === "circle") {
-      const w = source.width ?? 100;
-      const h = source.height ?? 100;
+      const w = (_a2 = source.width) != null ? _a2 : 100;
+      const h = (_b2 = source.height) != null ? _b2 : 100;
       const newW = Math.max(2, w + distance * 2);
       const newH = Math.max(2, h + distance * 2);
-      const cx = (source.x ?? 0) + w / 2;
-      const cy = (source.y ?? 0) + h / 2;
+      const cx = ((_c2 = source.x) != null ? _c2 : 0) + w / 2;
+      const cy = ((_d2 = source.y) != null ? _d2 : 0) + h / 2;
       const newX = cx - newW / 2;
       const newY = cy - newH / 2;
       const KAPPA = 0.5522847498307936;
@@ -9352,8 +9444,8 @@ function OverlayEditorApp({ initialOverlay }) {
     if (!resolved) return;
     const result = offsetOverlayPath(resolved.path, distance);
     const pathId = addPathElement(result.path, {
-      x: (source.x ?? 0) + result.bounds.x,
-      y: (source.y ?? 0) + result.bounds.y,
+      x: ((_e2 = source.x) != null ? _e2 : 0) + result.bounds.x,
+      y: ((_f2 = source.y) != null ? _f2 : 0) + result.bounds.y,
       width: result.bounds.width,
       height: result.bounds.height
     }, distance < 0 ? "Inset Path" : "Outset Path");
@@ -9373,33 +9465,35 @@ function OverlayEditorApp({ initialOverlay }) {
     }));
   }
   function flattenBooleanSelected() {
+    var _a2;
     if (!primarySelectedEl || primarySelectedEl.type !== "boolean") return;
     const booleanEl = primarySelectedEl;
     createResolvedPathElement(booleanEl, {
       name: `${booleanEl.name || defaultElementLabel(booleanEl)} Path`,
-      removeIds: [booleanEl.id, ...booleanEl.childIds ?? []],
+      removeIds: [booleanEl.id, ...(_a2 = booleanEl.childIds) != null ? _a2 : []],
       insertAtId: booleanEl.id
     });
   }
   function flattenSelectedToBooleanSubtract() {
+    var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2, _o2, _p2, _q2, _r2, _s, _t, _u, _v;
     if (selectedEls.length !== 2) return;
     const [a, b] = selectedEls;
     if (!isPathCapableElement(a) || !isPathCapableElement(b)) return;
-    const aArea = (a.width ?? 0) * (a.height ?? 0);
-    const bArea = (b.width ?? 0) * (b.height ?? 0);
+    const aArea = ((_a2 = a.width) != null ? _a2 : 0) * ((_b2 = a.height) != null ? _b2 : 0);
+    const bArea = ((_c2 = b.width) != null ? _c2 : 0) * ((_d2 = b.height) != null ? _d2 : 0);
     const outer = aArea >= bArea ? a : b;
     const inner = aArea >= bArea ? b : a;
     const outerResolved = resolveElementGeometry(outer, elementsById);
     const innerResolved = resolveElementGeometry(inner, elementsById);
     if (!outerResolved || !innerResolved) return;
-    const outerPath = translateOverlayPath(outerResolved.path, outer.x ?? 0, outer.y ?? 0);
-    const innerPath = translateOverlayPath(innerResolved.path, inner.x ?? 0, inner.y ?? 0);
+    const outerPath = translateOverlayPath(outerResolved.path, (_e2 = outer.x) != null ? _e2 : 0, (_f2 = outer.y) != null ? _f2 : 0);
+    const innerPath = translateOverlayPath(innerResolved.path, (_g2 = inner.x) != null ? _g2 : 0, (_h2 = inner.y) != null ? _h2 : 0);
     const combinedCommands = [...outerPath.commands, ...innerPath.commands];
     const combinedPath = { commands: combinedCommands };
-    const minX = Math.min(outer.x ?? 0, inner.x ?? 0);
-    const minY = Math.min(outer.y ?? 0, inner.y ?? 0);
-    const maxX = Math.max((outer.x ?? 0) + (outer.width ?? 0), (inner.x ?? 0) + (inner.width ?? 0));
-    const maxY = Math.max((outer.y ?? 0) + (outer.height ?? 0), (inner.y ?? 0) + (inner.height ?? 0));
+    const minX = Math.min((_i2 = outer.x) != null ? _i2 : 0, (_j2 = inner.x) != null ? _j2 : 0);
+    const minY = Math.min((_k2 = outer.y) != null ? _k2 : 0, (_l2 = inner.y) != null ? _l2 : 0);
+    const maxX = Math.max(((_m2 = outer.x) != null ? _m2 : 0) + ((_n2 = outer.width) != null ? _n2 : 0), ((_o2 = inner.x) != null ? _o2 : 0) + ((_p2 = inner.width) != null ? _p2 : 0));
+    const maxY = Math.max(((_q2 = outer.y) != null ? _q2 : 0) + ((_r2 = outer.height) != null ? _r2 : 0), ((_s = inner.y) != null ? _s : 0) + ((_t = inner.height) != null ? _t : 0));
     const localCommands = combinedPath.commands.map((cmd) => {
       if (cmd.type === "move" || cmd.type === "line") return { ...cmd, x: cmd.x - minX, y: cmd.y - minY };
       if (cmd.type === "curve") return { ...cmd, x: cmd.x - minX, y: cmd.y - minY, x1: cmd.x1 - minX, y1: cmd.y1 - minY, x2: cmd.x2 - minX, y2: cmd.y2 - minY };
@@ -9415,7 +9509,7 @@ function OverlayEditorApp({ initialOverlay }) {
       width: maxX - minX,
       height: maxY - minY,
       path: { commands: localCommands },
-      fillColor: outer.fillColor ?? outer.backgroundColor ?? "#ffffff",
+      fillColor: (_v = (_u = outer.fillColor) != null ? _u : outer.backgroundColor) != null ? _v : "#ffffff",
       fillOpacity: 1,
       strokeWidth: 0,
       visible: true,
@@ -9453,6 +9547,7 @@ function OverlayEditorApp({ initialOverlay }) {
     setSelectedPathAnchor(null);
   }
   function splitSelectedPath() {
+    var _a2, _b2, _c2, _d2;
     if (!primarySelectedEl || primarySelectedEl.type !== "path" || !selectedPathAnchor) return;
     const displayPath = elementToOverlayPath(primarySelectedEl);
     if (!displayPath) return;
@@ -9460,8 +9555,8 @@ function OverlayEditorApp({ initialOverlay }) {
     if (splitPaths.length === 1) {
       const normalized = normalizePathToBounds(splitPaths[0]);
       updateElement(primarySelectedEl.id, {
-        x: Math.round((primarySelectedEl.x ?? 0) + normalized.bounds.x),
-        y: Math.round((primarySelectedEl.y ?? 0) + normalized.bounds.y),
+        x: Math.round(((_a2 = primarySelectedEl.x) != null ? _a2 : 0) + normalized.bounds.x),
+        y: Math.round(((_b2 = primarySelectedEl.y) != null ? _b2 : 0) + normalized.bounds.y),
         width: Math.max(1, Math.round(normalized.bounds.width)),
         height: Math.max(1, Math.round(normalized.bounds.height)),
         path: normalized.path
@@ -9475,8 +9570,8 @@ function OverlayEditorApp({ initialOverlay }) {
       ...primarySelectedEl,
       id: secondId,
       name: `${primarySelectedEl.name || defaultElementLabel(primarySelectedEl)} Split`,
-      x: Math.round((primarySelectedEl.x ?? 0) + secondPath.bounds.x),
-      y: Math.round((primarySelectedEl.y ?? 0) + secondPath.bounds.y),
+      x: Math.round(((_c2 = primarySelectedEl.x) != null ? _c2 : 0) + secondPath.bounds.x),
+      y: Math.round(((_d2 = primarySelectedEl.y) != null ? _d2 : 0) + secondPath.bounds.y),
       width: Math.max(1, Math.round(secondPath.bounds.width)),
       height: Math.max(1, Math.round(secondPath.bounds.height)),
       path: secondPath.path
@@ -9484,17 +9579,20 @@ function OverlayEditorApp({ initialOverlay }) {
     setConfig((prev) => ({
       ...prev,
       elements: prev.elements.flatMap(
-        (candidate) => candidate.id === primarySelectedEl.id ? [
-          {
-            ...candidate,
-            x: Math.round((primarySelectedEl.x ?? 0) + firstPath.bounds.x),
-            y: Math.round((primarySelectedEl.y ?? 0) + firstPath.bounds.y),
-            width: Math.max(1, Math.round(firstPath.bounds.width)),
-            height: Math.max(1, Math.round(firstPath.bounds.height)),
-            path: firstPath.path
-          },
-          secondEl
-        ] : [candidate]
+        (candidate) => {
+          var _a3, _b3;
+          return candidate.id === primarySelectedEl.id ? [
+            {
+              ...candidate,
+              x: Math.round(((_a3 = primarySelectedEl.x) != null ? _a3 : 0) + firstPath.bounds.x),
+              y: Math.round(((_b3 = primarySelectedEl.y) != null ? _b3 : 0) + firstPath.bounds.y),
+              width: Math.max(1, Math.round(firstPath.bounds.width)),
+              height: Math.max(1, Math.round(firstPath.bounds.height)),
+              path: firstPath.path
+            },
+            secondEl
+          ] : [candidate];
+        }
       )
     }));
     setSelectedIds([primarySelectedEl.id, secondId]);
@@ -9520,12 +9618,13 @@ function OverlayEditorApp({ initialOverlay }) {
     showEditorStatus("Continuing path", "Click to extend from the selected endpoint.");
   }
   function joinSelectedPaths() {
+    var _a2, _b2, _c2, _d2, _e2, _f2;
     if (selectedIds.length !== 2) return;
     const selectedPaths = selectedIds.map((id) => elementsById[id]).filter((candidate) => Boolean(candidate) && candidate.type === "path");
     if (selectedPaths.length !== 2) return;
     const [first, second] = selectedPaths;
-    const worldFirst = translateOverlayPath(elementToOverlayPath(first) ?? first.path, first.x ?? 0, first.y ?? 0);
-    const worldSecond = translateOverlayPath(elementToOverlayPath(second) ?? second.path, second.x ?? 0, second.y ?? 0);
+    const worldFirst = translateOverlayPath((_a2 = elementToOverlayPath(first)) != null ? _a2 : first.path, (_b2 = first.x) != null ? _b2 : 0, (_c2 = first.y) != null ? _c2 : 0);
+    const worldSecond = translateOverlayPath((_d2 = elementToOverlayPath(second)) != null ? _d2 : second.path, (_e2 = second.x) != null ? _e2 : 0, (_f2 = second.y) != null ? _f2 : 0);
     const joined = joinOpenOverlayPaths(worldFirst, worldSecond);
     if (!joined) return;
     const normalized = normalizePathToBounds(joined);
@@ -9549,33 +9648,35 @@ function OverlayEditorApp({ initialOverlay }) {
     setSelectedPathAnchor(null);
   }
   function expandSelectedStroke() {
+    var _a2, _b2, _c2, _d2, _e2, _f2;
     const source = primarySelectedEl;
     if (!source || !isPathCapableElement(source)) return;
     const resolved = resolveElementGeometry(source, elementsById);
     if (!resolved) return;
     const strokeWidth = Math.max(
       1,
-      Number(source.strokeWidthPx ?? source.strokeWidth ?? 0) || 1
+      Number((_b2 = (_a2 = source.strokeWidthPx) != null ? _a2 : source.strokeWidth) != null ? _b2 : 0) || 1
     );
     const expanded = expandStrokePath(resolved.path, strokeWidth);
     addPathElement(
       expanded.path,
       {
-        x: Math.round((source.x ?? 0) + expanded.bounds.x),
-        y: Math.round((source.y ?? 0) + expanded.bounds.y),
+        x: Math.round(((_c2 = source.x) != null ? _c2 : 0) + expanded.bounds.x),
+        y: Math.round(((_d2 = source.y) != null ? _d2 : 0) + expanded.bounds.y),
         width: Math.max(1, Math.round(expanded.bounds.width)),
         height: Math.max(1, Math.round(expanded.bounds.height))
       },
       `${source.name || defaultElementLabel(source)} Stroke`,
       {
-        fillColor: source.strokeColor ?? "#ffffff",
-        fillOpacity: source.strokeOpacity ?? 1,
+        fillColor: (_e2 = source.strokeColor) != null ? _e2 : "#ffffff",
+        fillOpacity: (_f2 = source.strokeOpacity) != null ? _f2 : 1,
         strokeColor: "transparent",
         strokeWidthPx: 0
       }
     );
   }
   function commitPenDraft(closePath = false) {
+    var _a2, _b2;
     if (!penDraft || penDraft.anchors.length < 2) return;
     const commands = closePath ? [...penDraft.commands, { type: "close" }] : penDraft.commands;
     const normalized = normalizePathToBounds({ commands });
@@ -9583,8 +9684,8 @@ function OverlayEditorApp({ initialOverlay }) {
       const source = elementsById[penDraft.sourceElementId];
       if (source) {
         updateElement(penDraft.sourceElementId, {
-          x: Math.round((source.x ?? 0) + normalized.bounds.x),
-          y: Math.round((source.y ?? 0) + normalized.bounds.y),
+          x: Math.round(((_a2 = source.x) != null ? _a2 : 0) + normalized.bounds.x),
+          y: Math.round(((_b2 = source.y) != null ? _b2 : 0) + normalized.bounds.y),
           width: Math.max(1, Math.round(normalized.bounds.width)),
           height: Math.max(1, Math.round(normalized.bounds.height)),
           path: normalized.path
@@ -9597,12 +9698,13 @@ function OverlayEditorApp({ initialOverlay }) {
     setActiveCreationTool(null);
   }
   function applyDerivedOffsetPathDrafts(nextDrafts, nextPatches) {
+    var _a2, _b2, _c2, _d2;
     for (const [draftId] of Object.entries(nextDrafts)) {
       const candidate = previewElementsById[draftId];
       if (!candidate || candidate.type !== "path") continue;
       const pathSource = candidate.pathSource;
       if (!pathSource || pathSource.kind !== "offset") continue;
-      const sourceBase = previewElementsById[pathSource.sourceId] ?? elementsById[pathSource.sourceId];
+      const sourceBase = (_a2 = previewElementsById[pathSource.sourceId]) != null ? _a2 : elementsById[pathSource.sourceId];
       if (!sourceBase) continue;
       const sourceDraft = nextDrafts[pathSource.sourceId];
       const sourcePatch = nextPatches[pathSource.sourceId];
@@ -9615,13 +9717,13 @@ function OverlayEditorApp({ initialOverlay }) {
       if (!resolved) continue;
       const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
       nextDrafts[draftId] = {
-        x: Math.round((sourceElement.x ?? 0) + offset.bounds.x),
-        y: Math.round((sourceElement.y ?? 0) + offset.bounds.y),
+        x: Math.round(((_b2 = sourceElement.x) != null ? _b2 : 0) + offset.bounds.x),
+        y: Math.round(((_c2 = sourceElement.y) != null ? _c2 : 0) + offset.bounds.y),
         width: Math.max(1, Math.round(offset.bounds.width)),
         height: Math.max(1, Math.round(offset.bounds.height))
       };
       nextPatches[draftId] = {
-        ...nextPatches[draftId] ?? {},
+        ...(_d2 = nextPatches[draftId]) != null ? _d2 : {},
         path: offset.path
       };
     }
@@ -9897,9 +9999,11 @@ function OverlayEditorApp({ initialOverlay }) {
     setSelectedIds([id]);
   }
   function handleMaskElement(shapeId) {
+    var _a2, _b2;
     const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
     let createdContentLabel = "content";
     setConfig((prev) => {
+      var _a3, _b3, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2;
       const els = [...prev.elements];
       const shapeIdx = els.findIndex((e) => e.id === shapeId);
       if (shapeIdx < 0) return prev;
@@ -9908,14 +10012,26 @@ function OverlayEditorApp({ initialOverlay }) {
       let contentNode;
       if (contentIds.length === 1) {
         contentNode = els.find((e) => e.id === contentIds[0]);
-        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode);
+        createdContentLabel = (contentNode == null ? void 0 : contentNode.name) || defaultElementLabel(contentNode);
       } else if (contentIds.length > 1) {
         const contentEls = els.filter((e) => contentIds.includes(e.id));
         if (!contentEls.length) return prev;
-        const minX = Math.min(...contentEls.map((e) => e.x ?? 0));
-        const minY = Math.min(...contentEls.map((e) => e.y ?? 0));
-        const maxX = Math.max(...contentEls.map((e) => (e.x ?? 0) + (e.width ?? 0)));
-        const maxY = Math.max(...contentEls.map((e) => (e.y ?? 0) + (e.height ?? 0)));
+        const minX = Math.min(...contentEls.map((e) => {
+          var _a4;
+          return (_a4 = e.x) != null ? _a4 : 0;
+        }));
+        const minY = Math.min(...contentEls.map((e) => {
+          var _a4;
+          return (_a4 = e.y) != null ? _a4 : 0;
+        }));
+        const maxX = Math.max(...contentEls.map((e) => {
+          var _a4, _b4;
+          return ((_a4 = e.x) != null ? _a4 : 0) + ((_b4 = e.width) != null ? _b4 : 0);
+        }));
+        const maxY = Math.max(...contentEls.map((e) => {
+          var _a4, _b4;
+          return ((_a4 = e.y) != null ? _a4 : 0) + ((_b4 = e.height) != null ? _b4 : 0);
+        }));
         const groupId = genId("group");
         const groupEl = {
           id: groupId,
@@ -9936,18 +10052,18 @@ function OverlayEditorApp({ initialOverlay }) {
       } else {
         if (shapeIdx <= 0) return prev;
         contentNode = els[shapeIdx - 1];
-        createdContentLabel = contentNode?.name || defaultElementLabel(contentNode);
+        createdContentLabel = (contentNode == null ? void 0 : contentNode.name) || defaultElementLabel(contentNode);
       }
       if (!contentNode) return prev;
-      const x = Math.min(shapeEl.x ?? 0, contentNode.x ?? 0);
-      const y = Math.min(shapeEl.y ?? 0, contentNode.y ?? 0);
+      const x = Math.min((_a3 = shapeEl.x) != null ? _a3 : 0, (_b3 = contentNode.x) != null ? _b3 : 0);
+      const y = Math.min((_c2 = shapeEl.y) != null ? _c2 : 0, (_d2 = contentNode.y) != null ? _d2 : 0);
       const w = Math.max(
-        (shapeEl.x ?? 0) + (shapeEl.width ?? 0),
-        (contentNode.x ?? 0) + (contentNode.width ?? 0)
+        ((_e2 = shapeEl.x) != null ? _e2 : 0) + ((_f2 = shapeEl.width) != null ? _f2 : 0),
+        ((_g2 = contentNode.x) != null ? _g2 : 0) + ((_h2 = contentNode.width) != null ? _h2 : 0)
       ) - x;
       const h = Math.max(
-        (shapeEl.y ?? 0) + (shapeEl.height ?? 0),
-        (contentNode.y ?? 0) + (contentNode.height ?? 0)
+        ((_i2 = shapeEl.y) != null ? _i2 : 0) + ((_j2 = shapeEl.height) != null ? _j2 : 0),
+        ((_k2 = contentNode.y) != null ? _k2 : 0) + ((_l2 = contentNode.height) != null ? _l2 : 0)
       ) - y;
       const maskGroup = {
         id: maskId,
@@ -9969,7 +10085,7 @@ function OverlayEditorApp({ initialOverlay }) {
       };
     });
     setSelectedIds([maskId]);
-    const shapeLabel = elementsById[shapeId]?.name || defaultElementLabel(elementsById[shapeId] ?? { type: "shape" });
+    const shapeLabel = ((_a2 = elementsById[shapeId]) == null ? void 0 : _a2.name) || defaultElementLabel((_b2 = elementsById[shapeId]) != null ? _b2 : { type: "shape" });
     showEditorStatus("Mask created", `${shapeLabel} is now the mask shape. ${createdContentLabel} is now the masked content.`);
   }
   function handleReleaseMask(maskId) {
@@ -10060,7 +10176,7 @@ function OverlayEditorApp({ initialOverlay }) {
         propOverrides: {}
       };
       setConfig((prev) => {
-        const toRemove = new Set([...childrenIds, grp?.id].filter(Boolean));
+        const toRemove = new Set([...childrenIds, grp == null ? void 0 : grp.id].filter(Boolean));
         const withoutOld = prev.elements.filter((e) => !toRemove.has(e.id));
         return { ...prev, elements: [...withoutOld, instanceEl] };
       });
@@ -10089,31 +10205,33 @@ function OverlayEditorApp({ initialOverlay }) {
     }
   }
   function detachSelectedComponentInstance() {
+    var _a2, _b2, _c2;
     if (!primarySelectedEl || primarySelectedEl.type !== "componentInstance") return;
     const instance = primarySelectedEl;
     const def = overlayComponents.find((component) => component.id === instance.componentId);
     if (!def) return;
     const masterBounds = computeSelectionBounds(def.elements);
     if (!masterBounds) return;
-    const scaleX = (instance.width ?? masterBounds.w) / Math.max(1, masterBounds.w);
-    const scaleY = (instance.height ?? masterBounds.h) / Math.max(1, masterBounds.h);
+    const scaleX = ((_a2 = instance.width) != null ? _a2 : masterBounds.w) / Math.max(1, masterBounds.w);
+    const scaleY = ((_b2 = instance.height) != null ? _b2 : masterBounds.h) / Math.max(1, masterBounds.h);
     const idMap = /* @__PURE__ */ new Map();
-    const overrides = instance.propOverrides ?? {};
+    const overrides = (_c2 = instance.propOverrides) != null ? _c2 : {};
     const clones = def.elements.map((source) => {
+      var _a3, _b3, _c3, _d2, _e2, _f2, _g2, _h2;
       const nextId = genId(source.type === "text" ? "text" : source.type);
       idMap.set(source.id, nextId);
-      const localX = (source.x ?? 0) - masterBounds.x;
-      const localY = (source.y ?? 0) - masterBounds.y;
+      const localX = ((_a3 = source.x) != null ? _a3 : 0) - masterBounds.x;
+      const localY = ((_b3 = source.y) != null ? _b3 : 0) - masterBounds.y;
       const clone = {
         ...source,
         id: nextId,
-        x: Math.round((instance.x ?? 0) + localX * scaleX),
-        y: Math.round((instance.y ?? 0) + localY * scaleY),
-        width: Math.max(1, Math.round((source.width ?? 0) * scaleX)),
-        height: Math.max(1, Math.round((source.height ?? 0) * scaleY))
+        x: Math.round(((_c3 = instance.x) != null ? _c3 : 0) + localX * scaleX),
+        y: Math.round(((_d2 = instance.y) != null ? _d2 : 0) + localY * scaleY),
+        width: Math.max(1, Math.round(((_e2 = source.width) != null ? _e2 : 0) * scaleX)),
+        height: Math.max(1, Math.round(((_f2 = source.height) != null ? _f2 : 0) * scaleY))
       };
       if (source.type === "text") {
-        Object.assign(clone, getScaledTextPatch(source, { width: masterBounds.w, height: masterBounds.h }, { width: instance.width ?? masterBounds.w, height: instance.height ?? masterBounds.h }));
+        Object.assign(clone, getScaledTextPatch(source, { width: masterBounds.w, height: masterBounds.h }, { width: (_g2 = instance.width) != null ? _g2 : masterBounds.w, height: (_h2 = instance.height) != null ? _h2 : masterBounds.h }));
       }
       if (source.bindings) {
         const nextBindings = { ...source.bindings };
@@ -10129,7 +10247,10 @@ function OverlayEditorApp({ initialOverlay }) {
       if (Array.isArray(clone.childIds)) {
         return {
           ...clone,
-          childIds: clone.childIds.map((childId) => idMap.get(childId) ?? childId)
+          childIds: clone.childIds.map((childId) => {
+            var _a3;
+            return (_a3 = idMap.get(childId)) != null ? _a3 : childId;
+          })
         };
       }
       return clone;
@@ -10199,6 +10320,7 @@ function OverlayEditorApp({ initialOverlay }) {
     setSelectedIds(children);
   }
   function duplicateSelected() {
+    var _a2, _b2;
     if (!primarySelectedEl) return;
     const prefix = primarySelectedEl.type === "text" ? "text" : primarySelectedEl.type === "box" ? "box" : primarySelectedEl.type === "shape" ? "shape" : primarySelectedEl.type === "image" ? "image" : primarySelectedEl.type === "video" ? "video" : primarySelectedEl.type === "lower_third" ? "lt" : "el";
     const copyId = genId(prefix);
@@ -10206,32 +10328,36 @@ function OverlayEditorApp({ initialOverlay }) {
       ...primarySelectedEl,
       id: copyId,
       name: `${primarySelectedEl.name || defaultElementLabel(primarySelectedEl)} copy`,
-      x: (primarySelectedEl.x ?? 0) + 20,
-      y: (primarySelectedEl.y ?? 0) + 20
+      x: ((_a2 = primarySelectedEl.x) != null ? _a2 : 0) + 20,
+      y: ((_b2 = primarySelectedEl.y) != null ? _b2 : 0) + 20
     };
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy] }));
     setSelectedIds([copyId]);
   }
   function createDragDuplicate(source) {
+    var _a2, _b2;
     const prefix = source.type === "text" ? "text" : source.type === "box" ? "box" : source.type === "shape" ? "shape" : source.type === "image" ? "image" : source.type === "video" ? "video" : source.type === "lower_third" ? "lt" : source.type === "componentInstance" ? "instance" : "el";
     const duplicateId = genId(prefix);
     const copy = {
       ...source,
       id: duplicateId,
       name: `${source.name || defaultElementLabel(source)} copy`,
-      x: source.x ?? 0,
-      y: source.y ?? 0
+      x: (_a2 = source.x) != null ? _a2 : 0,
+      y: (_b2 = source.y) != null ? _b2 : 0
     };
     setConfig((prev) => ({ ...prev, elements: [...prev.elements, copy] }));
-    setDraftRects((prev) => ({
-      ...prev,
-      [duplicateId]: {
-        x: source.x ?? 0,
-        y: source.y ?? 0,
-        width: source.width ?? 0,
-        height: source.height ?? 0
-      }
-    }));
+    setDraftRects((prev) => {
+      var _a3, _b3, _c2, _d2;
+      return {
+        ...prev,
+        [duplicateId]: {
+          x: (_a3 = source.x) != null ? _a3 : 0,
+          y: (_b3 = source.y) != null ? _b3 : 0,
+          width: (_c2 = source.width) != null ? _c2 : 0,
+          height: (_d2 = source.height) != null ? _d2 : 0
+        }
+      };
+    });
     return duplicateId;
   }
   function moveLayerBy(id, delta) {
@@ -10335,14 +10461,15 @@ function OverlayEditorApp({ initialOverlay }) {
     }));
   }
   function alignSelection(mode) {
+    var _a2, _b2;
     if (selectionHasLocked) return;
     if (!selectionBounds) return;
     if (selectedEls.length < 2) return;
     const b = selectionBounds;
     const patches = {};
     for (const el of selectedEls) {
-      const w = el.width ?? 0;
-      const h = el.height ?? 0;
+      const w = (_a2 = el.width) != null ? _a2 : 0;
+      const h = (_b2 = el.height) != null ? _b2 : 0;
       if (mode === "left") patches[el.id] = { x: b.l };
       if (mode === "hcenter") patches[el.id] = { x: b.cx - w / 2 };
       if (mode === "right") patches[el.id] = { x: b.r - w };
@@ -10397,7 +10524,7 @@ function OverlayEditorApp({ initialOverlay }) {
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       setSaveOk(true);
     } catch (err) {
-      setSaveError(err?.message || "Save failed");
+      setSaveError((err == null ? void 0 : err.message) || "Save failed");
     } finally {
       setSaving(false);
       setTimeout(() => setSaveOk(false), 2e3);
@@ -10581,7 +10708,7 @@ function OverlayEditorApp({ initialOverlay }) {
         zoomToSelection();
         return;
       }
-      if (selectedPathAnchor && primarySelectedEl?.type === "path" && (e.key === "Delete" || e.key === "Backspace")) {
+      if (selectedPathAnchor && (primarySelectedEl == null ? void 0 : primarySelectedEl.type) === "path" && (e.key === "Delete" || e.key === "Backspace")) {
         e.preventDefault();
         updateElement(primarySelectedEl.id, {
           path: removePathAnchor(primarySelectedEl.path, selectedPathAnchor.commandIndex)
@@ -10609,10 +10736,11 @@ function OverlayEditorApp({ initialOverlay }) {
           let lastTimelineTrackId = null;
           let lastTimelineKeyframeId = null;
           const next = prev.elements.map((raw) => {
+            var _a2, _b2;
             if (!sel.has(raw.id)) return raw;
             const el = raw;
-            const nx = (el.x ?? 0) + dx;
-            const ny = (el.y ?? 0) + dy;
+            const nx = ((_a2 = el.x) != null ? _a2 : 0) + dx;
+            const ny = ((_b2 = el.y) != null ? _b2 : 0) + dy;
             const nextX = Math.round(nx);
             const nextY = Math.round(ny);
             if (isTimelineEligibleElement(el)) {
@@ -10797,7 +10925,7 @@ function OverlayEditorApp({ initialOverlay }) {
       if (!active) return;
       const stagePoint = clientToStage(e.clientX, e.clientY);
       const draft = draftRotationDegs[active.id];
-      const resolvedDeg = draft ?? (stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0);
+      const resolvedDeg = draft != null ? draft : stagePoint ? snapRotationValue(Math.atan2(stagePoint.y - active.cy, stagePoint.x - active.cx) * (180 / Math.PI) + 90, e.altKey) : 0;
       updateElement(active.id, { rotationDeg: resolvedDeg });
       setDraftRotationDegs((prev) => {
         const next = { ...prev };
@@ -10815,6 +10943,7 @@ function OverlayEditorApp({ initialOverlay }) {
   reactExports.useEffect(() => {
     if (!resizeDragSession) return;
     const onMove = (e) => {
+      var _a2, _b2, _c2, _d2;
       e.preventDefault();
       const active = resizeDragSession;
       const stagePoint = clientToStage(e.clientX, e.clientY);
@@ -10831,22 +10960,23 @@ function OverlayEditorApp({ initialOverlay }) {
       const nextPatches = {};
       if (active.descendants) {
         const activeElement = previewElementsById[active.id];
-        const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free");
+        const shouldScaleFrameText = !((activeElement == null ? void 0 : activeElement.type) === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free");
         for (const [descendantId, rect] of Object.entries(active.descendants)) {
           const descendantEl = previewElementsById[descendantId];
-          nextDrafts[descendantId] = activeElement?.type === "frame" && descendantEl ? constrainFrameChildRect(descendantEl, active.origin, draft) : scaleDescendantRect(rect, active.origin, draft);
-          if (descendantEl?.type === "text" && shouldScaleFrameText) {
+          nextDrafts[descendantId] = (activeElement == null ? void 0 : activeElement.type) === "frame" && descendantEl ? constrainFrameChildRect(descendantEl, active.origin, draft) : scaleDescendantRect(rect, active.origin, draft);
+          if ((descendantEl == null ? void 0 : descendantEl.type) === "text" && shouldScaleFrameText) {
             nextPatches[descendantId] = getScaledTextPatch(descendantEl, active.origin, draft);
           }
         }
-        if (activeElement?.type === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free") {
+        if ((activeElement == null ? void 0 : activeElement.type) === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free") {
           const frameDraft = { ...activeElement, ...draft };
           const draftElements = Object.values(previewElementsById).map(
             (element) => element.id === active.id ? { ...element, ...draft } : nextDrafts[element.id] ? { ...element, ...nextDrafts[element.id] } : element
           );
           const reflowed = reflowFrameElements(frameDraft, draftElements);
           reflowed.forEach((element) => {
-            if (active.descendants?.[element.id]) {
+            var _a3;
+            if ((_a3 = active.descendants) == null ? void 0 : _a3[element.id]) {
               nextDrafts[element.id] = {
                 x: element.x,
                 y: element.y,
@@ -10858,23 +10988,24 @@ function OverlayEditorApp({ initialOverlay }) {
         }
         applyDerivedOffsetPathDrafts(nextDrafts, nextPatches);
       }
-      rndRefs.current[active.id]?.updatePosition?.({ x: draft.x, y: draft.y });
-      rndRefs.current[active.id]?.updateSize?.({ width: draft.width, height: draft.height });
+      (_b2 = (_a2 = rndRefs.current[active.id]) == null ? void 0 : _a2.updatePosition) == null ? void 0 : _b2.call(_a2, { x: draft.x, y: draft.y });
+      (_d2 = (_c2 = rndRefs.current[active.id]) == null ? void 0 : _c2.updateSize) == null ? void 0 : _d2.call(_c2, { width: draft.width, height: draft.height });
       setResizeStatusThrottled(draft);
       setDraftRectsThrottled(nextDrafts);
       if (Object.keys(nextPatches).length > 0) setDraftPatchesThrottled(nextPatches);
     };
     const onUp = (e) => {
+      var _a2;
       const active = resizeDragSession;
       setResizeDragSession(null);
       setMediaDragging(false);
       const stagePoint = clientToStage(e.clientX, e.clientY);
-      const draft = draftRects[active.id] ?? (stagePoint ? computeResizeDraft(
+      const draft = (_a2 = draftRects[active.id]) != null ? _a2 : stagePoint ? computeResizeDraft(
         active.origin,
         active.handle,
         { x: stagePoint.x - active.startStage.x, y: stagePoint.y - active.startStage.y },
         { preserveAspect: e.shiftKey, resizeFromCenter: e.altKey }
-      ) : active.origin);
+      ) : active.origin;
       let nx = Math.round(draft.x);
       let ny = Math.round(draft.y);
       let nw = Math.round(draft.width);
@@ -10894,8 +11025,9 @@ function OverlayEditorApp({ initialOverlay }) {
           let nextTimeline = prev.timeline;
           let lastTimelineTrackId = null;
           let lastTimelineKeyframeId = null;
-          const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free");
+          const shouldScaleFrameText = !((activeElement == null ? void 0 : activeElement.type) === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free");
           const nextElements = prev.elements.map((raw) => {
+            var _a3, _b2, _c2, _d2, _e2;
             if (raw.id === active.id) {
               const base2 = raw;
               if (isTimelineEligibleElement(base2)) {
@@ -10913,9 +11045,9 @@ function OverlayEditorApp({ initialOverlay }) {
               }
               return { ...base2, ...nextGroupRect };
             }
-            const descendantRect = active.descendants?.[raw.id];
+            const descendantRect = (_a3 = active.descendants) == null ? void 0 : _a3[raw.id];
             if (!descendantRect) return raw;
-            const scaled = activeElement?.type === "frame" ? constrainFrameChildRect(raw, active.origin, nextGroupRect) : scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
+            const scaled = (activeElement == null ? void 0 : activeElement.type) === "frame" ? constrainFrameChildRect(raw, active.origin, nextGroupRect) : scaleDescendantRect(descendantRect, active.origin, nextGroupRect);
             const rounded = {
               x: Math.round(scaled.x),
               y: Math.round(scaled.y),
@@ -10924,14 +11056,14 @@ function OverlayEditorApp({ initialOverlay }) {
             };
             const base = raw;
             let extraPatch = base.type === "text" && shouldScaleFrameText ? getScaledTextPatch(base, active.origin, nextGroupRect) : {};
-            if (base.type === "path" && base.pathSource?.kind === "offset") {
+            if (base.type === "path" && ((_b2 = base.pathSource) == null ? void 0 : _b2.kind) === "offset") {
               const pathSource = base.pathSource;
               const sourceRaw = prev.elements.find((candidate) => candidate.id === pathSource.sourceId);
               let sourceElement = sourceRaw;
               if (sourceRaw) {
                 if (sourceRaw.id === active.id) {
                   sourceElement = { ...sourceRaw, ...nextGroupRect };
-                } else if (active.descendants?.[sourceRaw.id]) {
+                } else if ((_c2 = active.descendants) == null ? void 0 : _c2[sourceRaw.id]) {
                   sourceElement = {
                     ...sourceRaw,
                     ...scaleDescendantRect(active.descendants[sourceRaw.id], active.origin, nextGroupRect)
@@ -10944,8 +11076,8 @@ function OverlayEditorApp({ initialOverlay }) {
                 ));
                 if (resolved) {
                   const offset = offsetOverlayPath(resolved.path, Number(pathSource.distance) || 0);
-                  rounded.x = Math.round((sourceElement.x ?? 0) + offset.bounds.x);
-                  rounded.y = Math.round((sourceElement.y ?? 0) + offset.bounds.y);
+                  rounded.x = Math.round(((_d2 = sourceElement.x) != null ? _d2 : 0) + offset.bounds.x);
+                  rounded.y = Math.round(((_e2 = sourceElement.y) != null ? _e2 : 0) + offset.bounds.y);
                   rounded.width = Math.max(1, Math.round(offset.bounds.width));
                   rounded.height = Math.max(1, Math.round(offset.bounds.height));
                   extraPatch = { ...extraPatch, path: offset.path };
@@ -10967,7 +11099,7 @@ function OverlayEditorApp({ initialOverlay }) {
             }
             return { ...base, ...rounded, ...extraPatch };
           });
-          const finalizedElements = activeElement?.type === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free" ? reflowFrameInElementList(active.id, nextElements) : nextElements;
+          const finalizedElements = (activeElement == null ? void 0 : activeElement.type) === "frame" && ensureFrameLayout(activeElement.layout).mode !== "free" ? reflowFrameInElementList(active.id, nextElements) : nextElements;
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
           if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
           return {
@@ -11023,6 +11155,7 @@ function OverlayEditorApp({ initialOverlay }) {
       }
     };
     const onUp = (e) => {
+      var _a2;
       const active = radiusDragSession;
       setRadiusDragSession(null);
       const stagePoint = clientToStage(e.clientX, e.clientY);
@@ -11037,7 +11170,7 @@ function OverlayEditorApp({ initialOverlay }) {
           Math.min(active.origin.width, active.origin.height) / 2
         );
       }
-      const nextRadius = Math.round(radius ?? getElementRadiusValue(elementsById[active.id] ?? { type: "box" }));
+      const nextRadius = Math.round(radius != null ? radius : getElementRadiusValue((_a2 = elementsById[active.id]) != null ? _a2 : { type: "box" }));
       const target = elementsById[active.id];
       if (target) {
         updateElement(active.id, getRadiusPatch(target, nextRadius));
@@ -11073,19 +11206,22 @@ function OverlayEditorApp({ initialOverlay }) {
         x: originAnchor.x + deltaLocal.x,
         y: originAnchor.y + deltaLocal.y
       });
-      setDraftElementPatches((prev) => ({
-        ...prev,
-        [active.elementId]: {
-          ...prev[active.elementId] ?? {},
-          path: nextPath
-        }
-      }));
+      setDraftElementPatches((prev) => {
+        var _a2;
+        return {
+          ...prev,
+          [active.elementId]: {
+            ...(_a2 = prev[active.elementId]) != null ? _a2 : {},
+            path: nextPath
+          }
+        };
+      });
     };
     const onUp = () => {
       const active = pathAnchorDragSession;
       setPathAnchorDragSession(null);
       const patch = draftElementPatches[active.elementId];
-      const nextPath = patch?.path;
+      const nextPath = patch == null ? void 0 : patch.path;
       if (nextPath) {
         updateElement(active.elementId, { path: nextPath });
       }
@@ -11131,19 +11267,22 @@ function OverlayEditorApp({ initialOverlay }) {
         },
         active.mirrorHandles
       );
-      setDraftElementPatches((prev) => ({
-        ...prev,
-        [active.elementId]: {
-          ...prev[active.elementId] ?? {},
-          path: nextPath
-        }
-      }));
+      setDraftElementPatches((prev) => {
+        var _a2;
+        return {
+          ...prev,
+          [active.elementId]: {
+            ...(_a2 = prev[active.elementId]) != null ? _a2 : {},
+            path: nextPath
+          }
+        };
+      });
     };
     const onUp = () => {
       const active = pathHandleDragSession;
       setPathHandleDragSession(null);
       const patch = draftElementPatches[active.elementId];
-      const nextPath = patch?.path;
+      const nextPath = patch == null ? void 0 : patch.path;
       if (nextPath) {
         updateElement(active.elementId, { path: nextPath });
       }
@@ -11230,27 +11369,28 @@ function OverlayEditorApp({ initialOverlay }) {
       window.removeEventListener("mouseup", onUp);
     };
   }, [marquee.active, clientToStage, applyMarqueeSelection]);
-  const handleDragStop = (_e, d, id) => {
+  const handleDragStop = (_e2, d, id) => {
+    var _a2, _b2, _c2, _d2, _e3, _f2, _g2, _h2, _i2;
     const elId = String(id);
     const el = elementsAny.find((x) => x.id === elId);
     if (!el) return;
-    const duplicate = dragDuplicateRef.current?.sourceId === elId ? dragDuplicateRef.current : null;
-    const commitId = duplicate?.duplicateId || elId;
+    const duplicate = ((_a2 = dragDuplicateRef.current) == null ? void 0 : _a2.sourceId) === elId ? dragDuplicateRef.current : null;
+    const commitId = (duplicate == null ? void 0 : duplicate.duplicateId) || elId;
     const exclude = /* @__PURE__ */ new Set([elId]);
-    if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
+    if (duplicate == null ? void 0 : duplicate.duplicateId) exclude.add(duplicate.duplicateId);
     const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
     const rect = {
       ...rectFromEl(el),
       x: d.x,
       y: d.y,
       l: d.x,
-      r: d.x + (el.width ?? 0),
+      r: d.x + ((_b2 = el.width) != null ? _b2 : 0),
       t: d.y,
-      b: d.y + (el.height ?? 0),
-      cx: d.x + (el.width ?? 0) / 2,
-      cy: d.y + (el.height ?? 0) / 2,
-      w: el.width ?? 0,
-      h: el.height ?? 0
+      b: d.y + ((_c2 = el.height) != null ? _c2 : 0),
+      cx: d.x + ((_d2 = el.width) != null ? _d2 : 0) / 2,
+      cy: d.y + ((_e3 = el.height) != null ? _e3 : 0) / 2,
+      w: (_f2 = el.width) != null ? _f2 : 0,
+      h: (_g2 = el.height) != null ? _g2 : 0
     };
     const snap2 = snapRectToLines(rect, lines, { enabled: guideSnapEnabled, threshold: 6 });
     let nx = Math.round(d.x + snap2.dx);
@@ -11259,8 +11399,8 @@ function OverlayEditorApp({ initialOverlay }) {
       nx = roundToGrid(nx, gridSize);
       ny = roundToGrid(ny, gridSize);
     }
-    const dx = nx - (el.x ?? 0);
-    const dy = ny - (el.y ?? 0);
+    const dx = nx - ((_h2 = el.x) != null ? _h2 : 0);
+    const dy = ny - ((_i2 = el.y) != null ? _i2 : 0);
     setConfig((prev) => {
       const prevMap = Object.fromEntries(prev.elements.map((item) => [item.id, item]));
       const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(prevMap, elId));
@@ -11269,10 +11409,11 @@ function OverlayEditorApp({ initialOverlay }) {
       let lastTimelineTrackId = null;
       let lastTimelineKeyframeId = null;
       const nextElements = prev.elements.map((raw) => {
+        var _a3, _b3;
         if (!movedIds.has(raw.id)) return raw;
         const base = raw;
-        const nextX = raw.id === commitId ? nx : Math.round((base.x ?? 0) + dx);
-        const nextY = raw.id === commitId ? ny : Math.round((base.y ?? 0) + dy);
+        const nextX = raw.id === commitId ? nx : Math.round(((_a3 = base.x) != null ? _a3 : 0) + dx);
+        const nextY = raw.id === commitId ? ny : Math.round(((_b3 = base.y) != null ? _b3 : 0) + dy);
         if (isTimelineEligibleElement(base)) {
           const xResult = upsertKeyframeAtPlayhead(
             ensureTimeline(nextTimeline),
@@ -11310,7 +11451,7 @@ function OverlayEditorApp({ initialOverlay }) {
       if (!duplicate) {
         for (const movedId of collectDescendantIds(previewElementsById, elId)) delete next[movedId];
       }
-      if (duplicate?.duplicateId) {
+      if (duplicate == null ? void 0 : duplicate.duplicateId) {
         delete next[duplicate.duplicateId];
       }
       return next;
@@ -11318,15 +11459,16 @@ function OverlayEditorApp({ initialOverlay }) {
   };
   const handleDragLive = reactExports.useCallback(
     (id, x, y, options) => {
+      var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2, _o2, _p2, _q2, _r2, _s, _t, _u, _v, _w, _x;
       const el = elementsAny.find((e) => e.id === id);
       if (!el) return;
-      const duplicate = dragDuplicateRef.current?.sourceId === id ? dragDuplicateRef.current : null;
-      const draftId = duplicate?.duplicateId || id;
+      const duplicate = ((_a2 = dragDuplicateRef.current) == null ? void 0 : _a2.sourceId) === id ? dragDuplicateRef.current : null;
+      const draftId = (duplicate == null ? void 0 : duplicate.duplicateId) || id;
       const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(elementsById, id));
-      const axisLock = options?.shiftKey === true;
+      const axisLock = (options == null ? void 0 : options.shiftKey) === true;
       let nx = x;
       let ny = y;
-      const start = dragStartRef.current[id] ?? { x: el.x ?? 0, y: el.y ?? 0 };
+      const start = (_d2 = dragStartRef.current[id]) != null ? _d2 : { x: (_b2 = el.x) != null ? _b2 : 0, y: (_c2 = el.y) != null ? _c2 : 0 };
       if (axisLock) {
         const dx2 = x - start.x;
         const dy2 = y - start.y;
@@ -11338,18 +11480,18 @@ function OverlayEditorApp({ initialOverlay }) {
       }
       if (guideSnapEnabled) {
         const exclude = /* @__PURE__ */ new Set([id]);
-        if (duplicate?.duplicateId) exclude.add(duplicate.duplicateId);
+        if (duplicate == null ? void 0 : duplicate.duplicateId) exclude.add(duplicate.duplicateId);
         const lines = buildSnapLines(baseResolution.width, baseResolution.height, elementsAny, exclude);
         const rect = {
           ...rectFromEl(el),
           l: nx,
-          r: nx + (el.width ?? 0),
+          r: nx + ((_e2 = el.width) != null ? _e2 : 0),
           t: ny,
-          b: ny + (el.height ?? 0),
-          cx: nx + (el.width ?? 0) / 2,
-          cy: ny + (el.height ?? 0) / 2,
-          w: el.width ?? 0,
-          h: el.height ?? 0
+          b: ny + ((_f2 = el.height) != null ? _f2 : 0),
+          cx: nx + ((_g2 = el.width) != null ? _g2 : 0) / 2,
+          cy: ny + ((_h2 = el.height) != null ? _h2 : 0) / 2,
+          w: (_i2 = el.width) != null ? _i2 : 0,
+          h: (_j2 = el.height) != null ? _j2 : 0
         };
         const snap2 = snapRectToLines(rect, lines, { enabled: true, threshold: 6 });
         nx += snap2.dx;
@@ -11374,36 +11516,37 @@ function OverlayEditorApp({ initialOverlay }) {
         nx = roundToGrid(nx, gridSize);
         ny = roundToGrid(ny, gridSize);
       }
-      const dx = nx - (el.x ?? 0);
-      const dy = ny - (el.y ?? 0);
+      const dx = nx - ((_k2 = el.x) != null ? _k2 : 0);
+      const dy = ny - ((_l2 = el.y) != null ? _l2 : 0);
       setDraftRectsThrottled({
         [id]: duplicate ? {
-          x: dragStartRef.current[id]?.x ?? el.x ?? 0,
-          y: dragStartRef.current[id]?.y ?? el.y ?? 0,
-          width: el.width ?? 0,
-          height: el.height ?? 0
+          x: (_o2 = (_n2 = (_m2 = dragStartRef.current[id]) == null ? void 0 : _m2.x) != null ? _n2 : el.x) != null ? _o2 : 0,
+          y: (_r2 = (_q2 = (_p2 = dragStartRef.current[id]) == null ? void 0 : _p2.y) != null ? _q2 : el.y) != null ? _r2 : 0,
+          width: (_s = el.width) != null ? _s : 0,
+          height: (_t = el.height) != null ? _t : 0
         } : {
           x: nx,
           y: ny,
-          width: el.width ?? 0,
-          height: el.height ?? 0
+          width: (_u = el.width) != null ? _u : 0,
+          height: (_v = el.height) != null ? _v : 0
         },
         [draftId]: {
           x: nx,
           y: ny,
-          width: el.width ?? 0,
-          height: el.height ?? 0
+          width: (_w = el.width) != null ? _w : 0,
+          height: (_x = el.height) != null ? _x : 0
         },
         ...Object.fromEntries(
           descendantIds.map((childId) => {
+            var _a3, _b3, _c3, _d3;
             const child = elementsById[childId];
             return [
               childId,
               {
-                x: Math.round((child?.x ?? 0) + dx),
-                y: Math.round((child?.y ?? 0) + dy),
-                width: child?.width ?? 0,
-                height: child?.height ?? 0
+                x: Math.round(((_a3 = child == null ? void 0 : child.x) != null ? _a3 : 0) + dx),
+                y: Math.round(((_b3 = child == null ? void 0 : child.y) != null ? _b3 : 0) + dy),
+                width: (_c3 = child == null ? void 0 : child.width) != null ? _c3 : 0,
+                height: (_d3 = child == null ? void 0 : child.height) != null ? _d3 : 0
               }
             ];
           })
@@ -11412,15 +11555,16 @@ function OverlayEditorApp({ initialOverlay }) {
     },
     [guideSnapEnabled, snapEnabled, gridSize, elementsAny, elementsById, baseResolution.width, baseResolution.height, updateGuidesThrottled, setDraftRectsThrottled, clearGuides]
   );
-  const onCanvasElementResizeStart = reactExports.useCallback((_e, handle, id, x, y, w, h, rotDeg) => {
-    const stagePoint = clientToStage(_e.clientX, _e.clientY);
+  const onCanvasElementResizeStart = reactExports.useCallback((_e2, handle, id, x, y, w, h, rotDeg) => {
+    const stagePoint = clientToStage(_e2.clientX, _e2.clientY);
     if (!stagePoint) return;
     const el = previewElementsById[id];
     const descendants = el && (el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean") ? Object.fromEntries(
       Array.from(collectDescendantIds(previewElementsById, id)).map((childId) => {
+        var _a2, _b2, _c2, _d2;
         const child = previewElementsById[childId];
         if (!child) return null;
-        return [childId, { x: child.x ?? 0, y: child.y ?? 0, width: child.width ?? 0, height: child.height ?? 0 }];
+        return [childId, { x: (_a2 = child.x) != null ? _a2 : 0, y: (_b2 = child.y) != null ? _b2 : 0, width: (_c2 = child.width) != null ? _c2 : 0, height: (_d2 = child.height) != null ? _d2 : 0 }];
       }).filter(Boolean)
     ) : void 0;
     setResizeDragSession({ id, handle, startStage: stagePoint, origin: { x, y, width: w, height: h, rotationDeg: rotDeg }, descendants });
@@ -11438,7 +11582,7 @@ function OverlayEditorApp({ initialOverlay }) {
     setRadiusDragSession({ id, origin: { x, y, width: w, height: h, rotationDeg: rotDeg } });
     setDraftRadiusValues((prev) => ({ ...prev, [id]: radiusValue }));
   }, []);
-  const onCanvasElementPathAnchorDown = reactExports.useCallback((_e, id, commandIndex, stagePoint, path, rotDeg) => {
+  const onCanvasElementPathAnchorDown = reactExports.useCallback((_e2, id, commandIndex, stagePoint, path, rotDeg) => {
     setSelectedPathAnchor({ elementId: id, commandIndex });
     setPathAnchorDragSession({ elementId: id, commandIndex, startStage: stagePoint, originPath: path, rotationDeg: rotDeg });
   }, []);
@@ -11453,13 +11597,14 @@ function OverlayEditorApp({ initialOverlay }) {
     }
     setSelectedPathAnchor({ elementId: id, commandIndex });
   }, [updateElement]);
-  const onCanvasElementPathHandleDown = reactExports.useCallback((_e, id, curveCommandIndex, role, stagePoint, path, rotDeg, mirror) => {
+  const onCanvasElementPathHandleDown = reactExports.useCallback((_e2, id, curveCommandIndex, role, stagePoint, path, rotDeg, mirror) => {
     setPathHandleDragSession({ elementId: id, curveCommandIndex, role, startStage: stagePoint, originPath: path, rotationDeg: rotDeg, mirrorHandles: mirror });
   }, []);
-  const onCanvasElementDragStart = reactExports.useCallback((_e, id) => {
-    const stagePoint = clientToStage(_e.clientX, _e.clientY);
+  const onCanvasElementDragStart = reactExports.useCallback((_e2, id) => {
+    var _a2, _b2, _c2, _d2;
+    const stagePoint = clientToStage(_e2.clientX, _e2.clientY);
     if (!stagePoint) return;
-    setPrimaryDragSession({ id, startStage: stagePoint, origin: { x: previewElementsById[id]?.x ?? 0, y: previewElementsById[id]?.y ?? 0 } });
+    setPrimaryDragSession({ id, startStage: stagePoint, origin: { x: (_b2 = (_a2 = previewElementsById[id]) == null ? void 0 : _a2.x) != null ? _b2 : 0, y: (_d2 = (_c2 = previewElementsById[id]) == null ? void 0 : _c2.y) != null ? _d2 : 0 } });
     setMediaDragging(true);
   }, [clientToStage, previewElementsById]);
   reactExports.useEffect(() => {
@@ -11474,16 +11619,17 @@ function OverlayEditorApp({ initialOverlay }) {
       handleDragLive(active.id, nextX, nextY, { shiftKey: e.shiftKey });
     };
     const onUp = (e) => {
+      var _a2, _b2, _c2, _d2, _e2, _f2;
       const active = primaryDragSession;
       setPrimaryDragSession(null);
       setMediaDragging(false);
       const draft = draftRects[active.id];
       const stagePoint = clientToStage(e.clientX, e.clientY);
-      const fallbackX = active.origin.x + ((stagePoint?.x ?? active.startStage.x) - active.startStage.x);
-      const fallbackY = active.origin.y + ((stagePoint?.y ?? active.startStage.y) - active.startStage.y);
-      handleDragStop(e, { x: draft?.x ?? fallbackX, y: draft?.y ?? fallbackY }, active.id);
-      const duplicateRequested = dragDuplicateRef.current?.sourceId === active.id;
-      const duplicateId = dragDuplicateRef.current?.duplicateId;
+      const fallbackX = active.origin.x + (((_a2 = stagePoint == null ? void 0 : stagePoint.x) != null ? _a2 : active.startStage.x) - active.startStage.x);
+      const fallbackY = active.origin.y + (((_b2 = stagePoint == null ? void 0 : stagePoint.y) != null ? _b2 : active.startStage.y) - active.startStage.y);
+      handleDragStop(e, { x: (_c2 = draft == null ? void 0 : draft.x) != null ? _c2 : fallbackX, y: (_d2 = draft == null ? void 0 : draft.y) != null ? _d2 : fallbackY }, active.id);
+      const duplicateRequested = ((_e2 = dragDuplicateRef.current) == null ? void 0 : _e2.sourceId) === active.id;
+      const duplicateId = (_f2 = dragDuplicateRef.current) == null ? void 0 : _f2.duplicateId;
       dragDuplicateRef.current = null;
       delete dragStartRef.current[active.id];
       if (duplicateRequested && duplicateId) {
@@ -11520,7 +11666,7 @@ function OverlayEditorApp({ initialOverlay }) {
     const onUp = (e) => {
       const session = penPointerSessionRef.current;
       penPointerSessionRef.current = null;
-      if (penHandleDragRef.current && penDraft?.handleDrag) {
+      if (penHandleDragRef.current && (penDraft == null ? void 0 : penDraft.handleDrag)) {
         const { anchor, outHandle } = penDraft.handleDrag;
         penHandleDragRef.current = null;
         clientToStage(e.clientX, e.clientY);
@@ -11594,6 +11740,7 @@ function OverlayEditorApp({ initialOverlay }) {
         }
       }
       setPenDraft((prev) => {
+        var _a2, _b2;
         if (!prev) {
           return {
             anchors: [snappedPoint],
@@ -11606,8 +11753,8 @@ function OverlayEditorApp({ initialOverlay }) {
         if (dragDistance > 8) {
           nextCommand = {
             type: "curve",
-            x1: prevOutHandle?.x ?? last.x + dx / 2,
-            y1: prevOutHandle?.y ?? last.y + dy / 2,
+            x1: (_a2 = prevOutHandle == null ? void 0 : prevOutHandle.x) != null ? _a2 : last.x + dx / 2,
+            y1: (_b2 = prevOutHandle == null ? void 0 : prevOutHandle.y) != null ? _b2 : last.y + dy / 2,
             x2: snappedPoint.x - dx / 2,
             y2: snappedPoint.y - dy / 2,
             x: snappedPoint.x,
@@ -11657,16 +11804,17 @@ function OverlayEditorApp({ initialOverlay }) {
   const groupDragStartRef = reactExports.useRef(null);
   reactExports.useRef(null);
   reactExports.useRef(null);
-  const onGroupDragStart = (_e, d) => {
+  const onGroupDragStart = (_e2, d) => {
+    var _a2, _b2;
     if (!selectionBounds) return;
     const initial = {};
     for (const el of selectedEls) {
-      initial[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+      initial[el.id] = { x: (_a2 = el.x) != null ? _a2 : 0, y: (_b2 = el.y) != null ? _b2 : 0 };
     }
     groupDragStartRef.current = { startX: d.x, startY: d.y, initial };
     setMediaDragging(true);
   };
-  const onGroupDrag = (_e, d) => {
+  const onGroupDrag = (_e2, d) => {
     if (!selectionBounds) return;
     const start = groupDragStartRef.current;
     if (!start) return;
@@ -11719,7 +11867,7 @@ function OverlayEditorApp({ initialOverlay }) {
       gy = roundToGrid(gy, gridSize);
     }
   };
-  const onGroupDragStop = (_e, d) => {
+  const onGroupDragStop = (_e2, d) => {
     const start = groupDragStartRef.current;
     groupDragStartRef.current = null;
     setMediaDragging(false);
@@ -11757,8 +11905,9 @@ function OverlayEditorApp({ initialOverlay }) {
     setConfig((prev) => {
       const sel = new Set(selectedIds);
       const next = prev.elements.map((raw) => {
+        var _a2, _b2, _c2;
         if (!sel.has(raw.id)) return raw;
-        const base = start.initial[raw.id] ?? { x: raw.x ?? 0, y: raw.y ?? 0 };
+        const base = (_c2 = start.initial[raw.id]) != null ? _c2 : { x: (_a2 = raw.x) != null ? _a2 : 0, y: (_b2 = raw.y) != null ? _b2 : 0 };
         return { ...raw, x: Math.round(base.x + dx), y: Math.round(base.y + dy) };
       });
       return { ...prev, elements: next };
@@ -11780,6 +11929,7 @@ function OverlayEditorApp({ initialOverlay }) {
   function reorderLayerRelative(id, targetId, placement) {
     if (id === targetId) return;
     setConfig((prev) => {
+      var _a2, _b2;
       const picked = prev.elements.find((el) => el.id === id);
       const target = prev.elements.find((el) => el.id === targetId);
       if (!picked || !target) return prev;
@@ -11792,8 +11942,8 @@ function OverlayEditorApp({ initialOverlay }) {
       );
       const parentGroup = groupFor(id);
       const targetParentGroup = groupFor(targetId);
-      const pickedParentId = parentGroup?.id ?? null;
-      const targetParentId = targetParentGroup?.id ?? null;
+      const pickedParentId = (_a2 = parentGroup == null ? void 0 : parentGroup.id) != null ? _a2 : null;
+      const targetParentId = (_b2 = targetParentGroup == null ? void 0 : targetParentGroup.id) != null ? _b2 : null;
       if (pickedParentId !== targetParentId) return prev;
       if (parentGroup) {
         const childIds = [...parentGroup.childIds || []];
@@ -11885,10 +12035,11 @@ function OverlayEditorApp({ initialOverlay }) {
     });
   }, []);
   function connectObsPreview() {
+    var _a2;
     const stored = localStorage.getItem("obs_ws_url") || "ws://localhost:4455";
     const storedPwd = localStorage.getItem("obs_ws_password") || "";
     const url = window.prompt("OBS WebSocket URL:", stored) || stored;
-    const pwd = window.prompt("OBS WebSocket Password (leave blank if none):", storedPwd) ?? storedPwd;
+    const pwd = (_a2 = window.prompt("OBS WebSocket Password (leave blank if none):", storedPwd)) != null ? _a2 : storedPwd;
     localStorage.setItem("obs_ws_url", url);
     localStorage.setItem("obs_ws_password", pwd);
     try {
@@ -11904,6 +12055,7 @@ function OverlayEditorApp({ initialOverlay }) {
         alert("Could not connect to OBS WebSocket. Enable it in OBS: Tools → WebSocket Server Settings.");
       };
       ws.onmessage = (ev) => {
+        var _a3, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2;
         try {
           const msg = JSON.parse(ev.data);
           if (msg.op === 0) ws.send(JSON.stringify({ op: 1, d: { rpcVersion: 1 } }));
@@ -11912,14 +12064,14 @@ function OverlayEditorApp({ initialOverlay }) {
             ws.send(JSON.stringify({ op: 6, d: { requestType: "GetVideoSettings", requestId: "getVideoSettings", requestData: {} } }));
             ws.send(JSON.stringify({ op: 6, d: { requestType: "GetCurrentProgramScene", requestId: "getScene", requestData: {} } }));
           }
-          if (msg.op === 7 && msg.d?.requestId === "getVideoSettings") {
-            const d = msg.d?.responseData;
-            if (d?.baseWidth && d?.baseHeight) {
+          if (msg.op === 7 && ((_a3 = msg.d) == null ? void 0 : _a3.requestId) === "getVideoSettings") {
+            const d = (_b2 = msg.d) == null ? void 0 : _b2.responseData;
+            if ((d == null ? void 0 : d.baseWidth) && (d == null ? void 0 : d.baseHeight)) {
               setObsCanvasSize({ w: d.baseWidth, h: d.baseHeight });
             }
           }
-          if (msg.op === 7 && msg.d?.requestId === "getScene") {
-            const sceneName = msg.d?.responseData?.currentProgramSceneName || msg.d?.responseData?.sceneName;
+          if (msg.op === 7 && ((_c2 = msg.d) == null ? void 0 : _c2.requestId) === "getScene") {
+            const sceneName = ((_e2 = (_d2 = msg.d) == null ? void 0 : _d2.responseData) == null ? void 0 : _e2.currentProgramSceneName) || ((_g2 = (_f2 = msg.d) == null ? void 0 : _f2.responseData) == null ? void 0 : _g2.sceneName);
             if (sceneName) {
               obsWsRef._sceneName = sceneName;
               const poll = () => {
@@ -11930,8 +12082,8 @@ function OverlayEditorApp({ initialOverlay }) {
               obsPreviewIntervalRef.current = window.setInterval(poll, 800);
             }
           }
-          if (msg.op === 7 && msg.d?.requestId === "preview") {
-            const img = msg.d?.responseData?.imageData;
+          if (msg.op === 7 && ((_h2 = msg.d) == null ? void 0 : _h2.requestId) === "preview") {
+            const img = (_j2 = (_i2 = msg.d) == null ? void 0 : _i2.responseData) == null ? void 0 : _j2.imageData;
             if (img) setObsPreviewUrl(img);
           }
         } catch {
@@ -12215,9 +12367,9 @@ function OverlayEditorApp({ initialOverlay }) {
               alert("Failed to send test event (Network)");
             }
           },
-          overlayId: initialOverlay?.id ?? null,
-          overlayName: initialOverlay?.name ?? "",
-          editingMasterId: editingMasterId ?? null
+          overlayId: (_d = initialOverlay == null ? void 0 : initialOverlay.id) != null ? _d : null,
+          overlayName: (_e = initialOverlay == null ? void 0 : initialOverlay.name) != null ? _e : "",
+          editingMasterId: editingMasterId != null ? editingMasterId : null
         },
         void 0,
         false,
@@ -12354,10 +12506,14 @@ function OverlayEditorApp({ initialOverlay }) {
             visibilityOverrides: previewVisibilityOverrides,
             onSelect: onSelectElement,
             onToggleVisible: (id) => {
-              const currentVisible = previewVisibilityOverrides[id] !== void 0 ? previewVisibilityOverrides[id] : elementsById[id]?.visible !== false;
+              var _a2;
+              const currentVisible = previewVisibilityOverrides[id] !== void 0 ? previewVisibilityOverrides[id] : ((_a2 = elementsById[id]) == null ? void 0 : _a2.visible) !== false;
               setPreviewVisibilityOverrides((prev) => ({ ...prev, [id]: !currentVisible }));
             },
-            onToggleLock: (id) => updateElement(id, { locked: !(elementsById[id]?.locked === true) }),
+            onToggleLock: (id) => {
+              var _a2;
+              return updateElement(id, { locked: !(((_a2 = elementsById[id]) == null ? void 0 : _a2.locked) === true) });
+            },
             onMask: handleMaskElement,
             onReleaseMask: handleReleaseMask,
             onMoveUp: (id) => moveLayerBy(id, 1),
@@ -12396,16 +12552,17 @@ function OverlayEditorApp({ initialOverlay }) {
             onDelete: deleteComponent,
             onCreateVariant: createVariantFromComponent,
             onInsertLowerThird: (tmpl) => {
+              var _a2, _b2, _c2;
               const id = genId("lt");
-              const tJson = tmpl.template_json ?? {};
+              const tJson = (_a2 = tmpl.template_json) != null ? _a2 : {};
               const newEl = {
                 id,
                 type: "lower_third",
                 name: tmpl.name,
                 x: 0,
                 y: tJson.height ? 1080 - tJson.height : 880,
-                width: tJson.width ?? 1920,
-                height: tJson.height ?? 150,
+                width: (_b2 = tJson.width) != null ? _b2 : 1920,
+                height: (_c2 = tJson.height) != null ? _c2 : 150,
                 visible: true,
                 locked: false,
                 opacity: 1,
@@ -12526,11 +12683,13 @@ function OverlayEditorApp({ initialOverlay }) {
             }, this) : null;
           })(),
           getAllWidgets().map((widgetDef) => {
+            var _a2;
             const m = widgetDef.widgetManifest;
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "button",
               {
                 onClick: () => {
+                  var _a3, _b2, _c2;
                   const wId = genId("widget");
                   const widgetEl = {
                     id: wId,
@@ -12546,8 +12705,8 @@ function OverlayEditorApp({ initialOverlay }) {
                     widgetId: m.widgetId,
                     propOverrides: { ...m.defaultProps },
                     liveDataSource: {
-                      sseEventType: m.dataContract?.sseEventType ?? null,
-                      beaconEndpoint: m.beaconEndpoint ?? void 0
+                      sseEventType: (_b2 = (_a3 = m.dataContract) == null ? void 0 : _a3.sseEventType) != null ? _b2 : null,
+                      beaconEndpoint: (_c2 = m.beaconEndpoint) != null ? _c2 : void 0
                     }
                   };
                   setConfig((prev) => ({ ...prev, elements: [...prev.elements, widgetEl] }));
@@ -12598,7 +12757,7 @@ function OverlayEditorApp({ initialOverlay }) {
                       lineNumber: 6262,
                       columnNumber: 23
                     }, this),
-                    m.dataContract?.sseEventType && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-emerald-500/70 mt-1", children: [
+                    ((_a2 = m.dataContract) == null ? void 0 : _a2.sseEventType) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-emerald-500/70 mt-1", children: [
                       "● ",
                       m.dataContract.sseEventType
                     ] }, void 0, true, {
@@ -13276,7 +13435,7 @@ function OverlayEditorApp({ initialOverlay }) {
           activeCreationTool === "pen" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "min-w-0 flex-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: [
               "Pen mode:",
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "ml-1 text-slate-200", children: penDraft?.anchors.length ? `${penDraft.anchors.length} point${penDraft.anchors.length === 1 ? "" : "s"}` : "click to start a path" }, void 0, false, {
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "ml-1 text-slate-200", children: (penDraft == null ? void 0 : penDraft.anchors.length) ? `${penDraft.anchors.length} point${penDraft.anchors.length === 1 ? "" : "s"}` : "click to start a path" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 6428,
                 columnNumber: 15
@@ -13801,8 +13960,8 @@ function OverlayEditorApp({ initialOverlay }) {
                               style: {
                                 borderColor: ACCENT_TINT_SOFT,
                                 color: "#e0e7ff",
-                                left: (resizeStatus.x ?? 0) + (resizeStatus.width ?? 0) / 2,
-                                top: (resizeStatus.y ?? 0) + (resizeStatus.height ?? 0) + 10,
+                                left: ((_f = resizeStatus.x) != null ? _f : 0) + ((_g = resizeStatus.width) != null ? _g : 0) / 2,
+                                top: ((_h = resizeStatus.y) != null ? _h : 0) + ((_i = resizeStatus.height) != null ? _i : 0) + 10,
                                 transform: "translateX(-50%)"
                               },
                               children: [
@@ -13883,9 +14042,10 @@ function OverlayEditorApp({ initialOverlay }) {
                             columnNumber: 17
                           }, this),
                           previewElements.map((raw) => {
+                            var _a2;
                             const el = raw;
                             if (allChildIds.has(el.id) && !selectedIds.includes(el.id)) return null;
-                            const animationPhase = previewAnimationPhases[el.id]?.phase;
+                            const animationPhase = (_a2 = previewAnimationPhases[el.id]) == null ? void 0 : _a2.phase;
                             if (animationPhase === "hidden" && !selectedIds.includes(el.id)) return null;
                             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                               CanvasElement,
@@ -13930,11 +14090,15 @@ function OverlayEditorApp({ initialOverlay }) {
                                 createDragDuplicate,
                                 setSelectedIds,
                                 onInlineEdit: (id) => {
+                                  var _a3;
                                   const el2 = previewElementsById[id];
                                   if (!el2 || el2.type !== "text") return;
                                   setInlineEditingId(id);
-                                  setInlineDraft(el2.text ?? "");
-                                  setTimeout(() => inlineEditRef.current?.focus(), 30);
+                                  setInlineDraft((_a3 = el2.text) != null ? _a3 : "");
+                                  setTimeout(() => {
+                                    var _a4;
+                                    return (_a4 = inlineEditRef.current) == null ? void 0 : _a4.focus();
+                                  }, 30);
                                 }
                               },
                               el.id,
@@ -14001,17 +14165,18 @@ function OverlayEditorApp({ initialOverlay }) {
                             this
                           ),
                           inlineEditingId && (() => {
+                            var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2, _l2, _m2, _n2;
                             const el = previewElementsById[inlineEditingId];
                             if (!el) return null;
                             const draft = draftRects[inlineEditingId];
-                            const ex = draft?.x ?? el.x ?? 0;
-                            const ey = draft?.y ?? el.y ?? 0;
-                            const ew = draft?.width ?? el.width ?? 100;
-                            const eh = draft?.height ?? el.height ?? 40;
-                            const fontSize = el.fontSizePx ?? el.fontSize ?? 24;
-                            const fontFamily = el.fontFamily ?? "inherit";
-                            const color = el.fillColor ?? el.color ?? "#ffffff";
-                            const textAlign = el.textAlign ?? "left";
+                            const ex = (_b2 = (_a2 = draft == null ? void 0 : draft.x) != null ? _a2 : el.x) != null ? _b2 : 0;
+                            const ey = (_d2 = (_c2 = draft == null ? void 0 : draft.y) != null ? _c2 : el.y) != null ? _d2 : 0;
+                            const ew = (_f2 = (_e2 = draft == null ? void 0 : draft.width) != null ? _e2 : el.width) != null ? _f2 : 100;
+                            const eh = (_h2 = (_g2 = draft == null ? void 0 : draft.height) != null ? _g2 : el.height) != null ? _h2 : 40;
+                            const fontSize = (_j2 = (_i2 = el.fontSizePx) != null ? _i2 : el.fontSize) != null ? _j2 : 24;
+                            const fontFamily = (_k2 = el.fontFamily) != null ? _k2 : "inherit";
+                            const color = (_m2 = (_l2 = el.fillColor) != null ? _l2 : el.color) != null ? _m2 : "#ffffff";
+                            const textAlign = (_n2 = el.textAlign) != null ? _n2 : "left";
                             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                               "div",
                               {
@@ -14203,9 +14368,10 @@ function OverlayEditorApp({ initialOverlay }) {
                                   this
                                 ),
                                 penDraft.anchors.length > 0 && (() => {
+                                  var _a2, _b2;
                                   const last = penDraft.anchors[penDraft.anchors.length - 1];
                                   const prevOut = penDraft._lastOutHandle;
-                                  const d = `M ${last.x} ${last.y} C ${prevOut?.x ?? last.x} ${prevOut?.y ?? last.y} ${inHandle.x} ${inHandle.y} ${anchor.x} ${anchor.y}`;
+                                  const d = `M ${last.x} ${last.y} C ${(_a2 = prevOut == null ? void 0 : prevOut.x) != null ? _a2 : last.x} ${(_b2 = prevOut == null ? void 0 : prevOut.y) != null ? _b2 : last.y} ${inHandle.x} ${inHandle.y} ${anchor.x} ${anchor.y}`;
                                   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d, fill: "none", stroke: "rgba(99,102,241,0.6)", strokeWidth: 1.5 / scale }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                                     lineNumber: 6972,
@@ -14291,19 +14457,20 @@ function OverlayEditorApp({ initialOverlay }) {
                             columnNumber: 17
                           }, this),
                           primarySelectedEl && (() => {
+                            var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2;
                             const fills = getElementFills(primarySelectedEl);
                             const gradientFills = fills.filter((f) => f.type === "linear" || f.type === "radial" || f.type === "conic");
                             if (!gradientFills.length) return null;
                             const el = primarySelectedEl;
                             const draft = draftRects[el.id];
-                            const ex = draft?.x ?? el.x ?? 0;
-                            const ey = draft?.y ?? el.y ?? 0;
-                            const ew = draft?.width ?? el.width ?? 100;
-                            const eh = draft?.height ?? el.height ?? 100;
+                            const ex = (_b2 = (_a2 = draft == null ? void 0 : draft.x) != null ? _a2 : el.x) != null ? _b2 : 0;
+                            const ey = (_d2 = (_c2 = draft == null ? void 0 : draft.y) != null ? _c2 : el.y) != null ? _d2 : 0;
+                            const ew = (_f2 = (_e2 = draft == null ? void 0 : draft.width) != null ? _e2 : el.width) != null ? _f2 : 100;
+                            const eh = (_h2 = (_g2 = draft == null ? void 0 : draft.height) != null ? _g2 : el.height) != null ? _h2 : 100;
                             const cx = ex + ew / 2;
                             const cy = ey + eh / 2;
                             const fill = gradientFills[0];
-                            const angleDeg = fill.angleDeg ?? 0;
+                            const angleDeg = (_i2 = fill.angleDeg) != null ? _i2 : 0;
                             const rad = angleDeg * Math.PI / 180;
                             const len = Math.max(ew, eh) / 2;
                             const startX = cx - Math.cos(rad) * len;
@@ -14393,8 +14560,8 @@ function OverlayEditorApp({ initialOverlay }) {
                               columnNumber: 19
                             }, this);
                           })(),
-                          guides.show && (guides.v?.length || guides.h?.length || guides.spacing?.length) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "absolute inset-0 pointer-events-none overflow-visible", style: { zIndex: 1e4 }, children: [
-                            guides.v?.map((guide) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                          guides.show && (((_j = guides.v) == null ? void 0 : _j.length) || ((_k = guides.h) == null ? void 0 : _k.length) || ((_l = guides.spacing) == null ? void 0 : _l.length)) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "absolute inset-0 pointer-events-none overflow-visible", style: { zIndex: 1e4 }, children: [
+                            (_m = guides.v) == null ? void 0 : _m.map((guide) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                               "line",
                               {
                                 x1: guide.pos,
@@ -14414,7 +14581,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               },
                               this
                             )),
-                            guides.h?.map((guide) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                            (_n = guides.h) == null ? void 0 : _n.map((guide) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                               "line",
                               {
                                 x1: 0,
@@ -14434,7 +14601,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               },
                               this
                             )),
-                            guides.spacing?.map((spacing) => {
+                            (_o = guides.spacing) == null ? void 0 : _o.map((spacing) => {
                               if (spacing.axis === "x") {
                                 const midY = spacing.y;
                                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
@@ -14806,7 +14973,7 @@ function OverlayEditorApp({ initialOverlay }) {
           primarySelectedEl ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             InspectorPanel,
             {
-              element: previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]],
+              element: (_p = previewElementsById[selectedIds[0]]) != null ? _p : elementsById[selectedIds[0]],
               elements: elementsAny,
               onChange: (u) => updateElement(selectedIds[0], u),
               onRename: (n) => updateElement(selectedIds[0], { name: n }),
@@ -14828,7 +14995,7 @@ function OverlayEditorApp({ initialOverlay }) {
                   title: "Pick Pattern",
                   onPick: (url) => updateElement(selectedIds[0], {
                     pattern: {
-                      ...ensurePatternFill(currentElement?.pattern),
+                      ...ensurePatternFill(currentElement == null ? void 0 : currentElement.pattern),
                       src: url
                     }
                   })
@@ -14879,7 +15046,7 @@ function OverlayEditorApp({ initialOverlay }) {
               onDetachInstance: detachSelectedComponentInstance,
               onCreateVariant: createVariantFromComponent,
               parentFrame: selectedParentFrame,
-              selectedPathAnchor: selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null,
+              selectedPathAnchor: (selectedPathAnchor == null ? void 0 : selectedPathAnchor.elementId) === selectedIds[0] ? selectedPathAnchor.commandIndex : null,
               onAddPathNode: addSelectedPathNode,
               onRemovePathNode: removeSelectedPathNode,
               onSplitPath: splitSelectedPath,
@@ -14887,7 +15054,7 @@ function OverlayEditorApp({ initialOverlay }) {
               onJoinPaths: joinSelectedPaths,
               onExpandStroke: expandSelectedStroke,
               canContinuePath: Boolean(
-                primarySelectedEl?.type === "path" && selectedPathAnchor && selectedPathAnchor.elementId === primarySelectedEl.id && (() => {
+                (primarySelectedEl == null ? void 0 : primarySelectedEl.type) === "path" && selectedPathAnchor && selectedPathAnchor.elementId === primarySelectedEl.id && (() => {
                   const path = elementToOverlayPath(primarySelectedEl);
                   if (!path || isClosedPath(path)) return false;
                   const anchors = getPathAnchors(path);
@@ -14895,12 +15062,15 @@ function OverlayEditorApp({ initialOverlay }) {
                   return selectedIndex === 0 || selectedIndex === anchors.length - 1;
                 })()
               ),
-              canJoinPaths: selectedIds.length === 2 && selectedIds.every((id) => elementsById[id]?.type === "path") && selectedIds.every((id) => {
+              canJoinPaths: selectedIds.length === 2 && selectedIds.every((id) => {
+                var _a2;
+                return ((_a2 = elementsById[id]) == null ? void 0 : _a2.type) === "path";
+              }) && selectedIds.every((id) => {
                 const candidate = elementsById[id];
                 const path = candidate ? elementToOverlayPath(candidate) : null;
                 return Boolean(path && !isClosedPath(path));
               }),
-              previewVisible: previewElementsById[selectedIds[0]]?.visible !== false,
+              previewVisible: ((_q = previewElementsById[selectedIds[0]]) == null ? void 0 : _q.visible) !== false,
               onPreviewVisibilityAction: (action) => triggerPreviewVisibility(selectedIds[0], action),
               timelineState: selectedTimelineState
             },
@@ -14955,9 +15125,10 @@ function OverlayEditorApp({ initialOverlay }) {
         columnNumber: 7
       }, this),
       curveEditorEffect !== null && (() => {
+        var _a2;
         const editingEffectIdx = parseInt(curveEditorEffect);
-        const editingEl = selectedIds[0] ? previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]] : null;
-        const peList = editingEl?.parametricEffects;
+        const editingEl = selectedIds[0] ? (_a2 = previewElementsById[selectedIds[0]]) != null ? _a2 : elementsById[selectedIds[0]] : null;
+        const peList = editingEl == null ? void 0 : editingEl.parametricEffects;
         if (!Array.isArray(peList) || editingEffectIdx >= peList.length) return null;
         const editingEffect = peList[editingEffectIdx];
         if (!editingEffect) return null;
@@ -14998,13 +15169,14 @@ function OverlayEditorApp({ initialOverlay }) {
           isPlaying: isTimelinePlaying,
           selectedTrackId: selectedTimelineTrackId,
           selectedKeyframeId: selectedTimelineKeyframeId,
-          selectedKeyframeEasing: selectedTimelineKeyframe?.easing ?? "linear",
+          selectedKeyframeEasing: (_r = selectedTimelineKeyframe == null ? void 0 : selectedTimelineKeyframe.easing) != null ? _r : "linear",
           onSelectKeyframe: (trackId, keyframeId) => {
             setSelectedTimelineTrackId(trackId);
             setSelectedTimelineKeyframeId(keyframeId);
           },
           onPlay: () => {
-            if (timeline.playback?.reverse) {
+            var _a2;
+            if ((_a2 = timeline.playback) == null ? void 0 : _a2.reverse) {
               if (timelinePlayheadMs <= 0) {
                 setTimelinePlayheadMs(timeline.durationMs);
               }
@@ -15015,8 +15187,9 @@ function OverlayEditorApp({ initialOverlay }) {
           },
           onPause: () => setIsTimelinePlaying(false),
           onStop: () => {
+            var _a2;
             setIsTimelinePlaying(false);
-            setTimelinePlayheadMs(timeline.playback?.reverse ? timeline.durationMs : 0);
+            setTimelinePlayheadMs(((_a2 = timeline.playback) == null ? void 0 : _a2.reverse) ? timeline.durationMs : 0);
           },
           onSetPlayhead: (timeMs) => {
             setIsTimelinePlaying(false);
@@ -15029,13 +15202,16 @@ function OverlayEditorApp({ initialOverlay }) {
           },
           onDeleteSelectedKeyframe: deleteSelectedTimelineKeyframe,
           onSetPlayback: (patch) => {
-            setTimeline((currentTimeline) => ({
-              ...currentTimeline,
-              playback: {
-                ...currentTimeline.playback ?? {},
-                ...patch
-              }
-            }));
+            setTimeline((currentTimeline) => {
+              var _a2;
+              return {
+                ...currentTimeline,
+                playback: {
+                  ...(_a2 = currentTimeline.playback) != null ? _a2 : {},
+                  ...patch
+                }
+              };
+            });
           },
           onSetSelectedKeyframeEasing: updateSelectedTimelineKeyframeEasing,
           onAddTrack: addTimelineTrack,
@@ -15098,7 +15274,7 @@ function formatTimelineTime(ms) {
 function TimelinePropertyMarker({
   state
 }) {
-  if (!state?.hasTrack) {
+  if (!(state == null ? void 0 : state.hasTrack)) {
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "inline-block h-2.5 w-2.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-transparent rotate-45" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 7555,
@@ -15530,15 +15706,16 @@ const EFFECT_TYPE_OPTIONS = [
   { value: "noise", label: "Noise / Grain" }
 ];
 function ensurePatternFill(pattern) {
+  var _a, _b, _c, _d, _e, _f, _g;
   return {
     type: "pattern",
-    src: pattern?.src ?? "",
-    fit: pattern?.fit ?? "tile",
-    scale: pattern?.scale ?? 100,
-    opacity: pattern?.opacity ?? 1,
-    offsetX: pattern?.offsetX ?? 0,
-    offsetY: pattern?.offsetY ?? 0,
-    rotationDeg: pattern?.rotationDeg ?? 0
+    src: (_a = pattern == null ? void 0 : pattern.src) != null ? _a : "",
+    fit: (_b = pattern == null ? void 0 : pattern.fit) != null ? _b : "tile",
+    scale: (_c = pattern == null ? void 0 : pattern.scale) != null ? _c : 100,
+    opacity: (_d = pattern == null ? void 0 : pattern.opacity) != null ? _d : 1,
+    offsetX: (_e = pattern == null ? void 0 : pattern.offsetX) != null ? _e : 0,
+    offsetY: (_f = pattern == null ? void 0 : pattern.offsetY) != null ? _f : 0,
+    rotationDeg: (_g = pattern == null ? void 0 : pattern.rotationDeg) != null ? _g : 0
   };
 }
 function defaultGradientStops() {
@@ -15548,30 +15725,32 @@ function defaultGradientStops() {
   ];
 }
 function ensureFill(fill) {
+  var _a, _b, _c, _d;
   if (!fill) return { type: "solid", color: "#ffffff", opacity: 1 };
-  if (fill.type === "solid") return { type: "solid", color: fill.color ?? "#ffffff", opacity: fill.opacity ?? 1, id: fill.id };
+  if (fill.type === "solid") return { type: "solid", color: (_a = fill.color) != null ? _a : "#ffffff", opacity: (_b = fill.opacity) != null ? _b : 1, id: fill.id };
   if (fill.type === "pattern") return ensurePatternFill(fill);
   return {
     type: fill.type,
     id: fill.id,
-    opacity: fill.opacity ?? 1,
-    angleDeg: fill.angleDeg ?? 0,
+    opacity: (_c = fill.opacity) != null ? _c : 1,
+    angleDeg: (_d = fill.angleDeg) != null ? _d : 0,
     stops: Array.isArray(fill.stops) && fill.stops.length ? fill.stops : defaultGradientStops()
   };
 }
 function getElementFills(element) {
+  var _a, _b, _c;
   if (Array.isArray(element.fills) && element.fills.length) {
     return element.fills.map((fill) => ensureFill(fill));
   }
   if (element.type === "box") {
     const fills2 = [];
     if (element.backgroundColor) fills2.push({ type: "solid", color: element.backgroundColor, opacity: 1 });
-    if (element.pattern?.src) fills2.push(ensurePatternFill(element.pattern));
+    if ((_a = element.pattern) == null ? void 0 : _a.src) fills2.push(ensurePatternFill(element.pattern));
     return fills2.length ? fills2 : [{ type: "solid", color: "#0f172a", opacity: 1 }];
   }
   const fills = [];
-  if (element.fillColor) fills.push({ type: "solid", color: element.fillColor, opacity: element.fillOpacity ?? 1 });
-  if (element.pattern?.src) fills.push(ensurePatternFill(element.pattern));
+  if (element.fillColor) fills.push({ type: "solid", color: element.fillColor, opacity: (_b = element.fillOpacity) != null ? _b : 1 });
+  if ((_c = element.pattern) == null ? void 0 : _c.src) fills.push(ensurePatternFill(element.pattern));
   return fills.length ? fills : [{ type: "solid", color: "#ffffff", opacity: 1 }];
 }
 function defaultEffect(type = "dropShadow") {
@@ -15592,56 +15771,58 @@ function defaultEffect(type = "dropShadow") {
   }
 }
 function ensureEffect(effect) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k;
   if (!effect) return defaultEffect();
   const base = { ...defaultEffect(effect.type), ...effect };
   if (base.type === "dropShadow" || base.type === "innerShadow") {
     return {
       type: base.type,
       id: base.id,
-      enabled: base.enabled ?? true,
-      opacity: base.opacity ?? 1,
+      enabled: (_a = base.enabled) != null ? _a : true,
+      opacity: (_b = base.opacity) != null ? _b : 1,
       color: base.color,
       blur: base.blur,
       x: base.x,
       y: base.y,
-      spread: base.spread ?? 0
+      spread: (_c = base.spread) != null ? _c : 0
     };
   }
   if (base.type === "outerGlow" || base.type === "innerGlow") {
     return {
       type: base.type,
       id: base.id,
-      enabled: base.enabled ?? true,
-      opacity: base.opacity ?? 1,
+      enabled: (_d = base.enabled) != null ? _d : true,
+      opacity: (_e = base.opacity) != null ? _e : 1,
       color: base.color,
       blur: base.blur,
-      spread: base.spread ?? 0
+      spread: (_f = base.spread) != null ? _f : 0
     };
   }
   if (base.type === "layerBlur") {
     return {
       type: "layerBlur",
       id: base.id,
-      enabled: base.enabled ?? true,
-      opacity: base.opacity ?? 1,
+      enabled: (_g = base.enabled) != null ? _g : true,
+      opacity: (_h = base.opacity) != null ? _h : 1,
       blur: base.blur
     };
   }
   return {
     type: "noise",
     id: base.id,
-    enabled: base.enabled ?? true,
-    opacity: base.opacity ?? 1,
+    enabled: (_i = base.enabled) != null ? _i : true,
+    opacity: (_j = base.opacity) != null ? _j : 1,
     amount: base.amount,
-    scale: base.scale ?? 24
+    scale: (_k = base.scale) != null ? _k : 24
   };
 }
 function getElementEffects(element) {
+  var _a;
   if (Array.isArray(element.effects) && element.effects.length) {
     return element.effects.map((effect) => ensureEffect(effect));
   }
   const shadow = element.shadow;
-  if (shadow?.enabled) {
+  if (shadow == null ? void 0 : shadow.enabled) {
     return [
       ensureEffect({
         type: "dropShadow",
@@ -15649,7 +15830,7 @@ function getElementEffects(element) {
         blur: shadow.blur,
         x: shadow.x,
         y: shadow.y,
-        spread: shadow.spread ?? 0,
+        spread: (_a = shadow.spread) != null ? _a : 0,
         opacity: 1
       })
     ];
@@ -15657,38 +15838,41 @@ function getElementEffects(element) {
   return [];
 }
 function ensureConstraints(constraints) {
+  var _a, _b;
   return {
-    horizontal: constraints?.horizontal ?? "start",
-    vertical: constraints?.vertical ?? "start"
+    horizontal: (_a = constraints == null ? void 0 : constraints.horizontal) != null ? _a : "start",
+    vertical: (_b = constraints == null ? void 0 : constraints.vertical) != null ? _b : "start"
   };
 }
 function ensureFrameLayout(layout) {
+  var _a, _b, _c, _d, _e, _f;
   return {
-    mode: layout?.mode ?? "free",
-    gap: layout?.gap ?? 12,
-    padding: layout?.padding ?? 16,
-    align: layout?.align ?? "start",
-    justify: layout?.justify ?? "start",
-    wrap: layout?.wrap ?? false
+    mode: (_a = layout == null ? void 0 : layout.mode) != null ? _a : "free",
+    gap: (_b = layout == null ? void 0 : layout.gap) != null ? _b : 12,
+    padding: (_c = layout == null ? void 0 : layout.padding) != null ? _c : 16,
+    align: (_d = layout == null ? void 0 : layout.align) != null ? _d : "start",
+    justify: (_e = layout == null ? void 0 : layout.justify) != null ? _e : "start",
+    wrap: (_f = layout == null ? void 0 : layout.wrap) != null ? _f : false
   };
 }
 function isContainerElement(el) {
   return !!el && (el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean");
 }
 function constrainFrameChildRect(child, frameOrigin, nextFrame) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
   const constraints = ensureConstraints(child.constraints);
-  const left = (child.x ?? 0) - frameOrigin.x;
-  const top = (child.y ?? 0) - frameOrigin.y;
-  const right = frameOrigin.width - left - (child.width ?? 0);
-  const bottom = frameOrigin.height - top - (child.height ?? 0);
-  const centerOffsetX = left + (child.width ?? 0) / 2 - frameOrigin.width / 2;
-  const centerOffsetY = top + (child.height ?? 0) / 2 - frameOrigin.height / 2;
+  const left = ((_a = child.x) != null ? _a : 0) - frameOrigin.x;
+  const top = ((_b = child.y) != null ? _b : 0) - frameOrigin.y;
+  const right = frameOrigin.width - left - ((_c = child.width) != null ? _c : 0);
+  const bottom = frameOrigin.height - top - ((_d = child.height) != null ? _d : 0);
+  const centerOffsetX = left + ((_e = child.width) != null ? _e : 0) / 2 - frameOrigin.width / 2;
+  const centerOffsetY = top + ((_f = child.height) != null ? _f : 0) / 2 - frameOrigin.height / 2;
   const scaleX = nextFrame.width / Math.max(frameOrigin.width, 1);
   const scaleY = nextFrame.height / Math.max(frameOrigin.height, 1);
-  let x = child.x ?? 0;
-  let y = child.y ?? 0;
-  let width = child.width ?? 0;
-  let height = child.height ?? 0;
+  let x = (_g = child.x) != null ? _g : 0;
+  let y = (_h = child.y) != null ? _h : 0;
+  let width = (_i = child.width) != null ? _i : 0;
+  let height = (_j = child.height) != null ? _j : 0;
   switch (constraints.horizontal) {
     case "end":
       x = nextFrame.x + nextFrame.width - right - width;
@@ -15737,21 +15921,23 @@ function constrainFrameChildRect(child, frameOrigin, nextFrame) {
   };
 }
 function reflowFrameElements(frame, elements) {
+  var _a, _b, _c;
   const layout = ensureFrameLayout(frame.layout);
   if (layout.mode === "free") return elements;
   const elementMap = new Map(elements.map((element) => [element.id, element]));
-  const children = (frame.childIds ?? []).map((childId) => elementMap.get(childId)).filter((child) => Boolean(child));
+  const children = ((_a = frame.childIds) != null ? _a : []).map((childId) => elementMap.get(childId)).filter((child) => Boolean(child));
   if (!children.length) return elements;
-  const pad = layout.padding ?? 0;
-  const gap = layout.gap ?? 0;
+  const pad = (_b = layout.padding) != null ? _b : 0;
+  const gap = (_c = layout.gap) != null ? _c : 0;
   const isHorizontal = layout.mode === "horizontal";
   const mainSize = Math.max(0, (isHorizontal ? frame.width : frame.height) - pad * 2);
   const crossSize = Math.max(0, (isHorizontal ? frame.height : frame.width) - pad * 2);
   const rows = [];
   let currentRow = { children: [], used: 0, cross: 0 };
   children.forEach((child, index) => {
-    const childMain = Math.max(1, isHorizontal ? child.width ?? 0 : child.height ?? 0);
-    const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+    var _a2, _b2, _c2, _d;
+    const childMain = Math.max(1, isHorizontal ? (_a2 = child.width) != null ? _a2 : 0 : (_b2 = child.height) != null ? _b2 : 0);
+    const childCross = Math.max(1, isHorizontal ? (_c2 = child.height) != null ? _c2 : 0 : (_d = child.width) != null ? _d : 0);
     const nextUsed = currentRow.children.length === 0 ? childMain : currentRow.used + gap + childMain;
     const shouldWrap = layout.wrap && currentRow.children.length > 0 && nextUsed > mainSize;
     if (shouldWrap) {
@@ -15780,10 +15966,14 @@ function reflowFrameElements(frame, elements) {
     } else if (layout.justify === "end") {
       mainCursor = frame.x + pad + Math.max(0, mainSize - row.used);
     } else if (layout.justify === "space-between" && row.children.length > 1) {
-      mainGap = Math.max(gap, (mainSize - row.children.reduce((sum, child) => sum + (isHorizontal ? child.width ?? 0 : child.height ?? 0), 0)) / (row.children.length - 1));
+      mainGap = Math.max(gap, (mainSize - row.children.reduce((sum, child) => {
+        var _a2, _b2;
+        return sum + (isHorizontal ? (_a2 = child.width) != null ? _a2 : 0 : (_b2 = child.height) != null ? _b2 : 0);
+      }, 0)) / (row.children.length - 1));
     }
     row.children.forEach((child) => {
-      const childCross = Math.max(1, isHorizontal ? child.height ?? 0 : child.width ?? 0);
+      var _a2, _b2, _c2, _d;
+      const childCross = Math.max(1, isHorizontal ? (_a2 = child.height) != null ? _a2 : 0 : (_b2 = child.width) != null ? _b2 : 0);
       let crossPos = crossCursor;
       let stretchPatch = {};
       if (layout.align === "center") {
@@ -15802,7 +15992,7 @@ function reflowFrameElements(frame, elements) {
         x: Math.round(isHorizontal ? mainCursor : crossPos),
         y: Math.round(isHorizontal ? crossPos : mainCursor)
       });
-      mainCursor += (isHorizontal ? child.width ?? 0 : child.height ?? 0) + mainGap;
+      mainCursor += (isHorizontal ? (_c2 = child.width) != null ? _c2 : 0 : (_d = child.height) != null ? _d : 0) + mainGap;
     });
     crossCursor += row.cross + gap;
   });
@@ -15814,21 +16004,23 @@ function reflowFrameInElementList(frameId, elements) {
   return reflowFrameElements(frame, elements);
 }
 function ensureCornerRadii(radius, cornerRadii) {
+  var _a, _b, _c, _d;
   return {
-    topLeft: cornerRadii?.topLeft ?? radius,
-    topRight: cornerRadii?.topRight ?? radius,
-    bottomRight: cornerRadii?.bottomRight ?? radius,
-    bottomLeft: cornerRadii?.bottomLeft ?? radius
+    topLeft: (_a = cornerRadii == null ? void 0 : cornerRadii.topLeft) != null ? _a : radius,
+    topRight: (_b = cornerRadii == null ? void 0 : cornerRadii.topRight) != null ? _b : radius,
+    bottomRight: (_c = cornerRadii == null ? void 0 : cornerRadii.bottomRight) != null ? _c : radius,
+    bottomLeft: (_d = cornerRadii == null ? void 0 : cornerRadii.bottomLeft) != null ? _d : radius
   };
 }
 function ensureKeying(keying) {
+  var _a, _b, _c, _d, _e, _f;
   return {
-    mode: keying?.mode ?? "none",
-    threshold: keying?.threshold ?? 0.2,
-    softness: keying?.softness ?? 0.15,
-    keyColor: keying?.keyColor ?? "#00ff00",
-    tolerance: keying?.tolerance ?? 0.2,
-    spillReduction: keying?.spillReduction ?? 0
+    mode: (_a = keying == null ? void 0 : keying.mode) != null ? _a : "none",
+    threshold: (_b = keying == null ? void 0 : keying.threshold) != null ? _b : 0.2,
+    softness: (_c = keying == null ? void 0 : keying.softness) != null ? _c : 0.15,
+    keyColor: (_d = keying == null ? void 0 : keying.keyColor) != null ? _d : "#00ff00",
+    tolerance: (_e = keying == null ? void 0 : keying.tolerance) != null ? _e : 0.2,
+    spillReduction: (_f = keying == null ? void 0 : keying.spillReduction) != null ? _f : 0
   };
 }
 function PatternFillControls({
@@ -15836,6 +16028,7 @@ function PatternFillControls({
   onChange,
   onPickImage
 }) {
+  var _a, _b, _c, _d, _e;
   const nextPattern = ensurePatternFill(pattern);
   const [imageState, setImageState] = reactExports.useState("idle");
   reactExports.useEffect(() => {
@@ -15956,7 +16149,7 @@ function PatternFillControls({
           NumberField,
           {
             label: "",
-            value: Math.round(nextPattern.scale ?? 100),
+            value: Math.round((_a = nextPattern.scale) != null ? _a : 100),
             onChange: (v) => onChange({ ...nextPattern, scale: Math.max(1, v) }),
             noLabel: true
           },
@@ -16000,7 +16193,7 @@ function PatternFillControls({
           NumberField,
           {
             label: "",
-            value: Math.round((nextPattern.opacity ?? 1) * 100),
+            value: Math.round(((_b = nextPattern.opacity) != null ? _b : 1) * 100),
             onChange: (v) => onChange({ ...nextPattern, opacity: Math.max(0, Math.min(1, v / 100)) }),
             noLabel: true
           },
@@ -16035,7 +16228,7 @@ function PatternFillControls({
           lineNumber: 8306,
           columnNumber: 11
         }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round(nextPattern.offsetX ?? 0), onChange: (v) => onChange({ ...nextPattern, offsetX: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_c = nextPattern.offsetX) != null ? _c : 0), onChange: (v) => onChange({ ...nextPattern, offsetX: v }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 8307,
           columnNumber: 11
@@ -16051,7 +16244,7 @@ function PatternFillControls({
           lineNumber: 8310,
           columnNumber: 11
         }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round(nextPattern.offsetY ?? 0), onChange: (v) => onChange({ ...nextPattern, offsetY: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_d = nextPattern.offsetY) != null ? _d : 0), onChange: (v) => onChange({ ...nextPattern, offsetY: v }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 8311,
           columnNumber: 11
@@ -16067,7 +16260,7 @@ function PatternFillControls({
           lineNumber: 8314,
           columnNumber: 11
         }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round(nextPattern.rotationDeg ?? 0), onChange: (v) => onChange({ ...nextPattern, rotationDeg: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_e = nextPattern.rotationDeg) != null ? _e : 0), onChange: (v) => onChange({ ...nextPattern, rotationDeg: v }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 8315,
           columnNumber: 11
@@ -16092,11 +16285,15 @@ function GradientEditor({
   fill,
   onChange
 }) {
+  var _a, _b;
   const [selectedStopIndex, setSelectedStopIndex] = reactExports.useState(null);
   const [isDragging, setIsDragging] = reactExports.useState(false);
   const barRef = reactExports.useRef(null);
   const stops = fill.stops || [];
-  const sortedStops = [...stops].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const sortedStops = [...stops].sort((a, b) => {
+    var _a2, _b2;
+    return ((_a2 = a.position) != null ? _a2 : 0) - ((_b2 = b.position) != null ? _b2 : 0);
+  });
   const handleBarClick = (e) => {
     if (!barRef.current || isDragging) return;
     const rect = barRef.current.getBoundingClientRect();
@@ -16106,7 +16303,10 @@ function GradientEditor({
       color: interpolateGradientColor(sortedStops, position),
       position: clamp(position, 0, 100)
     };
-    const newStops = [...stops, newStop].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    const newStops = [...stops, newStop].sort((a, b) => {
+      var _a2, _b2;
+      return ((_a2 = a.position) != null ? _a2 : 0) - ((_b2 = b.position) != null ? _b2 : 0);
+    });
     const newIndex = newStops.findIndex((s) => s === newStop);
     onChange({ ...fill, stops: newStops });
     setSelectedStopIndex(newIndex);
@@ -16144,7 +16344,10 @@ function GradientEditor({
     onChange({ ...fill, stops: stops.filter((_, i) => i !== index) });
     setSelectedStopIndex(null);
   };
-  const gradientCSS = sortedStops.map((stop) => `${stop.color} ${stop.position ?? 0}%`).join(", ");
+  const gradientCSS = sortedStops.map((stop) => {
+    var _a2;
+    return `${stop.color} ${(_a2 = stop.position) != null ? _a2 : 0}%`;
+  }).join(", ");
   const gradientStyle = fill.type === "linear" ? `linear-gradient(90deg, ${gradientCSS})` : fill.type === "radial" ? `radial-gradient(circle, ${gradientCSS})` : `conic-gradient(from 0deg, ${gradientCSS})`;
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
@@ -16175,7 +16378,8 @@ function GradientEditor({
               this
             ),
             stops.map((stop, index) => {
-              const position = stop.position ?? 0;
+              var _a2;
+              const position = (_a2 = stop.position) != null ? _a2 : 0;
               const isSelected = selectedStopIndex === index;
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                 "div",
@@ -16344,7 +16548,7 @@ function GradientEditor({
             min: "0",
             max: "100",
             className: "flex-1 h-1 accent-indigo-500",
-            value: stops[selectedStopIndex].position ?? 0,
+            value: (_a = stops[selectedStopIndex].position) != null ? _a : 0,
             onChange: (e) => onChange({
               ...fill,
               stops: stops.map(
@@ -16367,7 +16571,7 @@ function GradientEditor({
             {
               type: "number",
               className: `w-full pr-3 text-right ${uiClasses.field}`,
-              value: Math.round(stops[selectedStopIndex].position ?? 0),
+              value: Math.round((_b = stops[selectedStopIndex].position) != null ? _b : 0),
               onChange: (e) => onChange({
                 ...fill,
                 stops: stops.map(
@@ -16411,7 +16615,11 @@ function GradientEditor({
   }, this);
 }
 function interpolateGradientColor(stops, position) {
-  const sorted = [...stops].sort((a, b2) => (a.position ?? 0) - (b2.position ?? 0));
+  var _a, _b, _c, _d;
+  const sorted = [...stops].sort((a, b2) => {
+    var _a2, _b2;
+    return ((_a2 = a.position) != null ? _a2 : 0) - ((_b2 = b2.position) != null ? _b2 : 0);
+  });
   if (sorted.length === 0) return "#ffffff";
   if (sorted.length === 1) return sorted[0].color;
   let before = sorted[0];
@@ -16419,16 +16627,16 @@ function interpolateGradientColor(stops, position) {
   for (let i = 0; i < sorted.length - 1; i++) {
     const curr = sorted[i];
     const next = sorted[i + 1];
-    const currPos = curr.position ?? 0;
-    const nextPos = next.position ?? 100;
+    const currPos = (_a = curr.position) != null ? _a : 0;
+    const nextPos = (_b = next.position) != null ? _b : 100;
     if (position >= currPos && position <= nextPos) {
       before = curr;
       after = next;
       break;
     }
   }
-  const beforePos = before.position ?? 0;
-  const afterPos = after.position ?? 100;
+  const beforePos = (_c = before.position) != null ? _c : 0;
+  const afterPos = (_d = after.position) != null ? _d : 100;
   const t = afterPos === beforePos ? 0 : (position - beforePos) / (afterPos - beforePos);
   const parseColor = (hex) => {
     const clean = hex.replace("#", "");
@@ -16457,7 +16665,7 @@ function FillStackControls({
       const firstPattern2 = nextFills.find((fill) => fill.type === "pattern");
       onChange({
         fills: nextFills,
-        backgroundColor: firstSolid2?.color,
+        backgroundColor: firstSolid2 == null ? void 0 : firstSolid2.color,
         pattern: firstPattern2
       });
       return;
@@ -16466,13 +16674,14 @@ function FillStackControls({
     const firstPattern = nextFills.find((fill) => fill.type === "pattern");
     onChange({
       fills: nextFills,
-      fillColor: firstSolid?.color,
-      fillOpacity: firstSolid?.opacity,
+      fillColor: firstSolid == null ? void 0 : firstSolid.color,
+      fillOpacity: firstSolid == null ? void 0 : firstSolid.opacity,
       pattern: firstPattern
     });
   };
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3", children: [
     fills.map((fill, index) => {
+      var _a, _b, _c;
       const nextFill = ensureFill(fill);
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -16578,7 +16787,7 @@ function FillStackControls({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               AngleDial,
               {
-                value: Math.round(nextFill.angleDeg ?? 0),
+                value: Math.round((_a = nextFill.angleDeg) != null ? _a : 0),
                 onChange: (v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v } : candidate)),
                 size: 28
               },
@@ -16591,7 +16800,7 @@ function FillStackControls({
               },
               this
             ),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round(nextFill.angleDeg ?? 0), onChange: (v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v } : candidate)), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_b = nextFill.angleDeg) != null ? _b : 0), onChange: (v) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v } : candidate)), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 8690,
               columnNumber: 19
@@ -16637,7 +16846,7 @@ function FillStackControls({
           },
           this
         )
-      ] }, nextFill.id ?? `${nextFill.type}-${index}`, true, {
+      ] }, (_c = nextFill.id) != null ? _c : `${nextFill.type}-${index}`, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
         lineNumber: 8644,
         columnNumber: 11
@@ -16671,8 +16880,10 @@ function EffectsStackControls({
   onChange,
   onOpenCurveEditor
 }) {
+  var _a;
   const effects = getElementEffects(element);
   const setEffects = (nextEffects) => {
+    var _a2;
     const normalized = nextEffects.map((effect) => ensureEffect(effect));
     const legacyShadow = normalized.find((effect) => effect.type === "dropShadow");
     onChange({
@@ -16683,7 +16894,7 @@ function EffectsStackControls({
         blur: legacyShadow.blur,
         x: legacyShadow.x,
         y: legacyShadow.y,
-        spread: legacyShadow.spread ?? 0
+        spread: (_a2 = legacyShadow.spread) != null ? _a2 : 0
       } : {
         enabled: false,
         color: "#000000",
@@ -16708,6 +16919,7 @@ function EffectsStackControls({
       columnNumber: 9
     }, this),
     effects.map((effect, index) => {
+      var _a2, _b, _c, _d, _e;
       const nextEffect = ensureEffect(effect);
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -16947,7 +17159,7 @@ function EffectsStackControls({
               NumberField,
               {
                 label: "",
-                value: nextEffect.spread ?? 0,
+                value: (_a2 = nextEffect.spread) != null ? _a2 : 0,
                 onChange: (v) => setEffects(
                   effects.map(
                     (candidate, candidateIndex) => candidateIndex === index ? { ...nextEffect, spread: v } : candidate
@@ -17085,7 +17297,7 @@ function EffectsStackControls({
               NumberField,
               {
                 label: "",
-                value: nextEffect.spread ?? 0,
+                value: (_b = nextEffect.spread) != null ? _b : 0,
                 onChange: (v) => setEffects(
                   effects.map(
                     (candidate, candidateIndex) => candidateIndex === index ? { ...nextEffect, spread: v } : candidate
@@ -17157,7 +17369,7 @@ function EffectsStackControls({
               NumberField,
               {
                 label: "",
-                value: Math.round((nextEffect.amount ?? 0.18) * 100),
+                value: Math.round(((_c = nextEffect.amount) != null ? _c : 0.18) * 100),
                 onChange: (v) => setEffects(
                   effects.map(
                     (candidate, candidateIndex) => candidateIndex === index ? { ...nextEffect, amount: Math.max(0, Math.min(1, v / 100)) } : candidate
@@ -17190,7 +17402,7 @@ function EffectsStackControls({
               NumberField,
               {
                 label: "",
-                value: nextEffect.scale ?? 24,
+                value: (_d = nextEffect.scale) != null ? _d : 24,
                 onChange: (v) => setEffects(
                   effects.map(
                     (candidate, candidateIndex) => candidateIndex === index ? { ...nextEffect, scale: Math.max(1, v) } : candidate
@@ -17218,7 +17430,7 @@ function EffectsStackControls({
           lineNumber: 9e3,
           columnNumber: 15
         }, this)
-      ] }, nextEffect.id ?? `${nextEffect.type}-${index}`, true, {
+      ] }, (_e = nextEffect.id) != null ? _e : `${nextEffect.type}-${index}`, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
         lineNumber: 8777,
         columnNumber: 11
@@ -17256,17 +17468,24 @@ function EffectsStackControls({
       lineNumber: 9050,
       columnNumber: 7
     }, this),
-    element.parametricEffects?.map((pe, index) => {
+    (_a = element.parametricEffects) == null ? void 0 : _a.map((pe, index) => {
+      var _a2, _b;
       const presetDef = EFFECT_PRESETS[pe.preset];
-      const animatableParams = (presetDef?.params ?? []).filter((p) => p.animatable && p.type === "number");
-      const staticParams = (presetDef?.params ?? []).filter((p) => !p.animatable || p.type !== "number");
+      const animatableParams = ((_a2 = presetDef == null ? void 0 : presetDef.params) != null ? _a2 : []).filter((p) => p.animatable && p.type === "number");
+      const staticParams = ((_b = presetDef == null ? void 0 : presetDef.params) != null ? _b : []).filter((p) => !p.animatable || p.type !== "number");
       const MINI_COLORS = ["#818cf8", "#34d399", "#fbbf24", "#f87171", "#c084fc", "#22d3ee"];
       const miniW = 276, miniH = 72, mPL = 6, mPR = 6, mPT = 6, mPB = 14;
       const mIW = miniW - mPL - mPR, mIH = miniH - mPT - mPB;
       const effDur = pe.duration > 0 ? pe.duration : 4e3;
       const mToX = (t) => mPL + t / effDur * mIW;
-      const mToY = (v, p) => mPT + mIH - (v - (p.min ?? 0)) / ((p.max ?? 1) - (p.min ?? 0)) * mIH;
-      const getNodes2 = (key) => (pe.keyframes ?? []).filter((kf) => kf.params && key in kf.params).map((kf) => ({ t: kf.t, value: kf.params[key] })).sort((a, b) => a.t - b.t);
+      const mToY = (v, p) => {
+        var _a3, _b2, _c;
+        return mPT + mIH - (v - ((_a3 = p.min) != null ? _a3 : 0)) / (((_b2 = p.max) != null ? _b2 : 1) - ((_c = p.min) != null ? _c : 0)) * mIH;
+      };
+      const getNodes2 = (key) => {
+        var _a3;
+        return ((_a3 = pe.keyframes) != null ? _a3 : []).filter((kf) => kf.params && key in kf.params).map((kf) => ({ t: kf.t, value: kf.params[key] })).sort((a, b) => a.t - b.t);
+      };
       const buildMiniPath = (nodes, fallback, toX, toY) => {
         const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback }, { t: effDur, value: fallback }];
         const sorted = [...pts].sort((a, b) => a.t - b.t);
@@ -17343,7 +17562,7 @@ function EffectsStackControls({
         animatableParams.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           "div",
           {
-            onClick: () => onOpenCurveEditor?.(String(index)),
+            onClick: () => onOpenCurveEditor == null ? void 0 : onOpenCurveEditor(String(index)),
             title: "Click to open curve editor",
             style: { cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", position: "relative" },
             children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: miniW, height: miniH, style: { display: "block", background: "#07070f", width: "100%" }, children: [
@@ -17386,9 +17605,10 @@ function EffectsStackControls({
                 this
               ),
               animatableParams.map((param, idx) => {
+                var _a3;
                 const color = MINI_COLORS[idx % MINI_COLORS.length];
                 const nodes = getNodes2(param.key);
-                const fallback = Number(pe.params[param.key] ?? param.default);
+                const fallback = Number((_a3 = pe.params[param.key]) != null ? _a3 : param.default);
                 const d = buildMiniPath(nodes, fallback, mToX, (v) => mToY(v, param));
                 const areaD = d + ` L ${mToX(effDur)} ${mPT + mIH} L ${mPL} ${mPT + mIH} Z`;
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
@@ -17513,122 +17733,125 @@ function EffectsStackControls({
           },
           this
         ),
-        staticParams.map((param) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none truncate`, children: param.label }, void 0, false, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9164,
-            columnNumber: 17
-          }, this),
-          param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-            "input",
-            {
-              type: "color",
-              value: String(pe.params[param.key] ?? param.default),
-              onChange: (e) => {
-                const next = element.parametricEffects.map(
-                  (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.value } } : ef
-                );
-                onChange({ parametricEffects: next });
-              },
-              className: "w-8 h-6 rounded cursor-pointer border border-[rgba(255,255,255,0.08)] bg-transparent"
-            },
-            void 0,
-            false,
-            {
+        staticParams.map((param) => {
+          var _a3, _b2, _c, _d, _e, _f, _g, _h, _i;
+          return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none truncate`, children: param.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9166,
-              columnNumber: 19
-            },
-            this
-          ) : param.type === "boolean" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-            "input",
-            {
-              type: "checkbox",
-              checked: Boolean(pe.params[param.key] ?? param.default),
-              onChange: (e) => {
-                const next = element.parametricEffects.map(
-                  (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.checked } } : ef
-                );
-                onChange({ parametricEffects: next });
-              },
-              className: "accent-indigo-500"
-            },
-            void 0,
-            false,
-            {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9175,
-              columnNumber: 19
-            },
-            this
-          ) : param.type === "select" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-            "select",
-            {
-              className: `flex-1 ${uiClasses.field} text-[11px]`,
-              value: String(pe.params[param.key] ?? param.default),
-              onChange: (e) => {
-                const next = element.parametricEffects.map(
-                  (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.value } } : ef
-                );
-                onChange({ parametricEffects: next });
-              },
-              children: (param.options ?? []).map((o) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o, children: o }, o, false, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9192,
-                columnNumber: 63
-              }, this))
-            },
-            void 0,
-            false,
-            {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9184,
-              columnNumber: 19
-            },
-            this
-          ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              lineNumber: 9164,
+              columnNumber: 17
+            }, this),
+            param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "input",
               {
-                type: "range",
-                min: param.min ?? 0,
-                max: param.max ?? 10,
-                step: param.step ?? 0.1,
-                value: Number(pe.params[param.key] ?? param.default),
+                type: "color",
+                value: String((_a3 = pe.params[param.key]) != null ? _a3 : param.default),
                 onChange: (e) => {
                   const next = element.parametricEffects.map(
-                    (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: Number(e.target.value) } } : ef
+                    (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.value } } : ef
                   );
                   onChange({ parametricEffects: next });
                 },
-                className: "flex-1 accent-indigo-500"
+                className: "w-8 h-6 rounded cursor-pointer border border-[rgba(255,255,255,0.08)] bg-transparent"
               },
               void 0,
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9196,
-                columnNumber: 21
+                lineNumber: 9166,
+                columnNumber: 19
               },
               this
-            ),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `${uiClasses.fieldLabel} w-8 text-right tabular-nums`, children: Number(pe.params[param.key] ?? param.default).toFixed(
-              param.step && param.step < 1 ? 1 : 0
-            ) }, void 0, false, {
+            ) : param.type === "boolean" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "input",
+              {
+                type: "checkbox",
+                checked: Boolean((_b2 = pe.params[param.key]) != null ? _b2 : param.default),
+                onChange: (e) => {
+                  const next = element.parametricEffects.map(
+                    (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.checked } } : ef
+                  );
+                  onChange({ parametricEffects: next });
+                },
+                className: "accent-indigo-500"
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 9175,
+                columnNumber: 19
+              },
+              this
+            ) : param.type === "select" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "select",
+              {
+                className: `flex-1 ${uiClasses.field} text-[11px]`,
+                value: String((_c = pe.params[param.key]) != null ? _c : param.default),
+                onChange: (e) => {
+                  const next = element.parametricEffects.map(
+                    (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: e.target.value } } : ef
+                  );
+                  onChange({ parametricEffects: next });
+                },
+                children: ((_d = param.options) != null ? _d : []).map((o) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o, children: o }, o, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 9192,
+                  columnNumber: 63
+                }, this))
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 9184,
+                columnNumber: 19
+              },
+              this
+            ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                "input",
+                {
+                  type: "range",
+                  min: (_e = param.min) != null ? _e : 0,
+                  max: (_f = param.max) != null ? _f : 10,
+                  step: (_g = param.step) != null ? _g : 0.1,
+                  value: Number((_h = pe.params[param.key]) != null ? _h : param.default),
+                  onChange: (e) => {
+                    const next = element.parametricEffects.map(
+                      (ef, i) => i === index ? { ...ef, params: { ...ef.params, [param.key]: Number(e.target.value) } } : ef
+                    );
+                    onChange({ parametricEffects: next });
+                  },
+                  className: "flex-1 accent-indigo-500"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 9196,
+                  columnNumber: 21
+                },
+                this
+              ),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `${uiClasses.fieldLabel} w-8 text-right tabular-nums`, children: Number((_i = pe.params[param.key]) != null ? _i : param.default).toFixed(
+                param.step && param.step < 1 ? 1 : 0
+              ) }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 9206,
+                columnNumber: 21
+              }, this)
+            ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9206,
-              columnNumber: 21
+              lineNumber: 9195,
+              columnNumber: 19
             }, this)
-          ] }, void 0, true, {
+          ] }, param.key, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9195,
-            columnNumber: 19
-          }, this)
-        ] }, param.key, true, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9163,
-          columnNumber: 15
-        }, this)),
+            lineNumber: 9163,
+            columnNumber: 15
+          }, this);
+        }),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "pt-2 border-t border-[rgba(255,255,255,0.06)] space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider", children: "Dynamic Bindings" }, void 0, false, {
@@ -17647,7 +17870,8 @@ function EffectsStackControls({
             columnNumber: 15
           }, this),
           presetDef.params.filter((p) => p.type === "number").map((param) => {
-            const binding = pe.bindings?.[param.key];
+            var _a3, _b2, _c, _d;
+            const binding = (_a3 = pe.bindings) == null ? void 0 : _a3[param.key];
             const isBound = !!binding;
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "bg-slate-900/40 rounded border border-[rgba(255,255,255,0.04)] p-2 space-y-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
@@ -17673,6 +17897,7 @@ function EffectsStackControls({
                     type: "button",
                     onClick: () => {
                       const next = element.parametricEffects.map((ef, i) => {
+                        var _a4, _b3;
                         if (i === index) {
                           const bindings = { ...ef.bindings || {} };
                           if (isBound) {
@@ -17683,8 +17908,8 @@ function EffectsStackControls({
                               fieldId: "mpm",
                               inputMin: 0,
                               inputMax: 100,
-                              targetMin: param.min ?? 0,
-                              targetMax: param.max ?? 10
+                              targetMin: (_a4 = param.min) != null ? _a4 : 0,
+                              targetMax: (_b3 = param.max) != null ? _b3 : 10
                             };
                           }
                           return { ...ef, bindings };
@@ -17727,9 +17952,10 @@ function EffectsStackControls({
                       {
                         value: binding.sourceId,
                         onChange: (e) => {
+                          var _a4;
                           const sourceId = e.target.value;
                           const src = SourceCatalog.find((s) => s.id === sourceId);
-                          const firstFieldId = src?.fields.filter((f) => f.type === "number")[0]?.id || "";
+                          const firstFieldId = ((_a4 = src == null ? void 0 : src.fields.filter((f) => f.type === "number")[0]) == null ? void 0 : _a4.id) || "";
                           const next = element.parametricEffects.map((ef, i) => {
                             if (i === index) {
                               const bindings = { ...ef.bindings || {} };
@@ -17791,7 +18017,7 @@ function EffectsStackControls({
                           onChange({ parametricEffects: next });
                         },
                         className: `w-full ${uiClasses.field} text-[10px] px-1 py-0.5`,
-                        children: (SourceCatalog.find((s) => s.id === binding.sourceId)?.fields.filter((f) => f.type === "number") || []).map((f) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: f.id, children: f.label }, f.id, false, {
+                        children: (((_b2 = SourceCatalog.find((s) => s.id === binding.sourceId)) == null ? void 0 : _b2.fields.filter((f) => f.type === "number")) || []).map((f) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: f.id, children: f.label }, f.id, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                           lineNumber: 9326,
                           columnNumber: 33
@@ -17914,7 +18140,7 @@ function EffectsStackControls({
                         "input",
                         {
                           type: "number",
-                          step: param.step ?? 0.1,
+                          step: (_c = param.step) != null ? _c : 0.1,
                           placeholder: "Min",
                           value: binding.targetMin,
                           onChange: (e) => {
@@ -17952,7 +18178,7 @@ function EffectsStackControls({
                         "input",
                         {
                           type: "number",
-                          step: param.step ?? 0.1,
+                          step: (_d = param.step) != null ? _d : 0.1,
                           placeholder: "Max",
                           value: binding.targetMax,
                           onChange: (e) => {
@@ -18024,13 +18250,14 @@ function EffectsStackControls({
         type: "button",
         className: `${uiClasses.buttonGhost} h-8 w-full`,
         onClick: () => {
+          var _a2;
           const firstPreset = Object.keys(EFFECT_PRESETS)[0];
           const def = EFFECT_PRESETS[firstPreset];
           const defaultParams = {};
           def.params.forEach((p) => {
             defaultParams[p.key] = p.default;
           });
-          const existing = element.parametricEffects ?? [];
+          const existing = (_a2 = element.parametricEffects) != null ? _a2 : [];
           onChange({ parametricEffects: [...existing, { preset: firstPreset, params: defaultParams, enabled: true, id: `pe-${Date.now()}` }] });
         },
         children: "Add Filter / Effect"
@@ -18091,28 +18318,29 @@ const CanvasElement = React.memo(function CanvasElement2({
   setSelectedIds,
   onInlineEdit
 }) {
-  const x = draftRect?.x ?? el.x;
-  const y = draftRect?.y ?? el.y;
-  const w = draftRect?.width ?? el.width;
-  const h = draftRect?.height ?? el.height;
-  const rotationDeg = draftRotationDeg ?? Number(el.rotationDeg ?? 0);
+  var _a, _b, _c, _d, _e, _f;
+  const x = (_a = draftRect == null ? void 0 : draftRect.x) != null ? _a : el.x;
+  const y = (_b = draftRect == null ? void 0 : draftRect.y) != null ? _b : el.y;
+  const w = (_c = draftRect == null ? void 0 : draftRect.width) != null ? _c : el.width;
+  const h = (_d = draftRect == null ? void 0 : draftRect.height) != null ? _d : el.height;
+  const rotationDeg = draftRotationDeg != null ? draftRotationDeg : Number((_e = el.rotationDeg) != null ? _e : 0);
   const renderedEl = reactExports.useMemo(() => ({
     ...el,
-    ...draftRect ?? {},
+    ...draftRect != null ? draftRect : {},
     ...draftRotationDeg !== void 0 ? { rotationDeg: draftRotationDeg } : {},
     ...draftRadius !== void 0 ? getRadiusPatch(el, draftRadius) : {},
-    ...draftPatch ?? {}
+    ...draftPatch != null ? draftPatch : {}
   }), [el, draftRect, draftRotationDeg, draftRadius, draftPatch]);
   const editablePath = renderedEl.type === "path" ? elementToOverlayPath(renderedEl) : null;
   const pathAnchors = editablePath ? getPathAnchors(editablePath) : [];
   const pathHandles = editablePath ? getPathHandles(editablePath) : [];
   const radiusValue = clamp(
-    draftRadius ?? getElementRadiusValue(renderedEl),
+    draftRadius != null ? draftRadius : getElementRadiusValue(renderedEl),
     0,
-    Math.min(Math.max(1, w ?? 1), Math.max(1, h ?? 1)) / 2
+    Math.min(Math.max(1, w != null ? w : 1), Math.max(1, h != null ? h : 1)) / 2
   );
   const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marqueeActive;
-  const forcePlainWrapper = (renderedEl.type === "image" || renderedEl.type === "video") && (renderedEl.blendMode ?? "normal") !== "normal";
+  const forcePlainWrapper = (renderedEl.type === "image" || renderedEl.type === "video") && ((_f = renderedEl.blendMode) != null ? _f : "normal") !== "normal";
   const selectionStyle = isPrimary ? {} : isSelected ? { boxShadow: `0 0 0 1px ${ACCENT_TINT_SOFT}` } : {};
   const renderedElNoTransform = reactExports.useMemo(() => ({
     ...renderedEl,
@@ -18190,13 +18418,13 @@ const CanvasElement = React.memo(function CanvasElement2({
             ),
             [
               ["nw", 0, 0],
-              ["n", (w ?? 0) / 2, 0],
-              ["ne", w ?? 0, 0],
-              ["e", w ?? 0, (h ?? 0) / 2],
-              ["se", w ?? 0, h ?? 0],
-              ["s", (w ?? 0) / 2, h ?? 0],
-              ["sw", 0, h ?? 0],
-              ["w", 0, (h ?? 0) / 2]
+              ["n", (w != null ? w : 0) / 2, 0],
+              ["ne", w != null ? w : 0, 0],
+              ["e", w != null ? w : 0, (h != null ? h : 0) / 2],
+              ["se", w != null ? w : 0, h != null ? h : 0],
+              ["s", (w != null ? w : 0) / 2, h != null ? h : 0],
+              ["sw", 0, h != null ? h : 0],
+              ["w", 0, (h != null ? h : 0) / 2]
             ].map(([handle, left, top]) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "button",
               {
@@ -18206,7 +18434,7 @@ const CanvasElement = React.memo(function CanvasElement2({
                 onMouseDown: (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onResizeStart(e, handle, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg);
+                  onResizeStart(e, handle, el.id, x != null ? x : 0, y != null ? y : 0, w != null ? w : 0, h != null ? h : 0, rotationDeg);
                 },
                 "aria-label": `Resize ${handle}`
               },
@@ -18219,7 +18447,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               },
               this
             )),
-            renderedEl.type === "path" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "absolute inset-0 overflow-visible pointer-events-none", children: pathHandles.filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex).map((handle) => {
+            renderedEl.type === "path" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "absolute inset-0 overflow-visible pointer-events-none", children: pathHandles.filter((handle) => (selectedPathAnchor == null ? void 0 : selectedPathAnchor.elementId) === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex).map((handle) => {
               const anchor = pathAnchors.find((a) => a.commandIndex === handle.anchorCommandIndex);
               if (!anchor) return null;
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -18246,7 +18474,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               lineNumber: 9677,
               columnNumber: 13
             }, this),
-            renderedEl.type === "path" && pathHandles.filter((handle) => selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex).map((handle) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+            renderedEl.type === "path" && pathHandles.filter((handle) => (selectedPathAnchor == null ? void 0 : selectedPathAnchor.elementId) === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex).map((handle) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "button",
               {
                 type: "button",
@@ -18277,7 +18505,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               "button",
               {
                 type: "button",
-                className: `absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${selectedPathAnchor?.elementId === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex ? "border-indigo-100 bg-indigo-300" : "border-white bg-[#111113]"}`,
+                className: `absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_0_0_1px_rgba(15,23,42,0.85)] ${(selectedPathAnchor == null ? void 0 : selectedPathAnchor.elementId) === el.id && selectedPathAnchor.commandIndex === anchor.commandIndex ? "border-indigo-100 bg-indigo-300" : "border-white bg-[#111113]"}`,
                 style: { left: anchor.x, top: anchor.y, cursor: "grab", pointerEvents: "auto" },
                 onMouseDown: (e) => {
                   e.preventDefault();
@@ -18308,7 +18536,7 @@ const CanvasElement = React.memo(function CanvasElement2({
                 type: "button",
                 className: "absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white bg-[#111113] shadow-[0_0_0_1px_rgba(79,70,229,0.7)]",
                 style: {
-                  left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w ?? 0) / 2)),
+                  left: clamp(Math.max(radiusValue, 12), 12, Math.max(12, (w != null ? w : 0) / 2)),
                   top: 0,
                   cursor: "grab",
                   pointerEvents: "auto"
@@ -18316,7 +18544,7 @@ const CanvasElement = React.memo(function CanvasElement2({
                 onMouseDown: (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onRadiusStart(e, el.id, x ?? 0, y ?? 0, w ?? 0, h ?? 0, rotationDeg, radiusValue);
+                  onRadiusStart(e, el.id, x != null ? x : 0, y != null ? y : 0, w != null ? w : 0, h != null ? h : 0, rotationDeg, radiusValue);
                 },
                 "aria-label": "Adjust corner radius"
               },
@@ -18343,8 +18571,8 @@ const CanvasElement = React.memo(function CanvasElement2({
                 onMouseDown: (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  const centerX = (x ?? 0) + (w ?? 0) / 2;
-                  const centerY = (y ?? 0) + (h ?? 0) / 2;
+                  const centerX = (x != null ? x : 0) + (w != null ? w : 0) / 2;
+                  const centerY = (y != null ? y : 0) + (h != null ? h : 0) / 2;
                   onRotateStart(e, el.id, centerX, centerY);
                 },
                 title: "Rotate (snaps to 15deg, hold Alt for free rotate)"
@@ -18395,6 +18623,7 @@ const CanvasElement = React.memo(function CanvasElement2({
           }
         },
         onMouseDown: (e) => {
+          var _a2, _b2;
           if (spaceDown || e.button === 1) return;
           if (marqueeActive || isLocked) return;
           if (e.ctrlKey || e.metaKey) {
@@ -18411,7 +18640,7 @@ const CanvasElement = React.memo(function CanvasElement2({
           }
           e.preventDefault();
           e.stopPropagation();
-          dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+          dragStartRef.current[el.id] = { x: (_a2 = el.x) != null ? _a2 : 0, y: (_b2 = el.y) != null ? _b2 : 0 };
           if (e.altKey === true) {
             dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
           } else {
@@ -18448,7 +18677,8 @@ const CanvasElement = React.memo(function CanvasElement2({
       disableDragging: isLocked || isPanning || marqueeActive,
       enableResizing: false,
       onDragStart: (e) => {
-        dragStartRef.current[el.id] = { x: el.x ?? 0, y: el.y ?? 0 };
+        var _a2, _b2;
+        dragStartRef.current[el.id] = { x: (_a2 = el.x) != null ? _a2 : 0, y: (_b2 = el.y) != null ? _b2 : 0 };
         if (e.altKey === true) {
           dragDuplicateRef.current = { sourceId: el.id, duplicateId: createDragDuplicate(el) };
         } else {
@@ -18457,9 +18687,10 @@ const CanvasElement = React.memo(function CanvasElement2({
       },
       onDrag: (e, d) => onDragLive(el.id, d.x, d.y, { shiftKey: e.shiftKey === true }),
       onDragStop: (e, d) => {
+        var _a2, _b2;
         onDragStop(e, d, el.id);
-        const duplicateRequested = dragDuplicateRef.current?.sourceId === el.id;
-        const duplicateId = dragDuplicateRef.current?.duplicateId;
+        const duplicateRequested = ((_a2 = dragDuplicateRef.current) == null ? void 0 : _a2.sourceId) === el.id;
+        const duplicateId = (_b2 = dragDuplicateRef.current) == null ? void 0 : _b2.duplicateId;
         dragDuplicateRef.current = null;
         delete dragStartRef.current[el.id];
         if (duplicateRequested && duplicateId) {
@@ -18826,12 +19057,13 @@ function InspectorPanel({
   onPreviewVisibilityAction,
   timelineState
 }) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia, _Ja, _Ka, _La, _Ma, _Na, _Oa, _Pa, _Qa, _Ra, _Sa, _Ta, _Ua, _Va, _Wa, _Xa, _Ya, _Za, __a, _$a, _ab, _bb, _cb, _db, _eb, _fb, _gb, _hb, _ib, _jb, _kb, _lb, _mb, _nb, _ob, _pb, _qb, _rb, _sb, _tb, _ub, _vb, _wb, _xb, _yb, _zb, _Ab, _Bb, _Cb, _Db, _Eb, _Fb, _Gb, _Hb, _Ib, _Jb, _Kb, _Lb, _Mb, _Nb, _Ob, _Pb, _Qb, _Rb, _Sb, _Tb;
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
   const fieldClass = uiClasses.field;
   const fieldLabelClass = uiClasses.fieldLabel;
   const resolvedGeometry = element.type === "path" || element.type === "boolean" || element.type === "shape" || element.type === "box" ? resolveElementGeometry(element) : null;
-  const pathCommandCount = element.type === "path" ? element.path?.commands?.length ?? 0 : element.type === "boolean" ? resolvedGeometry?.path.commands.length ?? 0 : null;
+  const pathCommandCount = element.type === "path" ? (_c = (_b = (_a = element.path) == null ? void 0 : _a.commands) == null ? void 0 : _b.length) != null ? _c : 0 : element.type === "boolean" ? (_d = resolvedGeometry == null ? void 0 : resolvedGeometry.path.commands.length) != null ? _d : 0 : null;
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `block ${uiClasses.label}`, children: "Layer" }, void 0, false, {
@@ -18845,7 +19077,7 @@ function InspectorPanel({
           {
             type: "text",
             className: `flex-1 ${fieldClass}`,
-            value: element.name ?? "",
+            value: (_e = element.name) != null ? _e : "",
             placeholder: defaultElementLabel(element),
             onChange: (e) => onRename(e.target.value)
           },
@@ -18913,7 +19145,7 @@ function InspectorPanel({
         lineNumber: 10146,
         columnNumber: 9
       }, this),
-      timelineState?.hasAnimatedProperties && element.type !== "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
+      (timelineState == null ? void 0 : timelineState.hasAnimatedProperties) && element.type !== "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: [
           "Editing animated state at ",
           formatTimelineTime(timelineState.playheadMs)
@@ -18954,7 +19186,7 @@ function InspectorPanel({
           lineNumber: 10189,
           columnNumber: 13
         }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: element.type === "path" ? `This layer renders from ${pathCommandCount ?? 0} local path commands.` : `This container resolves ${element.childIds?.length ?? 0} child shapes into one cached path.` }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: element.type === "path" ? `This layer renders from ${pathCommandCount != null ? pathCommandCount : 0} local path commands.` : `This container resolves ${(_g = (_f = element.childIds) == null ? void 0 : _f.length) != null ? _g : 0} child shapes into one cached path.` }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 10192,
           columnNumber: 13
@@ -18963,7 +19195,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onFlattenBoolean?.(),
+              onClick: () => onFlattenBoolean == null ? void 0 : onFlattenBoolean(),
               className: `${uiClasses.buttonGhost} h-7`,
               children: "Flatten to Path"
             },
@@ -18979,7 +19211,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onReleaseBoolean?.(),
+              onClick: () => onReleaseBoolean == null ? void 0 : onReleaseBoolean(),
               className: `${uiClasses.buttonGhost} h-7`,
               children: "Release Boolean"
             },
@@ -19001,7 +19233,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onAddPathNode?.(),
+              onClick: () => onAddPathNode == null ? void 0 : onAddPathNode(),
               className: `${uiClasses.buttonGhost} h-7`,
               children: "Add Point"
             },
@@ -19017,7 +19249,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onRemovePathNode?.(),
+              onClick: () => onRemovePathNode == null ? void 0 : onRemovePathNode(),
               disabled: selectedPathAnchor == null,
               className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`,
               children: "Remove Point"
@@ -19034,7 +19266,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onSplitPath?.(),
+              onClick: () => onSplitPath == null ? void 0 : onSplitPath(),
               disabled: selectedPathAnchor == null,
               className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`,
               children: "Split Path"
@@ -19051,7 +19283,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onContinuePath?.(),
+              onClick: () => onContinuePath == null ? void 0 : onContinuePath(),
               disabled: !canContinuePath,
               className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`,
               children: "Continue Path"
@@ -19068,7 +19300,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onExpandStroke?.(),
+              onClick: () => onExpandStroke == null ? void 0 : onExpandStroke(),
               className: `${uiClasses.buttonGhost} h-7`,
               children: "Expand Stroke"
             },
@@ -19084,7 +19316,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onJoinPaths?.(),
+              onClick: () => onJoinPaths == null ? void 0 : onJoinPaths(),
               disabled: !canJoinPaths,
               className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`,
               children: "Join Selected"
@@ -19127,7 +19359,7 @@ function InspectorPanel({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 flex flex-wrap gap-2", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           "button",
           {
-            onClick: () => onConvertToPath?.(),
+            onClick: () => onConvertToPath == null ? void 0 : onConvertToPath(),
             className: `${uiClasses.buttonGhost} h-7`,
             children: "Convert to Path"
           },
@@ -19157,7 +19389,7 @@ function InspectorPanel({
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Transform", defaultOpen: true, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "X", timelineState: timelineState?.properties.x }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "X", timelineState: timelineState == null ? void 0 : timelineState.properties.x }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10285,
             columnNumber: 59
@@ -19166,7 +19398,7 @@ function InspectorPanel({
             lineNumber: 10285,
             columnNumber: 15
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.x ?? 0, onChange: (v) => onChange({ x: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_h = element.x) != null ? _h : 0, onChange: (v) => onChange({ x: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10286,
             columnNumber: 15
@@ -19177,7 +19409,7 @@ function InspectorPanel({
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Y", timelineState: timelineState?.properties.y }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Y", timelineState: timelineState == null ? void 0 : timelineState.properties.y }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10289,
             columnNumber: 59
@@ -19186,7 +19418,7 @@ function InspectorPanel({
             lineNumber: 10289,
             columnNumber: 15
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.y ?? 0, onChange: (v) => onChange({ y: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_i = element.y) != null ? _i : 0, onChange: (v) => onChange({ y: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10290,
             columnNumber: 15
@@ -19203,7 +19435,7 @@ function InspectorPanel({
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "W", timelineState: timelineState?.properties.width }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "W", timelineState: timelineState == null ? void 0 : timelineState.properties.width }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10295,
             columnNumber: 59
@@ -19212,7 +19444,7 @@ function InspectorPanel({
             lineNumber: 10295,
             columnNumber: 15
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.width ?? 0, onChange: (v) => onChange({ width: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_j = element.width) != null ? _j : 0, onChange: (v) => onChange({ width: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10296,
             columnNumber: 15
@@ -19223,7 +19455,7 @@ function InspectorPanel({
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "H", timelineState: timelineState?.properties.height }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "H", timelineState: timelineState == null ? void 0 : timelineState.properties.height }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10299,
             columnNumber: 59
@@ -19232,7 +19464,7 @@ function InspectorPanel({
             lineNumber: 10299,
             columnNumber: 15
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.height ?? 0, onChange: (v) => onChange({ height: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_k = element.height) != null ? _k : 0, onChange: (v) => onChange({ height: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10300,
             columnNumber: 15
@@ -19249,7 +19481,7 @@ function InspectorPanel({
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SX", timelineState: timelineState?.properties.scaleX }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SX", timelineState: timelineState == null ? void 0 : timelineState.properties.scaleX }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10305,
             columnNumber: 59
@@ -19269,7 +19501,7 @@ function InspectorPanel({
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SY", timelineState: timelineState?.properties.scaleY }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SY", timelineState: timelineState == null ? void 0 : timelineState.properties.scaleY }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10309,
             columnNumber: 59
@@ -19294,7 +19526,7 @@ function InspectorPanel({
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1", children: [
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Rotation", timelineState: timelineState?.properties.rotationDeg }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Rotation", timelineState: timelineState == null ? void 0 : timelineState.properties.rotationDeg }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 10315,
           columnNumber: 68
@@ -19307,7 +19539,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             AngleDial,
             {
-              value: element.rotationDeg ?? 0,
+              value: (_l = element.rotationDeg) != null ? _l : 0,
               onChange: (v) => onChange({ rotationDeg: v }),
               size: 32
             },
@@ -19327,7 +19559,7 @@ function InspectorPanel({
               min: "-180",
               max: "180",
               className: "h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400",
-              value: element.rotationDeg ?? 0,
+              value: (_m = element.rotationDeg) != null ? _m : 0,
               onChange: (e) => onChange({ rotationDeg: snapRotationValue(Number(e.target.value), altDown) })
             },
             void 0,
@@ -19339,7 +19571,7 @@ function InspectorPanel({
             },
             this
           ),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-12", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.rotationDeg ?? 0, onChange: (v) => onChange({ rotationDeg: snapRotationValue(v, altDown) }), noLabel: true }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-12", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_n = element.rotationDeg) != null ? _n : 0, onChange: (v) => onChange({ rotationDeg: snapRotationValue(v, altDown) }), noLabel: true }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10329,
             columnNumber: 17
@@ -19370,7 +19602,8 @@ function InspectorPanel({
           { label: "Skew X", key: "skewX", min: -45, max: 45 },
           { label: "Skew Y", key: "skewY", min: -45, max: 45 }
         ].map(({ label, key, min, max }) => {
-          const val = element[key] ?? 0;
+          var _a2;
+          const val = (_a2 = element[key]) != null ? _a2 : 0;
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12 flex-none`, children: label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -19425,7 +19658,7 @@ function InspectorPanel({
               max: 2e3,
               step: 50,
               className: "flex-1 h-1 accent-indigo-500",
-              value: element.perspective ?? 800,
+              value: (_o = element.perspective) != null ? _o : 800,
               onChange: (e) => onChange({ perspective: Number(e.target.value) })
             },
             void 0,
@@ -19438,7 +19671,7 @@ function InspectorPanel({
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-12 text-right text-[11px] text-slate-400", children: [
-            element.perspective ?? 800,
+            (_p = element.perspective) != null ? _p : 800,
             "px"
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -19471,8 +19704,9 @@ function InspectorPanel({
         columnNumber: 13
       }, this),
       ["horizontal", "vertical"].map((axis) => {
+        var _a2, _b2;
         const options = axis === "horizontal" ? [{ value: "start", label: "Left" }, { value: "end", label: "Right" }, { value: "center", label: "Center" }, { value: "stretch", label: "Left & Right" }, { value: "scale", label: "Scale" }] : [{ value: "start", label: "Top" }, { value: "end", label: "Bottom" }, { value: "center", label: "Center" }, { value: "stretch", label: "Top & Bottom" }, { value: "scale", label: "Scale" }];
-        const current = element.constraints?.[axis] ?? "start";
+        const current = (_b2 = (_a2 = element.constraints) == null ? void 0 : _a2[axis]) != null ? _b2 : "start";
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-16 flex-none capitalize`, children: axis }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -19517,7 +19751,7 @@ function InspectorPanel({
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Appearance", defaultOpen: true, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-4", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Opacity", timelineState: timelineState?.properties.opacity }, void 0, false, {
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Opacity", timelineState: timelineState == null ? void 0 : timelineState.properties.opacity }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 10404,
           columnNumber: 68
@@ -19596,7 +19830,7 @@ function InspectorPanel({
           lineNumber: 10429,
           columnNumber: 15
         }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: element.blendMode ?? "normal", onChange: (e) => onChange({ blendMode: e.target.value }), children: [
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: (_q = element.blendMode) != null ? _q : "normal", onChange: (e) => onChange({ blendMode: e.target.value }), children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 10431,
@@ -19663,10 +19897,11 @@ function InspectorPanel({
         columnNumber: 11
       }, this),
       element.type === "widget" && (() => {
+        var _a2;
         const widgetId = element.widgetId;
         const widgetDef = getWidgetDef(widgetId);
-        const manifest = widgetDef?.widgetManifest;
-        const schema = manifest?.configSchema || [];
+        const manifest = widgetDef == null ? void 0 : widgetDef.widgetManifest;
+        const schema = (manifest == null ? void 0 : manifest.configSchema) || [];
         const overrides = element.propOverrides || {};
         const EDITOR_WIDGET_SCRIPTS = {
           "chat-overlay": "/widgets/chat-overlay.js",
@@ -19732,8 +19967,9 @@ function InspectorPanel({
             columnNumber: 21
           }, this),
           schema.map((field) => {
+            var _a3;
             if (field.showWhen) {
-              const condVal = overrides[field.showWhen.key] !== void 0 ? overrides[field.showWhen.key] : schema.find((f) => f.key === field.showWhen.key)?.default;
+              const condVal = overrides[field.showWhen.key] !== void 0 ? overrides[field.showWhen.key] : (_a3 = schema.find((f) => f.key === field.showWhen.key)) == null ? void 0 : _a3.default;
               if (condVal !== field.showWhen.value) return null;
             }
             const val = overrides[field.key] !== void 0 ? overrides[field.key] : field.default;
@@ -19782,6 +20018,7 @@ function InspectorPanel({
                   columnNumber: 29
                 }, this),
                 ALERT_EVENTS.map(({ key: evKey, label: evLabel, color: evDefaultColor }) => {
+                  var _a4, _b2;
                   const ec = { ...EVENT_DEFAULTS[evKey] || {}, ...alertTypes[evKey] || {} };
                   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "flex items-center gap-2", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full flex-shrink-0", style: { background: ec.color || evDefaultColor } }, void 0, false, {
@@ -19976,7 +20213,7 @@ function InspectorPanel({
                           lineNumber: 10619,
                           columnNumber: 41
                         }, this),
-                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "range", min: "0", max: "1", step: "0.1", className: "flex-1 h-1 accent-indigo-500", value: ec.soundVol ?? 0.8, onChange: (e) => updateEvent(evKey, { soundVol: parseFloat(e.target.value) }) }, void 0, false, {
+                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "range", min: "0", max: "1", step: "0.1", className: "flex-1 h-1 accent-indigo-500", value: (_a4 = ec.soundVol) != null ? _a4 : 0.8, onChange: (e) => updateEvent(evKey, { soundVol: parseFloat(e.target.value) }) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                           lineNumber: 10620,
                           columnNumber: 41
@@ -20006,7 +20243,8 @@ function InspectorPanel({
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
                           ec.soundUrl ? "Change" : "Upload audio",
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "file", accept: "audio/*", className: "hidden", onChange: async (e) => {
-                            const file = e.target.files?.[0];
+                            var _a5;
+                            const file = (_a5 = e.target.files) == null ? void 0 : _a5[0];
                             if (!file) return;
                             const fd = new FormData();
                             fd.append("file", file);
@@ -20061,7 +20299,8 @@ function InspectorPanel({
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
                           ec.image ? "Change" : "Upload image / GIF",
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "file", accept: "image/*,image/gif", className: "hidden", onChange: async (e) => {
-                            const file = e.target.files?.[0];
+                            var _a5;
+                            const file = (_a5 = e.target.files) == null ? void 0 : _a5[0];
                             if (!file) return;
                             const fd = new FormData();
                             fd.append("file", file);
@@ -20116,7 +20355,8 @@ function InspectorPanel({
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
                           ec.soundUrl ? "Replace" : "Upload MP3/WAV",
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "file", accept: "audio/*", className: "hidden", onChange: async (e) => {
-                            const file = e.target.files?.[0];
+                            var _a5;
+                            const file = (_a5 = e.target.files) == null ? void 0 : _a5[0];
                             if (!file) return;
                             const fd = new FormData();
                             fd.append("file", file);
@@ -20160,7 +20400,7 @@ function InspectorPanel({
                         lineNumber: 10697,
                         columnNumber: 41
                       }, this),
-                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "number", className: `flex-1 ${fieldClass} text-[11px]`, value: ec.minAmount ?? 0, min: 0, step: 1, onChange: (e) => updateEvent(evKey, { minAmount: Number(e.target.value) }) }, void 0, false, {
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "number", className: `flex-1 ${fieldClass} text-[11px]`, value: (_b2 = ec.minAmount) != null ? _b2 : 0, min: 0, step: 1, onChange: (e) => updateEvent(evKey, { minAmount: Number(e.target.value) }) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                         lineNumber: 10698,
                         columnNumber: 41
@@ -20186,12 +20426,13 @@ function InspectorPanel({
                       "button",
                       {
                         onClick: async () => {
+                          var _a5;
                           const fn = window.__alertBoxTestFire;
                           if (typeof fn === "function") {
                             fn(evKey);
                             return;
                           }
-                          propOverrides?.alertTypes?.[evKey] || {};
+                          ((_a5 = propOverrides == null ? void 0 : propOverrides.alertTypes) == null ? void 0 : _a5[evKey]) || {};
                           await fetch("/dashboard/api/widget-test-fire", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -20350,7 +20591,7 @@ function InspectorPanel({
               columnNumber: 25
             }, this);
           }),
-          manifest.dataContract?.sseEventType && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-emerald-500/70 px-1 pt-1", children: [
+          ((_a2 = manifest.dataContract) == null ? void 0 : _a2.sseEventType) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-emerald-500/70 px-1 pt-1", children: [
             "● Live: ",
             manifest.dataContract.sseEventType
           ] }, void 0, true, {
@@ -20388,7 +20629,7 @@ function InspectorPanel({
                   {
                     onClick: () => {
                       const textEl = document.getElementById(`test-fire-text-${widgetId}`);
-                      const text = textEl?.value || "Test message!";
+                      const text = (textEl == null ? void 0 : textEl.value) || "Test message!";
                       const fn = window.__chatOverlayTest;
                       if (typeof fn === "function") {
                         fn("TestUser", text, platform);
@@ -20612,7 +20853,7 @@ function InspectorPanel({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "pt-2", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           "button",
           {
-            onClick: () => onEditMaster?.(element.componentId),
+            onClick: () => onEditMaster == null ? void 0 : onEditMaster(element.componentId),
             className: "flex h-8 w-full items-center justify-center gap-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] font-semibold text-slate-200 transition-colors hover:border-indigo-500 hover:bg-[#1d1d20]",
             children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
@@ -20651,7 +20892,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onDetachInstance?.(),
+              onClick: () => onDetachInstance == null ? void 0 : onDetachInstance(),
               className: uiClasses.buttonGhost,
               children: "Detach Instance"
             },
@@ -20667,7 +20908,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "button",
             {
-              onClick: () => onCreateVariant?.(element.componentId),
+              onClick: () => onCreateVariant == null ? void 0 : onCreateVariant(element.componentId),
               className: uiClasses.buttonGhost,
               children: "Create Variant"
             },
@@ -20686,8 +20927,9 @@ function InspectorPanel({
           columnNumber: 15
         }, this),
         (() => {
-          const comp = overlayComponents?.find((c) => c.id === element.componentId);
-          if (!comp?.variants?.length) return null;
+          var _a2, _b2;
+          const comp = overlayComponents == null ? void 0 : overlayComponents.find((c) => c.id === element.componentId);
+          if (!((_a2 = comp == null ? void 0 : comp.variants) == null ? void 0 : _a2.length)) return null;
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-16 flex-none`, children: "Variant" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -20698,7 +20940,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.activeVariantId ?? "",
+                value: (_b2 = element.activeVariantId) != null ? _b2 : "",
                 onChange: (e) => onChange({ activeVariantId: e.target.value || void 0 }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "Default" }, void 0, false, {
@@ -20744,7 +20986,7 @@ function InspectorPanel({
             "input",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.name ?? "",
+              value: (_r = element.name) != null ? _r : "",
               placeholder: "e.g. interview, raid, sponsor",
               onChange: (e) => onChange({ name: e.target.value })
             },
@@ -20801,7 +21043,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.layout?.mode ?? "stacked",
+                value: (_t = (_s = element.layout) == null ? void 0 : _s.mode) != null ? _t : "stacked",
                 onChange: (e) => onChange({ layout: { ...element.layout, mode: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "stacked", children: "Stacked" }, void 0, false, {
@@ -20835,7 +21077,7 @@ function InspectorPanel({
             lineNumber: 10980,
             columnNumber: 17
           }, this),
-          element.layout?.mode === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          ((_u = element.layout) == null ? void 0 : _u.mode) === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12`, children: "Ratio" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 10994,
@@ -20849,7 +21091,7 @@ function InspectorPanel({
                 max: "0.8",
                 step: "0.05",
                 className: "h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400",
-                value: element.layout?.splitRatio ?? 0.6,
+                value: (_w = (_v = element.layout) == null ? void 0 : _v.splitRatio) != null ? _w : 0.6,
                 onChange: (e) => onChange({ layout: { ...element.layout, splitRatio: parseFloat(e.target.value) } })
               },
               void 0,
@@ -20866,7 +21108,7 @@ function InspectorPanel({
             lineNumber: 10993,
             columnNumber: 19
           }, this),
-          (element.layout?.mode ?? "stacked") === "stacked" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-3 space-y-2", children: [
+          ((_y = (_x = element.layout) == null ? void 0 : _x.mode) != null ? _y : "stacked") === "stacked" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-3 space-y-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[11px] text-slate-400 font-semibold uppercase tracking-wider", children: "Content Lines" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -20879,13 +21121,14 @@ function InspectorPanel({
                   type: "button",
                   className: "text-[11px] text-indigo-400 hover:text-indigo-300",
                   onClick: () => {
-                    const lines = element.contentLines ?? [];
+                    var _a2, _b2, _c2;
+                    const lines = (_a2 = element.contentLines) != null ? _a2 : [];
                     const idx = lines.length + 3;
                     onChange({ contentLines: [...lines, {
                       key: `lower_third.line${idx}`,
                       label: `Line ${idx}`,
                       sizePx: 20,
-                      color: element.style?.subtitleColor ?? "rgba(255,255,255,0.7)",
+                      color: (_c2 = (_b2 = element.style) == null ? void 0 : _b2.subtitleColor) != null ? _c2 : "rgba(255,255,255,0.7)",
                       weight: "normal",
                       italic: false,
                       opacity: 1
@@ -20920,12 +21163,12 @@ function InspectorPanel({
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.style?.titleSizePx ?? 40, onChange: (v) => onChange({ style: { ...element.style, titleSizePx: v } }), noLabel: true, className: "w-14" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_A = (_z = element.style) == null ? void 0 : _z.titleSizePx) != null ? _A : 40, onChange: (v) => onChange({ style: { ...element.style, titleSizePx: v } }), noLabel: true, className: "w-14" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11036,
                     columnNumber: 27
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.titleColor, onChange: (v) => onChange({ style: { ...element.style, titleColor: v } }) }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_B = element.style) == null ? void 0 : _B.titleColor, onChange: (v) => onChange({ style: { ...element.style, titleColor: v } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11037,
                     columnNumber: 27
@@ -20952,12 +21195,12 @@ function InspectorPanel({
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.style?.subtitleSizePx ?? 26, onChange: (v) => onChange({ style: { ...element.style, subtitleSizePx: v } }), noLabel: true, className: "w-14" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_D = (_C = element.style) == null ? void 0 : _C.subtitleSizePx) != null ? _D : 26, onChange: (v) => onChange({ style: { ...element.style, subtitleSizePx: v } }), noLabel: true, className: "w-14" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11044,
                     columnNumber: 27
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.subtitleColor, onChange: (v) => onChange({ style: { ...element.style, subtitleColor: v } }) }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_E = element.style) == null ? void 0 : _E.subtitleColor, onChange: (v) => onChange({ style: { ...element.style, subtitleColor: v } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11045,
                     columnNumber: 27
@@ -20972,190 +21215,200 @@ function InspectorPanel({
                 lineNumber: 11040,
                 columnNumber: 23
               }, this),
-              (element.contentLines ?? []).map((line, i) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1 pt-1 border-t border-[rgba(255,255,255,0.04)]", children: [
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full bg-white/20 flex-none" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11053,
-                    columnNumber: 29
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                    "input",
-                    {
-                      className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`,
-                      value: line.label ?? `Line ${i + 3}`,
-                      onChange: (e) => {
-                        const lines = [...element.contentLines ?? []];
-                        lines[i] = { ...lines[i], label: e.target.value };
-                        onChange({ contentLines: lines });
-                      },
-                      placeholder: `Line ${i + 3}`
-                    },
-                    void 0,
-                    false,
-                    {
+              ((_F = element.contentLines) != null ? _F : []).map((line, i) => {
+                var _a2, _b2, _c2, _d2;
+                return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1 pt-1 border-t border-[rgba(255,255,255,0.04)]", children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full bg-white/20 flex-none" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11054,
+                      lineNumber: 11053,
                       columnNumber: 29
-                    },
-                    this
-                  ),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: line.sizePx ?? 20, onChange: (v) => {
-                      const lines = [...element.contentLines ?? []];
-                      lines[i] = { ...lines[i], sizePx: v };
-                      onChange({ contentLines: lines });
-                    }, noLabel: true, className: "w-14" }, void 0, false, {
-                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11065,
-                      columnNumber: 31
                     }, this),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: line.color, onChange: (v) => {
-                      const lines = [...element.contentLines ?? []];
-                      lines[i] = { ...lines[i], color: v };
-                      onChange({ contentLines: lines });
-                    } }, void 0, false, {
-                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11070,
-                      columnNumber: 31
-                    }, this),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                      "button",
-                      {
-                        type: "button",
-                        className: "text-[11px] text-red-400/60 hover:text-red-400 px-1",
-                        onClick: () => {
-                          const lines = (element.contentLines ?? []).filter((_, j) => j !== i);
-                          onChange({ contentLines: lines });
-                        },
-                        children: "✕"
-                      },
-                      void 0,
-                      false,
-                      {
-                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11075,
-                        columnNumber: 31
-                      },
-                      this
-                    )
-                  ] }, void 0, true, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11064,
-                    columnNumber: 29
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11052,
-                  columnNumber: 27
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "ml-4 flex gap-2", children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                    "select",
-                    {
-                      className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] px-1 text-[11px] text-slate-300`,
-                      value: line.weight ?? "normal",
-                      onChange: (e) => {
-                        const lines = [...element.contentLines ?? []];
-                        lines[i] = { ...lines[i], weight: e.target.value };
-                        onChange({ contentLines: lines });
-                      },
-                      children: [
-                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "light", children: "Light" }, void 0, false, {
-                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11095,
-                          columnNumber: 31
-                        }, this),
-                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
-                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11096,
-                          columnNumber: 31
-                        }, this),
-                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bold", children: "Bold" }, void 0, false, {
-                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11097,
-                          columnNumber: 31
-                        }, this)
-                      ]
-                    },
-                    void 0,
-                    true,
-                    {
-                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11086,
-                      columnNumber: 29
-                    },
-                    this
-                  ),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                       "input",
                       {
-                        type: "checkbox",
-                        checked: line.italic ?? false,
+                        className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`,
+                        value: (_a2 = line.label) != null ? _a2 : `Line ${i + 3}`,
                         onChange: (e) => {
-                          const lines = [...element.contentLines ?? []];
-                          lines[i] = { ...lines[i], italic: e.target.checked };
+                          var _a3;
+                          const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                          lines[i] = { ...lines[i], label: e.target.value };
                           onChange({ contentLines: lines });
                         },
-                        className: "accent-indigo-500"
+                        placeholder: `Line ${i + 3}`
                       },
                       void 0,
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11100,
-                        columnNumber: 31
+                        lineNumber: 11054,
+                        columnNumber: 29
                       },
                       this
                     ),
-                    "Italic"
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_b2 = line.sizePx) != null ? _b2 : 20, onChange: (v) => {
+                        var _a3;
+                        const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                        lines[i] = { ...lines[i], sizePx: v };
+                        onChange({ contentLines: lines });
+                      }, noLabel: true, className: "w-14" }, void 0, false, {
+                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                        lineNumber: 11065,
+                        columnNumber: 31
+                      }, this),
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: line.color, onChange: (v) => {
+                        var _a3;
+                        const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                        lines[i] = { ...lines[i], color: v };
+                        onChange({ contentLines: lines });
+                      } }, void 0, false, {
+                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                        lineNumber: 11070,
+                        columnNumber: 31
+                      }, this),
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                        "button",
+                        {
+                          type: "button",
+                          className: "text-[11px] text-red-400/60 hover:text-red-400 px-1",
+                          onClick: () => {
+                            var _a3;
+                            const lines = ((_a3 = element.contentLines) != null ? _a3 : []).filter((_, j) => j !== i);
+                            onChange({ contentLines: lines });
+                          },
+                          children: "✕"
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                          lineNumber: 11075,
+                          columnNumber: 31
+                        },
+                        this
+                      )
+                    ] }, void 0, true, {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                      lineNumber: 11064,
+                      columnNumber: 29
+                    }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11099,
-                    columnNumber: 29
+                    lineNumber: 11052,
+                    columnNumber: 27
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1", children: [
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-500", children: "Bind key" }, void 0, false, {
-                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11113,
-                      columnNumber: 31
-                    }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "ml-4 flex gap-2", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                      "input",
+                      "select",
                       {
-                        className: `w-28 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[10px] text-slate-400 font-mono`,
-                        value: line.key,
+                        className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] px-1 text-[11px] text-slate-300`,
+                        value: (_c2 = line.weight) != null ? _c2 : "normal",
                         onChange: (e) => {
-                          const lines = [...element.contentLines ?? []];
-                          lines[i] = { ...lines[i], key: e.target.value };
+                          var _a3;
+                          const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                          lines[i] = { ...lines[i], weight: e.target.value };
                           onChange({ contentLines: lines });
-                        }
+                        },
+                        children: [
+                          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "light", children: "Light" }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                            lineNumber: 11095,
+                            columnNumber: 31
+                          }, this),
+                          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                            lineNumber: 11096,
+                            columnNumber: 31
+                          }, this),
+                          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bold", children: "Bold" }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                            lineNumber: 11097,
+                            columnNumber: 31
+                          }, this)
+                        ]
                       },
                       void 0,
-                      false,
+                      true,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11114,
-                        columnNumber: 31
+                        lineNumber: 11086,
+                        columnNumber: 29
                       },
                       this
-                    )
+                    ),
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer", children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                        "input",
+                        {
+                          type: "checkbox",
+                          checked: (_d2 = line.italic) != null ? _d2 : false,
+                          onChange: (e) => {
+                            var _a3;
+                            const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                            lines[i] = { ...lines[i], italic: e.target.checked };
+                            onChange({ contentLines: lines });
+                          },
+                          className: "accent-indigo-500"
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                          lineNumber: 11100,
+                          columnNumber: 31
+                        },
+                        this
+                      ),
+                      "Italic"
+                    ] }, void 0, true, {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                      lineNumber: 11099,
+                      columnNumber: 29
+                    }, this),
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1", children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-500", children: "Bind key" }, void 0, false, {
+                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                        lineNumber: 11113,
+                        columnNumber: 31
+                      }, this),
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                        "input",
+                        {
+                          className: `w-28 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[10px] text-slate-400 font-mono`,
+                          value: line.key,
+                          onChange: (e) => {
+                            var _a3;
+                            const lines = [...(_a3 = element.contentLines) != null ? _a3 : []];
+                            lines[i] = { ...lines[i], key: e.target.value };
+                            onChange({ contentLines: lines });
+                          }
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                          lineNumber: 11114,
+                          columnNumber: 31
+                        },
+                        this
+                      )
+                    ] }, void 0, true, {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                      lineNumber: 11112,
+                      columnNumber: 29
+                    }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11112,
-                    columnNumber: 29
+                    lineNumber: 11085,
+                    columnNumber: 27
                   }, this)
-                ] }, void 0, true, {
+                ] }, i, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11085,
-                  columnNumber: 27
-                }, this)
-              ] }, i, true, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11051,
-                columnNumber: 25
-              }, this))
+                  lineNumber: 11051,
+                  columnNumber: 25
+                }, this);
+              })
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11031,
@@ -21173,11 +21426,12 @@ function InspectorPanel({
                   {
                     type: "button",
                     onClick: () => {
+                      var _a2, _b2, _c2;
                       const t = element.ticker;
-                      onChange({ ticker: { ...t ?? {}, enabled: !(t?.enabled ?? false), key: t?.key ?? "lower_third.ticker", speed: t?.speed ?? 80 } });
+                      onChange({ ticker: { ...t != null ? t : {}, enabled: !((_a2 = t == null ? void 0 : t.enabled) != null ? _a2 : false), key: (_b2 = t == null ? void 0 : t.key) != null ? _b2 : "lower_third.ticker", speed: (_c2 = t == null ? void 0 : t.speed) != null ? _c2 : 80 } });
                     },
-                    className: `relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${element.ticker?.enabled ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`,
-                    children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${element.ticker?.enabled ? "translate-x-3" : "translate-x-0"}` }, void 0, false, {
+                    className: `relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${((_G = element.ticker) == null ? void 0 : _G.enabled) ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`,
+                    children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${((_H = element.ticker) == null ? void 0 : _H.enabled) ? "translate-x-3" : "translate-x-0"}` }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                       lineNumber: 11141,
                       columnNumber: 27
@@ -21197,7 +21451,7 @@ function InspectorPanel({
                 lineNumber: 11131,
                 columnNumber: 23
               }, this),
-              element.ticker?.enabled && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-2", children: [
+              ((_I = element.ticker) == null ? void 0 : _I.enabled) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12`, children: "Preview" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -21209,7 +21463,7 @@ function InspectorPanel({
                     {
                       className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`,
                       placeholder: "Preview text (editor only)",
-                      value: ltPreview.ticker ?? "",
+                      value: (_J = ltPreview.ticker) != null ? _J : "",
                       onChange: (e) => onLtPreviewChange({ ...ltPreview, ticker: e.target.value })
                     },
                     void 0,
@@ -21236,7 +21490,7 @@ function InspectorPanel({
                     "input",
                     {
                       className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300 font-mono`,
-                      value: element.ticker?.key ?? "lower_third.ticker",
+                      value: (_L = (_K = element.ticker) == null ? void 0 : _K.key) != null ? _L : "lower_third.ticker",
                       onChange: (e) => onChange({ ticker: { ...element.ticker, key: e.target.value } })
                     },
                     void 0,
@@ -21263,7 +21517,7 @@ function InspectorPanel({
                     "input",
                     {
                       className: `flex-1 h-6 rounded border border-[rgba(255,255,255,0.08)] bg-transparent px-1.5 text-[11px] text-slate-300`,
-                      value: element.ticker?.tickerText ?? "",
+                      value: (_N = (_M = element.ticker) == null ? void 0 : _M.tickerText) != null ? _N : "",
                       onChange: (e) => onChange({ ticker: { ...element.ticker, tickerText: e.target.value } }),
                       placeholder: "Default ticker text (used by bot commands)"
                     },
@@ -21288,7 +21542,7 @@ function InspectorPanel({
                       lineNumber: 11174,
                       columnNumber: 31
                     }, this),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.ticker?.speed ?? 80, onChange: (v) => onChange({ ticker: { ...element.ticker, speed: v } }), noLabel: true, className: "w-full" }, void 0, false, {
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_P = (_O = element.ticker) == null ? void 0 : _O.speed) != null ? _P : 80, onChange: (v) => onChange({ ticker: { ...element.ticker, speed: v } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                       lineNumber: 11175,
                       columnNumber: 31
@@ -21304,7 +21558,7 @@ function InspectorPanel({
                       lineNumber: 11178,
                       columnNumber: 31
                     }, this),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.ticker?.heightPx ?? 32, onChange: (v) => onChange({ ticker: { ...element.ticker, heightPx: v } }), noLabel: true, className: "w-full" }, void 0, false, {
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_R = (_Q = element.ticker) == null ? void 0 : _Q.heightPx) != null ? _R : 32, onChange: (v) => onChange({ ticker: { ...element.ticker, heightPx: v } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                       lineNumber: 11179,
                       columnNumber: 31
@@ -21320,7 +21574,7 @@ function InspectorPanel({
                       lineNumber: 11182,
                       columnNumber: 31
                     }, this),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.ticker?.sizePx ?? 18, onChange: (v) => onChange({ ticker: { ...element.ticker, sizePx: v } }), noLabel: true, className: "w-full" }, void 0, false, {
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_T = (_S = element.ticker) == null ? void 0 : _S.sizePx) != null ? _T : 18, onChange: (v) => onChange({ ticker: { ...element.ticker, sizePx: v } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                       lineNumber: 11183,
                       columnNumber: 31
@@ -21341,7 +21595,7 @@ function InspectorPanel({
                     lineNumber: 11187,
                     columnNumber: 29
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.ticker?.bgColor ?? element.style?.accentColor, onChange: (v) => onChange({ ticker: { ...element.ticker, bgColor: v } }) }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_W = (_U = element.ticker) == null ? void 0 : _U.bgColor) != null ? _W : (_V = element.style) == null ? void 0 : _V.accentColor, onChange: (v) => onChange({ ticker: { ...element.ticker, bgColor: v } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11188,
                     columnNumber: 29
@@ -21351,7 +21605,7 @@ function InspectorPanel({
                     lineNumber: 11189,
                     columnNumber: 29
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.ticker?.color ?? "#ffffff", onChange: (v) => onChange({ ticker: { ...element.ticker, color: v } }) }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_Y = (_X = element.ticker) == null ? void 0 : _X.color) != null ? _Y : "#ffffff", onChange: (v) => onChange({ ticker: { ...element.ticker, color: v } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 11190,
                     columnNumber: 29
@@ -21402,7 +21656,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.style?.variant ?? "solid",
+                value: (__ = (_Z = element.style) == null ? void 0 : _Z.variant) != null ? __ : "solid",
                 onChange: (e) => onChange({ style: { ...element.style, variant: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "solid", children: "Solid" }, void 0, false, {
@@ -21451,7 +21705,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.style?.fontFamily ?? "",
+                value: (_aa = (_$ = element.style) == null ? void 0 : _$.fontFamily) != null ? _aa : "",
                 onChange: (e) => onChange({ style: { ...element.style, fontFamily: e.target.value || void 0 } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "Default (Inter)" }, void 0, false, {
@@ -21565,7 +21819,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.style?.titleWeight ?? "bold",
+                value: (_ca = (_ba = element.style) == null ? void 0 : _ba.titleWeight) != null ? _ca : "bold",
                 onChange: (e) => onChange({ style: { ...element.style, titleWeight: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
@@ -21601,12 +21855,12 @@ function InspectorPanel({
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2 items-center", children: [
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.bgColor, onChange: (v) => onChange({ style: { ...element.style, bgColor: v } }) }, void 0, false, {
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_da = element.style) == null ? void 0 : _da.bgColor, onChange: (v) => onChange({ style: { ...element.style, bgColor: v } }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11259,
                 columnNumber: 21
               }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.accentColor, onChange: (v) => onChange({ style: { ...element.style, accentColor: v } }) }, void 0, false, {
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ea = element.style) == null ? void 0 : _ea.accentColor, onChange: (v) => onChange({ style: { ...element.style, accentColor: v } }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11260,
                 columnNumber: 21
@@ -21618,9 +21872,9 @@ function InspectorPanel({
                   min: "0",
                   max: "1",
                   step: "0.05",
-                  title: `Opacity: ${Math.round((element.style?.bgOpacity ?? 0.75) * 100)}%`,
+                  title: `Opacity: ${Math.round(((_ga = (_fa = element.style) == null ? void 0 : _fa.bgOpacity) != null ? _ga : 0.75) * 100)}%`,
                   className: "flex-1 h-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400",
-                  value: element.style?.bgOpacity ?? 0.75,
+                  value: (_ia = (_ha = element.style) == null ? void 0 : _ha.bgOpacity) != null ? _ia : 0.75,
                   onChange: (e) => onChange({ style: { ...element.style, bgOpacity: parseFloat(e.target.value) } })
                 },
                 void 0,
@@ -21648,7 +21902,7 @@ function InspectorPanel({
               lineNumber: 11271,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.titleColor, onChange: (v) => onChange({ style: { ...element.style, titleColor: v } }) }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ja = element.style) == null ? void 0 : _ja.titleColor, onChange: (v) => onChange({ style: { ...element.style, titleColor: v } }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11272,
               columnNumber: 19
@@ -21664,7 +21918,7 @@ function InspectorPanel({
               lineNumber: 11275,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.style?.subtitleColor, onChange: (v) => onChange({ style: { ...element.style, subtitleColor: v } }) }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ka = element.style) == null ? void 0 : _ka.subtitleColor, onChange: (v) => onChange({ style: { ...element.style, subtitleColor: v } }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11276,
               columnNumber: 19
@@ -21680,12 +21934,12 @@ function InspectorPanel({
               lineNumber: 11279,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.style?.paddingPx ?? 0, onChange: (v) => onChange({ style: { ...element.style, paddingPx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ma = (_la = element.style) == null ? void 0 : _la.paddingPx) != null ? _ma : 0, onChange: (v) => onChange({ style: { ...element.style, paddingPx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11280,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.style?.cornerRadiusPx ?? 0, onChange: (v) => onChange({ style: { ...element.style, cornerRadiusPx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_oa = (_na = element.style) == null ? void 0 : _na.cornerRadiusPx) != null ? _oa : 0, onChange: (v) => onChange({ style: { ...element.style, cornerRadiusPx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11281,
               columnNumber: 19
@@ -21695,18 +21949,18 @@ function InspectorPanel({
             lineNumber: 11278,
             columnNumber: 17
           }, this),
-          element.layout?.mode === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          ((_pa = element.layout) == null ? void 0 : _pa.mode) === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12`, children: "L/R size" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11286,
               columnNumber: 21
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.layout?.leftSizePx ?? element.style?.titleSizePx ?? 40, onChange: (v) => onChange({ layout: { ...element.layout, leftSizePx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ta = (_sa = (_qa = element.layout) == null ? void 0 : _qa.leftSizePx) != null ? _sa : (_ra = element.style) == null ? void 0 : _ra.titleSizePx) != null ? _ta : 40, onChange: (v) => onChange({ layout: { ...element.layout, leftSizePx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11287,
               columnNumber: 21
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.layout?.rightSizePx ?? element.style?.subtitleSizePx ?? 26, onChange: (v) => onChange({ layout: { ...element.layout, rightSizePx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_xa = (_wa = (_ua = element.layout) == null ? void 0 : _ua.rightSizePx) != null ? _wa : (_va = element.style) == null ? void 0 : _va.subtitleSizePx) != null ? _xa : 26, onChange: (v) => onChange({ layout: { ...element.layout, rightSizePx: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11288,
               columnNumber: 21
@@ -21758,7 +22012,7 @@ function InspectorPanel({
               "button",
               {
                 type: "button",
-                onClick: () => onLtPinnedChange?.(!ltPinned),
+                onClick: () => onLtPinnedChange == null ? void 0 : onLtPinnedChange(!ltPinned),
                 className: `relative h-5 w-9 flex-none rounded-full transition-colors overflow-hidden ${ltPinned ? "bg-amber-500" : "bg-[rgba(255,255,255,0.1)]"}`,
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ltPinned ? "translate-x-4" : "translate-x-0"}` }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -21823,7 +22077,7 @@ function InspectorPanel({
             lineNumber: 11332,
             columnNumber: 17
           }, this),
-          element.layout?.mode === "single" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          ((_ya = element.layout) == null ? void 0 : _ya.mode) === "single" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12`, children: "Text" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11336,
@@ -21935,7 +22189,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.animation?.in ?? "slideUp",
+                value: (_Aa = (_za = element.animation) == null ? void 0 : _za.in) != null ? _Aa : "slideUp",
                 onChange: (e) => onChange({ animation: { ...element.animation, in: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fade", children: "Fade" }, void 0, false, {
@@ -21978,7 +22232,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.animation?.out ?? "slideDown",
+                value: (_Ca = (_Ba = element.animation) == null ? void 0 : _Ba.out) != null ? _Ca : "slideDown",
                 onChange: (e) => onChange({ animation: { ...element.animation, out: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fade", children: "Fade" }, void 0, false, {
@@ -22028,7 +22282,7 @@ function InspectorPanel({
               lineNumber: 11395,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.animation?.durationMs ?? 450, onChange: (v) => onChange({ animation: { ...element.animation, durationMs: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ea = (_Da = element.animation) == null ? void 0 : _Da.durationMs) != null ? _Ea : 450, onChange: (v) => onChange({ animation: { ...element.animation, durationMs: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11396,
               columnNumber: 19
@@ -22048,7 +22302,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.animation?.easing ?? "ease-out",
+                value: (_Ga = (_Fa = element.animation) == null ? void 0 : _Fa.easing) != null ? _Ga : "ease-out",
                 onChange: (e) => onChange({ animation: { ...element.animation, easing: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ease-out", children: "Ease Out (default)" }, void 0, false, {
@@ -22103,7 +22357,7 @@ function InspectorPanel({
               lineNumber: 11414,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.defaultDurationMs ?? 8e3, onChange: (v) => onChange({ defaultDurationMs: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ha = element.defaultDurationMs) != null ? _Ha : 8e3, onChange: (v) => onChange({ defaultDurationMs: v }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11415,
               columnNumber: 19
@@ -22139,7 +22393,10 @@ function InspectorPanel({
               "button",
               {
                 type: "button",
-                onClick: () => onChange({ alwaysOn: !(element.alwaysOn ?? false) }),
+                onClick: () => {
+                  var _a2;
+                  return onChange({ alwaysOn: !((_a2 = element.alwaysOn) != null ? _a2 : false) });
+                },
                 className: `relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${element.alwaysOn ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`,
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${element.alwaysOn ? "translate-x-3" : "translate-x-0"}` }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -22166,7 +22423,7 @@ function InspectorPanel({
           lineNumber: 11367,
           columnNumber: 15
         }, this),
-        element.ticker?.enabled && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+        ((_Ia = element.ticker) == null ? void 0 : _Ia.enabled) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass} w-12`, children: "Separator" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 11437,
@@ -22176,7 +22433,7 @@ function InspectorPanel({
             "input",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.ticker?.separator ?? "   •   ",
+              value: (_Ka = (_Ja = element.ticker) == null ? void 0 : _Ja.separator) != null ? _Ka : "   •   ",
               onChange: (e) => onChange({ ticker: { ...element.ticker, separator: e.target.value } }),
               placeholder: "   •   "
             },
@@ -22211,7 +22468,8 @@ function InspectorPanel({
           columnNumber: 15
         }, this),
         (() => {
-          const uniformRadius = element.borderRadius ?? element.borderRadiusPx ?? 0;
+          var _a2, _b2, _c2, _d2, _e2, _f2, _g2, _h2, _i2, _j2, _k2;
+          const uniformRadius = (_b2 = (_a2 = element.borderRadius) != null ? _a2 : element.borderRadiusPx) != null ? _b2 : 0;
           const cornerRadii = ensureCornerRadii(uniformRadius, element.cornerRadii);
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -22220,7 +22478,7 @@ function InspectorPanel({
                 lineNumber: 11460,
                 columnNumber: 17
               }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.borderRadius ?? element.borderRadiusPx ?? 0, onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_d2 = (_c2 = element.borderRadius) != null ? _c2 : element.borderRadiusPx) != null ? _d2 : 0, onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11461,
                 columnNumber: 17
@@ -22235,35 +22493,38 @@ function InspectorPanel({
               ["TR", "topRight"],
               ["BL", "bottomLeft"],
               ["BR", "bottomRight"]
-            ].map(([label, key]) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11471,
-                columnNumber: 21
-              }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                NumberField,
-                {
-                  label: "",
-                  value: Math.round(cornerRadii[key] ?? 0),
-                  onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v, cornerRadii: { ...cornerRadii, [key]: v } }),
-                  noLabel: true,
-                  className: "flex-1"
-                },
-                void 0,
-                false,
-                {
+            ].map(([label, key]) => {
+              var _a3;
+              return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11472,
+                  lineNumber: 11471,
                   columnNumber: 21
-                },
-                this
-              )
-            ] }, key, true, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11470,
-              columnNumber: 19
-            }, this)) }, void 0, false, {
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                  NumberField,
+                  {
+                    label: "",
+                    value: Math.round((_a3 = cornerRadii[key]) != null ? _a3 : 0),
+                    onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v, cornerRadii: { ...cornerRadii, [key]: v } }),
+                    noLabel: true,
+                    className: "flex-1"
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 11472,
+                    columnNumber: 21
+                  },
+                  this
+                )
+              ] }, key, true, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 11470,
+                columnNumber: 19
+              }, this);
+            }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11463,
               columnNumber: 15
@@ -22278,7 +22539,7 @@ function InspectorPanel({
                 "select",
                 {
                   className: `flex-1 ${fieldClass}`,
-                  value: element.cornerType ?? "round",
+                  value: (_e2 = element.cornerType) != null ? _e2 : "round",
                   onChange: (e) => onChange({ cornerType: e.target.value }),
                   children: CORNER_TYPE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -22312,12 +22573,12 @@ function InspectorPanel({
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.strokeColor ?? "#ffffff", onChange: (v) => onChange({ strokeColor: v }) }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_f2 = element.strokeColor) != null ? _f2 : "#ffffff", onChange: (v) => onChange({ strokeColor: v }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 11498,
                   columnNumber: 19
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: element.strokeColor ?? "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: (_g2 = element.strokeColor) != null ? _g2 : "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 11499,
                   columnNumber: 19
@@ -22333,7 +22594,7 @@ function InspectorPanel({
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-14", children: [
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.strokeWidthPx ?? 0, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "w-16" }, void 0, false, {
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_h2 = element.strokeWidthPx) != null ? _h2 : 0, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "w-16" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11503,
                 columnNumber: 17
@@ -22381,7 +22642,7 @@ function InspectorPanel({
                 "select",
                 {
                   className: `flex-1 ${fieldClass}`,
-                  value: element.strokeAlign ?? "center",
+                  value: (_i2 = element.strokeAlign) != null ? _i2 : "center",
                   onChange: (e) => onChange({ strokeAlign: e.target.value }),
                   children: STROKE_ALIGN_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -22413,7 +22674,7 @@ function InspectorPanel({
                 "select",
                 {
                   className: `flex-1 ${fieldClass}`,
-                  value: element.strokeLineJoin ?? "miter",
+                  value: (_j2 = element.strokeLineJoin) != null ? _j2 : "miter",
                   onChange: (e) => onChange({ strokeLineJoin: e.target.value }),
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "miter", children: "Miter" }, void 0, false, {
@@ -22446,7 +22707,7 @@ function InspectorPanel({
                 "select",
                 {
                   className: `flex-1 ${fieldClass}`,
-                  value: element.strokeLineCap ?? "butt",
+                  value: (_k2 = element.strokeLineCap) != null ? _k2 : "butt",
                   onChange: (e) => onChange({ strokeLineCap: e.target.value }),
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "butt", children: "Butt" }, void 0, false, {
@@ -22492,21 +22753,25 @@ function InspectorPanel({
                 ["B", "bottom"],
                 ["L", "left"]
               ].map(([label, key]) => {
-                const active = (element.strokeSides?.[key] ?? true) === true;
+                var _a3, _b3;
+                const active = ((_b3 = (_a3 = element.strokeSides) == null ? void 0 : _a3[key]) != null ? _b3 : true) === true;
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                   "button",
                   {
                     type: "button",
                     className: `${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`,
-                    onClick: () => onChange({
-                      strokeSides: {
-                        top: element.strokeSides?.top ?? true,
-                        right: element.strokeSides?.right ?? true,
-                        bottom: element.strokeSides?.bottom ?? true,
-                        left: element.strokeSides?.left ?? true,
-                        [key]: !active
-                      }
-                    }),
+                    onClick: () => {
+                      var _a4, _b4, _c3, _d3, _e3, _f3, _g3, _h3;
+                      return onChange({
+                        strokeSides: {
+                          top: (_b4 = (_a4 = element.strokeSides) == null ? void 0 : _a4.top) != null ? _b4 : true,
+                          right: (_d3 = (_c3 = element.strokeSides) == null ? void 0 : _c3.right) != null ? _d3 : true,
+                          bottom: (_f3 = (_e3 = element.strokeSides) == null ? void 0 : _e3.bottom) != null ? _f3 : true,
+                          left: (_h3 = (_g3 = element.strokeSides) == null ? void 0 : _g3.left) != null ? _h3 : true,
+                          [key]: !active
+                        }
+                      });
+                    },
                     children: label
                   },
                   key,
@@ -22550,7 +22815,7 @@ function InspectorPanel({
             "select",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.shape ?? "rect",
+              value: (_La = element.shape) != null ? _La : "rect",
               onChange: (e) => onChange({ shape: e.target.value }),
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "rect", children: "Rectangle" }, void 0, false, {
@@ -22614,7 +22879,7 @@ function InspectorPanel({
             NumberField,
             {
               label: "",
-              value: element.polygon?.sides ?? 6,
+              value: (_Na = (_Ma = element.polygon) == null ? void 0 : _Ma.sides) != null ? _Na : 6,
               onChange: (v) => onChange({ polygon: { ...element.polygon, sides: Math.max(3, Math.round(v)) } }),
               noLabel: true,
               className: "flex-1"
@@ -22644,7 +22909,7 @@ function InspectorPanel({
               NumberField,
               {
                 label: "",
-                value: element.star?.points ?? 5,
+                value: (_Pa = (_Oa = element.star) == null ? void 0 : _Oa.points) != null ? _Pa : 5,
                 onChange: (v) => onChange({ star: { ...element.star, points: Math.max(3, Math.round(v)) } }),
                 noLabel: true,
                 className: "flex-1"
@@ -22674,7 +22939,7 @@ function InspectorPanel({
                 NumberField,
                 {
                   label: "",
-                  value: Math.round((element.star?.innerRatio ?? 0.5) * 100),
+                  value: Math.round(((_Ra = (_Qa = element.star) == null ? void 0 : _Qa.innerRatio) != null ? _Ra : 0.5) * 100),
                   onChange: (v) => onChange({ star: { ...element.star, innerRatio: clamp(v / 100, 0.05, 0.95) } }),
                   noLabel: true
                 },
@@ -22718,7 +22983,7 @@ function InspectorPanel({
               "select",
               {
                 className: `flex-1 ${fieldClass}`,
-                value: element.arrow?.direction ?? "right",
+                value: (_Ta = (_Sa = element.arrow) == null ? void 0 : _Sa.direction) != null ? _Ta : "right",
                 onChange: (e) => onChange({ arrow: { ...element.arrow, direction: e.target.value } }),
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "right", children: "Right" }, void 0, false, {
@@ -22768,7 +23033,7 @@ function InspectorPanel({
                 NumberField,
                 {
                   label: "",
-                  value: Math.round((element.arrow?.shaftRatio ?? 0.42) * 100),
+                  value: Math.round(((_Va = (_Ua = element.arrow) == null ? void 0 : _Ua.shaftRatio) != null ? _Va : 0.42) * 100),
                   onChange: (v) => onChange({ arrow: { ...element.arrow, shaftRatio: clamp(v / 100, 0.1, 0.8) } }),
                   noLabel: true
                 },
@@ -22811,7 +23076,7 @@ function InspectorPanel({
             "select",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.operation ?? "union",
+              value: (_Wa = element.operation) != null ? _Wa : "union",
               onChange: (e) => onChange({ operation: e.target.value }),
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "union", children: "Union" }, void 0, false, {
@@ -22877,7 +23142,7 @@ function InspectorPanel({
               lineNumber: 11705,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: element.strokeColor ?? "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: (_Xa = element.strokeColor) != null ? _Xa : "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11706,
               columnNumber: 19
@@ -22893,7 +23158,7 @@ function InspectorPanel({
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-14", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.strokeWidthPx ?? 0, onChange: (v) => onChange({ strokeWidthPx: v, strokeWidth: v }), noLabel: true, className: "w-16" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ya = element.strokeWidthPx) != null ? _Ya : 0, onChange: (v) => onChange({ strokeWidthPx: v, strokeWidth: v }), noLabel: true, className: "w-16" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 11710,
             columnNumber: 17
@@ -22941,7 +23206,7 @@ function InspectorPanel({
             "select",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.strokeAlign ?? "center",
+              value: (_Za = element.strokeAlign) != null ? _Za : "center",
               onChange: (e) => onChange({ strokeAlign: e.target.value }),
               children: STROKE_ALIGN_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -22973,7 +23238,7 @@ function InspectorPanel({
             "select",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.strokeLineJoin ?? "miter",
+              value: (__a = element.strokeLineJoin) != null ? __a : "miter",
               onChange: (e) => onChange({ strokeLineJoin: e.target.value }),
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "miter", children: "Miter" }, void 0, false, {
@@ -23006,7 +23271,7 @@ function InspectorPanel({
             "select",
             {
               className: `flex-1 ${fieldClass}`,
-              value: element.strokeLineCap ?? "butt",
+              value: (_$a = element.strokeLineCap) != null ? _$a : "butt",
               onChange: (e) => onChange({ strokeLineCap: e.target.value }),
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "butt", children: "Butt" }, void 0, false, {
@@ -23052,21 +23317,25 @@ function InspectorPanel({
             ["B", "bottom"],
             ["L", "left"]
           ].map(([label, key]) => {
-            const active = (element.strokeSides?.[key] ?? true) === true;
+            var _a2, _b2;
+            const active = ((_b2 = (_a2 = element.strokeSides) == null ? void 0 : _a2[key]) != null ? _b2 : true) === true;
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "button",
               {
                 type: "button",
                 className: `${uiClasses.buttonGhost} h-7 flex-1 ${active ? "border-indigo-400/30 bg-indigo-500/10 text-indigo-100" : ""}`,
-                onClick: () => onChange({
-                  strokeSides: {
-                    top: element.strokeSides?.top ?? true,
-                    right: element.strokeSides?.right ?? true,
-                    bottom: element.strokeSides?.bottom ?? true,
-                    left: element.strokeSides?.left ?? true,
-                    [key]: !active
-                  }
-                }),
+                onClick: () => {
+                  var _a3, _b3, _c2, _d2, _e2, _f2, _g2, _h2;
+                  return onChange({
+                    strokeSides: {
+                      top: (_b3 = (_a3 = element.strokeSides) == null ? void 0 : _a3.top) != null ? _b3 : true,
+                      right: (_d2 = (_c2 = element.strokeSides) == null ? void 0 : _c2.right) != null ? _d2 : true,
+                      bottom: (_f2 = (_e2 = element.strokeSides) == null ? void 0 : _e2.bottom) != null ? _f2 : true,
+                      left: (_h2 = (_g2 = element.strokeSides) == null ? void 0 : _g2.left) != null ? _h2 : true,
+                      [key]: !active
+                    }
+                  });
+                },
                 children: label
               },
               key,
@@ -23089,7 +23358,8 @@ function InspectorPanel({
           columnNumber: 17
         }, this),
         element.type === "shape" && (() => {
-          const uniformRadius = element.cornerRadiusPx ?? element.cornerRadius ?? 0;
+          var _a2, _b2, _c2;
+          const uniformRadius = (_b2 = (_a2 = element.cornerRadiusPx) != null ? _a2 : element.cornerRadius) != null ? _b2 : 0;
           const cornerRadii = ensureCornerRadii(uniformRadius, element.cornerRadii);
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -23114,35 +23384,38 @@ function InspectorPanel({
                 ["TR", "topRight"],
                 ["BL", "bottomLeft"],
                 ["BR", "bottomRight"]
-              ].map(([label, key]) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11809,
-                  columnNumber: 33
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                  NumberField,
-                  {
-                    label: "",
-                    value: Math.round(cornerRadii[key] ?? 0),
-                    onChange: (v) => onChange({ cornerRadiusPx: v, cornerRadius: v, cornerRadii: { ...cornerRadii, [key]: v } }),
-                    noLabel: true,
-                    className: "flex-1"
-                  },
-                  void 0,
-                  false,
-                  {
+              ].map(([label, key]) => {
+                var _a3;
+                return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11810,
+                    lineNumber: 11809,
                     columnNumber: 33
-                  },
-                  this
-                )
-              ] }, key, true, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11808,
-                columnNumber: 31
-              }, this)) }, void 0, false, {
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                    NumberField,
+                    {
+                      label: "",
+                      value: Math.round((_a3 = cornerRadii[key]) != null ? _a3 : 0),
+                      onChange: (v) => onChange({ cornerRadiusPx: v, cornerRadius: v, cornerRadii: { ...cornerRadii, [key]: v } }),
+                      noLabel: true,
+                      className: "flex-1"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                      lineNumber: 11810,
+                      columnNumber: 33
+                    },
+                    this
+                  )
+                ] }, key, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 11808,
+                  columnNumber: 31
+                }, this);
+              }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11801,
                 columnNumber: 27
@@ -23157,7 +23430,7 @@ function InspectorPanel({
                   "select",
                   {
                     className: `flex-1 ${fieldClass}`,
-                    value: element.cornerType ?? "round",
+                    value: (_c2 = element.cornerType) != null ? _c2 : "round",
                     onChange: (e) => onChange({ cornerType: e.target.value }),
                     children: CORNER_TYPE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -23209,7 +23482,7 @@ function InspectorPanel({
                 {
                   propName: "text",
                   type: "text",
-                  binding: element.bindings?.["text"],
+                  binding: (_ab = element.bindings) == null ? void 0 : _ab["text"],
                   onUpdate: (b) => {
                     const newBindings = { ...element.bindings };
                     if (b) newBindings["text"] = b;
@@ -23241,11 +23514,11 @@ function InspectorPanel({
             lineNumber: 11845,
             columnNumber: 17
           }, this),
-          !element.bindings?.["text"] ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+          !((_bb = element.bindings) == null ? void 0 : _bb["text"]) ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "textarea",
             {
               className: `min-h-[60px] w-full font-mono ${fieldClass}`,
-              value: element.text ?? "",
+              value: (_cb = element.text) != null ? _cb : "",
               onChange: (e) => onChange({ text: e.target.value }),
               placeholder: "Enter static text..."
             },
@@ -23259,7 +23532,10 @@ function InspectorPanel({
             this
           ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300", children: [
             "Bound to ",
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-bold text-indigo-400", children: SourceCatalog.find((s) => s.id === element.bindings?.["text"]?.sourceId)?.label }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-bold text-indigo-400", children: (_db = SourceCatalog.find((s) => {
+              var _a2, _b2;
+              return s.id === ((_b2 = (_a2 = element.bindings) == null ? void 0 : _a2["text"]) == null ? void 0 : _b2.sourceId);
+            })) == null ? void 0 : _db.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11871,
               columnNumber: 30
@@ -23313,7 +23589,7 @@ function InspectorPanel({
               lineNumber: 11889,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.fontSize ?? 24, onChange: (v) => onChange({ fontSize: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_eb = element.fontSize) != null ? _eb : 24, onChange: (v) => onChange({ fontSize: v }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11890,
               columnNumber: 19
@@ -23329,7 +23605,7 @@ function InspectorPanel({
               lineNumber: 11893,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: element.fontWeight ?? "400", onChange: (e) => onChange({ fontWeight: e.target.value }), children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: (_fb = element.fontWeight) != null ? _fb : "400", onChange: (e) => onChange({ fontWeight: e.target.value }), children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "100", children: "100 Thin" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 11895,
@@ -23458,6 +23734,7 @@ function InspectorPanel({
           columnNumber: 15
         }, this),
         (() => {
+          var _a2, _b2, _c2;
           const pathEls = elements.filter((e) => e.type === "path" || e.type === "shape");
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -23470,7 +23747,7 @@ function InspectorPanel({
                 "select",
                 {
                   className: `flex-1 ${fieldClass}`,
-                  value: element.textOnPathId ?? "",
+                  value: (_a2 = element.textOnPathId) != null ? _a2 : "",
                   onChange: (e) => onChange({ textOnPathId: e.target.value || void 0 }),
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "None" }, void 0, false, {
@@ -23518,7 +23795,7 @@ function InspectorPanel({
                   max: "100",
                   step: "1",
                   className: "flex-1 h-1 accent-indigo-500",
-                  value: element.textOnPathOffset ?? 0,
+                  value: (_b2 = element.textOnPathOffset) != null ? _b2 : 0,
                   onChange: (e) => onChange({ textOnPathOffset: Number(e.target.value) })
                 },
                 void 0,
@@ -23531,7 +23808,7 @@ function InspectorPanel({
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-8 text-right text-[11px] text-slate-400", children: [
-                element.textOnPathOffset ?? 0,
+                (_c2 = element.textOnPathOffset) != null ? _c2 : 0,
                 "%"
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -23566,7 +23843,7 @@ function InspectorPanel({
               lineNumber: 11975,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: element.color ?? "", onChange: (e) => onChange({ color: e.target.value }) }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: (_gb = element.color) != null ? _gb : "", onChange: (e) => onChange({ color: e.target.value }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11976,
               columnNumber: 19
@@ -23593,12 +23870,12 @@ function InspectorPanel({
               lineNumber: 11982,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: element.strokeColor ?? "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass}`, value: (_hb = element.strokeColor) != null ? _hb : "", onChange: (e) => onChange({ strokeColor: e.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11983,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.strokeWidthPx ?? 0, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "w-12" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ib = element.strokeWidthPx) != null ? _ib : 0, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "w-12" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 11984,
               columnNumber: 19
@@ -23917,7 +24194,7 @@ function InspectorPanel({
               {
                 propName: "src",
                 type: "image",
-                binding: element.bindings?.["src"],
+                binding: (_jb = element.bindings) == null ? void 0 : _jb["src"],
                 onUpdate: (b) => {
                   const newBindings = { ...element.bindings };
                   if (b) newBindings["src"] = b;
@@ -23939,8 +24216,8 @@ function InspectorPanel({
             lineNumber: 12102,
             columnNumber: 17
           }, this),
-          !element.bindings?.["src"] ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: element.src ?? "", onChange: (e) => onChange({ src: e.target.value }), placeholder: "URL" }, void 0, false, {
+          !((_kb = element.bindings) == null ? void 0 : _kb["src"]) ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: (_lb = element.src) != null ? _lb : "", onChange: (e) => onChange({ src: e.target.value }), placeholder: "URL" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12118,
               columnNumber: 21
@@ -23960,7 +24237,10 @@ function InspectorPanel({
             columnNumber: 19
           }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: [
             "Bound to ",
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-bold text-indigo-400", children: SourceCatalog.find((s) => s.id === element.bindings?.["src"]?.sourceId)?.label }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-bold text-indigo-400", children: (_mb = SourceCatalog.find((s) => {
+              var _a2, _b2;
+              return s.id === ((_b2 = (_a2 = element.bindings) == null ? void 0 : _a2["src"]) == null ? void 0 : _b2.sourceId);
+            })) == null ? void 0 : _mb.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12123,
               columnNumber: 36
@@ -23985,7 +24265,7 @@ function InspectorPanel({
             lineNumber: 12129,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: element.fit ?? "cover", onChange: (e) => onChange({ fit: e.target.value }), children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: (_nb = element.fit) != null ? _nb : "cover", onChange: (e) => onChange({ fit: e.target.value }), children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "cover", children: "Cover" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12131,
@@ -24017,7 +24297,7 @@ function InspectorPanel({
             lineNumber: 12137,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: element.blendMode ?? "normal", onChange: (e) => onChange({ blendMode: e.target.value }), children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: (_ob = element.blendMode) != null ? _ob : "normal", onChange: (e) => onChange({ blendMode: e.target.value }), children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12139,
@@ -24043,7 +24323,7 @@ function InspectorPanel({
           lineNumber: 12136,
           columnNumber: 15
         }, this),
-        (element.blendMode ?? "normal") !== "normal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Screen is useful for effects on black backgrounds." }, void 0, false, {
+        ((_pb = element.blendMode) != null ? _pb : "normal") !== "normal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Screen is useful for effects on black backgrounds." }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 12145,
           columnNumber: 17
@@ -24054,7 +24334,7 @@ function InspectorPanel({
             lineNumber: 12150,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.borderRadius ?? element.borderRadiusPx ?? 0, onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_rb = (_qb = element.borderRadius) != null ? _qb : element.borderRadiusPx) != null ? _rb : 0, onChange: (v) => onChange({ borderRadius: v, borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12151,
             columnNumber: 17
@@ -24150,7 +24430,7 @@ function InspectorPanel({
             lineNumber: 12177,
             columnNumber: 19
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.strokeWidthPx ?? 4, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_sb = element.strokeWidthPx) != null ? _sb : 4, onChange: (v) => onChange({ strokeWidthPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12178,
             columnNumber: 19
@@ -24166,7 +24446,7 @@ function InspectorPanel({
             lineNumber: 12183,
             columnNumber: 19
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.borderRadiusPx ?? 0, onChange: (v) => onChange({ borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_tb = element.borderRadiusPx) != null ? _tb : 0, onChange: (v) => onChange({ borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12184,
             columnNumber: 19
@@ -24182,7 +24462,7 @@ function InspectorPanel({
             lineNumber: 12190,
             columnNumber: 19
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: element.direction ?? "ltr", onChange: (e) => onChange({ direction: e.target.value }), children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass}`, value: (_ub = element.direction) != null ? _ub : "ltr", onChange: (e) => onChange({ direction: e.target.value }), children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ltr", children: "L → R" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12192,
@@ -24225,7 +24505,7 @@ function InspectorPanel({
             lineNumber: 12206,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: element.backgroundColor ?? "", onChange: (e) => onChange({ backgroundColor: e.target.value }), placeholder: "Transparent" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: (_vb = element.backgroundColor) != null ? _vb : "", onChange: (e) => onChange({ backgroundColor: e.target.value }), placeholder: "Transparent" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12207,
             columnNumber: 17
@@ -24242,12 +24522,12 @@ function InspectorPanel({
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: element.borderColor ?? "", onChange: (e) => onChange({ borderColor: e.target.value }), placeholder: "None" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass}`, value: (_wb = element.borderColor) != null ? _wb : "", onChange: (e) => onChange({ borderColor: e.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12212,
               columnNumber: 19
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.borderWidth ?? 0, onChange: (v) => onChange({ borderWidth: v }), noLabel: true, className: "w-12" }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_xb = element.borderWidth) != null ? _xb : 0, onChange: (v) => onChange({ borderWidth: v }), noLabel: true, className: "w-12" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12213,
               columnNumber: 19
@@ -24268,7 +24548,7 @@ function InspectorPanel({
             lineNumber: 12217,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.borderRadiusPx ?? 0, onChange: (v) => onChange({ borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_yb = element.borderRadiusPx) != null ? _yb : 0, onChange: (v) => onChange({ borderRadiusPx: v }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12218,
             columnNumber: 17
@@ -24329,7 +24609,7 @@ function InspectorPanel({
                   lineNumber: 12239,
                   columnNumber: 25
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: ensureFrameLayout(element.layout).gap ?? 12, onChange: (v) => onChange({ layout: { ...ensureFrameLayout(element.layout), gap: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_zb = ensureFrameLayout(element.layout).gap) != null ? _zb : 12, onChange: (v) => onChange({ layout: { ...ensureFrameLayout(element.layout), gap: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 12240,
                   columnNumber: 25
@@ -24345,7 +24625,7 @@ function InspectorPanel({
                   lineNumber: 12243,
                   columnNumber: 25
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: ensureFrameLayout(element.layout).padding ?? 16, onChange: (v) => onChange({ layout: { ...ensureFrameLayout(element.layout), padding: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ab = ensureFrameLayout(element.layout).padding) != null ? _Ab : 16, onChange: (v) => onChange({ layout: { ...ensureFrameLayout(element.layout), padding: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 12244,
                   columnNumber: 25
@@ -24620,7 +24900,7 @@ function InspectorPanel({
               lineNumber: 12354,
               columnNumber: 21
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: element.childIds?.[0] }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: (_Bb = element.childIds) == null ? void 0 : _Bb[0] }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12355,
               columnNumber: 21
@@ -24636,7 +24916,7 @@ function InspectorPanel({
               lineNumber: 12358,
               columnNumber: 21
             }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: element.childIds?.[1] }, void 0, false, {
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: (_Cb = element.childIds) == null ? void 0 : _Cb[1] }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
               lineNumber: 12359,
               columnNumber: 21
@@ -24750,7 +25030,7 @@ function InspectorPanel({
           "button",
           {
             type: "button",
-            onClick: () => onPreviewVisibilityAction?.("enter"),
+            onClick: () => onPreviewVisibilityAction == null ? void 0 : onPreviewVisibilityAction("enter"),
             className: "h-7 flex-1 rounded-md border border-emerald-800 bg-emerald-900/30 text-[12px] leading-[1.4] text-emerald-200 transition-colors hover:bg-emerald-800/40",
             children: "Start"
           },
@@ -24767,7 +25047,7 @@ function InspectorPanel({
           "button",
           {
             type: "button",
-            onClick: () => onPreviewVisibilityAction?.("exit"),
+            onClick: () => onPreviewVisibilityAction == null ? void 0 : onPreviewVisibilityAction("exit"),
             className: "h-7 flex-1 rounded-md border border-amber-800 bg-amber-900/30 text-[12px] leading-[1.4] text-amber-200 transition-colors hover:bg-amber-800/40",
             children: "Test Exit"
           },
@@ -24784,7 +25064,7 @@ function InspectorPanel({
           "button",
           {
             type: "button",
-            onClick: () => onPreviewVisibilityAction?.("reset"),
+            onClick: () => onPreviewVisibilityAction == null ? void 0 : onPreviewVisibilityAction("reset"),
             className: "h-7 flex-1 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] text-[12px] leading-[1.4] text-slate-200 transition-colors hover:bg-[#1d1d20]",
             children: "Reset"
           },
@@ -24824,7 +25104,7 @@ function InspectorPanel({
           "select",
           {
             className: `flex-1 ${fieldClass}`,
-            value: element.animation?.enter ?? "none",
+            value: (_Eb = (_Db = element.animation) == null ? void 0 : _Db.enter) != null ? _Eb : "none",
             onChange: (e) => onChange({
               animation: {
                 ...element.animation,
@@ -24861,7 +25141,7 @@ function InspectorPanel({
           "select",
           {
             className: `flex-1 ${fieldClass}`,
-            value: element.animation?.exit ?? "none",
+            value: (_Gb = (_Fb = element.animation) == null ? void 0 : _Fb.exit) != null ? _Gb : "none",
             onChange: (e) => onChange({
               animation: {
                 ...element.animation,
@@ -24898,7 +25178,7 @@ function InspectorPanel({
           NumberField,
           {
             label: "",
-            value: element.animation?.durationMs ?? 400,
+            value: (_Ib = (_Hb = element.animation) == null ? void 0 : _Hb.durationMs) != null ? _Ib : 400,
             onChange: (v) => onChange({
               animation: {
                 ...element.animation,
@@ -24932,7 +25212,7 @@ function InspectorPanel({
           NumberField,
           {
             label: "",
-            value: element.animation?.delayMs ?? 0,
+            value: (_Kb = (_Jb = element.animation) == null ? void 0 : _Jb.delayMs) != null ? _Kb : 0,
             onChange: (v) => onChange({
               animation: {
                 ...element.animation,
@@ -24966,7 +25246,7 @@ function InspectorPanel({
           "select",
           {
             className: `flex-1 ${fieldClass}`,
-            value: element.animation?.easing ?? "ease-out",
+            value: (_Mb = (_Lb = element.animation) == null ? void 0 : _Lb.easing) != null ? _Mb : "ease-out",
             onChange: (e) => onChange({
               animation: {
                 ...element.animation,
@@ -25044,7 +25324,7 @@ function InspectorPanel({
             "select",
             {
               className: `w-24 ${fieldClass}`,
-              value: element.clip?.type ?? "none",
+              value: (_Ob = (_Nb = element.clip) == null ? void 0 : _Nb.type) != null ? _Ob : "none",
               onChange: (e) => onChange({ clip: { ...element.clip, type: e.target.value } }),
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "none", children: "None" }, void 0, false, {
@@ -25078,13 +25358,13 @@ function InspectorPanel({
           lineNumber: 12560,
           columnNumber: 13
         }, this),
-        element.clip?.type === "roundRect" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 ml-1 flex items-center gap-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2", children: [
+        ((_Pb = element.clip) == null ? void 0 : _Pb.type) === "roundRect" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 ml-1 flex items-center gap-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-10 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Radius" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12574,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: element.clip?.radius ?? 0, onChange: (v) => onChange({ clip: { ...element.clip, radius: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Rb = (_Qb = element.clip) == null ? void 0 : _Qb.radius) != null ? _Rb : 0, onChange: (v) => onChange({ clip: { ...element.clip, radius: v } }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12575,
             columnNumber: 17
@@ -25112,7 +25392,7 @@ function InspectorPanel({
       (element.type === "progressBar" || element.type === "progressRing") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "mb-1 block text-[12px] leading-[1.4] text-slate-400", children: [
           "Value (",
-          Math.round((element.value ?? 0) * 100),
+          Math.round(((_Sb = element.value) != null ? _Sb : 0) * 100),
           "%)"
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
@@ -25127,7 +25407,7 @@ function InspectorPanel({
             max: "1",
             step: "0.01",
             className: "h-1 w-full rounded-full bg-[#161618]",
-            value: element.value ?? 0,
+            value: (_Tb = element.value) != null ? _Tb : 0,
             onChange: (e) => onChange({ value: Number(e.target.value) })
           },
           void 0,
@@ -25205,10 +25485,12 @@ function LowerThirdAutomationsPanel({
   element,
   onChange
 }) {
+  var _a;
   const [open, setOpen] = reactExports.useState(false);
-  const automations = element.automations ?? [];
+  const automations = (_a = element.automations) != null ? _a : [];
   const getAuto = (trigger) => automations.find((a) => a.trigger === trigger);
   const setAuto = (trigger, patch) => {
+    var _a2;
     const existing = getAuto(trigger);
     const tpl = LT_TRIGGERS.find((t) => t.value === trigger);
     const updated = existing ? { ...existing, ...patch } : {
@@ -25216,7 +25498,7 @@ function LowerThirdAutomationsPanel({
       enabled: false,
       titleTemplate: tpl.defaultTitle,
       subtitleTemplate: tpl.defaultSubtitle,
-      durationMs: element.defaultDurationMs ?? 8e3,
+      durationMs: (_a2 = element.defaultDurationMs) != null ? _a2 : 8e3,
       cooldownMs: 3e4,
       ...patch
     };
@@ -25286,8 +25568,9 @@ function LowerThirdAutomationsPanel({
         columnNumber: 11
       }, this),
       LT_TRIGGERS.map((tpl) => {
+        var _a2, _b, _c, _d, _e, _f;
         const auto = getAuto(tpl.value);
-        const enabled = auto?.enabled ?? false;
+        const enabled = (_a2 = auto == null ? void 0 : auto.enabled) != null ? _a2 : false;
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -25341,7 +25624,7 @@ function LowerThirdAutomationsPanel({
                 "input",
                 {
                   className: fieldClass,
-                  value: auto?.titleTemplate ?? tpl.defaultTitle,
+                  value: (_b = auto == null ? void 0 : auto.titleTemplate) != null ? _b : tpl.defaultTitle,
                   onChange: (e) => setAuto(tpl.value, { titleTemplate: e.target.value }),
                   placeholder: tpl.defaultTitle
                 },
@@ -25369,7 +25652,7 @@ function LowerThirdAutomationsPanel({
                 "input",
                 {
                   className: fieldClass,
-                  value: auto?.subtitleTemplate ?? tpl.defaultSubtitle,
+                  value: (_c = auto == null ? void 0 : auto.subtitleTemplate) != null ? _c : tpl.defaultSubtitle,
                   onChange: (e) => setAuto(tpl.value, { subtitleTemplate: e.target.value }),
                   placeholder: tpl.defaultSubtitle || "Optional subtitle"
                 },
@@ -25399,7 +25682,7 @@ function LowerThirdAutomationsPanel({
                   {
                     type: "number",
                     className: fieldClass,
-                    value: auto?.durationMs ?? element.defaultDurationMs ?? 8e3,
+                    value: (_e = (_d = auto == null ? void 0 : auto.durationMs) != null ? _d : element.defaultDurationMs) != null ? _e : 8e3,
                     onChange: (e) => setAuto(tpl.value, { durationMs: Number(e.target.value) }),
                     min: 1e3,
                     step: 500
@@ -25429,7 +25712,7 @@ function LowerThirdAutomationsPanel({
                   {
                     type: "number",
                     className: fieldClass,
-                    value: auto?.cooldownMs ?? 3e4,
+                    value: (_f = auto == null ? void 0 : auto.cooldownMs) != null ? _f : 3e4,
                     onChange: (e) => setAuto(tpl.value, { cooldownMs: Number(e.target.value) }),
                     min: 0,
                     step: 1e3
@@ -25559,7 +25842,7 @@ function AssetPickerModal({
         refresh();
         onPick(url);
       } catch (e) {
-        setErr(e?.message || "Upload failed");
+        setErr((e == null ? void 0 : e.message) || "Upload failed");
       } finally {
         setBusy(false);
       }
@@ -25635,7 +25918,8 @@ function AssetPickerModal({
                     accept,
                     className: "hidden",
                     onChange: (e) => {
-                      const f = e.target.files?.[0];
+                      var _a;
+                      const f = (_a = e.target.files) == null ? void 0 : _a[0];
                       if (!f) return;
                       void doUpload(f);
                       e.currentTarget.value = "";
@@ -25654,7 +25938,10 @@ function AssetPickerModal({
                   "button",
                   {
                     disabled: busy,
-                    onClick: () => fileInputRef.current?.click(),
+                    onClick: () => {
+                      var _a;
+                      return (_a = fileInputRef.current) == null ? void 0 : _a.click();
+                    },
                     className: "flex h-8 items-center justify-center gap-2 rounded-md border border-indigo-400/30 bg-indigo-500/15 px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-indigo-100 transition-colors hover:bg-indigo-500/20 disabled:opacity-60",
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FolderIcon, {}, void 0, false, {
@@ -26569,12 +26856,14 @@ function CreationToolbar({
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "file", accept: ".json,.scraplet.json", className: "hidden", onChange: (e) => {
-          const file = e.target.files?.[0];
+          var _a;
+          const file = (_a = e.target.files) == null ? void 0 : _a[0];
           if (!file) return;
           const reader = new FileReader();
           reader.onload = (ev) => {
+            var _a2;
             try {
-              const parsed = JSON.parse(ev.target?.result);
+              const parsed = JSON.parse((_a2 = ev.target) == null ? void 0 : _a2.result);
               onImportJSON(parsed);
             } catch {
               alert("Invalid JSON file");
@@ -26707,9 +26996,10 @@ function LayersPanel({
   const draggedIdRef = reactExports.useRef(null);
   const [dragState, setDragState] = reactExports.useState(null);
   reactExports.useEffect(() => {
+    var _a;
     if (selectedIds.length === 0) return;
     const lastId = selectedIds[selectedIds.length - 1];
-    const el = containerRef.current?.querySelector(`[data-layer-id="${lastId}"]`);
+    const el = (_a = containerRef.current) == null ? void 0 : _a.querySelector(`[data-layer-id="${lastId}"]`);
     if (el) {
       el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
@@ -26723,13 +27013,16 @@ function LayersPanel({
   const roots = layersTopToBottom.filter((el) => !allChildIds.has(el.id));
   const renderItem = (el, depth, isLastChild, parentTree, roleLabel) => {
     const isSelected = selectedIds.includes(el.id);
-    const isVisible = visibilityOverrides?.[el.id] !== void 0 ? visibilityOverrides[el.id] !== false : el.visible !== false;
+    const isVisible = (visibilityOverrides == null ? void 0 : visibilityOverrides[el.id]) !== void 0 ? visibilityOverrides[el.id] !== false : el.visible !== false;
     const isLocked = el.locked === true;
     const isRenaming = renamingId === el.id;
     const isContainer = el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean";
     let children = [];
     if (isContainer) {
-      children = layersTopToBottom.filter((c) => el.childIds?.includes(c.id));
+      children = layersTopToBottom.filter((c) => {
+        var _a;
+        return (_a = el.childIds) == null ? void 0 : _a.includes(c.id);
+      });
     }
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -26766,7 +27059,7 @@ function LayersPanel({
           },
           onDragLeave: (e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) {
-              setDragState((prev) => prev?.overId === el.id ? null : prev);
+              setDragState((prev) => (prev == null ? void 0 : prev.overId) === el.id ? null : prev);
             }
           },
           onDrop: (e) => {
@@ -26789,7 +27082,7 @@ function LayersPanel({
             setDragState(null);
           },
           children: [
-            dragState?.overId === el.id && dragState.draggedId !== el.id && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+            (dragState == null ? void 0 : dragState.overId) === el.id && dragState.draggedId !== el.id && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
               "div",
               {
                 className: "absolute left-1 right-1 h-px bg-indigo-300 pointer-events-none",
@@ -27077,7 +27370,8 @@ function LayersPanel({
 function SaveLowerThirdButton({ element }) {
   const [status, setStatus] = reactExports.useState("idle");
   const save = async () => {
-    const name = element.name?.trim();
+    var _a;
+    const name = (_a = element.name) == null ? void 0 : _a.trim();
     if (!name) {
       alert("Give this lower third a name first (at the top of the inspector).");
       return;
@@ -27138,7 +27432,8 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
   const [ltLoaded, setLtLoaded] = reactExports.useState(false);
   reactExports.useEffect(() => {
     fetch("/dashboard/api/lower-third-templates", { credentials: "include" }).then((r) => r.json()).then((d) => {
-      if (d.ok) setLtTemplates(d.templates ?? []);
+      var _a;
+      if (d.ok) setLtTemplates((_a = d.templates) != null ? _a : []);
     }).catch(() => {
     }).finally(() => setLtLoaded(true));
   }, []);
@@ -27172,7 +27467,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
         "div",
         {
           className: "group flex items-center justify-between rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] px-3 py-2 cursor-pointer hover:border-indigo-500/50 hover:bg-[#1d1d20] transition-colors",
-          onClick: () => onInsertLowerThird?.(tmpl),
+          onClick: () => onInsertLowerThird == null ? void 0 : onInsertLowerThird(tmpl),
           title: `Insert "${tmpl.name}" lower third`,
           children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col truncate", children: [
@@ -27239,6 +27534,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
         lineNumber: 13749,
         columnNumber: 11
       }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col gap-1", children: components.map((comp) => {
+        var _a;
         const isBuiltin = comp.id.startsWith("preset_");
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           "div",
@@ -27253,7 +27549,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "mt-1 text-[11px] leading-[1.4] text-slate-500", children: [
-                  comp.elements?.length || 0,
+                  ((_a = comp.elements) == null ? void 0 : _a.length) || 0,
                   " nodes",
                   comp.variantName ? ` • ${comp.variantName}` : ""
                 ] }, void 0, true, {
