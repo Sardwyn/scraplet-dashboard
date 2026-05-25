@@ -660,8 +660,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // Chat messages now flow through overlayGate SSE (chat.message packets) — no widget SSE bridge needed.
 
   // ... (existing refs/state) ...
-  const pinnedMeasureRef = useRef<HTMLDivElement>(null);
-  const [pinnedHeight, setPinnedHeight] = useState(0);
+  // Pinned layer height and elements to render are computed synchronously from configuration
   const [viewport, setViewport] = useState({
     w: window.innerWidth,
     h: window.innerHeight,
@@ -1163,6 +1162,17 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
   const normalElements = rootElements.filter((el: any) => el.pinned !== true);
 
+  const pinnedElementsToRender = React.useMemo(() => {
+    if (!canvasInitialized) return pinnedElements;
+    const canvasTypes = new Set(['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image']);
+    return pinnedElements.filter(el => !canvasTypes.has(el.type));
+  }, [pinnedElements, canvasInitialized]);
+
+  const pinnedHeight = React.useMemo(() => {
+    if (pinnedElements.length === 0) return 0;
+    return Math.max(...pinnedElements.map((el: any) => el.height ?? 0));
+  }, [pinnedElements]);
+
   const normalElementsToRender = React.useMemo(() => {
     if (!canvasInitialized) return normalElements;
     const canvasTypes = new Set(['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image']);
@@ -1264,30 +1274,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     };
   }, [usedFontsKey, canvasInitialized]);
 
-  // Measure pinned block height in overlay coordinate space (unscaled)
-  useLayoutEffect(() => {
-    const el = pinnedMeasureRef.current;
-    if (!el || pinnedElements.length === 0) {
-      setPinnedHeight(0);
-      return;
-    }
-
-    const sync = () => {
-      const px = el.getBoundingClientRect().height;
-      const overlayUnits = scale > 0 ? px / scale : 0;
-      setPinnedHeight(Math.ceil(overlayUnits));
-    };
-
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(el);
-    window.addEventListener("resize", sync);
-
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", sync);
-    };
-  }, [pinnedElements.length, scale]);
+  // Pinned block height computed via pure hook useMemo (no DOM measurement needed)
 
   // Sync scale transform to pre-rendered widget containers
   useEffect(() => {
@@ -1358,9 +1345,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             }}
           />
           {/* PINNED LAYER */}
-          {pinnedElements.length > 0 && (
+          {pinnedElementsToRender.length > 0 && (
             <div
-              ref={pinnedMeasureRef}
               style={{
                 position: "absolute",
                 top: 0,
@@ -1371,7 +1357,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 transformStyle: "preserve-3d",
               }}
             >
-              {pinnedElements.map((el: any) => (
+              {pinnedElementsToRender.map((el: any) => (
                 <ElementRenderer
                   key={el.id}
                   element={{

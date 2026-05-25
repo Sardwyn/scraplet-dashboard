@@ -83838,8 +83838,6 @@ ${parts.join("\n")}
         window.dispatchEvent(new CustomEvent("scraplet:overlay:event", { detail: packet }));
       }
     });
-    const pinnedMeasureRef = reactExports.useRef(null);
-    const [pinnedHeight, setPinnedHeight] = reactExports.useState(0);
     const [viewport, setViewport] = reactExports.useState({
       w: window.innerWidth,
       h: window.innerHeight
@@ -84238,6 +84236,18 @@ ${parts.join("\n")}
     const rootElements = React.useMemo(() => elements.filter((el) => !allChildIds.has(el.id)), [elements, allChildIds]);
     const pinnedElements = rootElements.filter((el) => el.pinned === true);
     const normalElements = rootElements.filter((el) => el.pinned !== true);
+    const pinnedElementsToRender = React.useMemo(() => {
+      if (!canvasInitialized) return pinnedElements;
+      const canvasTypes = /* @__PURE__ */ new Set(["shape", "rect", "ellipse", "circle", "path", "text", "video", "image"]);
+      return pinnedElements.filter((el) => !canvasTypes.has(el.type));
+    }, [pinnedElements, canvasInitialized]);
+    const pinnedHeight = React.useMemo(() => {
+      if (pinnedElements.length === 0) return 0;
+      return Math.max(...pinnedElements.map((el) => {
+        var _a4;
+        return (_a4 = el.height) != null ? _a4 : 0;
+      }));
+    }, [pinnedElements]);
     const normalElementsToRender = React.useMemo(() => {
       if (!canvasInitialized) return normalElements;
       const canvasTypes = /* @__PURE__ */ new Set(["shape", "rect", "ellipse", "circle", "path", "text", "video", "image"]);
@@ -84311,26 +84321,6 @@ ${parts.join("\n")}
         cancelled = true;
       };
     }, [usedFontsKey, canvasInitialized]);
-    reactExports.useLayoutEffect(() => {
-      const el = pinnedMeasureRef.current;
-      if (!el || pinnedElements.length === 0) {
-        setPinnedHeight(0);
-        return;
-      }
-      const sync = () => {
-        const px = el.getBoundingClientRect().height;
-        const overlayUnits = scale > 0 ? px / scale : 0;
-        setPinnedHeight(Math.ceil(overlayUnits));
-      };
-      sync();
-      const ro2 = new ResizeObserver(sync);
-      ro2.observe(el);
-      window.addEventListener("resize", sync);
-      return () => {
-        ro2.disconnect();
-        window.removeEventListener("resize", sync);
-      };
-    }, [pinnedElements.length, scale]);
     reactExports.useEffect(() => {
       const widgetWrapper = document.getElementById("widget-containers-prerender");
       if (widgetWrapper) {
@@ -84340,7 +84330,7 @@ ${parts.join("\n")}
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1304,
+        lineNumber: 1291,
         columnNumber: 7
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84388,7 +84378,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1332,
+                    lineNumber: 1319,
                     columnNumber: 11
                   },
                   this
@@ -84412,15 +84402,14 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1347,
+                    lineNumber: 1334,
                     columnNumber: 11
                   },
                   this
                 ),
-                pinnedElements.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                pinnedElementsToRender.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                   "div",
                   {
-                    ref: pinnedMeasureRef,
                     style: {
                       position: "absolute",
                       top: 0,
@@ -84430,7 +84419,7 @@ ${parts.join("\n")}
                       pointerEvents: "none",
                       transformStyle: "preserve-3d"
                     },
-                    children: pinnedElements.map((el) => {
+                    children: pinnedElementsToRender.map((el) => {
                       var _a4;
                       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                         ElementRenderer,
@@ -84453,7 +84442,7 @@ ${parts.join("\n")}
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                          lineNumber: 1375,
+                          lineNumber: 1361,
                           columnNumber: 17
                         },
                         this
@@ -84464,7 +84453,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1362,
+                    lineNumber: 1349,
                     columnNumber: 13
                   },
                   this
@@ -84491,14 +84480,14 @@ ${parts.join("\n")}
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                      lineNumber: 1401,
+                      lineNumber: 1387,
                       columnNumber: 17
                     },
                     this
                   );
                 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 1399,
+                  lineNumber: 1385,
                   columnNumber: 13
                 }, this)
               ]
@@ -84507,7 +84496,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1320,
+              lineNumber: 1307,
               columnNumber: 9
             },
             this
@@ -84517,7 +84506,7 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1307,
+          lineNumber: 1294,
           columnNumber: 7
         },
         this
@@ -84546,7 +84535,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1437,
+              lineNumber: 1423,
               columnNumber: 9
             },
             this
@@ -84556,19 +84545,19 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1426,
+          lineNumber: 1412,
           columnNumber: 7
         },
         this
       ),
       !isOBS && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(DebugHud, { state, data: eventData }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1445,
+        lineNumber: 1431,
         columnNumber: 18
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1303,
+      lineNumber: 1290,
       columnNumber: 5
     }, this);
   }
@@ -84576,7 +84565,7 @@ ${parts.join("\n")}
   if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
     clientExports.createRoot(rootEl).render(/* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(OverlayRuntimeRoot, { publicId: window.__OVERLAY_PUBLIC_ID__ }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1456,
+      lineNumber: 1442,
       columnNumber: 29
     }, void 0));
   }
