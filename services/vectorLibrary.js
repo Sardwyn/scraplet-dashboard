@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import parseSvgPath from 'parse-svg-path';
 import absSvgPath from 'abs-svg-path';
 import normalizeSvgPath from 'normalize-svg-path';
+import { getMotifSvg } from './motifLibrary.js';
 
 const ICONIFY_API_BASE = 'https://api.iconify.design';
 
@@ -31,9 +32,17 @@ export async function searchIcons(query, limit = 5) {
  */
 export async function getIconSvgAsPaths(iconId) {
   try {
-    const res = await fetch(`${ICONIFY_API_BASE}/${iconId}.svg`);
-    if (!res.ok) throw new Error(`Iconify fetch failed: ${res.status}`);
-    const svgStr = await res.text();
+    let svgStr;
+    if (iconId && iconId.startsWith('motif:')) {
+      svgStr = getMotifSvg(iconId);
+      if (!svgStr) {
+        throw new Error(`Local curated motif '${iconId}' not found in motifLibrary.`);
+      }
+    } else {
+      const res = await fetch(`${ICONIFY_API_BASE}/${iconId}.svg`);
+      if (!res.ok) throw new Error(`Iconify fetch failed: ${res.status}`);
+      svgStr = await res.text();
+    }
 
     const $ = cheerio.load(svgStr, { xmlMode: true });
     const paths = $('path');

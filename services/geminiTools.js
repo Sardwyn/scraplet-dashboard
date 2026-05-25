@@ -292,7 +292,9 @@ export const canvasToolsSchema = {
           fillColor: { type: "string", description: "Hex color code to fill the vector." },
           x: { type: "integer" },
           y: { type: "integer" },
-          width: { type: "integer", description: "Target width. Height will auto-scale if not provided." }
+          width: { type: "integer", description: "Target width. Height will auto-scale if not provided." },
+          name: { type: "string", description: "Optional descriptive name of the vector element, e.g. 'raven_base_for_boolean'." },
+          id: { type: "string", description: "Optional unique element ID (UUID or custom name identifier) to pre-assign." }
         },
         required: ["overlayId", "iconId"]
       }
@@ -490,7 +492,7 @@ export const canvasToolsSchema = {
           name: { type: "string", description: "Optional custom descriptive name for the canvas node." },
           propOverrides: {
             type: "object",
-            description: "Optional key-value parameters to directly override default styles/behaviours of the widget (e.g., custom fonts, theme colors, limits)."
+            description: "Optional key-value parameters to directly override default styles/behaviours of the widget (e.g., custom fonts, theme colors, limits). Supports dynamic theme mappings like 'theme.fontFamily', 'theme.textColor', 'theme.accentColor', 'theme.panelColor', and alpha modifiers like 'theme.panelColor|0.4' or 'theme.accentColor|0.8'."
           },
           anchorZone: {
             type: "string",

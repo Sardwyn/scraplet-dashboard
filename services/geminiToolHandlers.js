@@ -171,47 +171,77 @@ function getValidCompositionVariant(variant, structureId) {
   return 'standard';
 }
 
+function hexToRgba(hex, alpha) {
+  if (!hex || typeof hex !== 'string') return hex;
+  let cleanHex = hex.trim().replace('#', '');
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex[0] + cleanHex[0] + cleanHex[1] + cleanHex[1] + cleanHex[2] + cleanHex[2];
+  }
+  if (cleanHex.length === 6) {
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return hex;
+}
+
 function resolveThemeValue(value, paletteId, structureId, componentId) {
   if (typeof value !== 'string') return value;
   if (!value.startsWith('theme.')) return value;
 
-  const key = value.substring(6); // e.g., 'bgColor', 'borderRadiusPx'
+  const parts = value.substring(6).split('|');
+  const key = parts[0];
+  const alphaStr = parts[1];
+
+  let resolved = null;
 
   // 1. Try component-specific override in active palette
   if (componentId && paletteId && tokens.palettes[paletteId]) {
     const pal = tokens.palettes[paletteId];
     if (pal.components && pal.components[componentId] && pal.components[componentId][key] !== undefined) {
-      return pal.components[componentId][key];
+      resolved = pal.components[componentId][key];
     }
   }
 
   // 2. Try component-specific override in active structure
-  if (componentId && structureId && tokens.structures[structureId]) {
+  if (resolved === null && componentId && structureId && tokens.structures[structureId]) {
     const struct = tokens.structures[structureId];
     if (struct.components && struct.components[componentId] && struct.components[componentId][key] !== undefined) {
-      return struct.components[componentId][key];
+      resolved = struct.components[componentId][key];
     }
   }
 
   // 3. Try to find in standard palette
-  if (paletteId && tokens.palettes[paletteId]) {
+  if (resolved === null && paletteId && tokens.palettes[paletteId]) {
     const pal = tokens.palettes[paletteId];
-    if (pal[key] !== undefined) return pal[key];
+    if (pal[key] !== undefined) resolved = pal[key];
   }
   
   // 4. Try to find in standard structure
-  if (structureId && tokens.structures[structureId]) {
+  if (resolved === null && structureId && tokens.structures[structureId]) {
     const struct = tokens.structures[structureId];
-    if (struct[key] !== undefined) return struct[key];
+    if (struct[key] !== undefined) resolved = struct[key];
   }
 
   // Fallback to carbon_slate and minimalist
-  const fallbackPal = tokens.palettes['carbon_slate'] || {};
-  const fallbackStruct = tokens.structures['minimalist'] || {};
-  if (fallbackPal[key] !== undefined) return fallbackPal[key];
-  if (fallbackStruct[key] !== undefined) return fallbackStruct[key];
+  if (resolved === null) {
+    const fallbackPal = tokens.palettes['carbon_slate'] || {};
+    const fallbackStruct = tokens.structures['minimalist'] || {};
+    if (fallbackPal[key] !== undefined) {
+      resolved = fallbackPal[key];
+    } else if (fallbackStruct[key] !== undefined) {
+      resolved = fallbackStruct[key];
+    } else {
+      resolved = value;
+    }
+  }
 
-  return value;
+  if (alphaStr && typeof resolved === 'string' && resolved.startsWith('#')) {
+    resolved = hexToRgba(resolved, alphaStr);
+  }
+
+  return resolved;
 }
 
 function resolveThemeReferences(obj, paletteId, structureId, componentId) {
@@ -882,8 +912,11 @@ export async function applySceneTemplateInternal(overlayId, guildId, { archetype
   const arch = archetypesData.archetypes[archetypeId];
   if (!arch) return { error: `Invalid archetypeId: '${archetypeId}'` };
 
-  const variant = arch.variants[variantId];
-  if (!variant) return { error: `Invalid variantId: '${variantId}' for archetype '${archetypeId}'` };
+  const validVariants = arch.variants ? Object.keys(arch.variants) : [];
+  const actualVariantId = variantId || (validVariants.includes('immersive') ? 'immersive' : (validVariants[0] || 'standard'));
+
+  const variant = arch.variants[actualVariantId];
+  if (!variant) return { error: `Invalid variantId: '${actualVariantId}' for archetype '${archetypeId}'` };
 
   // 1. Reset canvas elements for the new template blueprint
   overlay.json.elements = [];
@@ -1267,7 +1300,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         
         let message = `Created overlay '${name}'`;
         if (archetypeId) {
-          const actualVariantId = variantId || 'immersive';
+          const arch = archetypesData.archetypes[archetypeId];
+          const validVariants = arch && arch.variants ? Object.keys(arch.variants) : [];
+          const actualVariantId = variantId || (validVariants.includes('immersive') ? 'immersive' : (validVariants[0] || 'standard'));
           const templateResult = await applySceneTemplateInternal(String(newId), guildId, {
             archetypeId,
             variantId: actualVariantId,
@@ -1304,7 +1339,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
       }
 
       case 'add_vector_to_overlay': {
-        const { overlayId, iconId, fillColor, x, y, width } = args;
+        const { overlayId, iconId, fillColor, x, y, width, name, id } = args;
         const overlay = await getOverlay(overlayId, guildId);
         if (!overlay) return { error: `Overlay not found` };
 
@@ -1331,8 +1366,8 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
 
         // Create a single unified Path Element combining all sub-path commands for proportional scaling
         const combinedCommands = svgData.paths.flatMap(p => p.commands);
-        const elId = crypto.randomUUID();
-        overlay.json.elements.push({
+        const elId = id || crypto.randomUUID();
+        const element = {
           id: elId,
           type: 'path',
           path: { commands: combinedCommands },
@@ -1348,7 +1383,13 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           fillOpacity: 1,
           locked: false,
           visible: true
-        });
+        };
+
+        if (name) {
+          element.name = name;
+        }
+
+        overlay.json.elements.push(element);
 
         await updateOverlay(overlayId, guildId, overlay.json);
         return { success: true, message: `Added vector ${iconId}` };
@@ -1501,7 +1542,14 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
 
         const resolvedChildIds = [];
         if (childIds && childIds.length > 0) {
-          resolvedChildIds.push(...childIds);
+          for (const cid of childIds) {
+            const foundEl = overlay.json.elements.find(el => el.id === cid || el.name === cid);
+            if (foundEl) {
+              resolvedChildIds.push(foundEl.id);
+            } else {
+              resolvedChildIds.push(cid);
+            }
+          }
         }
 
         if (childPrimitives && childPrimitives.length > 0) {
@@ -1706,7 +1754,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         if (!overlay) return { error: `Overlay not found` };
 
         for (const up of updates) {
-          const el = overlay.json.elements.find(e => e.id === up.elementId);
+          const el = overlay.json.elements.find(e => e.id === up.elementId || e.name === up.elementId);
           if (el) {
             if (up.x !== undefined) el.x = up.x;
             if (up.y !== undefined) el.y = up.y;
@@ -2122,6 +2170,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           }
         }
 
+        const structureId = overlay.json.structureId;
+        const paletteId = overlay.json.paletteId;
+
         const elId = crypto.randomUUID();
         const element = {
           id: elId,
@@ -2135,11 +2186,9 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
           visible: true,
           locked: false,
           liveDataSource: { sseEventType: null },
-          propOverrides: propOverrides || {}
+          propOverrides: resolveThemeReferences(propOverrides || {}, paletteId, structureId, widgetId)
         };
 
-        const structureId = overlay.json.structureId;
-        const paletteId = overlay.json.paletteId;
         if (structureId) element.structureId = structureId;
         if (paletteId) element.paletteId = paletteId;
         if (anchorZone) element.anchorZone = anchorZone;
@@ -2154,7 +2203,7 @@ export async function executeCanvasTool(guildId, userId, toolName, args) {
         const overlay = await getOverlay(overlayId, guildId);
         if (!overlay) return { error: `Overlay not found` };
 
-        const element = overlay.json.elements.find(el => el.id === elementId);
+        const element = overlay.json.elements.find(el => el.id === elementId || el.name === elementId);
         if (!element) return { error: `Element with ID '${elementId}' not found in overlay` };
 
         if (!element.effects) {
