@@ -1363,7 +1363,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 top: 0,
                 left: 0,
                 right: 0,
-                zIndex: 20,
+                zIndex: 30,
                 pointerEvents: "none",
                 transformStyle: "preserve-3d",
               }}
@@ -1394,7 +1394,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                zIndex on each element (from elementIndex = config order) handles stacking.
                No separate layer containers — they caused z-order bugs in OBS CEF. */}
           {overlay && normalElementsToRender.length > 0 && (
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: 'preserve-3d' }}>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: 'preserve-3d', zIndex: 30 }}>
               {normalElementsToRender.map((el: any) => (
                 <ElementRenderer
                   key={el.id}

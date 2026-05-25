@@ -2047,7 +2047,10 @@ export function ElementRenderer({
     });
     
     if (canonicalTransform !== 'none') {
-        (baseStyle as any).transform = canonicalTransform;
+        const existingTransform = (baseStyle as any).transform;
+        (baseStyle as any).transform = existingTransform && existingTransform !== 'none'
+            ? `${canonicalTransform} ${existingTransform}`
+            : canonicalTransform;
         (baseStyle as any).transformOrigin = 'center center';
     }
 
