@@ -45,6 +45,8 @@ import {
 } from "../shared/overlayTypes";
 import { ElementRenderer } from "../shared/overlayRenderer";
 import { resolveElementTransform } from "../shared/overlayRenderer/renderResolver";
+import { PixiMediaCore } from "../overlay-runtime/PixiMediaCore";
+import { LeaferGraphicCore } from "../overlay-runtime/LeaferGraphicCore";
 import { FontLoader } from "../shared/FontManager";
 import { BindingPicker } from "./BindingPicker";
 import { SourceCatalog } from "../shared/bindingEngine";
@@ -1455,6 +1457,52 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   const baseResolution = config.baseResolution || (config as any).settings || { width: 1920, height: 1080 };
+  const baseW = baseResolution.width;
+  const baseH = baseResolution.height;
+
+  const pixiCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const leaferCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pixiCoreRef = useRef<PixiMediaCore | null>(null);
+  const leaferCoreRef = useRef<LeaferGraphicCore | null>(null);
+  const [canvasInitialized, setCanvasInitialized] = useState(false);
+  const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
+
+  // Initialize Canvas Core Engines
+  useEffect(() => {
+    const pixiCanvas = pixiCanvasRef.current;
+    const leaferCanvas = leaferCanvasRef.current;
+    if (!pixiCanvas || !leaferCanvas) return;
+
+    const pixiCore = new PixiMediaCore();
+    const leaferCore = new LeaferGraphicCore();
+
+    pixiCoreRef.current = pixiCore;
+    leaferCoreRef.current = leaferCore;
+
+    const initCores = async () => {
+      await pixiCore.initialize({
+        canvas: pixiCanvas,
+        width: baseW,
+        height: baseH,
+      });
+      leaferCore.initialize({
+        canvas: leaferCanvas,
+        width: baseW,
+        height: baseH,
+      });
+      setCanvasInitialized(true);
+    };
+
+    initCores().catch(err => {
+      console.error('[OverlayEditor] Failed to initialize dual canvas core rendering:', err);
+    });
+
+    return () => {
+      pixiCore.destroy();
+      leaferCore.destroy();
+      setCanvasInitialized(false);
+    };
+  }, [baseW, baseH]);
   const timeline = useMemo(() => {
     if (activeEventTimeline) {
       const et = (config as any).eventTimelines?.[activeEventTimeline];
@@ -1510,6 +1558,181 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
     return map;
   }, [draftElementPatches, previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
+
+  const isActivelyDragging = !!(primaryDragSession || resizeDragSession || radiusDragSession || pathAnchorDragSession || pathHandleDragSession);
+
+  // Toggle Pixi ticker based on interaction state to achieve maximum 144fps rendering performance
+  useEffect(() => {
+    if (pixiCoreRef.current) {
+      pixiCoreRef.current.setTickerActive(!isActivelyDragging);
+    }
+  }, [isActivelyDragging]);
+
+  // Sync elements to Canvas Core engines reactively
+  React.useLayoutEffect(() => {
+    if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
+
+    const activeLeaferIds = new Set<string>();
+    const activePixiIds = new Set<string>();
+
+    const elementsToSync = Object.values(previewElementsById);
+
+    elementsToSync.forEach((el) => {
+      if (el.visible === false) return;
+
+      const type = el.type;
+
+      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape)
+      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text') {
+        activeLeaferIds.add(el.id);
+
+        const properties: Record<string, any> = { ...el };
+        let drawType: 'rect' | 'circle' | 'ellipse' | 'path' | 'text' = 'rect';
+
+        if (type === 'shape') {
+          const s = el as any;
+          if (s.shape === 'rect') drawType = 'rect';
+          else if (s.shape === 'circle') drawType = 'circle';
+          else if (s.shape === 'ellipse') drawType = 'ellipse';
+          else if (s.shape === 'line') {
+            drawType = 'path';
+            const w = s.width ?? 100;
+            const h = s.height ?? 100;
+            const x1 = s.line ? s.line.x1 * w : 0;
+            const y1 = s.line ? s.line.y1 * h : h / 2;
+            const x2 = s.line ? s.line.x2 * w : w;
+            const y2 = s.line ? s.line.y2 * h : h / 2;
+            properties.pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else {
+            // polygon / triangle
+            drawType = 'path';
+            const w = s.width ?? 100;
+            const h = s.height ?? 100;
+            properties.pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
+          }
+        } else {
+          drawType = type as any;
+        }
+
+        // Trigger font loading if needed
+        if (drawType === 'text' && properties.fontFamily) {
+          leaferCoreRef.current?.preloadFonts([properties.fontFamily]);
+        }
+
+        leaferCoreRef.current?.drawElement(el.id, drawType, properties);
+      }
+
+      // 2. PixiJS Media (video feeds)
+      if (type === 'video') {
+        activePixiIds.add(el.id);
+
+        let videoEl = videoElementsRef.current.get(el.id);
+        if (!videoEl) {
+          videoEl = document.createElement('video');
+          videoEl.crossOrigin = 'anonymous';
+          videoEl.src = el.src || '';
+          videoEl.loop = el.loop !== false;
+          videoEl.muted = el.muted !== false;
+          videoEl.autoplay = el.autoplay !== false;
+          videoEl.playsInline = true;
+          videoEl.volume = 0; // ensure muted for overlay safety
+          
+          // Append to document.body to satisfy browser auto-play policies
+          videoEl.style.display = 'none';
+          document.body.appendChild(videoEl);
+          
+          videoEl.play().catch(err => {
+            console.warn('[PixiMediaCore] Background video play failed:', err);
+          });
+          
+          videoElementsRef.current.set(el.id, videoEl);
+        }
+
+        // Update loop/muted/src properties if changed
+        if (videoEl.src !== (el.src || '')) {
+          videoEl.src = el.src || '';
+          videoEl.load();
+          videoEl.play().catch(() => {});
+        }
+        if (videoEl.loop !== (el.loop !== false)) videoEl.loop = el.loop !== false;
+        if (videoEl.muted !== (el.muted !== false)) videoEl.muted = el.muted !== false;
+
+        // Parse keying/chroma configuration if any
+        let chromaConfig: any = undefined;
+        if (el.keying && el.keying.mode && el.keying.mode !== 'none') {
+          const colorHex = el.keying.color || '#00ff00';
+          const cleanHex = colorHex.replace('#', '');
+          const r = (parseInt(cleanHex.substring(0, 2), 16) || 0) / 255;
+          const g = (parseInt(cleanHex.substring(2, 4), 16) || 255) / 255;
+          const b = (parseInt(cleanHex.substring(4, 6), 16) || 0) / 255;
+          
+          chromaConfig = {
+            keyColor: [r, g, b],
+            similarity: el.keying.similarity ?? 0.4,
+            smoothness: el.keying.smoothness ?? 0.08
+          };
+        }
+
+        pixiCoreRef.current?.updateVideoElement(
+          el.id,
+          videoEl,
+          {
+            x: el.x ?? 0,
+            y: el.y ?? 0,
+            width: el.width ?? 100,
+            height: el.height ?? 100
+          },
+          chromaConfig
+        );
+      }
+    });
+
+    // Cleanup orphaned Leafer elements
+    leaferCoreRef.current?.cleanupOrphanedElements(activeLeaferIds);
+
+    // Cleanup orphaned Pixi video elements
+    videoElementsRef.current.forEach((videoEl, id) => {
+      if (!activePixiIds.has(id)) {
+        videoEl.pause();
+        videoEl.src = "";
+        videoEl.load();
+        videoEl.remove();
+        videoElementsRef.current.delete(id);
+        
+        pixiCoreRef.current?.removeVideoElement(id);
+      }
+    });
+  }, [previewElementsById, canvasInitialized]);
+
+  // Client-Side Unified Snapshot Composite
+  const captureUnifiedSnapshot = useCallback(async (): Promise<string | null> => {
+    const pixiCanvas = pixiCanvasRef.current;
+    const leaferCanvas = leaferCanvasRef.current;
+    if (!pixiCanvas || !leaferCanvas) {
+      console.warn('[Snapshot] Canvases not initialized');
+      return null;
+    }
+
+    try {
+      // Create a temporary staging canvas at the overlay's base resolution
+      const stageCanvas = document.createElement('canvas');
+      stageCanvas.width = baseResolution.width;
+      stageCanvas.height = baseResolution.height;
+      const ctx = stageCanvas.getContext('2d');
+      if (!ctx) return null;
+
+      // 1. Draw Layer 1 (PixiJS canvas)
+      ctx.drawImage(pixiCanvas, 0, 0, baseResolution.width, baseResolution.height);
+
+      // 2. Draw Layer 2 (LeaferJS canvas)
+      ctx.drawImage(leaferCanvas, 0, 0, baseResolution.width, baseResolution.height);
+
+      return stageCanvas.toDataURL('image/png');
+    } catch (err) {
+      console.error('[Snapshot] Failed to composite canvases:', err);
+      return null;
+    }
+  }, [baseResolution.width, baseResolution.height]);
 
   const previewAnimationPhases = useElementAnimationPhases(
     previewElements as OverlayElement[],
@@ -5777,12 +6000,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             a.click();
             URL.revokeObjectURL(url);
           }}
-          onExportPNG={initialOverlay.id ? async () => {
+          onExportPNG={async () => {
+            const dataUrl = await captureUnifiedSnapshot();
+            if (!dataUrl) {
+              alert("Failed to capture snapshot of dual canvas layers.");
+              return;
+            }
             const a = document.createElement('a');
-            a.href = `/dashboard/api/overlays/${initialOverlay.id}/snapshot`;
+            a.href = dataUrl;
             a.download = `${name || 'overlay'}.png`;
             a.click();
-          } : undefined}
+          }}
           onImportJSON={(parsed) => {
             if (!parsed || typeof parsed !== 'object') { alert('Invalid overlay file'); return; }
             if (!confirm('Replace current overlay with imported config? This cannot be undone.')) return;
@@ -6333,6 +6561,36 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 }
               }}
             >
+              {/* WebGL Canvas (PixiJS - Layer 1) */}
+              <canvas
+                ref={pixiCanvasRef}
+                id="pixi-media-canvas"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                }}
+              />
+              
+              {/* Canvas 2D Layer (LeaferJS - Layer 2) */}
+              <canvas
+                ref={leaferCanvasRef}
+                id="leafer-graphics-canvas"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  zIndex: 2,
+                  pointerEvents: 'none',
+                }}
+              />
+
               {/* Grid */}
               {showGrid && (
                 <div
@@ -6510,6 +6768,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   <CanvasElement
                     key={el.id}
                     el={el}
+                    canvasInitialized={canvasInitialized}
                     draftRect={draftRects[el.id]}
                     draftRotationDeg={draftRotationDegs[el.id]}
                     draftRadius={draftRadiusValues[el.id]}
@@ -9206,6 +9465,7 @@ function EffectsStackControls({
  */
 interface CanvasElementProps {
   el: AnyEl;
+  canvasInitialized: boolean;
   // Per-element draft state (only this element's slice)
   draftRect: { x: number; y: number; width: number; height: number } | undefined;
   draftRotationDeg: number | undefined;
@@ -9252,6 +9512,7 @@ interface CanvasElementProps {
 
 const CanvasElement = React.memo(function CanvasElement({
   el,
+  canvasInitialized,
   draftRect,
   draftRotationDeg,
   draftRadius,
@@ -9355,17 +9616,19 @@ const CanvasElement = React.memo(function CanvasElement({
         ...(isSelected ? selectionStyle : {}),
       }}
     >
-      <ElementRenderer
-        element={renderedElNoTransform as any}
-        layout="fill"
-        elementsById={previewElementsById}
-        overlayComponents={overlayComponents}
-        animationPhase={animationPhase}
-        animationPhases={animationPhases}
-        data={renderData}
-        visited={new Set()}
-        overlayPublicId={overlayPublicId}
-      />
+      {(!canvasInitialized || !['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video'].includes(renderedEl.type)) && (
+        <ElementRenderer
+          element={renderedElNoTransform as any}
+          layout="fill"
+          elementsById={previewElementsById}
+          overlayComponents={overlayComponents}
+          animationPhase={animationPhase}
+          animationPhases={animationPhases}
+          data={renderData}
+          visited={new Set()}
+          overlayPublicId={overlayPublicId}
+        />
+      )}
 
       {isPrimary && (
         <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>

@@ -26,6 +26,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "public/static/overlays"),
     emptyOutDir: false,
+    minify: false,
     sourcemap: true,
     chunkSizeWarningLimit: 5000,
     rollupOptions: isRuntime

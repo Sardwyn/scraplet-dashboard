@@ -27,6 +27,8 @@ interface BotWidget {
 interface BotLayerRootProps {
   publicId: string;
   isEditorMode: boolean;
+  pixiCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
+  leaferCanvasRef?: React.RefObject<HTMLCanvasElement | null>;
 }
 
 /**
@@ -38,7 +40,7 @@ interface BotLayerRootProps {
  * - Auto-expires widgets based on duration
  * - z-index 9999+ (above all user-created content)
  */
-export function BotLayerRoot({ publicId, isEditorMode }: BotLayerRootProps) {
+export function BotLayerRoot({ publicId, isEditorMode, pixiCanvasRef, leaferCanvasRef }: BotLayerRootProps) {
   const [widgets, setWidgets] = useState<BotWidget[]>([]);
   // Live data store — tracks overlay variable values from SSE events
   // Used by LowerThirdWidget ticker and other data-bound elements
@@ -172,9 +174,54 @@ export function BotLayerRoot({ publicId, isEditorMode }: BotLayerRootProps) {
         transform: 'translateZ(0)'
       }}
     >
-      {widgets.map(widget => (
-        <BotWidget key={widget.id} widget={widget} liveData={liveData} />
-      ))}
+      {/* WebGL Canvas (PixiJS - Layer 1) */}
+      <canvas
+        ref={pixiCanvasRef}
+        id="pixi-media-canvas"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 10,
+        }}
+      />
+      
+      {/* Canvas 2D Layer (LeaferJS - Layer 2) */}
+      <canvas
+        ref={leaferCanvasRef}
+        id="leafer-graphics-canvas"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 20,
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Absolute HTML Layer (React DOM Widgets - Layer 3) */}
+      <div 
+        id="html-widget-layer" 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 30,
+          pointerEvents: 'none', // Allow passing click through when clicking on canvas items in editor
+        }}
+      >
+        <div style={{ pointerEvents: 'auto', width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
+          {widgets.map(widget => (
+            <BotWidget key={widget.id} widget={widget} liveData={liveData} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

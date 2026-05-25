@@ -16,6 +16,8 @@ import { useUnifiedOverlayState } from './useUnifiedOverlayState';
 import type { OverlayConfigV0 as DerivedOverlayConfigV0 } from './DerivedStateEngine';
 import './widgetRenderers'; // Register unified-state widget renderers
 import { BotLayerRoot } from './BotLayerRoot';
+import { PixiMediaCore } from './PixiMediaCore';
+import { LeaferGraphicCore } from './LeaferGraphicCore';
 
 
 
@@ -625,6 +627,23 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const playbackStartRef = useRef<number | null>(null);
   const overlayConfigHashRef = useRef<string>("");
 
+  const baseW = overlay?.baseResolution?.width ?? (window as any).__OVERLAY_BASE_W__ ?? 1920;
+  const baseH = overlay?.baseResolution?.height ?? (window as any).__OVERLAY_BASE_H__ ?? 1080;
+
+  const pixiCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const leaferCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const pixiCoreRef = useRef<PixiMediaCore | null>(null);
+  const leaferCoreRef = useRef<LeaferGraphicCore | null>(null);
+  const [canvasInitialized, setCanvasInitialized] = useState(false);
+  const videoElementsRef = useRef<Map<string, HTMLVideoElement>>(new Map());
+  const [fontTrigger, setFontTrigger] = useState(0);
+
+  useEffect(() => {
+    const syncFonts = () => setFontTrigger(prev => prev + 1);
+    document.fonts.addEventListener('loadingdone', syncFonts);
+    return () => document.fonts.removeEventListener('loadingdone', syncFonts);
+  }, []);
+
   // OBS detection — disable debug HUD when running inside OBS CEF
   const isOBS = navigator.userAgent.includes("OBS");
 
@@ -721,6 +740,176 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const animationPhases = useElementAnimationPhases(elements);
 
+  // Initialize Dual Canvas core engines
+  useEffect(() => {
+    const pixiCanvas = pixiCanvasRef.current;
+    const leaferCanvas = leaferCanvasRef.current;
+    if (!pixiCanvas || !leaferCanvas) return;
+
+    const pixiCore = new PixiMediaCore();
+    const leaferCore = new LeaferGraphicCore();
+
+    pixiCoreRef.current = pixiCore;
+    leaferCoreRef.current = leaferCore;
+
+    const initCores = async () => {
+      await pixiCore.initialize({
+        canvas: pixiCanvas,
+        width: baseW,
+        height: baseH,
+      });
+      leaferCore.initialize({
+        canvas: leaferCanvas,
+        width: baseW,
+        height: baseH,
+      });
+      setCanvasInitialized(true);
+    };
+
+    initCores().catch(err => {
+      console.error('[OverlayRuntime] Failed to initialize dual canvas core rendering:', err);
+    });
+
+    return () => {
+      pixiCore.destroy();
+      leaferCore.destroy();
+      setCanvasInitialized(false);
+    };
+  }, [baseW, baseH]);
+
+  // Sync elements to Canvas Core engines (Leafer for vector/text, Pixi for media/video)
+  useLayoutEffect(() => {
+    if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
+
+    const activeLeaferIds = new Set<string>();
+    const activePixiIds = new Set<string>();
+
+    elements.forEach((el) => {
+      if (el.visible === false) return;
+
+      const type = el.type;
+
+      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape)
+      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text') {
+        activeLeaferIds.add(el.id);
+
+        const properties: Record<string, any> = { ...el };
+        let drawType: 'rect' | 'circle' | 'ellipse' | 'path' | 'text' = 'rect';
+
+        if (type === 'shape') {
+          const s = el as any;
+          if (s.shape === 'rect') drawType = 'rect';
+          else if (s.shape === 'circle') drawType = 'circle';
+          else if (s.shape === 'ellipse') drawType = 'ellipse';
+          else if (s.shape === 'line') {
+            drawType = 'path';
+            const w = s.width ?? 100;
+            const h = s.height ?? 100;
+            const x1 = s.line ? s.line.x1 * w : 0;
+            const y1 = s.line ? s.line.y1 * h : h / 2;
+            const x2 = s.line ? s.line.x2 * w : w;
+            const y2 = s.line ? s.line.y2 * h : h / 2;
+            properties.pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else {
+            // polygon / triangle
+            drawType = 'path';
+            const w = s.width ?? 100;
+            const h = s.height ?? 100;
+            properties.pathData = `M ${w / 2} 0 L ${w} ${h} L 0 ${h} Z`;
+          }
+        } else {
+          drawType = type as any;
+        }
+
+        // Trigger font loading if needed
+        if (drawType === 'text' && properties.fontFamily) {
+          leaferCoreRef.current?.preloadFonts([properties.fontFamily]);
+        }
+
+        leaferCoreRef.current?.drawElement(el.id, drawType, properties);
+      }
+
+      // 2. PixiJS Media (video feeds)
+      if (type === 'video') {
+        activePixiIds.add(el.id);
+
+        let videoEl = videoElementsRef.current.get(el.id);
+        if (!videoEl) {
+          videoEl = document.createElement('video');
+          videoEl.crossOrigin = 'anonymous';
+          videoEl.src = el.src || '';
+          videoEl.loop = el.loop !== false;
+          videoEl.muted = el.muted !== false;
+          videoEl.autoplay = el.autoplay !== false;
+          videoEl.playsInline = true;
+          videoEl.volume = 0; // ensure muted for overlay safety
+          
+          // Append to document.body to satisfy browser auto-play policies
+          videoEl.style.display = 'none';
+          document.body.appendChild(videoEl);
+          
+          videoEl.play().catch(err => {
+            console.warn('[PixiMediaCore] Background video play failed:', err);
+          });
+          
+          videoElementsRef.current.set(el.id, videoEl);
+        }
+
+        // Update loop/muted/src properties if changed
+        if (videoEl.src !== (el.src || '')) {
+          videoEl.src = el.src || '';
+          videoEl.load();
+          videoEl.play().catch(() => {});
+        }
+        if (videoEl.loop !== (el.loop !== false)) videoEl.loop = el.loop !== false;
+        if (videoEl.muted !== (el.muted !== false)) videoEl.muted = el.muted !== false;
+
+        // Parse keying/chroma configuration if any
+        let chromaConfig: any = undefined;
+        if (el.keying && el.keying.mode && el.keying.mode !== 'none') {
+          const colorHex = el.keying.color || '#00ff00';
+          const cleanHex = colorHex.replace('#', '');
+          const r = (parseInt(cleanHex.substring(0, 2), 16) || 0) / 255;
+          const g = (parseInt(cleanHex.substring(2, 4), 16) || 255) / 255;
+          const b = (parseInt(cleanHex.substring(4, 6), 16) || 0) / 255;
+          
+          chromaConfig = {
+            keyColor: [r, g, b],
+            similarity: el.keying.similarity ?? 0.4,
+            smoothness: el.keying.smoothness ?? 0.08
+          };
+        }
+
+        pixiCoreRef.current?.updateVideoElement(
+          el.id,
+          videoEl,
+          {
+            x: el.x ?? 0,
+            y: el.y ?? 0,
+            width: el.width ?? 100,
+            height: el.height ?? 100
+          },
+          chromaConfig
+        );
+      }
+    });
+
+    // Cleanup orphaned Leafer elements
+    leaferCoreRef.current?.cleanupOrphanedElements(activeLeaferIds);
+
+    // Cleanup orphaned Pixi video elements
+    videoElementsRef.current.forEach((videoEl, id) => {
+      if (!activePixiIds.has(id)) {
+        videoEl.pause();
+        videoEl.src = "";
+        videoEl.load();
+        videoEl.remove();
+        videoElementsRef.current.delete(id);
+        
+        pixiCoreRef.current?.removeVideoElement(id);
+      }
+    });
+  }, [elements, canvasInitialized, fontTrigger]);
 
   // Load config and refresh it periodically so persistent OBS browser sources
   // pick up saved timeline changes without needing a manual source refresh.
@@ -918,8 +1107,6 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   // Safe defaults before overlay loads (keeps hooks order stable)
   // Use server-injected base resolution if available (avoids layout shift before config loads)
-  const baseW = overlay?.baseResolution?.width ?? (window as any).__OVERLAY_BASE_W__ ?? 1920;
-  const baseH = overlay?.baseResolution?.height ?? (window as any).__OVERLAY_BASE_H__ ?? 1080;
 
   // IMPORTANT: Filter out children of container elements so they don't double-render at root
   const allChildIds = React.useMemo(() => {
@@ -936,6 +1123,12 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
   const normalElements = rootElements.filter((el: any) => el.pinned !== true);
+
+  const normalElementsToRender = React.useMemo(() => {
+    if (!canvasInitialized) return normalElements;
+    const canvasTypes = new Set(['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video']);
+    return normalElements.filter(el => !canvasTypes.has(el.type));
+  }, [normalElements, canvasInitialized]);
 
   // Rendering layers — stacking order (bottom to top):
   // z=1: flatElements    — 2D elements, no transforms
@@ -1078,9 +1271,9 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           {/* SINGLE RENDER LAYER — all elements in one preserve-3d context.
                zIndex on each element (from elementIndex = config order) handles stacking.
                No separate layer containers — they caused z-order bugs in OBS CEF. */}
-          {overlay && normalElements.length > 0 && (
+          {overlay && normalElementsToRender.length > 0 && (
             <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-              {normalElements.map((el: any) => (
+              {normalElementsToRender.map((el: any) => (
                 <ElementRenderer
                   key={el.id}
                   element={el}
@@ -1116,7 +1309,12 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           transform: 'translateZ(0)',
         }}
       >
-        <BotLayerRoot publicId={publicId} isEditorMode={false} />
+        <BotLayerRoot 
+          publicId={publicId} 
+          isEditorMode={false} 
+          pixiCanvasRef={pixiCanvasRef} 
+          leaferCanvasRef={leaferCanvasRef} 
+        />
       </div>
 
       {!isOBS && <DebugHud state={state} data={eventData} />}
