@@ -6740,7 +6740,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   onDrag={onGroupDrag}
                   onDragStop={onGroupDragStop}
                   className="cursor-move border border-dashed"
-                  style={{ borderColor: ACCENT_TINT }}
+                  style={{ borderColor: ACCENT_TINT, zIndex: 35, pointerEvents: "auto" }}
                 >
                   <div className="w-full h-full bg-transparent">
                     <div className="absolute -top-6 left-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-200 shadow-sm shadow-black/20">
@@ -9615,6 +9615,7 @@ const CanvasElement = React.memo(function CanvasElement({
         transform: fullTransform !== 'none' ? fullTransform : undefined,
         transformOrigin: "center center",
         pointerEvents: suppressPointerEvents ? "none" : "auto",
+        background: "rgba(0,0,0,0)",
         ...(isSelected ? selectionStyle : {}),
       }}
     >
@@ -9788,6 +9789,8 @@ const CanvasElement = React.memo(function CanvasElement({
           width: w,
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : "auto",
+          zIndex: 30,
+          background: "rgba(0,0,0,0)",
         }}
         onDoubleClick={(e) => {
           if (el.type === "text" && onInlineEdit && !isLocked) {
@@ -9878,6 +9881,7 @@ const CanvasElement = React.memo(function CanvasElement({
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
         pointerEvents: suppressPointerEvents ? "none" : "auto",
+        zIndex: 30,
       }}
     >
       {contentNode}
