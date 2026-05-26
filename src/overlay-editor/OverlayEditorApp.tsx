@@ -1581,9 +1581,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (el.visible === false) return;
 
       const type = el.type;
+      const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
+      const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
 
       // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape, image)
-      if (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') {
+      if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') && !hasRevealEffect) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };

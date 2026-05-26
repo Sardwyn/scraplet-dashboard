@@ -1934,7 +1934,9 @@ export function ElementRenderer({
     }
 
     const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
-    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type);
+    const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
+    const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
+    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type) && !hasRevealEffect;
 
     const effectiveAnimationPhase =
         animationPhase ?? (el.visible === false ? "hidden" : "visible");
