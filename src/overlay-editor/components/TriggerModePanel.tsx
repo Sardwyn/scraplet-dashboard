@@ -8,9 +8,11 @@ interface TriggerModePanelProps {
   selectedElementId?: string;
   activePreviewTrigger: string;
   onPreviewTriggerChange: (triggerId: string) => void;
-  onAddInteraction: (elementId: string, interaction: ElementInteraction) => void;
+  onAddInteraction?: (elementId: string, interaction: ElementInteraction) => void;
   onAddSpawner: (spawner: EventComponentSpawner) => void;
   onTestTrigger: (triggerId: string) => void;
+  durationMs: number;
+  onDurationMsChange: (duration: number) => void;
 }
 
 const AVAILABLE_TRIGGERS = [
@@ -33,35 +35,17 @@ export function TriggerModePanel({
   onPreviewTriggerChange,
   onAddInteraction,
   onAddSpawner,
-  onTestTrigger
+  onTestTrigger,
+  durationMs,
+  onDurationMsChange
 }: TriggerModePanelProps) {
   const [selectedTriggerId, setSelectedTriggerId] = useState(AVAILABLE_TRIGGERS[0].id);
-  const [durationMs, setDurationMs] = useState(8000);
   const [priority, setPriority] = useState(5);
   const [cooldownMs, setCooldownMs] = useState(10000);
   const [stackMode, setStackMode] = useState<'replace' | 'stack' | 'queue'>('queue');
   const [minViewers, setMinViewers] = useState(0);
 
   const selectedElement = elements.find(el => el.id === selectedElementId);
-
-  const handleCreateInteraction = () => {
-    if (!selectedElementId) return;
-    const newInteraction: ElementInteraction = {
-      id: Math.random().toString(36).substring(2, 9),
-      triggerId: selectedTriggerId,
-      actionType: 'style_shift',
-      durationMs,
-      priority,
-      cooldownMs,
-      styleOverrides: {
-        opacity: 1,
-        scaleX: 1.1,
-        scaleY: 1.1
-      },
-      conditions: minViewers > 0 ? { minViewers } : undefined
-    };
-    onAddInteraction(selectedElementId, newInteraction);
-  };
 
   const handleCreateSpawner = () => {
     const newSpawner: EventComponentSpawner = {
@@ -80,12 +64,12 @@ export function TriggerModePanel({
   };
 
   return (
-    <div className="bg-slate-950/80 backdrop-blur-md border-l border-slate-800 text-slate-200 h-full w-full p-4 space-y-6 overflow-y-auto flex flex-col font-sans select-none">
+    <div className="text-slate-200 p-4 space-y-6 flex flex-col font-sans select-none">
       
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-indigo-400 text-lg">⚡</span>
+          <span className="text-cyan-400 text-lg">⚡</span>
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100">Interactions & Reactions</h2>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">
@@ -94,11 +78,11 @@ export function TriggerModePanel({
       </div>
 
       {/* State Preview Controller */}
-      <div className="bg-slate-900/60 border border-indigo-500/20 rounded-lg p-3 space-y-2.5">
-        <label className="text-[10px] uppercase font-bold tracking-wider text-indigo-300">Active State Preview</label>
+      <div className="bg-slate-900/60 border border-cyan-500/20 rounded-lg p-3 space-y-2.5">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-cyan-300">Active State Preview</label>
         <div className="flex gap-2">
           <select
-            className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-indigo-500 outline-none"
+            className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-cyan-500 outline-none"
             value={activePreviewTrigger}
             onChange={(e) => onPreviewTriggerChange(e.target.value)}
           >
@@ -110,7 +94,7 @@ export function TriggerModePanel({
           {activePreviewTrigger !== 'idle' && (
             <button
               onClick={() => onTestTrigger(activePreviewTrigger)}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-3 rounded shadow-lg shadow-indigo-600/20 active:scale-95 transition-transform"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs px-3 rounded shadow-lg shadow-cyan-600/20 active:scale-95 transition-transform"
             >
               Test
             </button>
@@ -120,14 +104,14 @@ export function TriggerModePanel({
 
       {/* Trigger Creator Configurator */}
       <div className="space-y-4 pt-4 border-t border-slate-900">
-        <h3 className="text-xs font-bold uppercase text-slate-300">Create New Trigger Action</h3>
+        <h3 className="text-xs font-bold uppercase text-slate-300">Create New Spawner</h3>
         
         <div className="space-y-3">
           {/* Select Event */}
           <div className="space-y-1">
             <label className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Event Source</label>
             <select
-              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
+              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-500"
               value={selectedTriggerId}
               onChange={(e) => setSelectedTriggerId(e.target.value)}
             >
@@ -143,16 +127,16 @@ export function TriggerModePanel({
               <label className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Duration (ms)</label>
               <input
                 type="number"
-                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-cyan-500"
                 value={durationMs}
-                onChange={(e) => setDurationMs(Number(e.target.value))}
+                onChange={(e) => onDurationMsChange(Number(e.target.value))}
               />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Cooldown (ms)</label>
               <input
                 type="number"
-                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-cyan-500"
                 value={cooldownMs}
                 onChange={(e) => setCooldownMs(Number(e.target.value))}
               />
@@ -166,7 +150,7 @@ export function TriggerModePanel({
                 type="number"
                 min="1"
                 max="10"
-                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-cyan-500"
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
               />
@@ -174,7 +158,7 @@ export function TriggerModePanel({
             <div className="space-y-1">
               <label className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Stacking Model</label>
               <select
-                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none focus:border-cyan-500"
                 value={stackMode}
                 onChange={(e) => setStackMode(e.target.value as any)}
               >
@@ -190,7 +174,7 @@ export function TriggerModePanel({
             <label className="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Minimum Viewers (Condition)</label>
             <input
               type="number"
-              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-indigo-500"
+              className="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1.5 text-xs text-slate-300 outline-none font-mono focus:border-cyan-500"
               value={minViewers}
               onChange={(e) => setMinViewers(Number(e.target.value))}
               placeholder="e.g. 50"
@@ -198,19 +182,12 @@ export function TriggerModePanel({
           </div>
 
           {/* Creator Buttons */}
-          <div className="pt-2 flex flex-col gap-2">
-            <button
-              disabled={!selectedElementId}
-              onClick={handleCreateInteraction}
-              className="w-full py-2 px-3 bg-slate-800 border border-indigo-500/20 hover:border-indigo-500/50 hover:bg-slate-750 disabled:opacity-50 disabled:pointer-events-none rounded text-xs font-semibold text-indigo-300 transition-colors"
-            >
-              Add Style Shift to Selected Element
-            </button>
+          <div className="pt-2">
             <button
               onClick={handleCreateSpawner}
-              className="w-full py-2 px-3 bg-slate-800 border border-indigo-500/20 hover:border-indigo-500/50 hover:bg-slate-750 rounded text-xs font-semibold text-indigo-300 transition-colors"
+              className="w-full py-2.5 px-3 bg-slate-900 border border-cyan-500/20 hover:border-cyan-500/50 hover:bg-slate-800/80 active:scale-98 rounded text-xs font-semibold text-cyan-300 transition-all duration-200 text-center shadow-lg shadow-cyan-950/20"
             >
-              Add Spawner for Selected Group
+              Add Spawner...
             </button>
           </div>
         </div>
@@ -221,7 +198,7 @@ export function TriggerModePanel({
         <div className="pt-4 border-t border-slate-900 flex-1 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Active Element Rules</span>
-            <span className="text-[9px] bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full px-1.5 py-0.5 max-w-[120px] truncate font-mono">
+            <span className="text-[9px] bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-full px-1.5 py-0.5 max-w-[120px] truncate font-mono">
               {selectedElement.name || selectedElement.id}
             </span>
           </div>
@@ -233,7 +210,7 @@ export function TriggerModePanel({
                 <div key={it.id || idx} className="bg-slate-900/40 border border-slate-850 rounded p-2.5 space-y-1 flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-indigo-400 text-xs">⚡</span>
+                      <span className="text-cyan-400 text-xs">⚡</span>
                       <span className="text-[11px] font-bold text-slate-300">{it.triggerId}</span>
                     </div>
                     <div className="text-[9px] text-slate-500 flex gap-2 font-mono">

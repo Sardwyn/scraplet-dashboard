@@ -445,6 +445,7 @@ type Props = {
   // new
   onMoveMultipleKeyframes?: (moves: Array<{ trackId: string; keyframeId: string; nextTimeMs: number }>) => void;
   onSetKeyframeBezier?: (trackId: string, keyframeId: string, bezier: [number,number,number,number]) => void;
+  isTriggerMode?: boolean;
 };
 
 
@@ -457,8 +458,13 @@ export function TimelinePanel({
   onAddTrack, onMoveKeyframe, onDuplicateKeyframe, onAddKeyframeAtTime,
   onMoveMultipleKeyframes, onSetKeyframeBezier,
   activeEventTimeline, eventTimelines, onSetActiveEventTimeline,
+  isTriggerMode,
 }: Props) {
   const activeColor = activeEventTimeline ? (EVENT_COLORS[activeEventTimeline] ?? "#6366f1") : null;
+  const isNeonColor = isTriggerMode;
+  const borderCol = isNeonColor ? "#06b6d4" : (activeColor ?? 'rgba(255,255,255,0.08)');
+  const borderWidth = isNeonColor || activeColor ? 2 : 1;
+  const shadowGlow = isNeonColor ? "0 -4px 12px rgba(6, 182, 212, 0.15)" : undefined;
   // ── zoom / scroll ──────────────────────────────────────────────────────────
   const [pxPerSec, setPxPerSec] = useState(DEFAULT_PX_PER_SEC);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -663,8 +669,12 @@ export function TimelinePanel({
 
   return (
     <div
-      className="flex h-72 flex-col border-t bg-[#111113]"
-      style={{ borderTopColor: activeColor ?? 'rgba(255,255,255,0.08)', borderTopWidth: activeColor ? 2 : 1 }}
+      className="flex h-72 flex-col border-t bg-[#111113] transition-all duration-300"
+      style={{
+        borderTopColor: borderCol,
+        borderTopWidth: borderWidth,
+        boxShadow: shadowGlow,
+      }}
       onWheel={onWheel}
     >
       {/* ── Toolbar ── */}

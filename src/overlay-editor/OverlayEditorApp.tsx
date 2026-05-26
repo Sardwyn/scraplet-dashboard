@@ -1330,6 +1330,30 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   const [leftTab, setLeftTab] = useState<"layers" | "components" | "assets" | "icons" | "widgets">("layers");
   const [editorMode, setEditorMode] = useState<"design" | "triggers">("design");
   const [activePreviewTrigger, setActivePreviewTrigger] = useState<string>("idle");
+
+  // Helper to map preview triggers to event timeline names
+  const getTimelineNameFromTrigger = (triggerId: string): string | null => {
+    if (triggerId.includes("raid")) return "raid";
+    if (triggerId.includes("subscription") || triggerId.includes("sub")) return "sub";
+    if (triggerId.includes("follow")) return "follow";
+    if (triggerId.includes("donation")) return "donation";
+    if (triggerId.includes("cheer")) return "cheer";
+    if (triggerId.includes("host")) return "host";
+    return null;
+  };
+
+  // Sync active preview trigger with active event timeline
+  useEffect(() => {
+    if (editorMode === "triggers") {
+      const mapped = getTimelineNameFromTrigger(activePreviewTrigger);
+      setActiveEventTimeline(mapped);
+      setTimelinePlayheadMs(0);
+      setIsTimelinePlaying(false);
+    } else {
+      setActiveEventTimeline(null);
+    }
+  }, [editorMode, activePreviewTrigger]);
+
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [versionHistoryList, setVersionHistoryList] = useState<Array<{id: number; version_name: string; created_at: string}>>([]);
@@ -6643,10 +6667,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               {/* Grid */}
               {showGrid && (
                 <div
-                  className="absolute inset-0 opacity-[0.015] pointer-events-none"
+                  className={`absolute inset-0 pointer-events-none transition-all duration-300 ${editorMode === "triggers" ? "opacity-[0.08]" : "opacity-[0.015]"}`}
                   style={{
-                    backgroundImage:
-                      "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
+                    backgroundImage: editorMode === "triggers"
+                      ? "linear-gradient(to right, #06b6d4 1px, transparent 1px), linear-gradient(to bottom, #06b6d4 1px, transparent 1px)"
+                      : "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
                     backgroundSize: `${gridSize}px ${gridSize}px`,
                   }}
                 />
@@ -7301,44 +7326,187 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           </div>
         )}
         {editorMode === "triggers" ? (
-          <TriggerModePanel
-            elements={config.elements}
-            eventSpawners={config.eventSpawners || []}
-            selectedElementId={selectedIds[0]}
-            activePreviewTrigger={activePreviewTrigger}
-            onPreviewTriggerChange={setActivePreviewTrigger}
-            onAddInteraction={handleAddInteraction}
-            onAddSpawner={handleAddSpawner}
-            onTestTrigger={async (triggerId) => {
-              try {
-                const mockPayload = triggerId === "platform.kick.raid" ? {
-                  type: "platform.kick.raid",
-                  "event.actor.displayName": "Sardwyn",
-                  "event.meta.viewers": 45,
-                  "event.message.text": "Raid incoming!"
-                } : {
-                  type: triggerId,
-                  "event.actor.displayName": "Sardwyn",
-                  "event.meta.viewers": 12,
-                  "event.message.text": "Trigger test!"
-                };
+          <div className="flex flex-col h-full overflow-y-auto divide-y divide-slate-850 bg-slate-950/80 backdrop-blur-md">
+            <div className="flex-none">
+              <TriggerModePanel
+                elements={config.elements}
+                eventSpawners={config.eventSpawners || []}
+                selectedElementId={selectedIds[0]}
+                activePreviewTrigger={activePreviewTrigger}
+                onPreviewTriggerChange={setActivePreviewTrigger}
+                onAddInteraction={handleAddInteraction}
+                onAddSpawner={handleAddSpawner}
+                durationMs={timeline.durationMs}
+                onDurationMsChange={(val) => {
+                  const nextDuration = Math.max(100, val);
+                  setTimeline((currentTimeline) => ({ ...currentTimeline, durationMs: nextDuration }));
+                  setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
+                }}
+                onTestTrigger={async (triggerId) => {
+                  // Instant playground response and playback in editor!
+                  setTimelinePlayheadMs(0);
+                  setIsTimelinePlaying(true);
+                  
+                  try {
+                    const mockPayload = triggerId === "platform.kick.raid" ? {
+                      type: "platform.kick.raid",
+                      "event.actor.displayName": "Sardwyn",
+                      "event.meta.viewers": 45,
+                      "event.message.text": "Raid incoming!"
+                    } : {
+                      type: triggerId,
+                      "event.actor.displayName": "Sardwyn",
+                      "event.meta.viewers": 12,
+                      "event.message.text": "Trigger test!"
+                    };
 
-                const res = await fetch(`/dashboard/api/overlays/${initialOverlay.id}/test-event`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    type: triggerId,
-                    payload: mockPayload
-                  })
-                });
+                    const res = await fetch(`/dashboard/api/overlays/${initialOverlay.id}/test-event`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        type: triggerId,
+                        payload: mockPayload
+                      })
+                    });
 
-                if (!res.ok) throw new Error(res.statusText);
-              } catch (e) {
-                console.error("Test trigger failed:", e);
-                alert("Failed to send test trigger");
-              }
-            }}
-          />
+                    if (!res.ok) throw new Error(res.statusText);
+                  } catch (e) {
+                    console.error("Test trigger failed:", e);
+                    alert("Failed to send test trigger");
+                  }
+                }}
+              />
+            </div>
+            {primarySelectedEl && (
+              <div className="flex-1 border-t border-slate-900 p-4 bg-slate-950/40">
+                <div className="mb-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Design Properties</h3>
+                  <p className="text-[10px] text-slate-500 mt-1">Keyframe selected properties directly on active event timeline.</p>
+                </div>
+                <InspectorPanel
+                  element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
+                  elements={elementsAny}
+                  onChange={(u) => updateElement(selectedIds[0], u)}
+                  onRename={(n) => updateElement(selectedIds[0], { name: n })}
+                  onPickImage={() => {
+                    setAssetPicker({
+                      open: true,
+                      kind: "images",
+                      scope: "profiles",
+                      title: "Pick Image",
+                      onPick: (url) => updateElement(selectedIds[0], { src: url } as any)
+                    });
+                  }}
+                  onPickPatternImage={() => {
+                    const currentElement = elementsById[selectedIds[0]] as AnyEl | undefined;
+                    setAssetPicker({
+                      open: true,
+                      kind: "images",
+                      scope: "overlays",
+                      title: "Pick Pattern",
+                      onPick: (url) =>
+                        updateElement(selectedIds[0], {
+                          pattern: {
+                            ...ensurePatternFill(currentElement?.pattern as OverlayPatternFill | undefined),
+                            src: url,
+                          },
+                        } as any),
+                    });
+                  }}
+                  onPickVideo={() => {
+                    setAssetPicker({
+                      open: true,
+                      kind: "videos",
+                      scope: "profiles",
+                      title: "Pick Video",
+                      onPick: (url) => updateElement(selectedIds[0], { url } as any)
+                    });
+                  }}
+                  onPickAudio={() => {
+                    setAssetPicker({
+                      open: true,
+                      kind: "audios",
+                      scope: "profiles",
+                      title: "Pick Audio",
+                      onPick: (url) => updateElement(selectedIds[0], { url } as any)
+                    });
+                  }}
+                  onPickFrameClip={(elId, clipType, clipId) => {
+                    updateElement(elId, { clipType, clipId } as any);
+                  }}
+                  ltPreview={ltPreview}
+                  onLtPreviewChange={setLtPreview}
+                  ltPinned={ltPinned}
+                  onLtPinnedChange={setLtPinned}
+                  onTestLowerThird={async (action) => {
+                    try {
+                      const body = action === "show" ? {
+                        title: ltPreview.title,
+                        subtitle: ltPreview.subtitle,
+                        text: ltPreview.text,
+                        duration_ms: 5000
+                      } : {};
+
+                      const res = await fetch(`/dashboard/api/overlays/${initialOverlay.id}/test-lower-third/${action}`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                      });
+
+                      if (!res.ok) throw new Error(res.statusText);
+                      console.log(`Test ${action} sent`);
+                    } catch (e) {
+                      console.error("Test Event Error", e);
+                      alert("Failed to send test event");
+                    }
+                  }}
+                  overlayComponents={overlayComponents}
+                  isComponentMaster={isComponentMaster}
+                  propsSchema={propsSchema}
+                  onUpdateSchema={setPropsSchema}
+                  onEditMaster={enterIsolationMode}
+                  onReleaseMask={handleReleaseMask}
+                  onReleaseBoolean={ungroupSelected}
+                  onFlattenBoolean={flattenBooleanSelected}
+                  onConvertToPath={convertSelectedToPath}
+                  onDetachInstance={detachSelectedComponentInstance}
+                  onCreateVariant={createVariantFromComponent}
+                  parentFrame={selectedParentFrame}
+                  selectedPathAnchor={selectedPathAnchor?.elementId === selectedIds[0] ? selectedPathAnchor.commandIndex : null}
+                  onAddPathNode={addSelectedPathNode}
+                  onRemovePathNode={removeSelectedPathNode}
+                  onSplitPath={splitSelectedPath}
+                  onContinuePath={continueSelectedPath}
+                  onJoinPaths={joinSelectedPaths}
+                  onExpandStroke={expandSelectedStroke}
+                  canContinuePath={Boolean(
+                    primarySelectedEl?.type === "path" &&
+                    selectedPathAnchor &&
+                    selectedPathAnchor.elementId === primarySelectedEl.id &&
+                    (() => {
+                      const path = elementToOverlayPath(primarySelectedEl as any);
+                      if (!path || isClosedPath(path)) return false;
+                      const anchors = getPathAnchors(path);
+                      const selectedIndex = anchors.findIndex((anchor) => anchor.commandIndex === selectedPathAnchor.commandIndex);
+                      return selectedIndex === 0 || selectedIndex === anchors.length - 1;
+                    })()
+                  )}
+                  canJoinPaths={
+                    selectedIds.length === 2 &&
+                    selectedIds.every((id) => elementsById[id]?.type === "path") &&
+                    selectedIds.every((id) => {
+                      const candidate = elementsById[id] as AnyEl | undefined;
+                      const path = candidate ? elementToOverlayPath(candidate as any) : null;
+                      return Boolean(path && !isClosedPath(path));
+                    })
+                  }
+                  previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
+                  onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
+                  timelineState={selectedTimelineState}
+                />
+              </div>
+            )}
+          </div>
         ) : primarySelectedEl ? (
           <InspectorPanel
             element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
@@ -7548,6 +7716,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         onAddKeyframeAtTime={addTimelineKeyframeAtTime}
         activeEventTimeline={activeEventTimeline}
         eventTimelines={(config as any).eventTimelines}
+        isTriggerMode={editorMode === "triggers"}
         onSetActiveEventTimeline={(name) => {
           setActiveEventTimeline(name);
           setTimelinePlayheadMs(0);
