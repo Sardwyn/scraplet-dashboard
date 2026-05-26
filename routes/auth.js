@@ -91,21 +91,6 @@ function doLogout(req, res) {
 router.get("/logout", (req, res) => doLogout(req, res));
 router.post("/logout", (req, res) => doLogout(req, res));
 
-router.get("/autologin", async (req, res) => {
-  try {
-    const result = await db.query("SELECT * FROM users WHERE id = 4");
-    const user = result.rows[0];
-    req.session.user = {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-    };
-    return res.redirect("/dashboard");
-  } catch (err) {
-    return res.status(500).send("Autologin failed: " + err.message);
-  }
-});
-
 // ======================================================
 // SIGNUP
 // ======================================================
