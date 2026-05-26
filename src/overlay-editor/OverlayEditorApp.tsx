@@ -9787,7 +9787,7 @@ const CanvasElement = React.memo(function CanvasElement({
           top: y,
           width: w,
           height: h,
-          pointerEvents: "none",
+          pointerEvents: suppressPointerEvents ? "none" : "auto",
         }}
         onDoubleClick={(e) => {
           if (el.type === "text" && onInlineEdit && !isLocked) {
@@ -9877,7 +9877,7 @@ const CanvasElement = React.memo(function CanvasElement({
       }}
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
-        pointerEvents: "none",
+        pointerEvents: suppressPointerEvents ? "none" : "auto",
       }}
     >
       {contentNode}
