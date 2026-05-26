@@ -83091,7 +83091,7 @@ ${parts.join("\n")}
     /**
      * Dynamic shape router - parses database element type and draws onto Canvas 2D
      */
-    drawElement(id, type, properties) {
+    drawElement(id, type, properties, parentId) {
       var _a3, _b, _c, _d, _e2, _f, _g, _h2;
       if (!this.app) return;
       let node = this.elementsMap.get(id);
@@ -83110,12 +83110,27 @@ ${parts.join("\n")}
           case "text":
             node = new di$1();
             break;
+          case "group":
+            node = new ve$1();
+            break;
+          case "frame":
+            node = new be$1();
+            break;
           default:
             console.warn(`[LeaferGraphicCore] Unsupported element type: ${type}`);
             return;
         }
-        this.app.add(node);
         this.elementsMap.set(id, node);
+        if (parentId) {
+          const parentNode = this.elementsMap.get(parentId);
+          if (parentNode) {
+            parentNode.add(node);
+          } else {
+            this.app.add(node);
+          }
+        } else {
+          this.app.add(node);
+        }
       }
       const mappedProps = {
         x: (_a3 = properties.x) != null ? _a3 : 0,
@@ -83159,6 +83174,18 @@ ${parts.join("\n")}
         mappedProps.fontWeight = properties.fontWeight || "normal";
         mappedProps.textAlign = properties.textAlign || "left";
         mappedProps.verticalAlign = "middle";
+      } else if (type === "group" || type === "frame") {
+        if (properties.backgroundColor) {
+          mappedProps.fill = properties.backgroundColor;
+        }
+        mappedProps.cornerRadius = properties.borderRadiusPx || properties.borderRadius || 0;
+        if (properties.borderWidth && properties.borderColor) {
+          mappedProps.stroke = properties.borderColor;
+          mappedProps.strokeWidth = properties.borderWidth;
+        }
+        if (type === "frame") {
+          mappedProps.overflow = properties.clipContent !== false ? "hidden" : "visible";
+        }
       }
       node.set(mappedProps);
     }
@@ -84017,13 +84044,40 @@ ${parts.join("\n")}
       leaferCoreRef.current.clearAll();
       const activeLeaferIds = /* @__PURE__ */ new Set();
       const activePixiIds = /* @__PURE__ */ new Set();
+      const elementsById2 = {};
       elements.forEach((el) => {
-        var _a5, _b2, _c2, _d2, _e3, _f2, _g2, _h3, _i3, _j2, _k2, _l2, _m2;
+        elementsById2[el.id] = el;
+      });
+      const drawTree = (el, parentId) => {
+        var _a5, _b2, _c2, _d2, _e3, _f2, _g2, _h3, _i3, _j2, _k2, _l2, _m2, _n3;
         if (el.visible === false) return;
         const type = el.type;
         const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
         const hasRevealEffect = parametric.some((pe2) => pe2 && pe2.enabled !== false && (pe2.preset === "typewriter" || pe2.preset === "textReveal"));
-        if ((type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image") && !hasRevealEffect) {
+        if (type === "group" || type === "frame") {
+          activeLeaferIds.add(el.id);
+          const properties = { ...el };
+          (_a5 = leaferCoreRef.current) == null ? void 0 : _a5.drawElement(el.id, type, properties, parentId);
+          if (Array.isArray(el.childIds)) {
+            el.childIds.forEach((cid) => {
+              var _a6, _b3;
+              const child = elementsById2[cid];
+              if (child) {
+                const origParent = elementsById2[el.id];
+                const parentX = origParent ? origParent.x : el.x;
+                const parentY = origParent ? origParent.y : el.y;
+                const relX = ((_a6 = child.x) != null ? _a6 : 0) - (parentX != null ? parentX : 0);
+                const relY = ((_b3 = child.y) != null ? _b3 : 0) - (parentY != null ? parentY : 0);
+                const relChild = {
+                  ...child,
+                  x: relX,
+                  y: relY
+                };
+                drawTree(relChild, el.id);
+              }
+            });
+          }
+        } else if ((type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image") && !hasRevealEffect) {
           activeLeaferIds.add(el.id);
           const properties = { ...el };
           let drawType = "rect";
@@ -84034,8 +84088,8 @@ ${parts.join("\n")}
             else if (s2.shape === "ellipse") drawType = "ellipse";
             else if (s2.shape === "line") {
               drawType = "path";
-              const w2 = (_a5 = s2.width) != null ? _a5 : 100;
-              const h2 = (_b2 = s2.height) != null ? _b2 : 100;
+              const w2 = (_b2 = s2.width) != null ? _b2 : 100;
+              const h2 = (_c2 = s2.height) != null ? _c2 : 100;
               const x1 = s2.line ? s2.line.x1 * w2 : 0;
               const y1 = s2.line ? s2.line.y1 * h2 : h2 / 2;
               const x2 = s2.line ? s2.line.x2 * w2 : w2;
@@ -84043,8 +84097,8 @@ ${parts.join("\n")}
               properties.pathData = `M ${x1} ${y1} L ${x2} ${y2}`;
             } else {
               drawType = "path";
-              const w2 = (_c2 = s2.width) != null ? _c2 : 100;
-              const h2 = (_d2 = s2.height) != null ? _d2 : 100;
+              const w2 = (_d2 = s2.width) != null ? _d2 : 100;
+              const h2 = (_e3 = s2.height) != null ? _e3 : 100;
               properties.pathData = `M ${w2 / 2} 0 L ${w2} ${h2} L 0 ${h2} Z`;
             }
           } else if (type === "image") {
@@ -84053,11 +84107,10 @@ ${parts.join("\n")}
             drawType = type;
           }
           if (drawType === "text" && properties.fontFamily) {
-            (_e3 = leaferCoreRef.current) == null ? void 0 : _e3.preloadFonts([properties.fontFamily]);
+            (_f2 = leaferCoreRef.current) == null ? void 0 : _f2.preloadFonts([properties.fontFamily]);
           }
-          (_f2 = leaferCoreRef.current) == null ? void 0 : _f2.drawElement(el.id, drawType, properties);
-        }
-        if (type === "video") {
+          (_g2 = leaferCoreRef.current) == null ? void 0 : _g2.drawElement(el.id, drawType, properties, parentId);
+        } else if (type === "video") {
           activePixiIds.add(el.id);
           let videoEl = videoElementsRef.current.get(el.id);
           if (!videoEl) {
@@ -84093,22 +84146,26 @@ ${parts.join("\n")}
             const b2 = (parseInt(cleanHex.substring(4, 6), 16) || 0) / 255;
             chromaConfig = {
               keyColor: [r2, g2, b2],
-              similarity: (_g2 = el.keying.similarity) != null ? _g2 : 0.4,
-              smoothness: (_h3 = el.keying.smoothness) != null ? _h3 : 0.08
+              similarity: (_h3 = el.keying.similarity) != null ? _h3 : 0.4,
+              smoothness: (_i3 = el.keying.smoothness) != null ? _i3 : 0.08
             };
           }
-          (_m2 = pixiCoreRef.current) == null ? void 0 : _m2.updateVideoElement(
+          const origEl = elementsById2[el.id] || el;
+          (_n3 = pixiCoreRef.current) == null ? void 0 : _n3.updateVideoElement(
             el.id,
             videoEl,
             {
-              x: (_i3 = el.x) != null ? _i3 : 0,
-              y: (_j2 = el.y) != null ? _j2 : 0,
-              width: (_k2 = el.width) != null ? _k2 : 100,
-              height: (_l2 = el.height) != null ? _l2 : 100
+              x: (_j2 = origEl.x) != null ? _j2 : 0,
+              y: (_k2 = origEl.y) != null ? _k2 : 0,
+              width: (_l2 = origEl.width) != null ? _l2 : 100,
+              height: (_m2 = origEl.height) != null ? _m2 : 100
             },
             chromaConfig
           );
         }
+      };
+      rootElements.forEach((el) => {
+        drawTree(el);
       });
       (_a4 = leaferCoreRef.current) == null ? void 0 : _a4.cleanupOrphanedElements(activeLeaferIds);
       videoElementsRef.current.forEach((videoEl, id) => {
@@ -84381,7 +84438,7 @@ ${parts.join("\n")}
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1303,
+        lineNumber: 1341,
         columnNumber: 7
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84429,7 +84486,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1331,
+                    lineNumber: 1369,
                     columnNumber: 11
                   },
                   this
@@ -84453,7 +84510,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1346,
+                    lineNumber: 1384,
                     columnNumber: 11
                   },
                   this
@@ -84495,7 +84552,7 @@ ${parts.join("\n")}
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                          lineNumber: 1374,
+                          lineNumber: 1412,
                           columnNumber: 17
                         },
                         this
@@ -84506,7 +84563,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1361,
+                    lineNumber: 1399,
                     columnNumber: 13
                   },
                   this
@@ -84534,14 +84591,14 @@ ${parts.join("\n")}
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                      lineNumber: 1401,
+                      lineNumber: 1439,
                       columnNumber: 17
                     },
                     this
                   );
                 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 1399,
+                  lineNumber: 1437,
                   columnNumber: 13
                 }, this)
               ]
@@ -84550,7 +84607,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1319,
+              lineNumber: 1357,
               columnNumber: 9
             },
             this
@@ -84560,7 +84617,7 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1306,
+          lineNumber: 1344,
           columnNumber: 7
         },
         this
@@ -84589,7 +84646,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1438,
+              lineNumber: 1476,
               columnNumber: 9
             },
             this
@@ -84599,19 +84656,19 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1427,
+          lineNumber: 1465,
           columnNumber: 7
         },
         this
       ),
       !isOBS && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(DebugHud, { state, data: eventData }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1446,
+        lineNumber: 1484,
         columnNumber: 18
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1302,
+      lineNumber: 1340,
       columnNumber: 5
     }, this);
   }
@@ -84619,7 +84676,7 @@ ${parts.join("\n")}
   if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
     clientExports.createRoot(rootEl).render(/* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(OverlayRuntimeRoot, { publicId: window.__OVERLAY_PUBLIC_ID__ }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1457,
+      lineNumber: 1495,
       columnNumber: 29
     }, void 0));
   }

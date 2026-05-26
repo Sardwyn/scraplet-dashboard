@@ -1,4 +1,4 @@
-import { Leafer, Rect, Ellipse, Path, Text, UI } from 'leafer-ui';
+import { Leafer, Rect, Ellipse, Path, Text, UI, Group, Frame } from 'leafer-ui';
 import { elementToOverlayPath, svgPathFromCommands } from '../shared/geometry/pathUtils';
 
 export interface LeaferGraphicConfig {
@@ -62,8 +62,9 @@ export class LeaferGraphicCore {
    */
   public drawElement(
     id: string,
-    type: 'rect' | 'circle' | 'ellipse' | 'path' | 'text',
-    properties: Record<string, any>
+    type: 'rect' | 'circle' | 'ellipse' | 'path' | 'text' | 'group' | 'frame',
+    properties: Record<string, any>,
+    parentId?: string
   ): void {
     if (!this.app) return;
 
@@ -85,12 +86,29 @@ export class LeaferGraphicCore {
         case 'text':
           node = new Text();
           break;
+        case 'group':
+          node = new Group();
+          break;
+        case 'frame':
+          node = new Frame();
+          break;
         default:
           console.warn(`[LeaferGraphicCore] Unsupported element type: ${type}`);
           return;
       }
-      this.app.add(node);
       this.elementsMap.set(id, node);
+
+      // Parent-child hierarchy management
+      if (parentId) {
+        const parentNode = this.elementsMap.get(parentId);
+        if (parentNode) {
+          parentNode.add(node);
+        } else {
+          this.app.add(node);
+        }
+      } else {
+        this.app.add(node);
+      }
     }
 
     // Map properties from database JSON schema to LeaferJS properties
@@ -137,6 +155,18 @@ export class LeaferGraphicCore {
       mappedProps.fontWeight = properties.fontWeight || 'normal';
       mappedProps.textAlign = properties.textAlign || 'left';
       mappedProps.verticalAlign = 'middle';
+    } else if (type === 'group' || type === 'frame') {
+      if (properties.backgroundColor) {
+        mappedProps.fill = properties.backgroundColor;
+      }
+      mappedProps.cornerRadius = properties.borderRadiusPx || properties.borderRadius || 0;
+      if (properties.borderWidth && properties.borderColor) {
+        mappedProps.stroke = properties.borderColor;
+        mappedProps.strokeWidth = properties.borderWidth;
+      }
+      if (type === 'frame') {
+        mappedProps.overflow = properties.clipContent !== false ? 'hidden' : 'visible';
+      }
     }
 
     // Apply properties dynamically to the node

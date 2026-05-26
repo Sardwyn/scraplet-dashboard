@@ -821,15 +821,48 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     const activeLeaferIds = new Set<string>();
     const activePixiIds = new Set<string>();
 
-    elements.forEach((el) => {
+    // Build elements map for quick lookup
+    const elementsById: Record<string, any> = {};
+    elements.forEach(el => {
+      elementsById[el.id] = el;
+    });
+
+    const drawTree = (el: any, parentId?: string) => {
       if (el.visible === false) return;
 
       const type = el.type;
       const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
       const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
 
-      // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape, image)
-      if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') && !hasRevealEffect) {
+      // 1. Container elements (group, frame)
+      if (type === 'group' || type === 'frame') {
+        activeLeaferIds.add(el.id);
+        const properties: Record<string, any> = { ...el };
+        
+        leaferCoreRef.current?.drawElement(el.id, type, properties, parentId);
+
+        // Recursively draw children
+        if (Array.isArray(el.childIds)) {
+          el.childIds.forEach((cid: string) => {
+            const child = elementsById[cid];
+            if (child) {
+              const origParent = elementsById[el.id];
+              const parentX = origParent ? origParent.x : el.x;
+              const parentY = origParent ? origParent.y : el.y;
+              const relX = (child.x ?? 0) - (parentX ?? 0);
+              const relY = (child.y ?? 0) - (parentY ?? 0);
+              const relChild = {
+                ...child,
+                x: relX,
+                y: relY
+              };
+              drawTree(relChild, el.id);
+            }
+          });
+        }
+      }
+      // 2. Standard graphics (rect, ellipse, circle, path, text, shape, image)
+      else if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') && !hasRevealEffect) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -867,11 +900,10 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           leaferCoreRef.current?.preloadFonts([properties.fontFamily]);
         }
 
-        leaferCoreRef.current?.drawElement(el.id, drawType, properties);
+        leaferCoreRef.current?.drawElement(el.id, drawType, properties, parentId);
       }
-
-      // 2. PixiJS Media (video feeds)
-      if (type === 'video') {
+      // 3. PixiJS Media (video feeds) - keeps absolute coords on flat WebGL canvas
+      else if (type === 'video') {
         activePixiIds.add(el.id);
 
         let videoEl = videoElementsRef.current.get(el.id);
@@ -921,18 +953,24 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
           };
         }
 
+        const origEl = elementsById[el.id] || el;
         pixiCoreRef.current?.updateVideoElement(
           el.id,
           videoEl,
           {
-            x: el.x ?? 0,
-            y: el.y ?? 0,
-            width: el.width ?? 100,
-            height: el.height ?? 100
+            x: origEl.x ?? 0,
+            y: origEl.y ?? 0,
+            width: origEl.width ?? 100,
+            height: origEl.height ?? 100
           },
           chromaConfig
         );
       }
+    };
+
+    // Draw canvas recursively starting from rootElements
+    rootElements.forEach((el) => {
+      drawTree(el);
     });
 
     // Cleanup orphaned Leafer elements

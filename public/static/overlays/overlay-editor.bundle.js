@@ -82633,7 +82633,7 @@ class LeaferGraphicCore {
   /**
    * Dynamic shape router - parses database element type and draws onto Canvas 2D
    */
-  drawElement(id, type, properties) {
+  drawElement(id, type, properties, parentId) {
     var _a3, _b, _c, _d, _e2, _f, _g, _h2;
     if (!this.app) return;
     let node = this.elementsMap.get(id);
@@ -82652,12 +82652,27 @@ class LeaferGraphicCore {
         case "text":
           node = new di$1();
           break;
+        case "group":
+          node = new ve$1();
+          break;
+        case "frame":
+          node = new be$1();
+          break;
         default:
           console.warn(`[LeaferGraphicCore] Unsupported element type: ${type}`);
           return;
       }
-      this.app.add(node);
       this.elementsMap.set(id, node);
+      if (parentId) {
+        const parentNode = this.elementsMap.get(parentId);
+        if (parentNode) {
+          parentNode.add(node);
+        } else {
+          this.app.add(node);
+        }
+      } else {
+        this.app.add(node);
+      }
     }
     const mappedProps = {
       x: (_a3 = properties.x) != null ? _a3 : 0,
@@ -82701,6 +82716,18 @@ class LeaferGraphicCore {
       mappedProps.fontWeight = properties.fontWeight || "normal";
       mappedProps.textAlign = properties.textAlign || "left";
       mappedProps.verticalAlign = "middle";
+    } else if (type === "group" || type === "frame") {
+      if (properties.backgroundColor) {
+        mappedProps.fill = properties.backgroundColor;
+      }
+      mappedProps.cornerRadius = properties.borderRadiusPx || properties.borderRadius || 0;
+      if (properties.borderWidth && properties.borderColor) {
+        mappedProps.stroke = properties.borderColor;
+        mappedProps.strokeWidth = properties.borderWidth;
+      }
+      if (type === "frame") {
+        mappedProps.overflow = properties.clipContent !== false ? "hidden" : "visible";
+      }
     }
     node.set(mappedProps);
   }
