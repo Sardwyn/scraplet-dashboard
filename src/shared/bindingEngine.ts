@@ -173,3 +173,53 @@ function applyFormat(value: any, format?: BindingFormat): any {
     // 3. Decorations
     return `${format.prefix || ""}${result}${format.suffix || ""}`;
 }
+
+/**
+ * Evaluates whether a set of conditions matches the current state / packet payload data.
+ */
+export function evaluateConditions(conditions: any, data: Record<string, any>): boolean {
+    if (!conditions) return true;
+
+    // 1. Min Viewers Check
+    if (conditions.minViewers !== undefined) {
+        const viewers = Number(data["event.meta.viewers"]) || Number(data["viewers"]) || 0;
+        if (viewers < conditions.minViewers) return false;
+    }
+
+    // 2. Only If Visible check (handled primarily by the renderer context, but initialized here)
+    if (conditions.onlyIfVisible === true) {
+        // Can be evaluated dynamically by layout triggers
+    }
+
+    return true;
+}
+
+/**
+ * Parses and replaces placeholders like {actor} or {viewers} or {message.text}
+ * with canonical values from the flattened packet data.
+ * E.g., "RAID! {actor} brought {viewers} viewers!"
+ */
+export function substituteTemplateVariables(template: string, data: Record<string, any>): string {
+    if (!template) return "";
+    return template.replace(/\{([^}]+)\}/g, (match, path) => {
+        // Check direct path first, e.g., "event.actor.displayName"
+        let val = data[path];
+        if (val === undefined || val === null) {
+            // Check abbreviated alias names
+            const aliases: Record<string, string> = {
+                actor: "event.actor.displayName",
+                displayName: "event.actor.displayName",
+                viewers: "event.meta.viewers",
+                amount: "event.amount",
+                count: "event.count",
+                message: "event.message.text",
+                text: "event.message.text",
+                avatar: "event.actor.avatar",
+                avatar_url: "event.author.avatar_url"
+            };
+            const resolvedPath = aliases[path] || path;
+            val = data[resolvedPath];
+        }
+        return val !== undefined && val !== null ? String(val) : "";
+    });
+}

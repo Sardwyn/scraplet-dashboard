@@ -21786,6 +21786,37 @@
     }
     return `${format.prefix || ""}${result}${format.suffix || ""}`;
   }
+  function evaluateConditions(conditions, data) {
+    if (!conditions) return true;
+    if (conditions.minViewers !== void 0) {
+      const viewers = Number(data["event.meta.viewers"]) || Number(data["viewers"]) || 0;
+      if (viewers < conditions.minViewers) return false;
+    }
+    if (conditions.onlyIfVisible === true) ;
+    return true;
+  }
+  function substituteTemplateVariables(template, data) {
+    if (!template) return "";
+    return template.replace(/\{([^}]+)\}/g, (match, path2) => {
+      let val = data[path2];
+      if (val === void 0 || val === null) {
+        const aliases = {
+          actor: "event.actor.displayName",
+          displayName: "event.actor.displayName",
+          viewers: "event.meta.viewers",
+          amount: "event.amount",
+          count: "event.count",
+          message: "event.message.text",
+          text: "event.message.text",
+          avatar: "event.actor.avatar",
+          avatar_url: "event.author.avatar_url"
+        };
+        const resolvedPath = aliases[path2] || path2;
+        val = data[resolvedPath];
+      }
+      return val !== void 0 && val !== null ? String(val) : "";
+    });
+  }
   const EFFECT_PRESETS = {
     neonPulse: {
       id: "neonPulse",
@@ -83554,7 +83585,7 @@ ${parts.join("\n")}
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { fontWeight: 700 }, children: "Overlay State" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 302,
+                  lineNumber: 303,
                   columnNumber: 9
                 }, this),
                 (state == null ? void 0 : state.rev) != null && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { opacity: 0.8 }, children: [
@@ -83567,7 +83598,7 @@ ${parts.join("\n")}
                   (_d = (_c = state.tenant) == null ? void 0 : _c.platform) != null ? _d : "no-platform"
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 304,
+                  lineNumber: 305,
                   columnNumber: 11
                 }, this)
               ]
@@ -83576,7 +83607,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 293,
+              lineNumber: 294,
               columnNumber: 7
             },
             this
@@ -83596,7 +83627,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 310,
+              lineNumber: 311,
               columnNumber: 7
             },
             this
@@ -83604,7 +83635,7 @@ ${parts.join("\n")}
           data && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { fontWeight: 700, marginTop: 10, marginBottom: 6 }, children: "Event Data" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 322,
+              lineNumber: 323,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -83623,14 +83654,14 @@ ${parts.join("\n")}
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                lineNumber: 323,
+                lineNumber: 324,
                 columnNumber: 11
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-            lineNumber: 321,
+            lineNumber: 322,
             columnNumber: 9
           }, this)
         ]
@@ -83639,7 +83670,7 @@ ${parts.join("\n")}
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 270,
+        lineNumber: 271,
         columnNumber: 5
       },
       this
@@ -83651,6 +83682,38 @@ ${parts.join("\n")}
     const [flash, setFlash] = reactExports.useState(false);
     const [variables, setVariables] = reactExports.useState([]);
     const lastIdRef = reactExports.useRef(void 0);
+    const [activeInteractions, setActiveInteractions] = reactExports.useState({});
+    const activeInteractionsRef = reactExports.useRef({});
+    const cooldownsRef = reactExports.useRef({});
+    reactExports.useEffect(() => {
+      return () => {
+        Object.values(activeInteractionsRef.current).forEach((act) => window.clearTimeout(act.timeoutId));
+      };
+    }, []);
+    const mergedOverrides = reactExports.useMemo(() => {
+      const next = { ...overrides };
+      for (const [elementId, active] of Object.entries(activeInteractions)) {
+        const { interaction } = active;
+        const elOverrides = {};
+        if (interaction.styleOverrides) {
+          Object.assign(elOverrides, interaction.styleOverrides);
+        }
+        if (interaction.actionType === "content_override" && interaction.textTemplate) {
+          elOverrides.text = substituteTemplateVariables(interaction.textTemplate, data);
+        }
+        if (interaction.animationIn || interaction.animationOut) {
+          elOverrides.animation = {
+            enter: interaction.animationIn || "none",
+            exit: interaction.animationOut || "none"
+          };
+        }
+        next[elementId] = {
+          ...next[elementId],
+          ...elOverrides
+        };
+      }
+      return next;
+    }, [overrides, activeInteractions, data]);
     reactExports.useEffect(() => {
       if (!publicId) return;
       const handlePacket = (e2) => {
@@ -83658,6 +83721,26 @@ ${parts.join("\n")}
           const packet = e2.detail;
           const { header, payload } = packet || {};
           if (!(header == null ? void 0 : header.type)) return;
+          const flatData = {};
+          const flatten = (obj, prefix) => {
+            for (const [k2, v2] of Object.entries(obj)) {
+              if (v2 && typeof v2 === "object" && !Array.isArray(v2)) {
+                flatten(v2, `${prefix}${k2}.`);
+              } else {
+                flatData[`${prefix}${k2}`] = String(v2);
+              }
+            }
+          };
+          if (payload) {
+            flatten(payload, "event.");
+            for (const [k2, v2] of Object.entries(payload)) {
+              if (v2 && typeof v2 !== "object") {
+                flatData[k2] = String(v2);
+              }
+            }
+            console.log("[OverlayEvents] Bound Data:", flatData);
+            setData((prev) => ({ ...prev, ...flatData }));
+          }
           if ((header == null ? void 0 : header.type) === "overlay.lower_third.show") {
             const p2 = payload || {};
             const text = p2.text || (p2.username && p2.message ? `${p2.username}: ${p2.message}` : "");
@@ -83735,27 +83818,54 @@ ${parts.join("\n")}
               setVariables(vars);
             }
           }
-          lastIdRef.current = header == null ? void 0 : header.id;
-          if (payload) {
-            const flatData = {};
-            const flatten = (obj, prefix) => {
-              for (const [k2, v2] of Object.entries(obj)) {
-                if (v2 && typeof v2 === "object" && !Array.isArray(v2)) {
-                  flatten(v2, `${prefix}${k2}.`);
-                } else {
-                  flatData[`${prefix}${k2}`] = String(v2);
+          elements.forEach((element) => {
+            var _a3, _b;
+            const matchingInteractions = (element.interactions || []).filter((inter) => {
+              var _a4;
+              const matchTrigger = inter.triggerId === header.type;
+              if (!matchTrigger) return false;
+              if (!evaluateConditions(inter.conditions, flatData)) return false;
+              const cooldownKey = `${element.id}:${inter.id}`;
+              const lastTriggered = cooldownsRef.current[cooldownKey] || 0;
+              const cooldownMs = (_a4 = inter.cooldownMs) != null ? _a4 : 0;
+              if (Date.now() - lastTriggered < cooldownMs) return false;
+              return true;
+            });
+            if (matchingInteractions.length > 0) {
+              matchingInteractions.sort((a2, b2) => {
+                var _a4, _b2;
+                return ((_a4 = b2.priority) != null ? _a4 : 0) - ((_b2 = a2.priority) != null ? _b2 : 0);
+              });
+              const bestInteraction = matchingInteractions[0];
+              const currentActive = activeInteractionsRef.current[element.id];
+              if (!currentActive || ((_a3 = bestInteraction.priority) != null ? _a3 : 0) >= ((_b = currentActive.interaction.priority) != null ? _b : 0)) {
+                if (currentActive) {
+                  window.clearTimeout(currentActive.timeoutId);
                 }
-              }
-            };
-            flatten(payload, "event.");
-            for (const [k2, v2] of Object.entries(payload)) {
-              if (v2 && typeof v2 !== "object") {
-                flatData[k2] = String(v2);
+                const cooldownKey = `${element.id}:${bestInteraction.id}`;
+                cooldownsRef.current[cooldownKey] = Date.now();
+                if (bestInteraction.actionType === "audio_play" && bestInteraction.audioUrl) {
+                  const audio = new Audio(bestInteraction.audioUrl);
+                  audio.volume = 0.5;
+                  audio.play().catch((e22) => console.warn("Failed to play interaction audio:", e22));
+                }
+                const timeoutId = window.setTimeout(() => {
+                  setActiveInteractions((prev) => {
+                    const next = { ...prev };
+                    delete next[element.id];
+                    return next;
+                  });
+                  delete activeInteractionsRef.current[element.id];
+                }, bestInteraction.durationMs);
+                setActiveInteractions((prev) => ({
+                  ...prev,
+                  [element.id]: { interaction: bestInteraction, startTime: Date.now(), timeoutId }
+                }));
+                activeInteractionsRef.current[element.id] = { interaction: bestInteraction, startTime: Date.now(), timeoutId };
               }
             }
-            console.log("[OverlayEvents] Bound Data:", flatData);
-            setData((prev) => ({ ...prev, ...flatData }));
-          }
+          });
+          lastIdRef.current = header == null ? void 0 : header.id;
         } catch (err) {
           console.error("[OverlayEvents] Parse error:", err);
         }
@@ -83765,7 +83875,7 @@ ${parts.join("\n")}
         window.removeEventListener("scraplet:overlay:event", handlePacket);
       };
     }, [publicId, elements]);
-    return { overrides, data, flash, variables };
+    return { overrides: mergedOverrides, data, flash, variables };
   }
   let sharedWidgetSse = null;
   let sharedWidgetToken = null;
@@ -83973,11 +84083,154 @@ ${parts.join("\n")}
         return applyTimelineOverrides(merged, timelineValues[el.id]);
       });
     }, [baseElements, overrides, timelineValues]);
-    const animationPhases = useElementAnimationPhases(elements);
+    const [activeSpawns, setActiveSpawns] = reactExports.useState([]);
+    const activeSpawnsRef = reactExports.useRef([]);
+    activeSpawnsRef.current = activeSpawns;
+    const spawnerCooldownsRef = reactExports.useRef({});
+    const spawnQueuesRef = reactExports.useRef({});
+    const spawnedElements = reactExports.useMemo(() => {
+      return activeSpawns.flatMap((spawn) => spawn.elements);
+    }, [activeSpawns]);
+    const finalElements = reactExports.useMemo(() => {
+      return [...elements, ...spawnedElements];
+    }, [elements, spawnedElements]);
+    reactExports.useEffect(() => {
+      return () => {
+        activeSpawnsRef.current.forEach((s2) => window.clearTimeout(s2.timeoutId));
+      };
+    }, []);
+    reactExports.useEffect(() => {
+      const handler = (e2) => {
+        const detail = e2.detail;
+        const { header, payload } = detail || {};
+        if (!(header == null ? void 0 : header.type)) return;
+        const flatData = {};
+        const flatten = (obj, prefix) => {
+          for (const [k2, v2] of Object.entries(obj)) {
+            if (v2 && typeof v2 === "object" && !Array.isArray(v2)) {
+              flatten(v2, `${prefix}${k2}.`);
+            } else {
+              flatData[`${prefix}${k2}`] = String(v2);
+            }
+          }
+        };
+        if (payload) {
+          flatten(payload, "event.");
+          for (const [k2, v2] of Object.entries(payload)) {
+            if (v2 && typeof v2 !== "object") {
+              flatData[k2] = String(v2);
+            }
+          }
+        }
+        const matchingSpawners = ((overlay == null ? void 0 : overlay.eventSpawners) || []).filter((spawner) => {
+          var _a4;
+          const matchTrigger = spawner.triggerId === header.type;
+          if (!matchTrigger) return false;
+          if (!evaluateConditions(spawner.conditions, flatData)) return false;
+          const cooldownKey = `spawner:${spawner.id}`;
+          const lastTriggered = spawnerCooldownsRef.current[cooldownKey] || 0;
+          const cooldownMs = (_a4 = spawner.cooldownMs) != null ? _a4 : 0;
+          if (Date.now() - lastTriggered < cooldownMs) return false;
+          return true;
+        });
+        if (matchingSpawners.length === 0) return;
+        matchingSpawners.sort((a2, b2) => {
+          var _a4, _b2;
+          return ((_a4 = b2.priority) != null ? _a4 : 0) - ((_b2 = a2.priority) != null ? _b2 : 0);
+        });
+        const triggerSpawn = (spawner, data) => {
+          const componentId = spawner.componentId;
+          const components = (overlay == null ? void 0 : overlay.components) || [];
+          const suffixId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+          const component = components.find((c2) => c2.id === componentId);
+          if (!component) return;
+          const clonedElements = JSON.parse(JSON.stringify(component.elements));
+          const componentElementIds = new Set(clonedElements.map((el) => el.id));
+          const spawnedClones = clonedElements.map((el) => {
+            var _a4, _b2;
+            const oldId = el.id;
+            el.id = `${oldId}_${suffixId}`;
+            if (el.parentId && componentElementIds.has(el.parentId)) {
+              el.parentId = `${el.parentId}_${suffixId}`;
+            } else {
+              el.x = ((_a4 = el.x) != null ? _a4 : 0) + spawner.x;
+              el.y = ((_b2 = el.y) != null ? _b2 : 0) + spawner.y;
+            }
+            if (el.childIds && Array.isArray(el.childIds)) {
+              el.childIds = el.childIds.map((cid) => {
+                return componentElementIds.has(cid) ? `${cid}_${suffixId}` : cid;
+              });
+            }
+            if (el.type === "text" && el.text) {
+              el.text = substituteTemplateVariables(el.text, data);
+            }
+            return el;
+          });
+          const spawnedRootIds = new Set(spawnedClones.filter((el) => !el.parentId || !componentElementIds.has(el.parentId)).map((el) => el.id));
+          spawnedClones.forEach((el) => {
+            if (spawnedRootIds.has(el.id)) {
+              el.animation = {
+                ...el.animation,
+                enter: spawner.animationIn || "none",
+                exit: spawner.animationOut || "none"
+              };
+            }
+          });
+          const handleDespawn = (spawnInstanceId2) => {
+            setActiveSpawns((prev) => prev.filter((spawn) => spawn.id !== spawnInstanceId2));
+            if (spawner.stackMode === "queue") {
+              const queue = spawnQueuesRef.current[spawner.id] || [];
+              if (queue.length > 0) {
+                const nextRequest = queue.shift();
+                if (nextRequest) {
+                  triggerSpawn(nextRequest.spawner, nextRequest.data);
+                }
+              }
+            }
+          };
+          if (spawner.stackMode === "replace") {
+            const existingSpawns = activeSpawnsRef.current.filter((s2) => s2.spawnerId === spawner.id);
+            existingSpawns.forEach((s2) => window.clearTimeout(s2.timeoutId));
+            setActiveSpawns((prev) => prev.filter((s2) => s2.spawnerId !== spawner.id));
+          }
+          if (spawner.stackMode === "queue") {
+            const isCurrentlyActive = activeSpawnsRef.current.some((s2) => s2.spawnerId === spawner.id);
+            if (isCurrentlyActive) {
+              if (!spawnQueuesRef.current[spawner.id]) {
+                spawnQueuesRef.current[spawner.id] = [];
+              }
+              spawnQueuesRef.current[spawner.id].push({ spawner, data });
+              return;
+            }
+          }
+          const spawnInstanceId = `${spawner.id}_${suffixId}`;
+          const timeoutId = window.setTimeout(() => {
+            handleDespawn(spawnInstanceId);
+          }, spawner.durationMs);
+          const newSpawnInstance = {
+            id: spawnInstanceId,
+            spawnerId: spawner.id,
+            componentId: spawner.componentId,
+            elements: spawnedClones,
+            expiresAt: Date.now() + spawner.durationMs,
+            timeoutId
+          };
+          const cooldownKey = `spawner:${spawner.id}`;
+          spawnerCooldownsRef.current[cooldownKey] = Date.now();
+          setActiveSpawns((prev) => [...prev, newSpawnInstance]);
+        };
+        matchingSpawners.forEach((spawner) => {
+          triggerSpawn(spawner, flatData);
+        });
+      };
+      window.addEventListener("scraplet:overlay:event", handler);
+      return () => window.removeEventListener("scraplet:overlay:event", handler);
+    }, [overlay]);
+    const animationPhases = useElementAnimationPhases(finalElements);
     const [imageTrigger, setImageTrigger] = reactExports.useState(0);
     const imageUrls = reactExports.useMemo(() => {
       const urls = /* @__PURE__ */ new Set();
-      elements.forEach((el) => {
+      finalElements.forEach((el) => {
         var _a4;
         if (el.visible === false) return;
         if (el.type === "image" && el.src) urls.add(el.src);
@@ -83989,7 +84242,7 @@ ${parts.join("\n")}
         }
       });
       return Array.from(urls);
-    }, [elements]);
+    }, [finalElements]);
     reactExports.useEffect(() => {
       if (imageUrls.length === 0) return;
       let cancelled = false;
@@ -84045,7 +84298,7 @@ ${parts.join("\n")}
       const activeLeaferIds = /* @__PURE__ */ new Set();
       const activePixiIds = /* @__PURE__ */ new Set();
       const elementsById2 = {};
-      elements.forEach((el) => {
+      finalElements.forEach((el) => {
         elementsById2[el.id] = el;
       });
       const drawTree = (el, parentId) => {
@@ -84179,7 +84432,7 @@ ${parts.join("\n")}
           (_a5 = pixiCoreRef.current) == null ? void 0 : _a5.removeVideoElement(id);
         }
       });
-    }, [elements, canvasInitialized, fontTrigger, imageTrigger]);
+    }, [finalElements, canvasInitialized, fontTrigger, imageTrigger]);
     reactExports.useEffect(() => {
       let cancelled = false;
       const loadConfig = async () => {
@@ -84264,18 +84517,18 @@ ${parts.join("\n")}
     }, []);
     reactExports.useEffect(() => {
       const interval = window.setInterval(() => {
-        tickCountdowns(elements);
+        tickCountdowns(finalElements);
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [elements]);
+    }, [finalElements]);
     reactExports.useEffect(() => {
       const interval = window.setInterval(() => {
-        tickClocks(elements);
+        tickClocks(finalElements);
       }, 1e3);
       return () => window.clearInterval(interval);
-    }, [elements]);
+    }, [finalElements]);
     reactExports.useEffect(() => {
-      const avEls = elements.filter((el) => el.type === "audioVisualiser");
+      const avEls = finalElements.filter((el) => el.type === "audioVisualiser");
       if (avEls.length === 0) return;
       if (!window.__AUDIO_ANALYSERS__) {
         window.__AUDIO_ANALYSERS__ = /* @__PURE__ */ new Map();
@@ -84326,17 +84579,17 @@ ${parts.join("\n")}
         audioCtx == null ? void 0 : audioCtx.close().catch(() => {
         });
       };
-    }, [elements]);
+    }, [finalElements]);
     const allChildIds = React.useMemo(() => {
       const ids = /* @__PURE__ */ new Set();
-      elements.forEach((el) => {
+      finalElements.forEach((el) => {
         if ((el.type === "group" || el.type === "frame" || el.type === "mask" || el.type === "boolean") && el.childIds) {
           el.childIds.forEach((cid) => ids.add(cid));
         }
       });
       return ids;
-    }, [elements]);
-    const rootElements = React.useMemo(() => elements.filter((el) => !allChildIds.has(el.id)), [elements, allChildIds]);
+    }, [finalElements]);
+    const rootElements = React.useMemo(() => finalElements.filter((el) => !allChildIds.has(el.id)), [finalElements, allChildIds]);
     const pinnedElements = rootElements.filter((el) => el.pinned === true);
     const normalElements = rootElements.filter((el) => el.pinned !== true);
     const pinnedElementsToRender = pinnedElements;
@@ -84356,20 +84609,20 @@ ${parts.join("\n")}
     const scale = Math.min(viewport.w / baseW, viewport.h / baseH);
     const elementsById = React.useMemo(() => {
       const map = {};
-      for (const el of elements) {
+      for (const el of finalElements) {
         map[el.id] = el;
       }
       return map;
-    }, [elements]);
+    }, [finalElements]);
     const usedFonts = React.useMemo(() => {
       const set = /* @__PURE__ */ new Set();
-      for (const el of elements) {
+      for (const el of finalElements) {
         if (el.type === "text" && el.fontFamily) {
           set.add(el.fontFamily);
         }
       }
       return Array.from(set);
-    }, [elements]);
+    }, [finalElements]);
     const usedFontsKey = usedFonts.join(",");
     reactExports.useEffect(() => {
       if (!canvasInitialized || usedFonts.length === 0) return;
@@ -84438,7 +84691,7 @@ ${parts.join("\n")}
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1341,
+        lineNumber: 1590,
         columnNumber: 7
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84448,7 +84701,7 @@ ${parts.join("\n")}
             width: "100vw",
             height: "100vh",
             background: (overlay == null ? void 0 : overlay.backgroundColor) && overlay.backgroundColor !== "transparent" ? overlay.backgroundColor : "transparent",
-            overflow: elements.some((el) => {
+            overflow: finalElements.some((el) => {
               var _a4, _b2, _c2, _d2;
               return ((_a4 = el.tiltX) != null ? _a4 : 0) !== 0 || ((_b2 = el.tiltY) != null ? _b2 : 0) !== 0 || ((_c2 = el.skewX) != null ? _c2 : 0) !== 0 || ((_d2 = el.skewY) != null ? _d2 : 0) !== 0;
             }) ? "visible" : "hidden",
@@ -84486,7 +84739,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1369,
+                    lineNumber: 1618,
                     columnNumber: 11
                   },
                   this
@@ -84510,7 +84763,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1384,
+                    lineNumber: 1633,
                     columnNumber: 11
                   },
                   this
@@ -84544,7 +84797,7 @@ ${parts.join("\n")}
                           animationPhases,
                           data: {},
                           visited: /* @__PURE__ */ new Set(),
-                          elementIndex: elements.indexOf(el) + 1,
+                          elementIndex: finalElements.indexOf(el) + 1,
                           canvasInitialized,
                           isCanvasDrawn: canvasInitialized
                         },
@@ -84552,7 +84805,7 @@ ${parts.join("\n")}
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                          lineNumber: 1412,
+                          lineNumber: 1661,
                           columnNumber: 17
                         },
                         this
@@ -84563,7 +84816,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1399,
+                    lineNumber: 1648,
                     columnNumber: 13
                   },
                   this
@@ -84582,7 +84835,7 @@ ${parts.join("\n")}
                       data: eventData,
                       overlayVariables,
                       visited: /* @__PURE__ */ new Set(),
-                      elementIndex: elements.indexOf(el) + 1,
+                      elementIndex: finalElements.indexOf(el) + 1,
                       widgetStates: unifiedState.widgetStates,
                       canvasInitialized,
                       isCanvasDrawn: canvasInitialized
@@ -84591,14 +84844,14 @@ ${parts.join("\n")}
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                      lineNumber: 1439,
+                      lineNumber: 1688,
                       columnNumber: 17
                     },
                     this
                   );
                 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 1437,
+                  lineNumber: 1686,
                   columnNumber: 13
                 }, this)
               ]
@@ -84607,7 +84860,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1357,
+              lineNumber: 1606,
               columnNumber: 9
             },
             this
@@ -84617,7 +84870,7 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1344,
+          lineNumber: 1593,
           columnNumber: 7
         },
         this
@@ -84646,7 +84899,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1476,
+              lineNumber: 1725,
               columnNumber: 9
             },
             this
@@ -84656,19 +84909,19 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1465,
+          lineNumber: 1714,
           columnNumber: 7
         },
         this
       ),
       !isOBS && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(DebugHud, { state, data: eventData }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1484,
+        lineNumber: 1733,
         columnNumber: 18
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1340,
+      lineNumber: 1589,
       columnNumber: 5
     }, this);
   }
@@ -84676,7 +84929,7 @@ ${parts.join("\n")}
   if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
     clientExports.createRoot(rootEl).render(/* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(OverlayRuntimeRoot, { publicId: window.__OVERLAY_PUBLIC_ID__ }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1495,
+      lineNumber: 1744,
       columnNumber: 29
     }, void 0));
   }

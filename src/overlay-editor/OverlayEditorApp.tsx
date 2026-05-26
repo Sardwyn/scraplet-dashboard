@@ -57,6 +57,7 @@ import { TimelinePanel } from "./components/TimelinePanel";
 import { AssetsPanel } from "./components/AssetsPanel";
 import { ShortcutCheatsheetModal } from "./components/ShortcutCheatsheetModal";
 import { PanelGeneratorPanel } from "./components/PanelGeneratorPanel";
+import { TriggerModePanel } from "./components/TriggerModePanel";
 import { getAllWidgets, getWidgetDef } from "../shared/widgetRegistry";
 import "../stakeMonitor/stakeMonitorWidget";
 import "../ttsWidget/ttsWidget";
@@ -1327,6 +1328,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   // Template Picker State
   // (templates state removed)
   const [leftTab, setLeftTab] = useState<"layers" | "components" | "assets" | "icons" | "widgets">("layers");
+  const [editorMode, setEditorMode] = useState<"design" | "triggers">("design");
+  const [activePreviewTrigger, setActivePreviewTrigger] = useState<string>("idle");
   const [showShortcutModal, setShowShortcutModal] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [versionHistoryList, setVersionHistoryList] = useState<Array<{id: number; version_name: string; created_at: string}>>([]);
@@ -2403,6 +2406,31 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   function deleteElement(id: string) {
     setConfig((prev) => ({ ...prev, elements: prev.elements.filter((e) => e.id !== id) }));
     setSelectedIds((prevSel) => prevSel.filter((x) => x !== id));
+  }
+
+  function handleAddInteraction(elementId: string, interaction: ElementInteraction) {
+    setConfig((prev) => {
+      const nextEls = [...prev.elements];
+      const idx = nextEls.findIndex(e => e.id === elementId);
+      if (idx === -1) return prev;
+      const el = nextEls[idx];
+      const existingInteractions = el.interactions || [];
+      nextEls[idx] = {
+        ...el,
+        interactions: [...existingInteractions, interaction]
+      } as any;
+      return { ...prev, elements: nextEls };
+    });
+  }
+
+  function handleAddSpawner(spawner: EventComponentSpawner) {
+    setConfig((prev) => {
+      const existingSpawners = prev.eventSpawners || [];
+      return {
+        ...prev,
+        eventSpawners: [...existingSpawners, spawner]
+      };
+    });
   }
 
   function triggerPreviewVisibility(id: string, action: "enter" | "exit" | "reset") {
@@ -6293,6 +6321,23 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         {/* Top Data Bar / Canvas Settings */}
         <div className="z-10 flex h-8 items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[#111113] px-4">
           <div className="flex items-center gap-4">
+            {/* Editor Mode Segmented Controls */}
+            <div className="flex bg-[#161618] rounded-md p-0.5 border border-[rgba(255,255,255,0.08)]">
+              <button
+                onClick={() => setEditorMode("design")}
+                className={`px-2.5 py-0.5 rounded text-[11px] font-semibold transition-colors ${editorMode === "design" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              >
+                Design
+              </button>
+              <button
+                onClick={() => setEditorMode("triggers")}
+                className={`px-2.5 py-0.5 rounded text-[11px] font-semibold transition-colors ${editorMode === "triggers" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-slate-200"}`}
+              >
+                Interactions ⚡
+              </button>
+            </div>
+            <div className="h-4 w-px bg-[rgba(255,255,255,0.08)]" />
+
             {/* Grid / Snap Controls */}
             <div className="flex items-center gap-2">
               <label className="flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200">
@@ -7255,7 +7300,46 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             </div>
           </div>
         )}
-        {primarySelectedEl ? (
+        {editorMode === "triggers" ? (
+          <TriggerModePanel
+            elements={config.elements}
+            eventSpawners={config.eventSpawners || []}
+            selectedElementId={selectedIds[0]}
+            activePreviewTrigger={activePreviewTrigger}
+            onPreviewTriggerChange={setActivePreviewTrigger}
+            onAddInteraction={handleAddInteraction}
+            onAddSpawner={handleAddSpawner}
+            onTestTrigger={async (triggerId) => {
+              try {
+                const mockPayload = triggerId === "platform.kick.raid" ? {
+                  type: "platform.kick.raid",
+                  "event.actor.displayName": "Sardwyn",
+                  "event.meta.viewers": 45,
+                  "event.message.text": "Raid incoming!"
+                } : {
+                  type: triggerId,
+                  "event.actor.displayName": "Sardwyn",
+                  "event.meta.viewers": 12,
+                  "event.message.text": "Trigger test!"
+                };
+
+                const res = await fetch(`/dashboard/api/overlays/${initialOverlay.id}/test-event`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    type: triggerId,
+                    payload: mockPayload
+                  })
+                });
+
+                if (!res.ok) throw new Error(res.statusText);
+              } catch (e) {
+                console.error("Test trigger failed:", e);
+                alert("Failed to send test trigger");
+              }
+            }}
+          />
+        ) : primarySelectedEl ? (
           <InspectorPanel
             element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
             elements={elementsAny}
@@ -9584,6 +9668,8 @@ const CanvasElement = React.memo(function CanvasElement({
     (renderedEl.type === "image" || renderedEl.type === "video") &&
     ((renderedEl as any).blendMode ?? "normal") !== "normal";
 
+  const isPhantom = isSelected && (renderedEl.opacity === 0 || renderedEl.visible === false);
+
   const selectionStyle = isPrimary
     ? {}
     : isSelected
@@ -9594,6 +9680,8 @@ const CanvasElement = React.memo(function CanvasElement({
   // by the outer wrapper div so the selection box tightly bounds the transformed shape.
   const renderedElNoTransform = useMemo(() => ({
     ...renderedEl,
+    visible: isPhantom ? true : renderedEl.visible,
+    opacity: isPhantom ? 1 : renderedEl.opacity,
     rotationDeg: 0,
     scaleX: 1,
     scaleY: 1,
@@ -9601,7 +9689,7 @@ const CanvasElement = React.memo(function CanvasElement({
     tiltY: 0,
     skewX: 0,
     skewY: 0,
-  } as AnyEl), [renderedEl]);
+  } as AnyEl), [renderedEl, isPhantom]);
 
   const fullTransform = useMemo(() => resolveElementTransform(renderedEl as any), [renderedEl]);
 
@@ -9618,6 +9706,8 @@ const CanvasElement = React.memo(function CanvasElement({
         transformOrigin: "center center",
         pointerEvents: suppressPointerEvents ? "none" : "auto",
         background: "rgba(0,0,0,0)",
+        opacity: isPhantom ? 0.35 : undefined,
+        outline: isPhantom ? `2px dashed ${ACCENT_TINT}` : undefined,
         ...(isSelected ? selectionStyle : {}),
       }}
     >

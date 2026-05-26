@@ -213,7 +213,7 @@ router.post("/overlays/:id/duplicate", requireAuth, express.json(), async (req, 
 
 
 // POST /dashboard/api/overlays/:id/test-event
-router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
+router.post("/overlays/:id/test-event", requireAuth, express.json(), async (req, res, next) => {
   try {
     const sessionUser = req.session.user;
     const userId = sessionUser.id;
@@ -230,23 +230,26 @@ router.post("/overlays/:id/test-event", requireAuth, async (req, res, next) => {
     if (!rows.length) return res.sendStatus(404);
     const { public_id: publicId, user_id: tenantId } = rows[0];
 
+    const type = req.body.type || "test.ping";
+    const payload = req.body.payload || {
+      message: "Test Event",
+      random: Math.floor(Math.random() * 1000)
+    };
+
     // 2. Construct Canonical Header Test Packet
     const packet = {
       header: {
         id: crypto.randomUUID(),
-        type: "test.ping",
+        type: type,
         ts: Date.now(),
         producer: "dashboard",
-        platform: "internal",
+        platform: type.split(".")[1] || "internal",
         scope: {
           tenantId: String(tenantId),
           overlayPublicId: publicId
         }
       },
-      payload: {
-        message: "Test Event",
-        random: Math.floor(Math.random() * 1000)
-      }
+      payload: payload
     };
 
     // 3. Publish to Gate

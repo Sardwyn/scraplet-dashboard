@@ -18,6 +18,7 @@ import './widgetRenderers'; // Register unified-state widget renderers
 import { BotLayerRoot } from './BotLayerRoot';
 import { PixiMediaCore } from './PixiMediaCore';
 import { LeaferGraphicCore } from './LeaferGraphicCore';
+import { evaluateConditions, substituteTemplateVariables } from "../shared/bindingEngine";
 
 
 
@@ -342,6 +343,15 @@ function DebugHud({ state, data }: { state: OverlayStateV0 | null, data?: Record
 ------------------------------*/
 type OverrideMap = Record<string, Partial<OverlayElement>>;
 
+interface ActiveSpawnInstance {
+  id: string;
+  spawnerId: string;
+  componentId: string;
+  elements: OverlayElement[];
+  expiresAt: number;
+  timeoutId: number;
+}
+
 function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [data, setData] = useState<Record<string, string>>({});
@@ -349,29 +359,86 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
   const [variables, setVariables] = useState<OverlayVariable[]>([]);
   const lastIdRef = useRef<string | undefined>(undefined);
 
+  const [activeInteractions, setActiveInteractions] = useState<Record<string, { interaction: ElementInteraction; startTime: number; timeoutId: number }>>({});
+  const activeInteractionsRef = useRef<Record<string, { interaction: ElementInteraction; startTime: number; timeoutId: number }>>({});
+  const cooldownsRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    return () => {
+      Object.values(activeInteractionsRef.current).forEach(act => window.clearTimeout(act.timeoutId));
+    };
+  }, []);
+
+  const mergedOverrides = useMemo(() => {
+    const next = { ...overrides };
+
+    for (const [elementId, active] of Object.entries(activeInteractions)) {
+      const { interaction } = active;
+      const elOverrides: any = {};
+
+      if (interaction.styleOverrides) {
+        Object.assign(elOverrides, interaction.styleOverrides);
+      }
+
+      if (interaction.actionType === "content_override" && interaction.textTemplate) {
+        elOverrides.text = substituteTemplateVariables(interaction.textTemplate, data);
+      }
+
+      if (interaction.animationIn || interaction.animationOut) {
+        elOverrides.animation = {
+          enter: interaction.animationIn || "none",
+          exit: interaction.animationOut || "none"
+        };
+      }
+
+      next[elementId] = {
+        ...next[elementId],
+        ...elOverrides
+      };
+    }
+
+    return next;
+  }, [overrides, activeInteractions, data]);
+
   useEffect(() => {
     if (!publicId) return;
 
-    // useOverlayEvents no longer opens its own SSE connection.
-    // Packets are forwarded here via scraplet:overlay:event dispatched by
-    // useUnifiedOverlayState's onPacketSideEffect — single SSE connection for the whole runtime.
     const handlePacket = (e: Event) => {
       try {
         const packet = (e as CustomEvent).detail;
         const { header, payload } = packet || {};
         if (!header?.type) return;
-        // Producer → Overlay events
+
+        const flatData: Record<string, string> = {};
+        const flatten = (obj: any, prefix: string) => {
+          for (const [k, v] of Object.entries(obj)) {
+            if (v && typeof v === 'object' && !Array.isArray(v)) {
+              flatten(v, `${prefix}${k}.`);
+            } else {
+              flatData[`${prefix}${k}`] = String(v);
+            }
+          }
+        };
+
+        if (payload) {
+          flatten(payload, "event.");
+          for (const [k, v] of Object.entries(payload)) {
+            if (v && typeof v !== 'object') {
+              flatData[k] = String(v);
+            }
+          }
+          console.log("[OverlayEvents] Bound Data:", flatData);
+          setData(prev => ({ ...prev, ...flatData }));
+        }
+
+        // 1. Legacy lower-third events compatibility
         if (header?.type === "overlay.lower_third.show") {
-          // 1. Resolve payload
           const p = payload || {};
           const text = p.text || (p.username && p.message ? `${p.username}: ${p.message}` : "");
           const title = p.title || "";
           const subtitle = p.subtitle || "";
-
-          // 2. Generate Sequence Token to race-condition proof the timer
           const seqToken = Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-          // 3. Update Data (Global keys only for V1)
           setData((prev) => ({
             ...prev,
             "lower_third.active": "1",
@@ -381,8 +448,6 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
             "lower_third.subtitle": subtitle,
           }));
 
-          // 4. Update Component Overrides (Phase 4)
-          // Find any componentInstance that is a preset_lower_third
           const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
 
           if (ltInstances.length > 0) {
@@ -403,12 +468,8 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
             });
           }
 
-          // 5. Determine Duration
-          // Priority: payload.duration_ms -> element default -> 8000
           let duration = typeof p.duration_ms === 'number' ? p.duration_ms : undefined;
-
           if (duration === undefined) {
-            // Try to find ANY lower_third element to steal its default
             const ltEl = elements.find(e => e.type === "lower_third" || (e.type === "componentInstance" && (e as any).componentId === "preset_lower_third")) as any;
             if (ltEl && typeof ltEl.defaultDurationMs === 'number') {
               duration = ltEl.defaultDurationMs;
@@ -416,13 +477,9 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
           }
           if (duration === undefined) duration = 8000;
 
-          // 6. Set Auto-Hide Timer
           window.setTimeout(() => {
             setData((prev) => {
-              // Only clear if the sequence token matches
               if (prev["lower_third._seq"] !== seqToken) return prev;
-
-              // Hide component instances
               setOverrides(oprev => {
                 const next = { ...oprev };
                 ltInstances.forEach(inst => {
@@ -430,7 +487,6 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
                 });
                 return next;
               });
-
               const next = { ...prev };
               next["lower_third.active"] = "0";
               return next;
@@ -444,7 +500,6 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
             next["lower_third.active"] = "0";
             return next;
           });
-          // Hide instances
           const ltInstances = elements.filter(e => e.type === "componentInstance" && (e as any).componentId === "preset_lower_third");
           setOverrides(prev => {
             const next = { ...prev };
@@ -462,41 +517,60 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
           }
         }
 
-        lastIdRef.current = header?.id;
+        // 2. Active interactions resolution
+        elements.forEach(element => {
+          const matchingInteractions = (element.interactions || []).filter(inter => {
+            const matchTrigger = inter.triggerId === header.type;
+            if (!matchTrigger) return false;
 
-        // Universal Packet Handler (Phase 12)
-        // Bind payload to data.event.* and root keys
-        if (payload) {
-          const flatData: Record<string, string> = {};
+            if (!evaluateConditions(inter.conditions, flatData)) return false;
 
-          // Helper to flatten object
-          const flatten = (obj: any, prefix: string) => {
-            for (const [k, v] of Object.entries(obj)) {
-              if (v && typeof v === 'object' && !Array.isArray(v)) {
-                flatten(v, `${prefix}${k}.`);
-              } else {
-                flatData[`${prefix}${k}`] = String(v);
+            const cooldownKey = `${element.id}:${inter.id}`;
+            const lastTriggered = cooldownsRef.current[cooldownKey] || 0;
+            const cooldownMs = inter.cooldownMs ?? 0;
+            if (Date.now() - lastTriggered < cooldownMs) return false;
+
+            return true;
+          });
+
+          if (matchingInteractions.length > 0) {
+            matchingInteractions.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+            const bestInteraction = matchingInteractions[0];
+            const currentActive = activeInteractionsRef.current[element.id];
+
+            if (!currentActive || (bestInteraction.priority ?? 0) >= (currentActive.interaction.priority ?? 0)) {
+              if (currentActive) {
+                window.clearTimeout(currentActive.timeoutId);
               }
-            }
-          };
 
-          // 1. Namespace under "event"
-          flatten(payload, "event.");
+              const cooldownKey = `${element.id}:${bestInteraction.id}`;
+              cooldownsRef.current[cooldownKey] = Date.now();
 
-          // 2. Back-compat: Top-level keys (shallow)
-          for (const [k, v] of Object.entries(payload)) {
-            if (v && typeof v !== 'object') {
-              flatData[k] = String(v);
+              if (bestInteraction.actionType === "audio_play" && (bestInteraction as any).audioUrl) {
+                const audio = new Audio((bestInteraction as any).audioUrl);
+                audio.volume = 0.5;
+                audio.play().catch(e => console.warn("Failed to play interaction audio:", e));
+              }
+
+              const timeoutId = window.setTimeout(() => {
+                setActiveInteractions(prev => {
+                  const next = { ...prev };
+                  delete next[element.id];
+                  return next;
+                });
+                delete activeInteractionsRef.current[element.id];
+              }, bestInteraction.durationMs);
+
+              setActiveInteractions(prev => ({
+                ...prev,
+                [element.id]: { interaction: bestInteraction, startTime: Date.now(), timeoutId }
+              }));
+              activeInteractionsRef.current[element.id] = { interaction: bestInteraction, startTime: Date.now(), timeoutId };
             }
           }
+        });
 
-          console.log("[OverlayEvents] Bound Data:", flatData);
-          setData(prev => ({ ...prev, ...flatData }));
-        }
-
-
-
-        // Group flash on generic packets removed — was a no-op hide and fired on every payload.
+        lastIdRef.current = header?.id;
       } catch (err) {
         console.error("[OverlayEvents] Parse error:", err);
       }
@@ -508,7 +582,7 @@ function useOverlayEvents(publicId: string, elements: OverlayElement[]) {
     };
   }, [publicId, elements]);
 
-  return { overrides, data, flash, variables };
+  return { overrides: mergedOverrides, data, flash, variables };
 }
 
 /* -----------------------------
@@ -738,13 +812,188 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     });
   }, [baseElements, overrides, timelineValues]);
 
-  const animationPhases = useElementAnimationPhases(elements);
+  const [activeSpawns, setActiveSpawns] = useState<ActiveSpawnInstance[]>([]);
+  const activeSpawnsRef = useRef<ActiveSpawnInstance[]>([]);
+  activeSpawnsRef.current = activeSpawns;
+
+  const spawnerCooldownsRef = useRef<Record<string, number>>({});
+  const spawnQueuesRef = useRef<Record<string, Array<{ spawner: EventComponentSpawner; data: any }>>>({});
+
+  const spawnedElements = useMemo(() => {
+    return activeSpawns.flatMap(spawn => spawn.elements);
+  }, [activeSpawns]);
+
+  const finalElements = useMemo(() => {
+    return [...elements, ...spawnedElements];
+  }, [elements, spawnedElements]);
+
+  // Sync activeSpawns cleanup
+  useEffect(() => {
+    return () => {
+      activeSpawnsRef.current.forEach(s => window.clearTimeout(s.timeoutId));
+    };
+  }, []);
+
+  // Listen for overlay SSE events to trigger component spawners
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const { header, payload } = detail || {};
+      if (!header?.type) return;
+
+      const flatData: Record<string, string> = {};
+      const flatten = (obj: any, prefix: string) => {
+        for (const [k, v] of Object.entries(obj)) {
+          if (v && typeof v === 'object' && !Array.isArray(v)) {
+            flatten(v, `${prefix}${k}.`);
+          } else {
+            flatData[`${prefix}${k}`] = String(v);
+          }
+        }
+      };
+
+      if (payload) {
+        flatten(payload, "event.");
+        for (const [k, v] of Object.entries(payload)) {
+          if (v && typeof v !== 'object') {
+            flatData[k] = String(v);
+          }
+        }
+      }
+
+      const matchingSpawners = ((overlay as any)?.eventSpawners || []).filter((spawner: EventComponentSpawner) => {
+        const matchTrigger = spawner.triggerId === header.type;
+        if (!matchTrigger) return false;
+
+        if (!evaluateConditions(spawner.conditions, flatData)) return false;
+
+        const cooldownKey = `spawner:${spawner.id}`;
+        const lastTriggered = spawnerCooldownsRef.current[cooldownKey] || 0;
+        const cooldownMs = spawner.cooldownMs ?? 0;
+        if (Date.now() - lastTriggered < cooldownMs) return false;
+
+        return true;
+      });
+
+      if (matchingSpawners.length === 0) return;
+
+      // Sort matching spawners by priority
+      matchingSpawners.sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0));
+
+      const triggerSpawn = (spawner: EventComponentSpawner, data: any) => {
+        const componentId = spawner.componentId;
+        const components = (overlay as any)?.components || [];
+        const suffixId = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+        const component = components.find((c: any) => c.id === componentId);
+        if (!component) return;
+
+        const clonedElements = JSON.parse(JSON.stringify(component.elements)) as OverlayElement[];
+        const componentElementIds = new Set(clonedElements.map(el => el.id));
+
+        const spawnedClones = clonedElements.map(el => {
+          const oldId = el.id;
+          el.id = `${oldId}_${suffixId}`;
+
+          if (el.parentId && componentElementIds.has(el.parentId)) {
+            el.parentId = `${el.parentId}_${suffixId}`;
+          } else {
+            el.x = (el.x ?? 0) + spawner.x;
+            el.y = (el.y ?? 0) + spawner.y;
+          }
+
+          if ((el as any).childIds && Array.isArray((el as any).childIds)) {
+            (el as any).childIds = (el as any).childIds.map((cid: string) => {
+              return componentElementIds.has(cid) ? `${cid}_${suffixId}` : cid;
+            });
+          }
+
+          if (el.type === "text" && (el as any).text) {
+            (el as any).text = substituteTemplateVariables((el as any).text, data);
+          }
+
+          return el;
+        });
+
+        // Apply animations to root elements of the spawned component
+        const spawnedRootIds = new Set(spawnedClones.filter(el => !el.parentId || !componentElementIds.has(el.parentId)).map(el => el.id));
+        spawnedClones.forEach(el => {
+          if (spawnedRootIds.has(el.id)) {
+            el.animation = {
+              ...el.animation,
+              enter: spawner.animationIn || "none",
+              exit: spawner.animationOut || "none"
+            };
+          }
+        });
+
+        const handleDespawn = (spawnInstanceId: string) => {
+          setActiveSpawns(prev => prev.filter(spawn => spawn.id !== spawnInstanceId));
+
+          if (spawner.stackMode === "queue") {
+            const queue = spawnQueuesRef.current[spawner.id] || [];
+            if (queue.length > 0) {
+              const nextRequest = queue.shift();
+              if (nextRequest) {
+                triggerSpawn(nextRequest.spawner, nextRequest.data);
+              }
+            }
+          }
+        };
+
+        if (spawner.stackMode === "replace") {
+          const existingSpawns = activeSpawnsRef.current.filter(s => s.spawnerId === spawner.id);
+          existingSpawns.forEach(s => window.clearTimeout(s.timeoutId));
+          setActiveSpawns(prev => prev.filter(s => s.spawnerId !== spawner.id));
+        }
+
+        if (spawner.stackMode === "queue") {
+          const isCurrentlyActive = activeSpawnsRef.current.some(s => s.spawnerId === spawner.id);
+          if (isCurrentlyActive) {
+            if (!spawnQueuesRef.current[spawner.id]) {
+              spawnQueuesRef.current[spawner.id] = [];
+            }
+            spawnQueuesRef.current[spawner.id].push({ spawner, data });
+            return;
+          }
+        }
+
+        const spawnInstanceId = `${spawner.id}_${suffixId}`;
+        const timeoutId = window.setTimeout(() => {
+          handleDespawn(spawnInstanceId);
+        }, spawner.durationMs);
+
+        const newSpawnInstance: ActiveSpawnInstance = {
+          id: spawnInstanceId,
+          spawnerId: spawner.id,
+          componentId: spawner.componentId,
+          elements: spawnedClones,
+          expiresAt: Date.now() + spawner.durationMs,
+          timeoutId
+        };
+
+        const cooldownKey = `spawner:${spawner.id}`;
+        spawnerCooldownsRef.current[cooldownKey] = Date.now();
+
+        setActiveSpawns(prev => [...prev, newSpawnInstance]);
+      };
+
+      matchingSpawners.forEach((spawner: EventComponentSpawner) => {
+        triggerSpawn(spawner, flatData);
+      });
+    };
+
+    window.addEventListener("scraplet:overlay:event", handler);
+    return () => window.removeEventListener("scraplet:overlay:event", handler);
+  }, [overlay]);
+
+  const animationPhases = useElementAnimationPhases(finalElements);
 
   const [imageTrigger, setImageTrigger] = useState(0);
 
   const imageUrls = useMemo(() => {
     const urls = new Set<string>();
-    elements.forEach(el => {
+    finalElements.forEach(el => {
       if (el.visible === false) return;
       if (el.type === 'image' && el.src) urls.add(el.src);
       if (el.pattern?.src) urls.add(el.pattern.src);
@@ -755,7 +1004,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       }
     });
     return Array.from(urls);
-  }, [elements]);
+  }, [finalElements]);
 
   useEffect(() => {
     if (imageUrls.length === 0) return;
@@ -823,7 +1072,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
     // Build elements map for quick lookup
     const elementsById: Record<string, any> = {};
-    elements.forEach(el => {
+    finalElements.forEach(el => {
       elementsById[el.id] = el;
     });
 
@@ -988,7 +1237,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         pixiCoreRef.current?.removeVideoElement(id);
       }
     });
-  }, [elements, canvasInitialized, fontTrigger, imageTrigger]);
+  }, [finalElements, canvasInitialized, fontTrigger, imageTrigger]);
 
   // Load config and refresh it periodically so persistent OBS browser sources
   // pick up saved timeline changes without needing a manual source refresh.
@@ -1110,22 +1359,22 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // Countdown tick loop
   useEffect(() => {
     const interval = window.setInterval(() => {
-      tickCountdowns(elements);
+      tickCountdowns(finalElements);
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [elements]);
+  }, [finalElements]);
 
   // Clock tick loop
   useEffect(() => {
     const interval = window.setInterval(() => {
-      tickClocks(elements);
+      tickClocks(finalElements);
     }, 1000);
     return () => window.clearInterval(interval);
-  }, [elements]);
+  }, [finalElements]);
 
   // Audio Visualiser runtime — Web Audio API
   useEffect(() => {
-    const avEls = elements.filter((el) => el.type === "audioVisualiser") as any[];
+    const avEls = finalElements.filter((el) => el.type === "audioVisualiser") as any[];
     if (avEls.length === 0) return;
 
     if (!window.__AUDIO_ANALYSERS__) {
@@ -1182,7 +1431,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       source?.disconnect();
       audioCtx?.close().catch(() => {});
     };
-  }, [elements]);
+  }, [finalElements]);
 
   // Safe defaults before overlay loads (keeps hooks order stable)
   // Use server-injected base resolution if available (avoids layout shift before config loads)
@@ -1190,15 +1439,15 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   // IMPORTANT: Filter out children of container elements so they don't double-render at root
   const allChildIds = React.useMemo(() => {
     const ids = new Set<string>();
-    elements.forEach(el => {
+    finalElements.forEach(el => {
       if ((el.type === 'group' || el.type === 'frame' || el.type === 'mask' || el.type === 'boolean') && (el as any).childIds) {
         (el as any).childIds.forEach((cid: string) => ids.add(cid));
       }
     });
     return ids;
-  }, [elements]);
+  }, [finalElements]);
 
-  const rootElements = React.useMemo(() => elements.filter(el => !allChildIds.has(el.id)), [elements, allChildIds]);
+  const rootElements = React.useMemo(() => finalElements.filter(el => !allChildIds.has(el.id)), [finalElements, allChildIds]);
 
   const pinnedElements = rootElements.filter((el: any) => el.pinned === true);
   const normalElements = rootElements.filter((el: any) => el.pinned !== true);
@@ -1233,22 +1482,22 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const elementsById = React.useMemo(() => {
     const map: Record<string, OverlayElement> = {};
-    for (const el of elements) {
+    for (const el of finalElements) {
       map[el.id] = el as OverlayElement;
     }
     return map;
-  }, [elements]);
+  }, [finalElements]);
 
   // Calculate used fonts
   const usedFonts = React.useMemo(() => {
     const set = new Set<string>();
-    for (const el of elements) {
+    for (const el of finalElements) {
       if (el.type === "text" && (el as any).fontFamily) {
         set.add((el as any).fontFamily);
       }
     }
     return Array.from(set);
-  }, [elements]);
+  }, [finalElements]);
 
   const usedFontsKey = usedFonts.join(",");
 
@@ -1349,7 +1598,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             overlay?.backgroundColor && overlay.backgroundColor !== "transparent"
               ? overlay.backgroundColor
               : "transparent",
-          overflow: elements.some((el: any) => (el.tiltX ?? 0) !== 0 || (el.tiltY ?? 0) !== 0 || (el.skewX ?? 0) !== 0 || (el.skewY ?? 0) !== 0) ? "visible" : "hidden",
+          overflow: finalElements.some((el: any) => (el.tiltX ?? 0) !== 0 || (el.tiltY ?? 0) !== 0 || (el.skewX ?? 0) !== 0 || (el.skewY ?? 0) !== 0) ? "visible" : "hidden",
           position: "relative",
         }}
       >
@@ -1422,7 +1671,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   animationPhases={animationPhases}
                   data={{}} // Test data placeholder
                   visited={new Set()}
-                  elementIndex={elements.indexOf(el) + 1}
+                  elementIndex={finalElements.indexOf(el) + 1}
                   canvasInitialized={canvasInitialized}
                   isCanvasDrawn={canvasInitialized}
                 />
@@ -1447,7 +1696,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   data={eventData}
                   overlayVariables={overlayVariables}
                   visited={new Set()}
-                  elementIndex={elements.indexOf(el) + 1}
+                  elementIndex={finalElements.indexOf(el) + 1}
                   widgetStates={unifiedState.widgetStates}
                   canvasInitialized={canvasInitialized}
                   isCanvasDrawn={canvasInitialized}

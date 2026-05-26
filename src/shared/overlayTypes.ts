@@ -72,6 +72,7 @@ export interface OverlayElementBase extends OverlayEditorFields {
   parentId?: string;  // set on texture child elements
   bindings?: Record<string, DynamicBinding>;
   animation?: OverlayAnimation;
+  interactions?: ElementInteraction[];
 }
 
 export type OverlayConstraintMode = "start" | "end" | "stretch" | "center" | "scale";
@@ -1039,6 +1040,61 @@ export interface OverlayConfigV0 {
     | OverlayComponentInstanceElement
     | OverlayWidgetElement
   >;
+  eventSpawners?: EventComponentSpawner[];
+}
+
+/* =========================
+   REACTIONS & TRIGGERS
+========================= */
+
+export interface ElementInteraction {
+  id: string;
+  triggerId: string;       // e.g., "platform.kick.raid", "room_intel.pressure"
+  actionType: "style_shift" | "content_override" | "audio_play";
+  durationMs: number;       // standard time the trigger holds active
+  priority?: number;       // priority to resolve simultaneous triggers deterministically
+  cooldownMs?: number;     // prevent rapid-fire events from spamming/flooding
+  
+  // Transition presets
+  animationIn?: OverlayMotionPreset;
+  animationOut?: OverlayMotionPreset;
+  
+  // Custom style overrides applicable only during activation
+  styleOverrides?: {
+    opacity?: number;
+    backgroundColor?: string;
+    scaleX?: number;
+    scaleY?: number;
+    rotationDeg?: number;
+  };
+  
+  // Text templates to replace content if the target is text
+  textTemplate?: string;    // e.g. "RAID! {actor} brought {viewers} raiders!"
+
+  // Evaluation criteria
+  conditions?: {
+    minViewers?: number;
+    onlyIfVisible?: boolean;
+  };
+}
+
+export interface EventComponentSpawner {
+  id: string;
+  triggerId: string;       // e.g., "platform.kick.raid"
+  componentId: string;     // ID of saved custom component/group
+  x: number;               // spawn coordinates
+  y: number;
+  durationMs: number;      // how long the component lives before despawn
+  priority?: number;       // priority scoring
+  cooldownMs?: number;     // prevents flood spam
+  stackMode: "replace" | "stack" | "queue"; // behavior on repeated triggers
+  animationIn?: OverlayMotionPreset;
+  animationOut?: OverlayMotionPreset;
+
+  conditions?: {
+    minViewers?: number;
+    onlyIfVisible?: boolean;
+  };
 }
 
 /**
@@ -1051,6 +1107,7 @@ export interface OverlayConfigV1 {
   eventTimelines?: Record<string, OverlayTimeline>;
   variables?: OverlayVariable[];
   elements: OverlayElement[];
+  eventSpawners?: EventComponentSpawner[];
 }
 
 export type OverlayConfig = OverlayConfigV0 | OverlayConfigV1;
