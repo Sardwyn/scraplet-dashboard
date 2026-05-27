@@ -50,6 +50,18 @@ const EASING_OPTIONS: Array<{ value: OverlayTimelineEasing; label: string }> = [
   { value: "hold",        label: "Hold"        },
 ];
 
+const STANDARD_TRIGGERS = [
+  { id: "platform.kick.raid", label: "Kick Raid" },
+  { id: "platform.kick.follow", label: "Kick Follow" },
+  { id: "platform.kick.subscription", label: "Kick Sub" },
+  { id: "platform.twitch.raid", label: "Twitch Raid" },
+  { id: "platform.twitch.follow", label: "Twitch Follow" },
+  { id: "platform.twitch.subscription", label: "Twitch Sub" },
+  { id: "platform.youtube.follow", label: "YouTube Follow" },
+  { id: "platform.youtube.subscription", label: "YouTube Sub" },
+  { id: "room_intel.pressure", label: "Room Pressure (Hype)" }
+];
+
 const PROPERTY_CATEGORIES = [
   {
     name: "Transform",
@@ -545,6 +557,22 @@ export function TimelinePanel({
   const [isUploading, setIsUploading] = useState(false);
   const markers = useMemo(() => timeline.markers ?? [], [timeline.markers]);
   const [activePropertyPickerElementId, setActivePropertyPickerElementId] = useState<string | null>(null);
+
+  const allowedTriggers = useMemo(() => {
+    const set = new Set<string>();
+    STANDARD_TRIGGERS.forEach(t => set.add(t.id));
+    elements.forEach(el => {
+      if (el.interactions) {
+        el.interactions.forEach(it => {
+          if (it.triggerId) set.add(it.triggerId);
+        });
+      }
+    });
+    EVENT_TIMELINE_NAMES.forEach(name => {
+      set.add(name);
+    });
+    return Array.from(set);
+  }, [elements]);
 
   // ── zoom / scroll ──────────────────────────────────────────────────────────
   const [pxPerSec, setPxPerSec] = useState(DEFAULT_PX_PER_SEC);
@@ -1388,24 +1416,68 @@ export function TimelinePanel({
                 </div>
               )}
 
-              {editingMarker.actionType === "trigger" && (
-                <div className="space-y-1">
-                  <label className="text-slate-400 block font-medium">Trigger Event ID / Name</label>
-                  <input
-                    type="text"
-                    placeholder="alert_custom_sfx"
-                    value={editingMarker.triggerId || ""}
-                    onChange={(e) => {
-                      const next = { ...editingMarker, triggerId: e.target.value };
-                      setEditingMarker(next);
-                      const updated = markers.map(m => m.id === editingMarker.id ? next : m);
-                      onUpdateMarkers?.(updated);
-                    }}
-                    className={`w-full ${uiClasses.field} text-slate-200`}
-                  />
-                  <span className="text-[9px] text-slate-500 block">Event triggered in active widgets.</span>
-                </div>
-              )}
+              {editingMarker.actionType === "trigger" && (() => {
+                const isCustom = !allowedTriggers.includes(editingMarker.triggerId || "") && (editingMarker.triggerId !== "");
+                return (
+                  <div className="space-y-2">
+                    <div className="space-y-1">
+                      <label className="text-slate-400 block font-medium">Select Trigger Event</label>
+                      <select
+                        value={isCustom ? "custom_input" : (editingMarker.triggerId || "")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "custom_input") {
+                            const next = { ...editingMarker, triggerId: editingMarker.triggerId || "custom_event" };
+                            setEditingMarker(next);
+                            const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                            onUpdateMarkers?.(updated);
+                          } else {
+                            const next = { ...editingMarker, triggerId: val };
+                            setEditingMarker(next);
+                            const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                            onUpdateMarkers?.(updated);
+                          }
+                        }}
+                        className={`w-full ${uiClasses.field} text-slate-200 appearance-none`}
+                      >
+                        <option value="">-- Select Event --</option>
+                        <optgroup label="Standard Platform Triggers">
+                          {STANDARD_TRIGGERS.map(t => (
+                            <option key={t.id} value={t.id}>{t.label} ({t.id})</option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Active Canvas Interactions & Events">
+                          {allowedTriggers
+                            .filter(tid => !STANDARD_TRIGGERS.some(st => st.id === tid))
+                            .map(tid => (
+                              <option key={tid} value={tid}>{tid}</option>
+                            ))}
+                        </optgroup>
+                        <option value="custom_input">✍ Custom Event ID...</option>
+                      </select>
+                    </div>
+
+                    {(isCustom || editingMarker.triggerId === "custom_event") && (
+                      <div className="space-y-1">
+                        <label className="text-slate-400 block font-medium">Custom Event ID / Name</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. alert_custom_sfx"
+                          value={editingMarker.triggerId || ""}
+                          onChange={(e) => {
+                            const next = { ...editingMarker, triggerId: e.target.value };
+                            setEditingMarker(next);
+                            const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                            onUpdateMarkers?.(updated);
+                          }}
+                          className={`w-full ${uiClasses.field} text-slate-200`}
+                        />
+                      </div>
+                    )}
+                    <span className="text-[9px] text-slate-500 block">Select from standard/active triggers on canvas, or define a custom event.</span>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-2 border-t border-white/10 pt-3">
