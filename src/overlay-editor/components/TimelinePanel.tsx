@@ -49,6 +49,28 @@ const EASING_OPTIONS: Array<{ value: OverlayTimelineEasing; label: string }> = [
   { value: "hold",        label: "Hold"        },
 ];
 
+const PROPERTY_CATEGORIES = [
+  {
+    name: "Transform",
+    props: ["x", "y", "width", "height", "opacity", "rotationDeg", "scaleX", "scaleY", "tiltX", "tiltY", "skewX", "skewY", "perspective"] as OverlayTimelineProperty[],
+  },
+  {
+    name: "Typography",
+    props: ["fontFamily", "fontSizePx", "color"] as OverlayTimelineProperty[],
+    eligible: (el: OverlayElement) => ["text", "countdown", "clock", "lower_third"].includes(el.type),
+  },
+  {
+    name: "Fills & Strokes",
+    props: ["fillColor", "strokeColor", "strokeWidthPx", "strokeOpacity"] as OverlayTimelineProperty[],
+    eligible: (el: OverlayElement) => ["box", "shape", "path", "boolean", "progressBar", "progressRing"].includes(el.type),
+  },
+  {
+    name: "Parametric Effects",
+    props: ["effect_enabled", "effect_opacity"] as OverlayTimelineProperty[],
+  }
+];
+
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function formatMs(ms: number) {
@@ -487,6 +509,7 @@ type Props = {
   onMoveKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => void;
   onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
   onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
+  onRemoveElementTracks?: (elementId: string) => void;
   // new
   onMoveMultipleKeyframes?: (moves: Array<{ trackId: string; keyframeId: string; nextTimeMs: number }>) => void;
   onSetKeyframeBezier?: (trackId: string, keyframeId: string, bezier: [number,number,number,number]) => void;
@@ -501,6 +524,7 @@ export function TimelinePanel({
   onSelectKeyframe, onPlay, onPause, onStop, onSetPlayhead, onSetDuration,
   onDeleteSelectedKeyframe, onSetPlayback, onSetSelectedKeyframeEasing,
   onAddTrack, onMoveKeyframe, onDuplicateKeyframe, onAddKeyframeAtTime,
+  onRemoveElementTracks,
   onMoveMultipleKeyframes, onSetKeyframeBezier,
   activeEventTimeline, eventTimelines, onSetActiveEventTimeline,
   isTriggerMode,
@@ -510,6 +534,12 @@ export function TimelinePanel({
   const borderCol = isNeonColor ? "#06b6d4" : (activeColor ?? 'rgba(255,255,255,0.08)');
   const borderWidth = isNeonColor || activeColor ? 2 : 1;
   const shadowGlow = isNeonColor ? "0 -4px 12px rgba(6, 182, 212, 0.15)" : undefined;
+
+  // ── Sequencer-style tracking state ──
+  const [manuallyTrackedElementIds, setManuallyTrackedElementIds] = useState<Set<string>>(new Set());
+  const [showElementPicker, setShowElementPicker] = useState(false);
+  const [activePropertyPickerElementId, setActivePropertyPickerElementId] = useState<string | null>(null);
+
   // ── zoom / scroll ──────────────────────────────────────────────────────────
   const [pxPerSec, setPxPerSec] = useState(DEFAULT_PX_PER_SEC);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -552,9 +582,54 @@ export function TimelinePanel({
   }, [baseTimeline]);
 
   const visibleElements = useMemo(() => {
-    const sel = new Set(selectedIds);
-    return timelineElements.filter(el => sel.has(el.id) || tracksByElement.has(el.id) || baseTracksByElement.has(el.id));
-  }, [timelineElements, selectedIds, tracksByElement, baseTracksByElement]);
+    return timelineElements.filter(el =>
+      manuallyTrackedElementIds.has(el.id) ||
+      tracksByElement.has(el.id) ||
+      baseTracksByElement.has(el.id)
+    );
+  }, [timelineElements, manuallyTrackedElementIds, tracksByElement, baseTracksByElement]);
+
+  const eligibleElementsToTrack = useMemo(() => {
+    const trackedIds = new Set(visibleElements.map(el => el.id));
+    return timelineElements.filter(el => !trackedIds.has(el.id));
+  }, [timelineElements, visibleElements]);
+
+  const handleAddElementToTimeline = (elementId: string) => {
+    setManuallyTrackedElementIds(prev => {
+      const next = new Set(prev);
+      next.add(elementId);
+      return next;
+    });
+  };
+
+  const handleMainAddTrack = () => {
+    if (selectedIds.length > 0) {
+      // Find first selected element that is eligible and not already tracked
+      const eligibleId = selectedIds.find(id => {
+        const el = elements.find(e => e.id === id);
+        return el && isTimelineEligible(el);
+      });
+      if (eligibleId) {
+        handleAddElementToTimeline(eligibleId);
+        setCollapsedElements(prev => {
+          const next = new Set(prev);
+          next.delete(eligibleId);
+          return next;
+        });
+        return;
+      }
+    }
+    setShowElementPicker(prev => !prev);
+  };
+
+  const handleRemoveElementFromTimeline = (elementId: string) => {
+    setManuallyTrackedElementIds(prev => {
+      const next = new Set(prev);
+      next.delete(elementId);
+      return next;
+    });
+    onRemoveElementTracks?.(elementId);
+  };
 
   const totalWidth = (timeline.durationMs / 1000) * pxPerSec;
 
@@ -839,8 +914,56 @@ export function TimelinePanel({
       {/* ── Scrollable track area ── */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {/* Ruler row */}
-        <div className="flex flex-none border-b border-[rgba(255,255,255,0.08)]" style={{ height: RULER_HEIGHT }}>
-          <div className="flex-none bg-[#0d0d0f]" style={{ width: HEADER_WIDTH }} />
+        <div className="flex flex-none border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f]" style={{ height: RULER_HEIGHT }}>
+          <div className="flex-none flex items-center justify-between px-3 relative border-r border-[rgba(255,255,255,0.04)] bg-[#09090b]" style={{ width: HEADER_WIDTH }}>
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Tracks</span>
+            <button
+              type="button"
+              onClick={handleMainAddTrack}
+              className="flex h-4 w-4 items-center justify-center rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all shadow-sm hover:scale-105 active:scale-95 focus:outline-none"
+              title="Add Canvas Element (Selected element or open picker)"
+            >
+              +
+            </button>
+
+            {/* Element Picker Popover */}
+            {showElementPicker && (
+              <div className="absolute top-6 left-3 z-[150] w-64 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#111113] p-1 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1.5 mb-1 bg-white/2 rounded-t">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Add Element Track</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowElementPicker(false)}
+                    className="text-[10px] text-slate-500 hover:text-slate-300"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {eligibleElementsToTrack.length === 0 ? (
+                    <div className="px-3 py-4 text-[11px] text-slate-500 text-center italic">
+                      No other elements on canvas.
+                    </div>
+                  ) : (
+                    eligibleElementsToTrack.map(el => (
+                      <button
+                        key={el.id}
+                        type="button"
+                        onClick={() => {
+                          handleAddElementToTimeline(el.id);
+                          setShowElementPicker(false);
+                        }}
+                        className="w-full text-left rounded px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-200 transition-colors flex items-center justify-between"
+                      >
+                        <span className="truncate font-medium">{el.name || el.type}</span>
+                        <span className="text-[9px] text-slate-500 uppercase font-mono px-1.5 py-0.5 rounded bg-white/5">{el.type}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex-1 overflow-hidden">
             <TimelineRuler
               durationMs={timeline.durationMs}
@@ -871,8 +994,15 @@ export function TimelinePanel({
           })()}
           <div ref={trackAreaRef} style={{ position: 'relative', minHeight: '100%' }} onMouseDown={onTrackAreaMouseDown}>
           {visibleElements.length === 0 && (
-            <div className="px-4 py-5 text-[12px] text-slate-500">
-              Select an element or add a keyframed property to start.
+            <div className="px-5 py-8 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-3">
+              <p>No elements are currently added to the timeline sequencer.</p>
+              <button
+                type="button"
+                onClick={handleMainAddTrack}
+                className="rounded border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 px-3 py-1.5 transition-colors font-medium text-[11px]"
+              >
+                + Add Track to Sequencer
+              </button>
             </div>
           )}
 
@@ -894,34 +1024,100 @@ export function TimelinePanel({
             });
 
             return (
-              <div key={element.id} className="border-b border-[rgba(255,255,255,0.06)]">
+              <div key={element.id} className="border-b border-[rgba(255,255,255,0.06)] group/el">
                 {/* Element header */}
-                <div className="flex items-center gap-2 bg-[rgba(255,255,255,0.03)] px-2 py-1.5 sticky left-0">
-                  <button
-                    type="button"
-                    onClick={() => setCollapsedElements(prev => {
-                      const next = new Set(prev);
-                      if (next.has(element.id)) next.delete(element.id);
-                      else next.add(element.id);
-                      return next;
-                    })}
-                    className="flex-none text-[10px] text-slate-500 hover:text-slate-300 w-4"
-                  >
-                    {isCollapsed ? "▶" : "▼"}
-                  </button>
-                  <span className="flex-none truncate text-[12px] font-semibold text-slate-200" style={{ width: HEADER_WIDTH - 24 }}>
-                    {element.name || element.type}
-                  </span>
+                <div className="flex items-center bg-[rgba(255,255,255,0.02)] py-1 sticky left-0 border-b border-[rgba(255,255,255,0.01)] h-[32px]">
+                  <div className="flex-none flex items-center justify-between px-2" style={{ width: HEADER_WIDTH }}>
+                    <div className="flex items-center gap-1.5 truncate flex-1">
+                      <button
+                        type="button"
+                        onClick={() => setCollapsedElements(prev => {
+                          const next = new Set(prev);
+                          if (next.has(element.id)) next.delete(element.id);
+                          else next.add(element.id);
+                          return next;
+                        })}
+                        className="flex-none text-[9px] text-slate-500 hover:text-slate-300 w-3"
+                      >
+                        {isCollapsed ? "▶" : "▼"}
+                      </button>
+                      <span className="truncate text-[11px] font-semibold text-slate-200" title={element.name || element.type}>
+                        {element.name || element.type}
+                      </span>
+                    </div>
+                    
+                    {/* Hover to delete element track */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveElementFromTimeline(element.id)}
+                      className="opacity-0 group-hover/el:opacity-100 focus:opacity-100 text-slate-500 hover:text-red-400 text-[10px] transition-all px-1.5"
+                      title="Remove from Sequencer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
                   {!isCollapsed && (
-                    <div className="flex flex-wrap gap-1 pl-1">
-                      {TIMELINE_PROPERTIES.map(prop => (
-                        <button key={prop} type="button"
-                          onClick={() => onAddTrack(element.id, prop)}
-                          disabled={existing.has(prop)}
-                          className="h-5 rounded border border-[rgba(255,255,255,0.07)] bg-[#161618] px-1.5 text-[10px] text-slate-400 hover:text-slate-200 disabled:opacity-30">
-                          +{prop}
-                        </button>
-                      ))}
+                    <div className="relative pl-2">
+                      <button
+                        type="button"
+                        onClick={() => setActivePropertyPickerElementId(activePropertyPickerElementId === element.id ? null : element.id)}
+                        className="h-5 rounded border border-indigo-500/25 bg-indigo-500/10 px-2 text-[10px] text-indigo-300 hover:text-indigo-200 transition-colors flex items-center gap-1 font-medium"
+                      >
+                        <span>+ Track</span>
+                      </button>
+
+                      {/* Property Picker Dropdown */}
+                      {activePropertyPickerElementId === element.id && (
+                        <div className="absolute left-2 top-6 z-[150] w-56 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#111113] p-1 shadow-2xl max-h-72 overflow-y-auto">
+                          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1 mb-1 bg-white/2 rounded-t">
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Add Property</span>
+                            <button
+                              type="button"
+                              onClick={() => setActivePropertyPickerElementId(null)}
+                              className="text-[9px] text-slate-500 hover:text-slate-300"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {(() => {
+                            let hasAny = false;
+                            const renderedCategories = PROPERTY_CATEGORIES.map(cat => {
+                              if (cat.eligible && !cat.eligible(element)) return null;
+                              const availableProps = cat.props.filter(p => !existing.has(p));
+                              if (availableProps.length === 0) return null;
+                              hasAny = true;
+                              return (
+                                <div key={cat.name} className="mb-2 last:mb-0">
+                                  <div className="px-2 py-0.5 text-[8px] text-slate-500 uppercase tracking-widest font-bold bg-white/2 rounded mb-1">
+                                    {cat.name}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    {availableProps.map(prop => (
+                                      <button
+                                        key={prop}
+                                        type="button"
+                                        onClick={() => {
+                                          onAddTrack(element.id, prop);
+                                          setActivePropertyPickerElementId(null);
+                                        }}
+                                        className="w-full text-left rounded px-2 py-1 text-[10px] text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-200 transition-colors"
+                                      >
+                                        {PROPERTY_LABELS[prop] ?? prop}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            });
+                            return hasAny ? renderedCategories : (
+                              <div className="px-2 py-4 text-[10px] text-slate-500 text-center italic">
+                                All properties are animated.
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

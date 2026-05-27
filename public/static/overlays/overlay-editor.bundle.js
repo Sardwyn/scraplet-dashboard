@@ -83680,6 +83680,26 @@ const EASING_OPTIONS = [
   { value: "ease-in-out", label: "Ease In Out" },
   { value: "hold", label: "Hold" }
 ];
+const PROPERTY_CATEGORIES = [
+  {
+    name: "Transform",
+    props: ["x", "y", "width", "height", "opacity", "rotationDeg", "scaleX", "scaleY", "tiltX", "tiltY", "skewX", "skewY", "perspective"]
+  },
+  {
+    name: "Typography",
+    props: ["fontFamily", "fontSizePx", "color"],
+    eligible: (el) => ["text", "countdown", "clock", "lower_third"].includes(el.type)
+  },
+  {
+    name: "Fills & Strokes",
+    props: ["fillColor", "strokeColor", "strokeWidthPx", "strokeOpacity"],
+    eligible: (el) => ["box", "shape", "path", "boolean", "progressBar", "progressRing"].includes(el.type)
+  },
+  {
+    name: "Parametric Effects",
+    props: ["effect_enabled", "effect_opacity"]
+  }
+];
 function formatMs(ms2) {
   const s2 = Math.floor(Math.max(0, ms2) / 1e3);
   const m2 = Math.round(Math.max(0, ms2) % 1e3);
@@ -83769,32 +83789,32 @@ function BezierEditor({
           [0.25, 0.5, 0.75].map((r2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: PAD + r2 * inner, y1: PAD, x2: PAD + r2 * inner, y2: PAD + inner, stroke: "rgba(255,255,255,0.05)" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 159,
+              lineNumber: 181,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: PAD, y1: PAD + r2 * inner, x2: PAD + inner, y2: PAD + r2 * inner, stroke: "rgba(255,255,255,0.05)" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 160,
+              lineNumber: 182,
               columnNumber: 13
             }, this)
           ] }, r2, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 158,
+            lineNumber: 180,
             columnNumber: 11
           }, this)),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: p0.x, y1: p0.y, x2: p3.x, y2: p3.y, stroke: "rgba(255,255,255,0.08)", strokeDasharray: "3 3" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 164,
+            lineNumber: 186,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, stroke: "#6366f1", strokeOpacity: 0.5 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 166,
+            lineNumber: 188,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: p3.x, y1: p3.y, x2: p2.x, y2: p2.y, stroke: "#6366f1", strokeOpacity: 0.5 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 167,
+            lineNumber: 189,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -83809,7 +83829,7 @@ function BezierEditor({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 169,
+              lineNumber: 191,
               columnNumber: 9
             },
             this
@@ -83833,19 +83853,19 @@ function BezierEditor({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 175,
+              lineNumber: 197,
               columnNumber: 11
             },
             this
           )),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: p0.x, cy: p0.y, r: 3, fill: "#94a3b8" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 184,
+            lineNumber: 206,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: p3.x, cy: p3.y, r: 3, fill: "#94a3b8" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 185,
+            lineNumber: 207,
             columnNumber: 9
           }, this)
         ]
@@ -83854,7 +83874,7 @@ function BezierEditor({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-        lineNumber: 150,
+        lineNumber: 172,
         columnNumber: 7
       },
       this
@@ -83862,7 +83882,7 @@ function BezierEditor({
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-1 text-[10px] text-slate-400", children: ["x1", "y1", "x2", "y2"].map((k2, i2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-1", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-4", children: k2 }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-        lineNumber: 190,
+        lineNumber: 212,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -83884,18 +83904,18 @@ function BezierEditor({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 191,
+          lineNumber: 213,
           columnNumber: 13
         },
         this
       )
     ] }, k2, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 189,
+      lineNumber: 211,
       columnNumber: 11
     }, this)) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 187,
+      lineNumber: 209,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-wrap gap-1", children: Object.entries(BEZIER_PRESETS).map(([name, preset]) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -83909,18 +83929,18 @@ function BezierEditor({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-        lineNumber: 206,
+        lineNumber: 228,
         columnNumber: 11
       },
       this
     )) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 204,
+      lineNumber: 226,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-    lineNumber: 149,
+    lineNumber: 171,
     columnNumber: 5
   }, this);
 }
@@ -84018,7 +84038,7 @@ function TimelineTrackRow({
             isInherited ? "(base)" : ""
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 323,
+            lineNumber: 345,
             columnNumber: 9
           }, this),
           isInherited && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84033,7 +84053,7 @@ function TimelineTrackRow({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 327,
+              lineNumber: 349,
               columnNumber: 11
             },
             this
@@ -84044,7 +84064,7 @@ function TimelineTrackRow({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-        lineNumber: 319,
+        lineNumber: 341,
         columnNumber: 7
       },
       this
@@ -84068,7 +84088,7 @@ function TimelineTrackRow({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 344,
+              lineNumber: 366,
               columnNumber: 9
             },
             this
@@ -84094,7 +84114,7 @@ function TimelineTrackRow({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 350,
+                lineNumber: 372,
                 columnNumber: 13
               },
               this
@@ -84106,14 +84126,14 @@ function TimelineTrackRow({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-        lineNumber: 336,
+        lineNumber: 358,
         columnNumber: 7
       },
       this
     )
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-    lineNumber: 318,
+    lineNumber: 340,
     columnNumber: 5
   }, this);
 }
@@ -84168,7 +84188,7 @@ function TimelineRuler({
               style: { left: px },
               children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute top-1 left-1 text-[10px] leading-[1.4] text-slate-500 whitespace-nowrap", children: formatMs(t2) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 430,
+                lineNumber: 452,
                 columnNumber: 15
               }, this)
             },
@@ -84176,14 +84196,14 @@ function TimelineRuler({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 428,
+              lineNumber: 450,
               columnNumber: 13
             },
             this
           );
         }) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 423,
+          lineNumber: 445,
           columnNumber: 7
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84196,7 +84216,7 @@ function TimelineRuler({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 438,
+            lineNumber: 460,
             columnNumber: 7
           },
           this
@@ -84211,7 +84231,7 @@ function TimelineRuler({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 441,
+            lineNumber: 463,
             columnNumber: 7
           },
           this
@@ -84222,7 +84242,7 @@ function TimelineRuler({
     true,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 417,
+      lineNumber: 439,
       columnNumber: 5
     },
     this
@@ -84261,6 +84281,7 @@ function TimelinePanel({
   onMoveKeyframe,
   onDuplicateKeyframe,
   onAddKeyframeAtTime,
+  onRemoveElementTracks,
   onMoveMultipleKeyframes,
   onSetKeyframeBezier,
   activeEventTimeline,
@@ -84274,6 +84295,9 @@ function TimelinePanel({
   const borderCol = isNeonColor ? "#06b6d4" : activeColor != null ? activeColor : "rgba(255,255,255,0.08)";
   const borderWidth = isNeonColor || activeColor ? 2 : 1;
   const shadowGlow = isNeonColor ? "0 -4px 12px rgba(6, 182, 212, 0.15)" : void 0;
+  const [manuallyTrackedElementIds, setManuallyTrackedElementIds] = reactExports.useState(/* @__PURE__ */ new Set());
+  const [showElementPicker, setShowElementPicker] = reactExports.useState(false);
+  const [activePropertyPickerElementId, setActivePropertyPickerElementId] = reactExports.useState(null);
   const [pxPerSec, setPxPerSec] = reactExports.useState(DEFAULT_PX_PER_SEC);
   const [scrollLeft, setScrollLeft] = reactExports.useState(0);
   const scrollRef = reactExports.useRef(null);
@@ -84303,9 +84327,47 @@ function TimelinePanel({
     return map;
   }, [baseTimeline]);
   const visibleElements = reactExports.useMemo(() => {
-    const sel = new Set(selectedIds);
-    return timelineElements.filter((el) => sel.has(el.id) || tracksByElement.has(el.id) || baseTracksByElement.has(el.id));
-  }, [timelineElements, selectedIds, tracksByElement, baseTracksByElement]);
+    return timelineElements.filter(
+      (el) => manuallyTrackedElementIds.has(el.id) || tracksByElement.has(el.id) || baseTracksByElement.has(el.id)
+    );
+  }, [timelineElements, manuallyTrackedElementIds, tracksByElement, baseTracksByElement]);
+  const eligibleElementsToTrack = reactExports.useMemo(() => {
+    const trackedIds = new Set(visibleElements.map((el) => el.id));
+    return timelineElements.filter((el) => !trackedIds.has(el.id));
+  }, [timelineElements, visibleElements]);
+  const handleAddElementToTimeline = (elementId) => {
+    setManuallyTrackedElementIds((prev) => {
+      const next = new Set(prev);
+      next.add(elementId);
+      return next;
+    });
+  };
+  const handleMainAddTrack = () => {
+    if (selectedIds.length > 0) {
+      const eligibleId = selectedIds.find((id) => {
+        const el = elements.find((e2) => e2.id === id);
+        return el && isTimelineEligible(el);
+      });
+      if (eligibleId) {
+        handleAddElementToTimeline(eligibleId);
+        setCollapsedElements((prev) => {
+          const next = new Set(prev);
+          next.delete(eligibleId);
+          return next;
+        });
+        return;
+      }
+    }
+    setShowElementPicker((prev) => !prev);
+  };
+  const handleRemoveElementFromTimeline = (elementId) => {
+    setManuallyTrackedElementIds((prev) => {
+      const next = new Set(prev);
+      next.delete(elementId);
+      return next;
+    });
+    onRemoveElementTracks == null ? void 0 : onRemoveElementTracks(elementId);
+  };
   timeline.durationMs / 1e3 * pxPerSec;
   const syncScroll = (e2) => {
     setScrollLeft(e2.target.scrollLeft);
@@ -84476,7 +84538,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 738,
+              lineNumber: 813,
               columnNumber: 9
             },
             this
@@ -84493,14 +84555,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 742,
+              lineNumber: 817,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 745,
+            lineNumber: 820,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84515,7 +84577,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 748,
+              lineNumber: 823,
               columnNumber: 9
             },
             this
@@ -84542,7 +84604,7 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 756,
+                lineNumber: 831,
                 columnNumber: 13
               },
               this
@@ -84550,17 +84612,17 @@ function TimelinePanel({
           }),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 768,
+            lineNumber: 843,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-mono text-[11px] text-slate-300 flex-shrink-0", children: formatMs(playheadMs) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 770,
+            lineNumber: 845,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-600 flex-shrink-0", children: "/" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 771,
+            lineNumber: 846,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84577,19 +84639,19 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 772,
+              lineNumber: 847,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 flex-shrink-0", children: "ms" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 775,
+            lineNumber: 850,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 777,
+            lineNumber: 852,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84607,7 +84669,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 779,
+              lineNumber: 854,
               columnNumber: 9
             },
             this
@@ -84627,14 +84689,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 783,
+              lineNumber: 858,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 788,
+            lineNumber: 863,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84646,7 +84708,7 @@ function TimelinePanel({
               className: "h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-1.5 text-[11px] leading-none text-slate-200 transition-colors focus:border-indigo-500/70 focus:outline-none appearance-none flex-shrink-0 disabled:opacity-40",
               children: EASING_OPTIONS.map((o2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o2.value, children: o2.label }, o2.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 793,
+                lineNumber: 868,
                 columnNumber: 36
               }, this))
             },
@@ -84654,7 +84716,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 790,
+              lineNumber: 865,
               columnNumber: 9
             },
             this
@@ -84672,7 +84734,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 796,
+              lineNumber: 871,
               columnNumber: 9
             },
             this
@@ -84690,14 +84752,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 802,
+              lineNumber: 877,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 807,
+            lineNumber: 882,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84712,7 +84774,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 809,
+              lineNumber: 884,
               columnNumber: 9
             },
             this
@@ -84722,7 +84784,7 @@ function TimelinePanel({
             "px/s"
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 812,
+            lineNumber: 887,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84737,7 +84799,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 813,
+              lineNumber: 888,
               columnNumber: 9
             },
             this
@@ -84753,25 +84815,25 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 816,
+              lineNumber: 891,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: `ml-auto text-[10px] flex-shrink-0 ${isPlaying ? "text-emerald-400" : "text-slate-600"}`, children: isPlaying ? "▶ Playing" : "■ Stopped" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 819,
+            lineNumber: 894,
             columnNumber: 9
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 736,
+          lineNumber: 811,
           columnNumber: 7
         }, this),
         showBezier && selectedTrackId && selectedKeyframeId && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] p-3", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 mb-2 uppercase tracking-wider", children: "Easing Curve" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 827,
+            lineNumber: 902,
             columnNumber: 11
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84788,21 +84850,118 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 828,
+              lineNumber: 903,
               columnNumber: 11
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 826,
+          lineNumber: 901,
           columnNumber: 9
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex min-h-0 flex-1 flex-col overflow-hidden", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-none border-b border-[rgba(255,255,255,0.08)]", style: { height: RULER_HEIGHT }, children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none bg-[#0d0d0f]", style: { width: HEADER_WIDTH } }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-none border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f]", style: { height: RULER_HEIGHT }, children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none flex items-center justify-between px-3 relative border-r border-[rgba(255,255,255,0.04)] bg-[#09090b]", style: { width: HEADER_WIDTH }, children: [
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 font-bold uppercase tracking-wider", children: "Tracks" }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                lineNumber: 919,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                "button",
+                {
+                  type: "button",
+                  onClick: handleMainAddTrack,
+                  className: "flex h-4 w-4 items-center justify-center rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition-all shadow-sm hover:scale-105 active:scale-95 focus:outline-none",
+                  title: "Add Canvas Element (Selected element or open picker)",
+                  children: "+"
+                },
+                void 0,
+                false,
+                {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                  lineNumber: 920,
+                  columnNumber: 13
+                },
+                this
+              ),
+              showElementPicker && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute top-6 left-3 z-[150] w-64 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#111113] p-1 shadow-2xl", children: [
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1.5 mb-1 bg-white/2 rounded-t", children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-400 font-bold uppercase tracking-wider", children: "Add Element Track" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                    lineNumber: 933,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                    "button",
+                    {
+                      type: "button",
+                      onClick: () => setShowElementPicker(false),
+                      className: "text-[10px] text-slate-500 hover:text-slate-300",
+                      children: "✕"
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                      lineNumber: 934,
+                      columnNumber: 19
+                    },
+                    this
+                  )
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                  lineNumber: 932,
+                  columnNumber: 17
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "max-h-48 overflow-y-auto", children: eligibleElementsToTrack.length === 0 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-3 py-4 text-[11px] text-slate-500 text-center italic", children: "No other elements on canvas." }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                  lineNumber: 944,
+                  columnNumber: 21
+                }, this) : eligibleElementsToTrack.map((el) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: () => {
+                      handleAddElementToTimeline(el.id);
+                      setShowElementPicker(false);
+                    },
+                    className: "w-full text-left rounded px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-200 transition-colors flex items-center justify-between",
+                    children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "truncate font-medium", children: el.name || el.type }, void 0, false, {
+                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                        lineNumber: 958,
+                        columnNumber: 25
+                      }, this),
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500 uppercase font-mono px-1.5 py-0.5 rounded bg-white/5", children: el.type }, void 0, false, {
+                        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                        lineNumber: 959,
+                        columnNumber: 25
+                      }, this)
+                    ]
+                  },
+                  el.id,
+                  true,
+                  {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                    lineNumber: 949,
+                    columnNumber: 23
+                  },
+                  this
+                )) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                  lineNumber: 942,
+                  columnNumber: 17
+                }, this)
+              ] }, void 0, true, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                lineNumber: 931,
+                columnNumber: 15
+              }, this)
+            ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 843,
+              lineNumber: 918,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 overflow-hidden", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84818,18 +84977,18 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 845,
+                lineNumber: 968,
                 columnNumber: 13
               },
               this
             ) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 844,
+              lineNumber: 967,
               columnNumber: 11
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 842,
+            lineNumber: 917,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: scrollRef, className: "flex-1 overflow-auto", onScroll: syncScroll, children: [
@@ -84851,14 +85010,37 @@ function TimelinePanel({
                 zIndex: 50
               } }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 864,
+                lineNumber: 987,
                 columnNumber: 15
               }, this);
             })(),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: trackAreaRef, style: { position: "relative", minHeight: "100%" }, onMouseDown: onTrackAreaMouseDown, children: [
-              visibleElements.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-4 py-5 text-[12px] text-slate-500", children: "Select an element or add a keyframed property to start." }, void 0, false, {
+              visibleElements.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-5 py-8 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-3", children: [
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { children: "No elements are currently added to the timeline sequencer." }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                  lineNumber: 998,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                  "button",
+                  {
+                    type: "button",
+                    onClick: handleMainAddTrack,
+                    className: "rounded border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 px-3 py-1.5 transition-colors font-medium text-[11px]",
+                    children: "+ Add Track to Sequencer"
+                  },
+                  void 0,
+                  false,
+                  {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                    lineNumber: 999,
+                    columnNumber: 15
+                  },
+                  this
+                )
+              ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 874,
+                lineNumber: 997,
                 columnNumber: 13
               }, this),
               visibleElements.map((element) => {
@@ -84873,63 +85055,181 @@ function TimelinePanel({
                 tracksToRender.sort((a2, b2) => {
                   return TIMELINE_PROPERTIES$1.indexOf(a2.track.property) - TIMELINE_PROPERTIES$1.indexOf(b2.track.property);
                 });
-                return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "border-b border-[rgba(255,255,255,0.06)]", children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 bg-[rgba(255,255,255,0.03)] px-2 py-1.5 sticky left-0", children: [
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                      "button",
-                      {
-                        type: "button",
-                        onClick: () => setCollapsedElements((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(element.id)) next.delete(element.id);
-                          else next.add(element.id);
-                          return next;
-                        }),
-                        className: "flex-none text-[10px] text-slate-500 hover:text-slate-300 w-4",
-                        children: isCollapsed ? "▶" : "▼"
-                      },
-                      void 0,
-                      false,
-                      {
+                return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "border-b border-[rgba(255,255,255,0.06)] group/el", children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center bg-[rgba(255,255,255,0.02)] py-1 sticky left-0 border-b border-[rgba(255,255,255,0.01)] h-[32px]", children: [
+                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none flex items-center justify-between px-2", style: { width: HEADER_WIDTH }, children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1.5 truncate flex-1", children: [
+                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                          "button",
+                          {
+                            type: "button",
+                            onClick: () => setCollapsedElements((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(element.id)) next.delete(element.id);
+                              else next.add(element.id);
+                              return next;
+                            }),
+                            className: "flex-none text-[9px] text-slate-500 hover:text-slate-300 w-3",
+                            children: isCollapsed ? "▶" : "▼"
+                          },
+                          void 0,
+                          false,
+                          {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                            lineNumber: 1032,
+                            columnNumber: 23
+                          },
+                          this
+                        ),
+                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "truncate text-[11px] font-semibold text-slate-200", title: element.name || element.type, children: element.name || element.type }, void 0, false, {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                          lineNumber: 1044,
+                          columnNumber: 23
+                        }, this)
+                      ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 900,
-                        columnNumber: 19
-                      },
-                      this
-                    ),
-                    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "flex-none truncate text-[12px] font-semibold text-slate-200", style: { width: HEADER_WIDTH - 24 }, children: element.name || element.type }, void 0, false, {
+                        lineNumber: 1031,
+                        columnNumber: 21
+                      }, this),
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => handleRemoveElementFromTimeline(element.id),
+                          className: "opacity-0 group-hover/el:opacity-100 focus:opacity-100 text-slate-500 hover:text-red-400 text-[10px] transition-all px-1.5",
+                          title: "Remove from Sequencer",
+                          children: "✕"
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                          lineNumber: 1050,
+                          columnNumber: 21
+                        },
+                        this
+                      )
+                    ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 912,
+                      lineNumber: 1030,
                       columnNumber: 19
                     }, this),
-                    !isCollapsed && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-wrap gap-1 pl-1", children: TIMELINE_PROPERTIES$1.map((prop) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                      "button",
-                      {
-                        type: "button",
-                        onClick: () => onAddTrack(element.id, prop),
-                        disabled: existing.has(prop),
-                        className: "h-5 rounded border border-[rgba(255,255,255,0.07)] bg-[#161618] px-1.5 text-[10px] text-slate-400 hover:text-slate-200 disabled:opacity-30",
-                        children: [
-                          "+",
-                          prop
-                        ]
-                      },
-                      prop,
-                      true,
-                      {
+                    !isCollapsed && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "relative pl-2", children: [
+                      /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                        "button",
+                        {
+                          type: "button",
+                          onClick: () => setActivePropertyPickerElementId(activePropertyPickerElementId === element.id ? null : element.id),
+                          className: "h-5 rounded border border-indigo-500/25 bg-indigo-500/10 px-2 text-[10px] text-indigo-300 hover:text-indigo-200 transition-colors flex items-center gap-1 font-medium",
+                          children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "+ Track" }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                            lineNumber: 1067,
+                            columnNumber: 25
+                          }, this)
+                        },
+                        void 0,
+                        false,
+                        {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                          lineNumber: 1062,
+                          columnNumber: 23
+                        },
+                        this
+                      ),
+                      activePropertyPickerElementId === element.id && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute left-2 top-6 z-[150] w-56 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[#111113] p-1 shadow-2xl max-h-72 overflow-y-auto", children: [
+                        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1 mb-1 bg-white/2 rounded-t", children: [
+                          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-400 font-bold uppercase tracking-wider", children: "Add Property" }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                            lineNumber: 1074,
+                            columnNumber: 29
+                          }, this),
+                          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                            "button",
+                            {
+                              type: "button",
+                              onClick: () => setActivePropertyPickerElementId(null),
+                              className: "text-[9px] text-slate-500 hover:text-slate-300",
+                              children: "✕"
+                            },
+                            void 0,
+                            false,
+                            {
+                              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                              lineNumber: 1075,
+                              columnNumber: 29
+                            },
+                            this
+                          )
+                        ] }, void 0, true, {
+                          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                          lineNumber: 1073,
+                          columnNumber: 27
+                        }, this),
+                        (() => {
+                          let hasAny = false;
+                          const renderedCategories = PROPERTY_CATEGORIES.map((cat) => {
+                            if (cat.eligible && !cat.eligible(element)) return null;
+                            const availableProps = cat.props.filter((p2) => !existing.has(p2));
+                            if (availableProps.length === 0) return null;
+                            hasAny = true;
+                            return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-2 last:mb-0", children: [
+                              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-2 py-0.5 text-[8px] text-slate-500 uppercase tracking-widest font-bold bg-white/2 rounded mb-1", children: cat.name }, void 0, false, {
+                                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                                lineNumber: 1092,
+                                columnNumber: 35
+                              }, this),
+                              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-0.5", children: availableProps.map((prop) => {
+                                var _a4;
+                                return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                                  "button",
+                                  {
+                                    type: "button",
+                                    onClick: () => {
+                                      onAddTrack(element.id, prop);
+                                      setActivePropertyPickerElementId(null);
+                                    },
+                                    className: "w-full text-left rounded px-2 py-1 text-[10px] text-slate-300 hover:bg-indigo-600/20 hover:text-indigo-200 transition-colors",
+                                    children: (_a4 = PROPERTY_LABELS[prop]) != null ? _a4 : prop
+                                  },
+                                  prop,
+                                  false,
+                                  {
+                                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                                    lineNumber: 1097,
+                                    columnNumber: 39
+                                  },
+                                  this
+                                );
+                              }) }, void 0, false, {
+                                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                                lineNumber: 1095,
+                                columnNumber: 35
+                              }, this)
+                            ] }, cat.name, true, {
+                              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                              lineNumber: 1091,
+                              columnNumber: 33
+                            }, this);
+                          });
+                          return hasAny ? renderedCategories : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-2 py-4 text-[10px] text-slate-500 text-center italic", children: "All properties are animated." }, void 0, false, {
+                            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                            lineNumber: 1114,
+                            columnNumber: 31
+                          }, this);
+                        })()
+                      ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 918,
+                        lineNumber: 1072,
                         columnNumber: 25
-                      },
-                      this
-                    )) }, void 0, false, {
+                      }, this)
+                    ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 916,
+                      lineNumber: 1061,
                       columnNumber: 21
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 899,
+                    lineNumber: 1029,
                     columnNumber: 17
                   }, this),
                   !isCollapsed && tracksToRender.map((item) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84954,35 +85254,35 @@ function TimelinePanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 931,
+                      lineNumber: 1127,
                       columnNumber: 19
                     },
                     this
                   ))
                 ] }, element.id, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 897,
+                  lineNumber: 1027,
                   columnNumber: 15
                 }, this);
               }),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { height: 32 } }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 953,
+                lineNumber: 1149,
                 columnNumber: 11
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 872,
+              lineNumber: 995,
               columnNumber: 11
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 856,
+            lineNumber: 979,
             columnNumber: 9
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 840,
+          lineNumber: 915,
           columnNumber: 7
         }, this)
       ]
@@ -84991,7 +85291,7 @@ function TimelinePanel({
     true,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 726,
+      lineNumber: 801,
       columnNumber: 5
     },
     this
@@ -89298,6 +89598,36 @@ function OverlayEditorApp({ initialOverlay }) {
       return { ...prev, timeline: nextTimeline };
     });
   }
+  function removeElementTracks(elementId) {
+    setConfig((prev) => {
+      var _a4;
+      const currentEventTl = activeEventTimeline ? (_a4 = prev.eventTimelines) == null ? void 0 : _a4[activeEventTimeline] : null;
+      if (currentEventTl) {
+        const ensured = ensureTimeline(currentEventTl);
+        const filteredTracks = ensured.tracks.filter((t2) => t2.elementId !== elementId);
+        return {
+          ...prev,
+          eventTimelines: {
+            ...prev.eventTimelines || {},
+            [activeEventTimeline]: {
+              ...ensured,
+              tracks: filteredTracks
+            }
+          }
+        };
+      } else {
+        const ensured = ensureTimeline(prev.timeline);
+        const filteredTracks = ensured.tracks.filter((t2) => t2.elementId !== elementId);
+        return {
+          ...prev,
+          timeline: {
+            ...ensured,
+            tracks: filteredTracks
+          }
+        };
+      }
+    });
+  }
   function toggleTimelineKeyframe(elementId, property) {
     const element = previewElementsById[elementId];
     if (!element) return;
@@ -92537,7 +92867,7 @@ function OverlayEditorApp({ initialOverlay }) {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex h-full w-full overflow-hidden bg-[#0b0b0c] text-slate-200", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 6139,
+      lineNumber: 6173,
       columnNumber: 7
     }, this),
     assetPicker.open && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -92556,7 +92886,7 @@ function OverlayEditorApp({ initialOverlay }) {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6141,
+        lineNumber: 6175,
         columnNumber: 9
       },
       this
@@ -92575,7 +92905,7 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6161,
+            lineNumber: 6195,
             columnNumber: 11
           },
           this
@@ -92595,12 +92925,12 @@ function OverlayEditorApp({ initialOverlay }) {
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "No collection" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6180,
+                  lineNumber: 6214,
                   columnNumber: 15
                 }, this),
                 collections.map((collection) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: collection.id, children: collection.name }, collection.id, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6182,
+                  lineNumber: 6216,
                   columnNumber: 17
                 }, this))
               ]
@@ -92609,7 +92939,7 @@ function OverlayEditorApp({ initialOverlay }) {
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6170,
+              lineNumber: 6204,
               columnNumber: 13
             },
             this
@@ -92627,14 +92957,14 @@ function OverlayEditorApp({ initialOverlay }) {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6187,
+              lineNumber: 6221,
               columnNumber: 13
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6169,
+          lineNumber: 6203,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 pl-1 font-mono text-[11px] leading-[1.4] text-slate-500", children: [
@@ -92644,12 +92974,12 @@ function OverlayEditorApp({ initialOverlay }) {
             baseResolution.height
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6198,
+            lineNumber: 6232,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-700 flex-none", children: "|" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6199,
+            lineNumber: 6233,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -92673,17 +93003,17 @@ function OverlayEditorApp({ initialOverlay }) {
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "10", height: "10", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className: "flex-none opacity-60", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "9", y: "9", width: "13", height: "13", rx: "2" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6211,
+                    lineNumber: 6245,
                     columnNumber: 191
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6211,
+                    lineNumber: 6245,
                     columnNumber: 240
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6211,
+                  lineNumber: 6245,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { id: "copy-url-btn", className: "truncate", children: [
@@ -92691,7 +93021,7 @@ function OverlayEditorApp({ initialOverlay }) {
                   slug
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6212,
+                  lineNumber: 6246,
                   columnNumber: 15
                 }, this)
               ]
@@ -92700,19 +93030,19 @@ function OverlayEditorApp({ initialOverlay }) {
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6200,
+              lineNumber: 6234,
               columnNumber: 13
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6197,
+          lineNumber: 6231,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6160,
+        lineNumber: 6194,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -92803,7 +93133,7 @@ function OverlayEditorApp({ initialOverlay }) {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6218,
+          lineNumber: 6252,
           columnNumber: 9
         },
         this
@@ -92811,90 +93141,90 @@ function OverlayEditorApp({ initialOverlay }) {
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 flex border-b border-t border-[rgba(255,255,255,0.08)] bg-[#111113]", children: [
         { id: "layers", label: "Layers", icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6303,
+          lineNumber: 6337,
           columnNumber: 83
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6303,
+          lineNumber: 6337,
           columnNumber: 57
         }, this) },
         { id: "components", label: "Com", icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6304,
+            lineNumber: 6338,
             columnNumber: 83
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "3.27 6.96 12 12.01 20.73 6.96" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6304,
+            lineNumber: 6338,
             columnNumber: 216
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "22.08", x2: "12", y2: "12" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6304,
+            lineNumber: 6338,
             columnNumber: 266
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6304,
+          lineNumber: 6338,
           columnNumber: 57
         }, this) },
         { id: "assets", label: "Assets", icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "18", height: "12", rx: "1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6305,
+            lineNumber: 6339,
             columnNumber: 83
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 9l4-4 4 4 3-3 5 5" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6305,
+            lineNumber: 6339,
             columnNumber: 132
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "8", cy: "6.5", r: "1.5" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6305,
+            lineNumber: 6339,
             columnNumber: 164
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6305,
+          lineNumber: 6339,
           columnNumber: 57
         }, this) },
         { id: "icons", label: "Icons", icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "10" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6306,
+            lineNumber: 6340,
             columnNumber: 83
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85m19.5 1.9c-3.5-.93-6.63-.82-8.94 0-2.58.92-5.01 2.86-7.44 6.32" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6306,
+            lineNumber: 6340,
             columnNumber: 115
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6306,
+          lineNumber: 6340,
           columnNumber: 57
         }, this) },
         { id: "widgets", label: "Widget", icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6307,
+            lineNumber: 6341,
             columnNumber: 83
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 21h8M12 17v4" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6307,
+            lineNumber: 6341,
             columnNumber: 132
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "17", cy: "8", r: "2" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6307,
+            lineNumber: 6341,
             columnNumber: 159
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6307,
+          lineNumber: 6341,
           columnNumber: 57
         }, this) }
       ].map(({ id, label, icon }) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -92906,7 +93236,7 @@ function OverlayEditorApp({ initialOverlay }) {
             icon,
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6315,
+              lineNumber: 6349,
               columnNumber: 15
             }, this)
           ]
@@ -92915,13 +93245,13 @@ function OverlayEditorApp({ initialOverlay }) {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6309,
+          lineNumber: 6343,
           columnNumber: 13
         },
         this
       )) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6301,
+        lineNumber: 6335,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-h-0 flex flex-col overflow-y-auto", children: [
@@ -92963,13 +93293,13 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6323,
+            lineNumber: 6357,
             columnNumber: 15
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6322,
+          lineNumber: 6356,
           columnNumber: 13
         }, this),
         leftTab === "components" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-h-0 flex flex-col pt-1", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93038,13 +93368,13 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6359,
+            lineNumber: 6393,
             columnNumber: 15
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6358,
+          lineNumber: 6392,
           columnNumber: 13
         }, this),
         leftTab === "assets" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-h-0 flex flex-col", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93062,13 +93392,13 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6425,
+            lineNumber: 6459,
             columnNumber: 15
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6424,
+          lineNumber: 6458,
           columnNumber: 13
         }, this),
         leftTab === "icons" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93087,7 +93417,7 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6439,
+            lineNumber: 6473,
             columnNumber: 13
           },
           this
@@ -93095,18 +93425,18 @@ function OverlayEditorApp({ initialOverlay }) {
         leftTab === "widgets" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-h-0 flex flex-col pt-1 px-2 gap-2 overflow-y-auto", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { className: "text-[11px] text-slate-500 px-1 pt-2", children: "Drag or click a widget to add it to the canvas. Widgets connect live data sources to your overlay." }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6453,
+            lineNumber: 6487,
             columnNumber: 15
           }, this),
           (() => {
             const categories = [...new Set(getAllWidgets().map((w2) => w2.widgetManifest.category))];
             return categories.length > 1 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 px-1 flex-wrap", children: categories.map((cat) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-indigo-400 bg-indigo-900/20 px-2 py-0.5 rounded-full border border-indigo-500/20 capitalize", children: cat }, cat, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6462,
+              lineNumber: 6496,
               columnNumber: 23
             }, this)) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6460,
+              lineNumber: 6494,
               columnNumber: 19
             }, this) : null;
           })(),
@@ -93145,21 +93475,21 @@ function OverlayEditorApp({ initialOverlay }) {
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-0.5 w-8 h-8 rounded-md bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center flex-shrink-0", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", className: "text-indigo-400", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6499,
+                      lineNumber: 6533,
                       columnNumber: 25
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 21h8M12 17v4" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6499,
+                      lineNumber: 6533,
                       columnNumber: 74
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6498,
+                    lineNumber: 6532,
                     columnNumber: 23
                   }, this) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6497,
+                    lineNumber: 6531,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-w-0", children: [
@@ -93167,22 +93497,22 @@ function OverlayEditorApp({ initialOverlay }) {
                       m2.displayName,
                       m2.invisible && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded", children: "invisible" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6506,
+                        lineNumber: 6540,
                         columnNumber: 27
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-indigo-400 bg-indigo-900/30 px-1.5 py-0.5 rounded ml-auto", children: m2.category }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6508,
+                        lineNumber: 6542,
                         columnNumber: 25
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6503,
+                      lineNumber: 6537,
                       columnNumber: 23
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-500 mt-0.5 leading-snug", children: m2.description }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6510,
+                      lineNumber: 6544,
                       columnNumber: 23
                     }, this),
                     ((_a4 = m2.dataContract) == null ? void 0 : _a4.sseEventType) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-emerald-500/70 mt-1", children: [
@@ -93190,12 +93520,12 @@ function OverlayEditorApp({ initialOverlay }) {
                       m2.dataContract.sseEventType
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6512,
+                      lineNumber: 6546,
                       columnNumber: 25
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6502,
+                    lineNumber: 6536,
                     columnNumber: 21
                   }, this)
                 ]
@@ -93204,7 +93534,7 @@ function OverlayEditorApp({ initialOverlay }) {
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6470,
+                lineNumber: 6504,
                 columnNumber: 19
               },
               this
@@ -93212,38 +93542,38 @@ function OverlayEditorApp({ initialOverlay }) {
           }),
           getAllWidgets().length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { className: "text-[11px] text-slate-600 px-1 text-center mt-4", children: "No widgets registered yet." }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6519,
+            lineNumber: 6553,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6452,
+          lineNumber: 6486,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6320,
+        lineNumber: 6354,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex justify-between border-t border-[rgba(255,255,255,0.08)] p-2 text-[11px] leading-[1.4] text-slate-600", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Ctrl+D Duplicate" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6527,
+          lineNumber: 6561,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "? Shortcuts" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6528,
+          lineNumber: 6562,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6526,
+        lineNumber: 6560,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 6158,
+      lineNumber: 6192,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden", children: [
@@ -93264,7 +93594,7 @@ function OverlayEditorApp({ initialOverlay }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6542,
+                    lineNumber: 6576,
                     columnNumber: 15
                   },
                   this
@@ -93280,52 +93610,52 @@ function OverlayEditorApp({ initialOverlay }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6548,
+                    lineNumber: 6582,
                     columnNumber: 15
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6541,
+                lineNumber: 6575,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-4 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6555,
+                lineNumber: 6589,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: snapEnabled, onChange: (e2) => setSnapEnabled(e2.target.checked), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6560,
+                    lineNumber: 6594,
                     columnNumber: 17
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Snap" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6561,
+                    lineNumber: 6595,
                     columnNumber: 17
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6559,
+                  lineNumber: 6593,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex cursor-pointer items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: showGrid, onChange: (e2) => setShowGrid(e2.target.checked), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6564,
+                    lineNumber: 6598,
                     columnNumber: 17
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Grid" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6565,
+                    lineNumber: 6599,
                     columnNumber: 17
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6563,
+                  lineNumber: 6597,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93338,17 +93668,17 @@ function OverlayEditorApp({ initialOverlay }) {
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: 8, children: "8px" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6573,
+                        lineNumber: 6607,
                         columnNumber: 17
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: 16, children: "16px" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6574,
+                        lineNumber: 6608,
                         columnNumber: 17
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: 32, children: "32px" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6575,
+                        lineNumber: 6609,
                         columnNumber: 17
                       }, this)
                     ]
@@ -93357,19 +93687,19 @@ function OverlayEditorApp({ initialOverlay }) {
                   true,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6567,
+                    lineNumber: 6601,
                     columnNumber: 15
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6558,
+                lineNumber: 6592,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-4 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6579,
+                lineNumber: 6613,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93382,17 +93712,17 @@ function OverlayEditorApp({ initialOverlay }) {
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "3", width: "20", height: "14", rx: "2" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6586,
+                        lineNumber: 6620,
                         columnNumber: 113
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 21h8M12 17v4" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6586,
+                        lineNumber: 6620,
                         columnNumber: 162
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6586,
+                      lineNumber: 6620,
                       columnNumber: 15
                     }, this),
                     "OBS Preview"
@@ -93402,14 +93732,14 @@ function OverlayEditorApp({ initialOverlay }) {
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6581,
+                  lineNumber: 6615,
                   columnNumber: 13
                 },
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(PerformanceModeToggleButton, {}, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6591,
+                lineNumber: 6625,
                 columnNumber: 13
               }, this),
               obsCanvasSize && (obsCanvasSize.w !== baseResolution.width || obsCanvasSize.h !== baseResolution.height) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93425,27 +93755,27 @@ function OverlayEditorApp({ initialOverlay }) {
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "12", height: "12", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 4v5h5" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6603,
+                        lineNumber: 6637,
                         columnNumber: 115
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M20 20v-5h-5" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6603,
+                        lineNumber: 6637,
                         columnNumber: 135
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 9a9 9 0 0 1 15-3.4" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6603,
+                        lineNumber: 6637,
                         columnNumber: 159
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M20 15a9 9 0 0 1-15 3.4" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6603,
+                        lineNumber: 6637,
                         columnNumber: 192
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6603,
+                      lineNumber: 6637,
                       columnNumber: 17
                     }, this),
                     "Sync ",
@@ -93458,7 +93788,7 @@ function OverlayEditorApp({ initialOverlay }) {
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6595,
+                  lineNumber: 6629,
                   columnNumber: 15
                 },
                 this
@@ -93467,253 +93797,82 @@ function OverlayEditorApp({ initialOverlay }) {
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("left"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Left", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "6", y1: "5", x2: "6", y2: "19" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6612,
+                    lineNumber: 6646,
                     columnNumber: 45
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "10", y1: "7", x2: "10", y2: "17" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6612,
+                    lineNumber: 6646,
                     columnNumber: 82
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "14", y1: "9", x2: "14", y2: "15" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6612,
+                    lineNumber: 6646,
                     columnNumber: 121
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6612,
+                  lineNumber: 6646,
                   columnNumber: 19
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6611,
+                  lineNumber: 6645,
                   columnNumber: 17
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6610,
+                  lineNumber: 6644,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("hcenter"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "5", x2: "12", y2: "19" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6617,
+                    lineNumber: 6651,
                     columnNumber: 45
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "8", y1: "7", x2: "8", y2: "17" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6617,
+                    lineNumber: 6651,
                     columnNumber: 84
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "16", y1: "7", x2: "16", y2: "17" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6617,
+                    lineNumber: 6651,
                     columnNumber: 121
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6617,
+                  lineNumber: 6651,
                   columnNumber: 19
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6616,
+                  lineNumber: 6650,
                   columnNumber: 17
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6615,
+                  lineNumber: 6649,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("right"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Right", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "18", y1: "5", x2: "18", y2: "19" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6622,
+                    lineNumber: 6656,
                     columnNumber: 45
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "14", y1: "7", x2: "14", y2: "17" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6622,
+                    lineNumber: 6656,
                     columnNumber: 84
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "10", y1: "9", x2: "10", y2: "15" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6622,
+                    lineNumber: 6656,
                     columnNumber: 123
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6622,
+                  lineNumber: 6656,
                   columnNumber: 19
                 }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6621,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6620,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("top"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Top", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "6", x2: "19", y2: "6" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6627,
-                    columnNumber: 45
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "10", x2: "17", y2: "10" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6627,
-                    columnNumber: 82
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "9", y1: "14", x2: "15", y2: "14" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6627,
-                    columnNumber: 121
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6627,
-                  columnNumber: 19
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6626,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6625,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("vcenter"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Middle", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "12", x2: "19", y2: "12" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6632,
-                    columnNumber: 45
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "8", x2: "17", y2: "8" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6632,
-                    columnNumber: 84
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "16", x2: "17", y2: "16" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6632,
-                    columnNumber: 121
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6632,
-                  columnNumber: 19
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6631,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6630,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("bottom"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Bottom", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "18", x2: "19", y2: "18" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6637,
-                    columnNumber: 45
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "14", x2: "17", y2: "14" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6637,
-                    columnNumber: 84
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "9", y1: "10", x2: "15", y2: "10" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6637,
-                    columnNumber: 123
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6637,
-                  columnNumber: 19
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6636,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6635,
-                  columnNumber: 15
-                }, this)
-              ] }, void 0, true, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6609,
-                columnNumber: 13
-              }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-4 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
-                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6642,
-                columnNumber: 13
-              }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1", children: [
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("union"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Union Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 8h8v8H8z" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6646,
-                    columnNumber: 43
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 4h8v8H4z" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6646,
-                    columnNumber: 67
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6646,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6645,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("subtract"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Subtract Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "4", width: "14", height: "14" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6649,
-                    columnNumber: 43
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 10h10v10H10z", fill: "#0b0b0c", stroke: "none" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6649,
-                    columnNumber: 86
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6649,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6648,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("intersect"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Intersect Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M7 12a5 5 0 1 1 10 0a5 5 0 1 1-10 0z" }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6652,
-                  columnNumber: 43
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6652,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6651,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("exclude"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Exclude Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M9 12a5 5 0 1 1 6 4.58" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6655,
-                    columnNumber: 43
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M15 12a5 5 0 1 1-6-4.58" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6655,
-                    columnNumber: 78
-                  }, this)
-                ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 6655,
                   columnNumber: 17
@@ -93722,118 +93881,85 @@ function OverlayEditorApp({ initialOverlay }) {
                   lineNumber: 6654,
                   columnNumber: 15
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createOffsetPath(-8), disabled: !canOffsetSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Create Inset Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "4", width: "16", height: "16", rx: "2" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6658,
-                    columnNumber: 43
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "8", y: "8", width: "8", height: "8", rx: "1" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6658,
-                    columnNumber: 93
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6658,
-                  columnNumber: 17
-                }, this) }, void 0, false, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6657,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createOffsetPath(8), disabled: !canOffsetSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Create Outset Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "7", y: "7", width: "10", height: "10", rx: "1" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("top"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Top", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "6", x2: "19", y2: "6" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 6661,
-                    columnNumber: 43
+                    columnNumber: 45
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "10", x2: "17", y2: "10" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                     lineNumber: 6661,
-                    columnNumber: 93
+                    columnNumber: 82
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "9", y1: "14", x2: "15", y2: "14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6661,
+                    columnNumber: 121
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 6661,
-                  columnNumber: 17
+                  columnNumber: 19
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 6660,
-                  columnNumber: 15
-                }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: convertSelectedToPath, disabled: !canConvertSelectionToPath, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Convert Selection to Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 6h8" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6664,
-                    columnNumber: 43
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 10h12" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6664,
-                    columnNumber: 62
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 14h9" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6664,
-                    columnNumber: 83
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16 5l3 3-6 6-4 1 1-4Z" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6664,
-                    columnNumber: 103
-                  }, this)
-                ] }, void 0, true, {
-                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6664,
                   columnNumber: 17
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6663,
+                  lineNumber: 6659,
                   columnNumber: 15
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: flattenBooleanSelected, disabled: !canFlattenBoolean, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Flatten Boolean to Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 6h14" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("vcenter"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Middle", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "12", x2: "19", y2: "12" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6667,
-                    columnNumber: 43
+                    lineNumber: 6666,
+                    columnNumber: 45
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 10h14" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "8", x2: "17", y2: "8" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6667,
-                    columnNumber: 63
-                  }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 14h14" }, void 0, false, {
-                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6667,
+                    lineNumber: 6666,
                     columnNumber: 84
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 18h14" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "16", x2: "17", y2: "16" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6667,
-                    columnNumber: 105
+                    lineNumber: 6666,
+                    columnNumber: 121
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6667,
+                  lineNumber: 6666,
+                  columnNumber: 19
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6665,
                   columnNumber: 17
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6666,
+                  lineNumber: 6664,
                   columnNumber: 15
                 }, this),
-                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: flattenSelectedToBooleanSubtract, disabled: !canFlattenCompound, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Flatten to Compound Path (select outer + inner shape)", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "9" }, void 0, false, {
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => alignSelection("bottom"), disabled: selectedIds.length < 2, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Align Bottom", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "18", x2: "19", y2: "18" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6670,
-                    columnNumber: 43
+                    lineNumber: 6671,
+                    columnNumber: 45
                   }, this),
-                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "4" }, void 0, false, {
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "14", x2: "17", y2: "14" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6670,
-                    columnNumber: 74
+                    lineNumber: 6671,
+                    columnNumber: 84
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "9", y1: "10", x2: "15", y2: "10" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6671,
+                    columnNumber: 123
                   }, this)
                 ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6671,
+                  columnNumber: 19
+                }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                   lineNumber: 6670,
                   columnNumber: 17
@@ -93844,18 +93970,222 @@ function OverlayEditorApp({ initialOverlay }) {
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6644,
+                lineNumber: 6643,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-4 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 6676,
+                columnNumber: 13
+              }, this),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1", children: [
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("union"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Union Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 8h8v8H8z" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6680,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 4h8v8H4z" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6680,
+                    columnNumber: 67
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6680,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6679,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("subtract"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Subtract Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "4", width: "14", height: "14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6683,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 10h10v10H10z", fill: "#0b0b0c", stroke: "none" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6683,
+                    columnNumber: 86
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6683,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6682,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("intersect"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Intersect Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M7 12a5 5 0 1 1 10 0a5 5 0 1 1-10 0z" }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6686,
+                  columnNumber: 43
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6686,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6685,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createBooleanFromSelection("exclude"), disabled: !canBooleanSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Exclude Selection", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M9 12a5 5 0 1 1 6 4.58" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6689,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M15 12a5 5 0 1 1-6-4.58" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6689,
+                    columnNumber: 78
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6689,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6688,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createOffsetPath(-8), disabled: !canOffsetSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Create Inset Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "4", width: "16", height: "16", rx: "2" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6692,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "8", y: "8", width: "8", height: "8", rx: "1" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6692,
+                    columnNumber: 93
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6692,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6691,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => createOffsetPath(8), disabled: !canOffsetSelection, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Create Outset Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "7", y: "7", width: "10", height: "10", rx: "1" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6695,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6695,
+                    columnNumber: 93
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6695,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6694,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: convertSelectedToPath, disabled: !canConvertSelectionToPath, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Convert Selection to Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 6h8" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6698,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 10h12" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6698,
+                    columnNumber: 62
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 14h9" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6698,
+                    columnNumber: 83
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16 5l3 3-6 6-4 1 1-4Z" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6698,
+                    columnNumber: 103
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6698,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6697,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: flattenBooleanSelected, disabled: !canFlattenBoolean, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Flatten Boolean to Path", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 6h14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6701,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 10h14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6701,
+                    columnNumber: 63
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 14h14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6701,
+                    columnNumber: 84
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 18h14" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6701,
+                    columnNumber: 105
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6701,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6700,
+                  columnNumber: 15
+                }, this),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: flattenSelectedToBooleanSubtract, disabled: !canFlattenCompound, className: `${uiClasses.iconButton} disabled:opacity-20`, title: "Flatten to Compound Path (select outer + inner shape)", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "9" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6704,
+                    columnNumber: 43
+                  }, this),
+                  /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "4" }, void 0, false, {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                    lineNumber: 6704,
+                    columnNumber: 74
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6704,
+                  columnNumber: 17
+                }, this) }, void 0, false, {
+                  fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                  lineNumber: 6703,
+                  columnNumber: 15
+                }, this)
+              ] }, void 0, true, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+                lineNumber: 6678,
                 columnNumber: 13
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6539,
+              lineNumber: 6573,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: zoomOut, className: uiClasses.iconButton, title: formatShortcutTooltip("zoom-canvas", "Zoom Out"), children: "－" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6676,
+                lineNumber: 6710,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-center font-mono text-[12px] leading-[1.4] text-slate-300", children: [
@@ -93863,17 +94193,17 @@ function OverlayEditorApp({ initialOverlay }) {
                 "%"
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6677,
+                lineNumber: 6711,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: zoomIn, className: uiClasses.iconButton, title: formatShortcutTooltip("zoom-canvas", "Zoom In"), children: "＋" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6678,
+                lineNumber: 6712,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: zoomFit, className: uiClasses.button, title: formatShortcutTooltip("zoom-fit"), children: "Fit" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6679,
+                lineNumber: 6713,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93888,19 +94218,19 @@ function OverlayEditorApp({ initialOverlay }) {
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6680,
+                  lineNumber: 6714,
                   columnNumber: 13
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6675,
+              lineNumber: 6709,
               columnNumber: 11
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6538,
+            lineNumber: 6572,
             columnNumber: 9
           }, this),
           activeCreationTool === "pen" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)] px-3 py-2", children: [
@@ -93908,27 +94238,27 @@ function OverlayEditorApp({ initialOverlay }) {
               "Pen mode:",
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "ml-1 text-slate-200", children: (penDraft == null ? void 0 : penDraft.anchors.length) ? `${penDraft.anchors.length} point${penDraft.anchors.length === 1 ? "" : "s"}` : "click to start a path" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6693,
+                lineNumber: 6727,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "ml-2 text-slate-500", children: "· snap-to-pixel on · click+drag to pull handles · Alt+click last point to break handle" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 6694,
+                lineNumber: 6728,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6691,
+              lineNumber: 6725,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => commitPenDraft(false), disabled: !penDraft || penDraft.anchors.length < 2, className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`, children: "Finish" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6696,
+              lineNumber: 6730,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => commitPenDraft(true), disabled: !penDraft || penDraft.anchors.length < 2, className: `${uiClasses.buttonGhost} h-7 disabled:opacity-30`, children: "Close" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6699,
+              lineNumber: 6733,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => {
@@ -93936,12 +94266,12 @@ function OverlayEditorApp({ initialOverlay }) {
               setActiveCreationTool(null);
             }, className: `${uiClasses.buttonGhost} h-7`, children: "Cancel" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6702,
+              lineNumber: 6736,
               columnNumber: 13
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 6690,
+            lineNumber: 6724,
             columnNumber: 11
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -93975,17 +94305,17 @@ function OverlayEditorApp({ initialOverlay }) {
                 editorStatus && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute right-4 top-4 z-[70] max-w-[360px] rounded-md border border-indigo-400/15 bg-[#161618]/95 px-3 py-2 shadow-xl shadow-black/35 backdrop-blur-sm", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: editorStatus.title }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6738,
+                    lineNumber: 6772,
                     columnNumber: 15
                   }, this),
                   editorStatus.detail && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: editorStatus.detail }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6740,
+                    lineNumber: 6774,
                     columnNumber: 17
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6737,
+                  lineNumber: 6771,
                   columnNumber: 13
                 }, this),
                 editingMasterId && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute left-1/2 top-4 z-[50] flex -translate-x-1/2 items-center gap-3 rounded-md border border-indigo-400/20 bg-[#161618] px-4 py-2 text-white shadow-xl shadow-black/30", children: [
@@ -93993,46 +94323,46 @@ function OverlayEditorApp({ initialOverlay }) {
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 20h9" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6747,
+                        lineNumber: 6781,
                         columnNumber: 78
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6747,
+                        lineNumber: 6781,
                         columnNumber: 104
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6747,
+                      lineNumber: 6781,
                       columnNumber: 52
                     }, this) }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6747,
+                      lineNumber: 6781,
                       columnNumber: 17
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] leading-[1.4] font-semibold uppercase tracking-[0.08em]", children: "Isolation Mode" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6748,
+                      lineNumber: 6782,
                       columnNumber: 17
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6746,
+                    lineNumber: 6780,
                     columnNumber: 15
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-px h-3 bg-indigo-400/50" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6750,
+                    lineNumber: 6784,
                     columnNumber: 15
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "max-w-[200px] truncate text-[13px] leading-[1.4] font-semibold", children: name }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6751,
+                    lineNumber: 6785,
                     columnNumber: 15
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-px h-3 bg-indigo-400/50" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6752,
+                    lineNumber: 6786,
                     columnNumber: 15
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -94046,14 +94376,14 @@ function OverlayEditorApp({ initialOverlay }) {
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 6753,
+                      lineNumber: 6787,
                       columnNumber: 15
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 6745,
+                  lineNumber: 6779,
                   columnNumber: 13
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -94141,7 +94471,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             false,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6830,
+                              lineNumber: 6864,
                               columnNumber: 15
                             },
                             this
@@ -94165,7 +94495,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             false,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6845,
+                              lineNumber: 6879,
                               columnNumber: 15
                             },
                             this
@@ -94183,7 +94513,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             false,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6861,
+                              lineNumber: 6895,
                               columnNumber: 17
                             },
                             this
@@ -94196,12 +94526,12 @@ function OverlayEditorApp({ initialOverlay }) {
                               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 bg-black/30", style: { clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${sa2.x / bw * 100}% ${sa2.y / bh2 * 100}%, ${sa2.x / bw * 100}% ${(sa2.y + sa2.height) / bh2 * 100}%, ${(sa2.x + sa2.width) / bw * 100}% ${(sa2.y + sa2.height) / bh2 * 100}%, ${(sa2.x + sa2.width) / bw * 100}% ${sa2.y / bh2 * 100}%, ${sa2.x / bw * 100}% ${sa2.y / bh2 * 100}%)` } }, void 0, false, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 6883,
+                                  lineNumber: 6917,
                                   columnNumber: 25
                                 }, this),
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute border-2 border-cyan-400/70 rounded-sm", style: { left: `${sa2.x / bw * 100}%`, top: `${sa2.y / bh2 * 100}%`, width: `${sa2.width / bw * 100}%`, height: `${sa2.height / bh2 * 100}%` } }, void 0, false, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 6885,
+                                  lineNumber: 6919,
                                   columnNumber: 25
                                 }, this),
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute text-[10px] font-mono text-cyan-300/80 bg-black/50 px-1.5 py-0.5 rounded", style: { left: `${sa2.x / bw * 100}%`, top: `calc(${sa2.y / bh2 * 100}% - 20px)` }, children: [
@@ -94211,23 +94541,23 @@ function OverlayEditorApp({ initialOverlay }) {
                                   sa2.height
                                 ] }, void 0, true, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 6887,
+                                  lineNumber: 6921,
                                   columnNumber: 25
                                 }, this)
                               ] }, void 0, true, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6881,
+                                lineNumber: 6915,
                                 columnNumber: 23
                               }, this);
                             }
                             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-8 border border-white/10 rounded-sm" }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6894,
+                              lineNumber: 6928,
                               columnNumber: 26
                             }, this);
                           })() }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 6873,
+                            lineNumber: 6907,
                             columnNumber: 15
                           }, this),
                           guides.show && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 pointer-events-none", children: [
@@ -94241,7 +94571,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6902,
+                                lineNumber: 6936,
                                 columnNumber: 21
                               },
                               this
@@ -94256,7 +94586,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6909,
+                                lineNumber: 6943,
                                 columnNumber: 21
                               },
                               this
@@ -94273,7 +94603,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6918,
+                                    lineNumber: 6952,
                                     columnNumber: 25
                                   },
                                   this
@@ -94288,7 +94618,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6922,
+                                    lineNumber: 6956,
                                     columnNumber: 25
                                   },
                                   this
@@ -94303,7 +94633,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6926,
+                                    lineNumber: 6960,
                                     columnNumber: 25
                                   },
                                   this
@@ -94319,14 +94649,14 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6930,
+                                    lineNumber: 6964,
                                     columnNumber: 25
                                   },
                                   this
                                 )
                               ] }, `gsx_${g2.start}_${g2.end}_${g2.y}`, true, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6917,
+                                lineNumber: 6951,
                                 columnNumber: 23
                               }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: [
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -94339,7 +94669,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6939,
+                                    lineNumber: 6973,
                                     columnNumber: 25
                                   },
                                   this
@@ -94354,7 +94684,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6943,
+                                    lineNumber: 6977,
                                     columnNumber: 25
                                   },
                                   this
@@ -94369,7 +94699,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6947,
+                                    lineNumber: 6981,
                                     columnNumber: 25
                                   },
                                   this
@@ -94385,20 +94715,20 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 6951,
+                                    lineNumber: 6985,
                                     columnNumber: 25
                                   },
                                   this
                                 )
                               ] }, `gsy_${g2.start}_${g2.end}_${g2.x}`, true, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6938,
+                                lineNumber: 6972,
                                 columnNumber: 23
                               }, this)
                             )
                           ] }, void 0, true, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 6900,
+                            lineNumber: 6934,
                             columnNumber: 17
                           }, this),
                           marquee.active && (() => {
@@ -94414,13 +94744,13 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 6969,
+                                lineNumber: 7003,
                                 columnNumber: 21
                               },
                               this
                             ) }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6968,
+                              lineNumber: 7002,
                               columnNumber: 19
                             }, this);
                           })(),
@@ -94445,7 +94775,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             true,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6979,
+                              lineNumber: 7013,
                               columnNumber: 17
                             },
                             this
@@ -94470,11 +94800,11 @@ function OverlayEditorApp({ initialOverlay }) {
                                 ")"
                               ] }, void 0, true, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7010,
+                                lineNumber: 7044,
                                 columnNumber: 21
                               }, this) }, void 0, false, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7009,
+                                lineNumber: 7043,
                                 columnNumber: 19
                               }, this)
                             },
@@ -94482,7 +94812,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             false,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 6995,
+                              lineNumber: 7029,
                               columnNumber: 17
                             },
                             this
@@ -94490,26 +94820,26 @@ function OverlayEditorApp({ initialOverlay }) {
                           config.elements.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40", children: [
                             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-4 flex h-16 w-16 items-center justify-center rounded-md border border-dashed border-[rgba(255,255,255,0.12)]", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-3xl text-slate-500", children: "+" }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7021,
+                              lineNumber: 7055,
                               columnNumber: 21
                             }, this) }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7020,
+                              lineNumber: 7054,
                               columnNumber: 19
                             }, this),
                             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { className: "text-[13px] leading-[1.4] font-medium text-slate-400", children: "Canvas is empty" }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7023,
+                              lineNumber: 7057,
                               columnNumber: 19
                             }, this),
                             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { className: "mt-1 text-[12px] leading-[1.4] text-slate-600", children: "Select a tool to add content" }, void 0, false, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7024,
+                              lineNumber: 7058,
                               columnNumber: 19
                             }, this)
                           ] }, void 0, true, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 7019,
+                            lineNumber: 7053,
                             columnNumber: 17
                           }, this),
                           previewElements.map((raw) => {
@@ -94576,7 +94906,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7034,
+                                lineNumber: 7068,
                                 columnNumber: 19
                               },
                               this
@@ -94593,35 +94923,35 @@ function OverlayEditorApp({ initialOverlay }) {
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: [
                                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("pattern", { id: "pixel-grid-10", width: "10", height: "10", patternUnits: "userSpaceOnUse", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M 10 0 L 0 0 0 10", fill: "none", stroke: "rgba(255,255,255,0.15)", strokeWidth: 1 / scale }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7096,
+                                    lineNumber: 7130,
                                     columnNumber: 23
                                   }, this) }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7095,
+                                    lineNumber: 7129,
                                     columnNumber: 21
                                   }, this),
                                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("pattern", { id: "pixel-grid-1", width: "1", height: "1", patternUnits: "userSpaceOnUse", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M 1 0 L 0 0 0 1", fill: "none", stroke: "rgba(255,255,255,0.06)", strokeWidth: 0.5 / scale }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7100,
+                                    lineNumber: 7134,
                                     columnNumber: 23
                                   }, this) }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7099,
+                                    lineNumber: 7133,
                                     columnNumber: 21
                                   }, this)
                                 ] }, void 0, true, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7093,
+                                  lineNumber: 7127,
                                   columnNumber: 19
                                 }, this),
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { width: "100%", height: "100%", fill: "url(#pixel-grid-10)" }, void 0, false, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7103,
+                                  lineNumber: 7137,
                                   columnNumber: 19
                                 }, this),
                                 scale >= 1.8 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { width: "100%", height: "100%", fill: "url(#pixel-grid-1)" }, void 0, false, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7104,
+                                  lineNumber: 7138,
                                   columnNumber: 36
                                 }, this)
                               ]
@@ -94630,7 +94960,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             true,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7087,
+                              lineNumber: 7121,
                               columnNumber: 17
                             },
                             this
@@ -94700,7 +95030,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7122,
+                                lineNumber: 7156,
                                 columnNumber: 19
                               },
                               this
@@ -94730,7 +95060,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7175,
+                                lineNumber: 7209,
                                 columnNumber: 19
                               },
                               this
@@ -94749,7 +95079,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7197,
+                                lineNumber: 7231,
                                 columnNumber: 21
                               },
                               this
@@ -94775,7 +95105,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7219,
+                                    lineNumber: 7253,
                                     columnNumber: 25
                                   },
                                   this
@@ -94794,7 +95124,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7222,
+                                    lineNumber: 7256,
                                     columnNumber: 25
                                   },
                                   this
@@ -94813,7 +95143,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7225,
+                                    lineNumber: 7259,
                                     columnNumber: 25
                                   },
                                   this
@@ -94833,7 +95163,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7228,
+                                    lineNumber: 7262,
                                     columnNumber: 25
                                   },
                                   this
@@ -94845,13 +95175,13 @@ function OverlayEditorApp({ initialOverlay }) {
                                   const d2 = `M ${last.x} ${last.y} C ${(_a4 = prevOut == null ? void 0 : prevOut.x) != null ? _a4 : last.x} ${(_b2 = prevOut == null ? void 0 : prevOut.y) != null ? _b2 : last.y} ${inHandle.x} ${inHandle.y} ${anchor.x} ${anchor.y}`;
                                   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: d2, fill: "none", stroke: "rgba(99,102,241,0.6)", strokeWidth: 1.5 / scale }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                    lineNumber: 7238,
+                                    lineNumber: 7272,
                                     columnNumber: 34
                                   }, this);
                                 })()
                               ] }, void 0, true, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7217,
+                                lineNumber: 7251,
                                 columnNumber: 23
                               }, this);
                             })(),
@@ -94870,7 +95200,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                 false,
                                 {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7247,
+                                  lineNumber: 7281,
                                   columnNumber: 23
                                 },
                                 this
@@ -94889,7 +95219,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                 false,
                                 {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7252,
+                                  lineNumber: 7286,
                                   columnNumber: 23
                                 },
                                 this
@@ -94912,19 +95242,19 @@ function OverlayEditorApp({ initialOverlay }) {
                                 true,
                                 {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7257,
+                                  lineNumber: 7291,
                                   columnNumber: 23
                                 },
                                 this
                               )
                             ] }, void 0, true, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7246,
+                              lineNumber: 7280,
                               columnNumber: 21
                             }, this)
                           ] }, void 0, true, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 7173,
+                            lineNumber: 7207,
                             columnNumber: 17
                           }, this),
                           primarySelectedEl && (() => {
@@ -94975,7 +95305,7 @@ function OverlayEditorApp({ initialOverlay }) {
                             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "absolute inset-0 pointer-events-none overflow-visible", style: { zIndex: 10001 }, children: [
                               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: startX, y1: startY, x2: endX, y2: endY, stroke: "rgba(129,140,248,0.6)", strokeWidth: 1, strokeDasharray: "4 3" }, void 0, false, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7320,
+                                lineNumber: 7354,
                                 columnNumber: 21
                               }, this),
                               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -94994,7 +95324,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                 false,
                                 {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7322,
+                                  lineNumber: 7356,
                                   columnNumber: 21
                                 },
                                 this
@@ -95015,19 +95345,19 @@ function OverlayEditorApp({ initialOverlay }) {
                                 false,
                                 {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7326,
+                                  lineNumber: 7360,
                                   columnNumber: 21
                                 },
                                 this
                               ),
                               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx, cy, r: 3, fill: "rgba(129,140,248,0.5)", style: { pointerEvents: "none" } }, void 0, false, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7330,
+                                lineNumber: 7364,
                                 columnNumber: 21
                               }, this)
                             ] }, "gradient-handles", true, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                              lineNumber: 7319,
+                              lineNumber: 7353,
                               columnNumber: 19
                             }, this);
                           })(),
@@ -95047,7 +95377,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7340,
+                                lineNumber: 7374,
                                 columnNumber: 21
                               },
                               this
@@ -95067,7 +95397,7 @@ function OverlayEditorApp({ initialOverlay }) {
                               false,
                               {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                lineNumber: 7353,
+                                lineNumber: 7387,
                                 columnNumber: 21
                               },
                               this
@@ -95090,7 +95420,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7370,
+                                      lineNumber: 7404,
                                       columnNumber: 27
                                     },
                                     this
@@ -95109,7 +95439,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7378,
+                                      lineNumber: 7412,
                                       columnNumber: 27
                                     },
                                     this
@@ -95128,7 +95458,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7386,
+                                      lineNumber: 7420,
                                       columnNumber: 27
                                     },
                                     this
@@ -95149,14 +95479,14 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7394,
+                                      lineNumber: 7428,
                                       columnNumber: 27
                                     },
                                     this
                                   )
                                 ] }, `spacing-x-${spacing.start}-${spacing.end}-${spacing.y}`, true, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7369,
+                                  lineNumber: 7403,
                                   columnNumber: 25
                                 }, this);
                               } else {
@@ -95176,7 +95506,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7411,
+                                      lineNumber: 7445,
                                       columnNumber: 27
                                     },
                                     this
@@ -95195,7 +95525,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7419,
+                                      lineNumber: 7453,
                                       columnNumber: 27
                                     },
                                     this
@@ -95214,7 +95544,7 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7427,
+                                      lineNumber: 7461,
                                       columnNumber: 27
                                     },
                                     this
@@ -95234,21 +95564,21 @@ function OverlayEditorApp({ initialOverlay }) {
                                     false,
                                     {
                                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                      lineNumber: 7435,
+                                      lineNumber: 7469,
                                       columnNumber: 27
                                     },
                                     this
                                   )
                                 ] }, `spacing-y-${spacing.start}-${spacing.end}-${spacing.x}`, true, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                                  lineNumber: 7410,
+                                  lineNumber: 7444,
                                   columnNumber: 25
                                 }, this);
                               }
                             })
                           ] }, void 0, true, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 7337,
+                            lineNumber: 7371,
                             columnNumber: 17
                           }, this)
                         ]
@@ -95257,7 +95587,7 @@ function OverlayEditorApp({ initialOverlay }) {
                       true,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 6780,
+                        lineNumber: 6814,
                         columnNumber: 13
                       },
                       this
@@ -95267,7 +95597,7 @@ function OverlayEditorApp({ initialOverlay }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 6762,
+                    lineNumber: 6796,
                     columnNumber: 11
                   },
                   this
@@ -95278,14 +95608,14 @@ function OverlayEditorApp({ initialOverlay }) {
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 6708,
+              lineNumber: 6742,
               columnNumber: 9
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 6535,
+          lineNumber: 6569,
           columnNumber: 7
         }, this),
         " ",
@@ -95294,17 +95624,17 @@ function OverlayEditorApp({ initialOverlay }) {
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between px-3 py-2 border-b border-[rgba(255,255,255,0.06)]", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[12px] font-semibold text-slate-200", children: "Version History" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7462,
+                lineNumber: 7496,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => setShowVersionHistory(false), className: uiClasses.iconButton, children: "✕" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7463,
+                lineNumber: 7497,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7461,
+              lineNumber: 7495,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-3 space-y-2", children: [
@@ -95322,7 +95652,7 @@ function OverlayEditorApp({ initialOverlay }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 7467,
+                    lineNumber: 7501,
                     columnNumber: 17
                   },
                   this
@@ -95349,14 +95679,14 @@ function OverlayEditorApp({ initialOverlay }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 7474,
+                    lineNumber: 7508,
                     columnNumber: 17
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7466,
+                lineNumber: 7500,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -95373,7 +95703,7 @@ function OverlayEditorApp({ initialOverlay }) {
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7489,
+                  lineNumber: 7523,
                   columnNumber: 15
                 },
                 this
@@ -95381,24 +95711,24 @@ function OverlayEditorApp({ initialOverlay }) {
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1 max-h-64 overflow-y-auto custom-scrollbar", children: [
                 versionHistoryList.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-500 text-center py-4", children: "No saved versions yet" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7498,
+                  lineNumber: 7532,
                   columnNumber: 19
                 }, this),
                 versionHistoryList.map((v2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] px-2 py-1.5", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 min-w-0", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-200 truncate", children: v2.version_name }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 7503,
+                      lineNumber: 7537,
                       columnNumber: 23
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500", children: new Date(v2.created_at).toLocaleString() }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 7504,
+                      lineNumber: 7538,
                       columnNumber: 23
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 7502,
+                    lineNumber: 7536,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -95416,29 +95746,29 @@ function OverlayEditorApp({ initialOverlay }) {
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 7506,
+                      lineNumber: 7540,
                       columnNumber: 21
                     },
                     this
                   )
                 ] }, v2.id, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7501,
+                  lineNumber: 7535,
                   columnNumber: 19
                 }, this))
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7496,
+                lineNumber: 7530,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7465,
+              lineNumber: 7499,
               columnNumber: 13
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 7460,
+            lineNumber: 7494,
             columnNumber: 11
           }, this),
           editorMode === "triggers" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col divide-y divide-slate-850 bg-slate-950/80 backdrop-blur-md", children: [
@@ -95492,30 +95822,30 @@ function OverlayEditorApp({ initialOverlay }) {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7523,
+                lineNumber: 7557,
                 columnNumber: 15
               },
               this
             ) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7522,
+              lineNumber: 7556,
               columnNumber: 13
             }, this),
             primarySelectedEl && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "border-t border-slate-900 p-4 bg-slate-950/40", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-4", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("h3", { className: "text-xs font-bold uppercase tracking-wider text-cyan-400", children: "Design Properties" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7575,
+                  lineNumber: 7609,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { className: "text-[10px] text-slate-500 mt-1", children: "Keyframe selected properties directly on active event timeline." }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7576,
+                  lineNumber: 7610,
                   columnNumber: 19
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 7574,
+                lineNumber: 7608,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -95640,19 +95970,19 @@ function OverlayEditorApp({ initialOverlay }) {
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 7578,
+                  lineNumber: 7612,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7573,
+              lineNumber: 7607,
               columnNumber: 15
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 7521,
+            lineNumber: 7555,
             columnNumber: 11
           }, this) : primarySelectedEl ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             InspectorPanel,
@@ -95763,17 +96093,17 @@ function OverlayEditorApp({ initialOverlay }) {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7705,
+              lineNumber: 7739,
               columnNumber: 11
             },
             this
           ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex h-40 flex-col items-center justify-center text-[12px] leading-[1.4] text-slate-500", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { children: "Select an element to edit" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 7817,
+            lineNumber: 7851,
             columnNumber: 13
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 7816,
+            lineNumber: 7850,
             columnNumber: 11
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -95794,19 +96124,19 @@ function OverlayEditorApp({ initialOverlay }) {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 7821,
+              lineNumber: 7855,
               columnNumber: 9
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 7457,
+          lineNumber: 7491,
           columnNumber: 7
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 6533,
+        lineNumber: 6567,
         columnNumber: 7
       }, this),
       curveEditorEffect !== null && (() => {
@@ -95834,13 +96164,13 @@ function OverlayEditorApp({ initialOverlay }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 7847,
+            lineNumber: 7881,
             columnNumber: 13
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 7846,
+          lineNumber: 7880,
           columnNumber: 11
         }, this);
       })(),
@@ -95901,6 +96231,7 @@ function OverlayEditorApp({ initialOverlay }) {
           },
           onSetSelectedKeyframeEasing: updateSelectedTimelineKeyframeEasing,
           onAddTrack: addTimelineTrack,
+          onRemoveElementTracks: removeElementTracks,
           onMoveKeyframe: moveTimelineKeyframe,
           onDuplicateKeyframe: duplicateTimelineKeyframe,
           onAddKeyframeAtTime: addTimelineKeyframeAtTime,
@@ -95917,24 +96248,24 @@ function OverlayEditorApp({ initialOverlay }) {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 7860,
+          lineNumber: 7894,
           columnNumber: 7
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ShortcutCheatsheetModal, { open: showShortcutModal, onClose: () => setShowShortcutModal(false) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 7922,
+        lineNumber: 7957,
         columnNumber: 7
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 6532,
+      lineNumber: 6566,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 6137,
+    lineNumber: 6171,
     columnNumber: 5
   }, this);
 }
@@ -95980,7 +96311,7 @@ function TimelinePropertyMarker({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8015,
+        lineNumber: 8050,
         columnNumber: 7
       },
       this
@@ -96002,7 +96333,7 @@ function TimelinePropertyMarker({
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8029,
+      lineNumber: 8064,
       columnNumber: 5
     },
     this
@@ -96016,17 +96347,17 @@ function TimelineFieldLabel({
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "flex items-center gap-1.5", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelinePropertyMarker, { state: timelineState2, onClick: onToggleKeyframe }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8057,
+      lineNumber: 8092,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: label }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8058,
+      lineNumber: 8093,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8056,
+    lineNumber: 8091,
     columnNumber: 5
   }, this);
 }
@@ -96055,7 +96386,7 @@ function ColorSwatch({ value, onChange, className, showAlpha }) {
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: `relative overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] shadow-sm flex-none ${className || "h-6 w-6"}`, children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0", style: { background: value } }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8089,
+        lineNumber: 8124,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -96070,14 +96401,14 @@ function ColorSwatch({ value, onChange, className, showAlpha }) {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8090,
+          lineNumber: 8125,
           columnNumber: 9
         },
         this
       )
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8088,
+      lineNumber: 8123,
       columnNumber: 7
     }, this),
     hasAlpha && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -96096,14 +96427,14 @@ function ColorSwatch({ value, onChange, className, showAlpha }) {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8098,
+        lineNumber: 8133,
         columnNumber: 9
       },
       this
     )
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8087,
+    lineNumber: 8122,
     columnNumber: 5
   }, this);
 }
@@ -96143,7 +96474,7 @@ function ExposeButton({
       className: `ml-1 flex-none ${uiClasses.iconButton} ${isBound ? "border-indigo-500 bg-indigo-600 text-white hover:bg-indigo-500 hover:text-white" : ""}`,
       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(LinkIcon, {}, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8148,
+        lineNumber: 8183,
         columnNumber: 7
       }, this)
     },
@@ -96151,7 +96482,7 @@ function ExposeButton({
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8143,
+      lineNumber: 8178,
       columnNumber: 5
     },
     this
@@ -96161,17 +96492,17 @@ function EyeIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8156,
+      lineNumber: 8191,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "3" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8157,
+      lineNumber: 8192,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8155,
+    lineNumber: 8190,
     columnNumber: 5
   }, this);
 }
@@ -96179,27 +96510,27 @@ function EyeOffIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 3l18 18" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8165,
+      lineNumber: 8200,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10.6 6.2A10.7 10.7 0 0 1 12 6c6.5 0 10 6 10 6a18.8 18.8 0 0 1-4.2 4.7" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8166,
+      lineNumber: 8201,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M6.7 6.7A18.1 18.1 0 0 0 2 12s3.5 6 10 6a9.8 9.8 0 0 0 3.4-.6" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8167,
+      lineNumber: 8202,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M9.9 9.9A3 3 0 0 0 14.1 14.1" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8168,
+      lineNumber: 8203,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8164,
+    lineNumber: 8199,
     columnNumber: 5
   }, this);
 }
@@ -96207,17 +96538,17 @@ function LockIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "11", width: "16", height: "10", rx: "2" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8176,
+      lineNumber: 8211,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 11V8a4 4 0 1 1 8 0v3" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8177,
+      lineNumber: 8212,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8175,
+    lineNumber: 8210,
     columnNumber: 5
   }, this);
 }
@@ -96225,64 +96556,10 @@ function UnlockIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "11", width: "16", height: "10", rx: "2" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8185,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 11V8a4 4 0 0 1 7.2-2.4" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8186,
-      columnNumber: 7
-    }, this)
-  ] }, void 0, true, {
-    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8184,
-    columnNumber: 5
-  }, this);
-}
-function MaskIcon() {
-  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3a9 9 0 1 0 0 18c2.3 0 4.3-.9 5.9-2.4A9 9 0 0 1 12 3Z" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8194,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3a9 9 0 0 1 0 18" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8195,
-      columnNumber: 7
-    }, this)
-  ] }, void 0, true, {
-    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8193,
-    columnNumber: 5
-  }, this);
-}
-function FolderIcon() {
-  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 7h6l2 2h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8203,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8204,
-      columnNumber: 7
-    }, this)
-  ] }, void 0, true, {
-    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8202,
-    columnNumber: 5
-  }, this);
-}
-function LinkIcon() {
-  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 8220,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7" }, void 0, false, {
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 11V8a4 4 0 0 1 7.2-2.4" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 8221,
       columnNumber: 7
@@ -96293,31 +96570,16 @@ function LinkIcon() {
     columnNumber: 5
   }, this);
 }
-function TrashIcon() {
+function MaskIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 6h16" }, void 0, false, {
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3a9 9 0 1 0 0 18c2.3 0 4.3-.9 5.9-2.4A9 9 0 0 1 12 3Z" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 8229,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M9 3h6" }, void 0, false, {
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3a9 9 0 0 1 0 18" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 8230,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M6 6v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8231,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 9v6" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8232,
-      columnNumber: 7
-    }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M14 9v6" }, void 0, false, {
-      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8233,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
@@ -96326,25 +96588,94 @@ function TrashIcon() {
     columnNumber: 5
   }, this);
 }
+function FolderIcon() {
+  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 7h6l2 2h10v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8238,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M3 7V5a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v2" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8239,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+    lineNumber: 8237,
+    columnNumber: 5
+  }, this);
+}
+function LinkIcon() {
+  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8255,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7.1 7.1l1.7-1.7" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8256,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+    lineNumber: 8254,
+    columnNumber: 5
+  }, this);
+}
+function TrashIcon() {
+  return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 6h16" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8264,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M9 3h6" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8265,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M6 6v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8266,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M10 9v6" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8267,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M14 9v6" }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+      lineNumber: 8268,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+    lineNumber: 8263,
+    columnNumber: 5
+  }, this);
+}
 function ChevronUpIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "m6 14 6-6 6 6" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8241,
+    lineNumber: 8276,
     columnNumber: 7
   }, this) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8240,
+    lineNumber: 8275,
     columnNumber: 5
   }, this);
 }
 function ChevronDownIcon() {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "m6 10 6 6 6-6" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8249,
+    lineNumber: 8284,
     columnNumber: 7
   }, this) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8248,
+    lineNumber: 8283,
     columnNumber: 5
   }, this);
 }
@@ -96766,7 +97097,7 @@ function PatternFillControls({
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Image" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8713,
+        lineNumber: 8748,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -96782,7 +97113,7 @@ function PatternFillControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8714,
+          lineNumber: 8749,
           columnNumber: 9
         },
         this
@@ -96796,7 +97127,7 @@ function PatternFillControls({
           title: "Pick pattern image",
           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FolderIcon, {}, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8727,
+            lineNumber: 8762,
             columnNumber: 11
           }, this)
         },
@@ -96804,25 +97135,25 @@ function PatternFillControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8721,
+          lineNumber: 8756,
           columnNumber: 9
         },
         this
       )
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8712,
+      lineNumber: 8747,
       columnNumber: 7
     }, this),
     imageState !== "idle" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: `text-[11px] leading-[1.4] ${imageState === "ok" ? "text-emerald-400" : "text-amber-400"}`, children: imageState === "ok" ? "Pattern image loaded." : "Pattern image could not be loaded. Renderer will fall back to solid fill." }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8732,
+      lineNumber: 8767,
       columnNumber: 9
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Fit" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8740,
+        lineNumber: 8775,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -96833,7 +97164,7 @@ function PatternFillControls({
           onChange: (e2) => onChange({ ...nextPattern, fit: e2.target.value }),
           children: PATTERN_FIT_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8747,
+            lineNumber: 8782,
             columnNumber: 13
           }, this))
         },
@@ -96841,20 +97172,20 @@ function PatternFillControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8741,
+          lineNumber: 8776,
           columnNumber: 9
         },
         this
       )
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8739,
+      lineNumber: 8774,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Scale" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8755,
+        lineNumber: 8790,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-20 relative", children: [
@@ -96870,35 +97201,35 @@ function PatternFillControls({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8757,
+            lineNumber: 8792,
             columnNumber: 11
           },
           this
         ),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8763,
+          lineNumber: 8798,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8756,
+        lineNumber: 8791,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 text-[11px] leading-[1.4] text-slate-600", children: "Scale now applies to tile, cover, and contain." }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8765,
+        lineNumber: 8800,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8754,
+      lineNumber: 8789,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Opacity" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8771,
+        lineNumber: 8806,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-20 relative", children: [
@@ -96914,83 +97245,83 @@ function PatternFillControls({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8773,
+            lineNumber: 8808,
             columnNumber: 11
           },
           this
         ),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8779,
+          lineNumber: 8814,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8772,
+        lineNumber: 8807,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8770,
+      lineNumber: 8805,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-3 gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-10 flex-none`, children: "Off X" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8785,
+          lineNumber: 8820,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_c = nextPattern.offsetX) != null ? _c : 0), onChange: (v2) => onChange({ ...nextPattern, offsetX: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8786,
+          lineNumber: 8821,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8784,
+        lineNumber: 8819,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-10 flex-none`, children: "Off Y" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8789,
+          lineNumber: 8824,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_d = nextPattern.offsetY) != null ? _d : 0), onChange: (v2) => onChange({ ...nextPattern, offsetY: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8790,
+          lineNumber: 8825,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8788,
+        lineNumber: 8823,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-10 flex-none`, children: "Rot" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8793,
+          lineNumber: 8828,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_e2 = nextPattern.rotationDeg) != null ? _e2 : 0), onChange: (v2) => onChange({ ...nextPattern, rotationDeg: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8794,
+          lineNumber: 8829,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8792,
+        lineNumber: 8827,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8783,
+      lineNumber: 8818,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8711,
+    lineNumber: 8746,
     columnNumber: 5
   }, this);
 }
@@ -97085,7 +97416,7 @@ function GradientEditor({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 8902,
+                lineNumber: 8937,
                 columnNumber: 11
               },
               this
@@ -97115,7 +97446,7 @@ function GradientEditor({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 8926,
+                      lineNumber: 8961,
                       columnNumber: 17
                     },
                     this
@@ -97125,7 +97456,7 @@ function GradientEditor({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 8915,
+                  lineNumber: 8950,
                   columnNumber: 15
                 },
                 this
@@ -97137,19 +97468,19 @@ function GradientEditor({
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8894,
+          lineNumber: 8929,
           columnNumber: 9
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 italic", children: "Click bar to add • Drag stops to reposition • Select and delete to remove" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8939,
+        lineNumber: 8974,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8893,
+      lineNumber: 8928,
       columnNumber: 7
     }, this),
     selectedStopIndex !== null && stops[selectedStopIndex] && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/20 bg-indigo-500/5 p-3 space-y-2", children: [
@@ -97159,7 +97490,7 @@ function GradientEditor({
           selectedStopIndex + 1
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8948,
+          lineNumber: 8983,
           columnNumber: 13
         }, this),
         stops.length > 2 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97171,7 +97502,7 @@ function GradientEditor({
             title: "Delete stop",
             children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TrashIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 8958,
+              lineNumber: 8993,
               columnNumber: 17
             }, this)
           },
@@ -97179,20 +97510,20 @@ function GradientEditor({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8952,
+            lineNumber: 8987,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8947,
+        lineNumber: 8982,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Color" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8964,
+          lineNumber: 8999,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex items-center gap-2 min-w-0", children: [
@@ -97211,7 +97542,7 @@ function GradientEditor({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 8966,
+              lineNumber: 9001,
               columnNumber: 15
             },
             this
@@ -97233,25 +97564,25 @@ function GradientEditor({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 8977,
+              lineNumber: 9012,
               columnNumber: 15
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8965,
+          lineNumber: 9e3,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8963,
+        lineNumber: 8998,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Position" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 8994,
+          lineNumber: 9029,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97273,7 +97604,7 @@ function GradientEditor({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 8995,
+            lineNumber: 9030,
             columnNumber: 13
           },
           this
@@ -97296,34 +97627,34 @@ function GradientEditor({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9013,
+              lineNumber: 9048,
               columnNumber: 15
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-2 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9028,
+            lineNumber: 9063,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9012,
+          lineNumber: 9047,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 8993,
+        lineNumber: 9028,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 8946,
+      lineNumber: 8981,
       columnNumber: 9
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 8891,
+    lineNumber: 8926,
     columnNumber: 5
   }, this);
 }
@@ -97400,7 +97731,7 @@ function FillStackControls({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Fill" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9125,
+            lineNumber: 9160,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97415,27 +97746,27 @@ function FillStackControls({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "solid", children: "Solid" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9139,
+                  lineNumber: 9174,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "linear", children: "Linear" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9140,
+                  lineNumber: 9175,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "radial", children: "Radial" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9141,
+                  lineNumber: 9176,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "conic", children: "Conic" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9142,
+                  lineNumber: 9177,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "pattern", children: "Pattern" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9143,
+                  lineNumber: 9178,
                   columnNumber: 17
                 }, this)
               ]
@@ -97444,57 +97775,57 @@ function FillStackControls({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9126,
+              lineNumber: 9161,
               columnNumber: 15
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { type: "button", className: uiClasses.iconButton, onClick: () => setFills(fills.filter((_2, candidateIndex) => candidateIndex !== index)), children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TrashIcon, {}, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9146,
+            lineNumber: 9181,
             columnNumber: 17
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9145,
+            lineNumber: 9180,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9124,
+          lineNumber: 9159,
           columnNumber: 13
         }, this),
         nextFill.type === "solid" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Color" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9152,
+            lineNumber: 9187,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: nextFill.color, onChange: (v2) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: v2 } : candidate)) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9154,
+              lineNumber: 9189,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${uiClasses.field}`, value: nextFill.color, onChange: (e2) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, color: e2.target.value } : candidate)) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9155,
+              lineNumber: 9190,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9153,
+            lineNumber: 9188,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9151,
+          lineNumber: 9186,
           columnNumber: 15
         }, this),
         (nextFill.type === "linear" || nextFill.type === "radial" || nextFill.type === "conic") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Angle" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9163,
+              lineNumber: 9198,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97508,19 +97839,19 @@ function FillStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9164,
+                lineNumber: 9199,
                 columnNumber: 19
               },
               this
             ),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: Math.round((_b = nextFill.angleDeg) != null ? _b : 0), onChange: (v2) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? { ...nextFill, angleDeg: v2 } : candidate)), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9169,
+              lineNumber: 9204,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9162,
+            lineNumber: 9197,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97533,14 +97864,14 @@ function FillStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9172,
+              lineNumber: 9207,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9161,
+          lineNumber: 9196,
           columnNumber: 15
         }, this),
         nextFill.type === "pattern" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97554,14 +97885,14 @@ function FillStackControls({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9180,
+            lineNumber: 9215,
             columnNumber: 15
           },
           this
         )
       ] }, (_c = nextFill.id) != null ? _c : `${nextFill.type}-${index}`, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9123,
+        lineNumber: 9158,
         columnNumber: 11
       }, this);
     }),
@@ -97577,14 +97908,14 @@ function FillStackControls({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9190,
+        lineNumber: 9225,
         columnNumber: 7
       },
       this
     )
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 9119,
+    lineNumber: 9154,
     columnNumber: 5
   }, this);
 }
@@ -97628,7 +97959,7 @@ function EffectsStackControls({
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3", children: [
     effects.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "No effects. Add shadows, glows, blur, or grain." }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9248,
+      lineNumber: 9283,
       columnNumber: 9
     }, this),
     effects.map((effect, index) => {
@@ -97638,7 +97969,7 @@ function EffectsStackControls({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Effect" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9258,
+            lineNumber: 9293,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97653,7 +97984,7 @@ function EffectsStackControls({
               ),
               children: EFFECT_TYPE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9271,
+                lineNumber: 9306,
                 columnNumber: 19
               }, this))
             },
@@ -97661,7 +97992,7 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9259,
+              lineNumber: 9294,
               columnNumber: 15
             },
             this
@@ -97676,7 +98007,7 @@ function EffectsStackControls({
               title: "Move effect up",
               children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ChevronUpIcon, {}, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9283,
+                lineNumber: 9318,
                 columnNumber: 17
               }, this)
             },
@@ -97684,7 +98015,7 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9276,
+              lineNumber: 9311,
               columnNumber: 15
             },
             this
@@ -97699,7 +98030,7 @@ function EffectsStackControls({
               title: "Move effect down",
               children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ChevronDownIcon, {}, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9292,
+                lineNumber: 9327,
                 columnNumber: 17
               }, this)
             },
@@ -97707,7 +98038,7 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9285,
+              lineNumber: 9320,
               columnNumber: 15
             },
             this
@@ -97721,7 +98052,7 @@ function EffectsStackControls({
               title: "Remove effect",
               children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TrashIcon, {}, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9300,
+                lineNumber: 9335,
                 columnNumber: 17
               }, this)
             },
@@ -97729,14 +98060,14 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9294,
+              lineNumber: 9329,
               columnNumber: 15
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9257,
+          lineNumber: 9292,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2", children: [
@@ -97756,25 +98087,25 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9305,
+              lineNumber: 9340,
               columnNumber: 15
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: uiClasses.fieldLabel, children: "Enabled" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9317,
+            lineNumber: 9352,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9304,
+          lineNumber: 9339,
           columnNumber: 13
         }, this),
         (nextEffect.type === "dropShadow" || nextEffect.type === "innerShadow" || nextEffect.type === "outerGlow" || nextEffect.type === "innerGlow") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Color" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9325,
+            lineNumber: 9360,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-1 gap-2", children: [
@@ -97792,7 +98123,7 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9327,
+                lineNumber: 9362,
                 columnNumber: 19
               },
               this
@@ -97813,26 +98144,26 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9337,
+                lineNumber: 9372,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9326,
+            lineNumber: 9361,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9324,
+          lineNumber: 9359,
           columnNumber: 15
         }, this),
         (nextEffect.type === "dropShadow" || nextEffect.type === "innerShadow") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Blur" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9356,
+              lineNumber: 9391,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97852,20 +98183,20 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9357,
+                lineNumber: 9392,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9355,
+            lineNumber: 9390,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Spread" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9372,
+              lineNumber: 9407,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97885,20 +98216,20 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9373,
+                lineNumber: 9408,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9371,
+            lineNumber: 9406,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Off X" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9388,
+              lineNumber: 9423,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97918,20 +98249,20 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9389,
+                lineNumber: 9424,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9387,
+            lineNumber: 9422,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Off Y" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9404,
+              lineNumber: 9439,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97951,26 +98282,26 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9405,
+                lineNumber: 9440,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9403,
+            lineNumber: 9438,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9354,
+          lineNumber: 9389,
           columnNumber: 15
         }, this),
         (nextEffect.type === "outerGlow" || nextEffect.type === "innerGlow") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Blur" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9425,
+              lineNumber: 9460,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -97990,20 +98321,20 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9426,
+                lineNumber: 9461,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9424,
+            lineNumber: 9459,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Spread" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9441,
+              lineNumber: 9476,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98023,25 +98354,25 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9442,
+                lineNumber: 9477,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9440,
+            lineNumber: 9475,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9423,
+          lineNumber: 9458,
           columnNumber: 15
         }, this),
         nextEffect.type === "layerBlur" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Blur" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9461,
+            lineNumber: 9496,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98061,21 +98392,21 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9462,
+              lineNumber: 9497,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9460,
+          lineNumber: 9495,
           columnNumber: 15
         }, this),
         nextEffect.type === "noise" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Amt" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9481,
+              lineNumber: 9516,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98095,20 +98426,20 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9482,
+                lineNumber: 9517,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9480,
+            lineNumber: 9515,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Scale" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9497,
+              lineNumber: 9532,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98128,24 +98459,24 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9498,
+                lineNumber: 9533,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9496,
+            lineNumber: 9531,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9479,
+          lineNumber: 9514,
           columnNumber: 15
         }, this)
       ] }, (_e2 = nextEffect.id) != null ? _e2 : `${nextEffect.type}-${index}`, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9256,
+        lineNumber: 9291,
         columnNumber: 11
       }, this);
     }),
@@ -98161,24 +98492,24 @@ function EffectsStackControls({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9518,
+        lineNumber: 9553,
         columnNumber: 7
       },
       this
     ),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9527,
+      lineNumber: 9562,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Filters & Effects" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9528,
+      lineNumber: 9563,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 -mt-1 mb-2", children: "Static filters (Colorize, Neon Glow) or animated effects with keyframes" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9529,
+      lineNumber: 9564,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 mb-2", children: [
@@ -98193,13 +98524,13 @@ function EffectsStackControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9535,
+          lineNumber: 9570,
           columnNumber: 11
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9534,
+        lineNumber: 9569,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98214,19 +98545,19 @@ function EffectsStackControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9541,
+          lineNumber: 9576,
           columnNumber: 9
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-400", children: "Enable parametric effects" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9547,
+        lineNumber: 9582,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9533,
+      lineNumber: 9568,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 mb-3", children: [
@@ -98241,13 +98572,13 @@ function EffectsStackControls({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9552,
+          lineNumber: 9587,
           columnNumber: 11
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9551,
+        lineNumber: 9586,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex items-center gap-2", children: [
@@ -98266,7 +98597,7 @@ function EffectsStackControls({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9559,
+            lineNumber: 9594,
             columnNumber: 11
           },
           this
@@ -98284,29 +98615,29 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9566,
+              lineNumber: 9601,
               columnNumber: 13
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-1 top-[5px] text-[9px] text-slate-500", children: "%" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9572,
+            lineNumber: 9607,
             columnNumber: 13
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9565,
+          lineNumber: 9600,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9558,
+        lineNumber: 9593,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 9550,
+      lineNumber: 9585,
       columnNumber: 7
     }, this),
     (_a3 = element.parametricEffects) == null ? void 0 : _a3.map((pe2, index) => {
@@ -98357,7 +98688,7 @@ function EffectsStackControls({
               },
               children: Object.values(EFFECT_PRESETS).map((p2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: p2.id, children: p2.label }, p2.id, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9620,
+                lineNumber: 9655,
                 columnNumber: 19
               }, this))
             },
@@ -98365,7 +98696,7 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9605,
+              lineNumber: 9640,
               columnNumber: 15
             },
             this
@@ -98385,19 +98716,19 @@ function EffectsStackControls({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9623,
+              lineNumber: 9658,
               columnNumber: 15
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9604,
+          lineNumber: 9639,
           columnNumber: 13
         }, this),
         presetDef && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 italic", children: presetDef.description }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9630,
+          lineNumber: 9665,
           columnNumber: 27
         }, this),
         animatableParams.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98421,7 +98752,7 @@ function EffectsStackControls({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9642,
+                  lineNumber: 9677,
                   columnNumber: 21
                 },
                 this
@@ -98440,7 +98771,7 @@ function EffectsStackControls({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9645,
+                  lineNumber: 9680,
                   columnNumber: 19
                 },
                 this
@@ -98455,7 +98786,7 @@ function EffectsStackControls({
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: areaD, fill: color, fillOpacity: 0.06 }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9656,
+                    lineNumber: 9691,
                     columnNumber: 25
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98471,7 +98802,7 @@ function EffectsStackControls({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9657,
+                      lineNumber: 9692,
                       columnNumber: 25
                     },
                     this
@@ -98491,7 +98822,7 @@ function EffectsStackControls({
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9661,
+                        lineNumber: 9696,
                         columnNumber: 29
                       },
                       this
@@ -98508,26 +98839,26 @@ function EffectsStackControls({
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9663,
+                        lineNumber: 9698,
                         columnNumber: 29
                       },
                       this
                     )
                   ] }, ni2, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9660,
+                    lineNumber: 9695,
                     columnNumber: 27
                   }, this))
                 ] }, param.key, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9655,
+                  lineNumber: 9690,
                   columnNumber: 23
                 }, this);
               }),
               animatableParams.map((param, idx) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: mPL + idx * 36 + 4, cy: miniH - 5, r: 2.5, fill: MINI_COLORS[idx % MINI_COLORS.length] }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9673,
+                  lineNumber: 9708,
                   columnNumber: 23
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98544,24 +98875,24 @@ function EffectsStackControls({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9674,
+                    lineNumber: 9709,
                     columnNumber: 23
                   },
                   this
                 )
               ] }, param.key, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9672,
+                lineNumber: 9707,
                 columnNumber: 21
               }, this)),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: miniW - 5, y: miniH - 2, fontSize: 7.5, fill: "rgba(255,255,255,0.25)", textAnchor: "end", children: "↗ edit" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9679,
+                lineNumber: 9714,
                 columnNumber: 19
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9639,
+              lineNumber: 9674,
               columnNumber: 17
             }, this)
           },
@@ -98569,7 +98900,7 @@ function EffectsStackControls({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9634,
+            lineNumber: 9669,
             columnNumber: 15
           },
           this
@@ -98579,7 +98910,7 @@ function EffectsStackControls({
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none truncate`, children: param.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9687,
+              lineNumber: 9722,
               columnNumber: 17
             }, this),
             param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98599,7 +98930,7 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9689,
+                lineNumber: 9724,
                 columnNumber: 19
               },
               this
@@ -98620,7 +98951,7 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9698,
+                lineNumber: 9733,
                 columnNumber: 19
               },
               this
@@ -98637,7 +98968,7 @@ function EffectsStackControls({
                 },
                 children: ((_d = param.options) != null ? _d : []).map((o2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o2, children: o2 }, o2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9715,
+                  lineNumber: 9750,
                   columnNumber: 63
                 }, this))
               },
@@ -98645,7 +98976,7 @@ function EffectsStackControls({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9707,
+                lineNumber: 9742,
                 columnNumber: 19
               },
               this
@@ -98670,7 +99001,7 @@ function EffectsStackControls({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9719,
+                  lineNumber: 9754,
                   columnNumber: 21
                 },
                 this
@@ -98679,17 +99010,17 @@ function EffectsStackControls({
                 param.step && param.step < 1 ? 1 : 0
               ) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9729,
+                lineNumber: 9764,
                 columnNumber: 21
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9718,
+              lineNumber: 9753,
               columnNumber: 19
             }, this)
           ] }, param.key, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9686,
+            lineNumber: 9721,
             columnNumber: 15
           }, this);
         }),
@@ -98697,17 +99028,17 @@ function EffectsStackControls({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] font-bold text-slate-400 uppercase tracking-wider", children: "Dynamic Bindings" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9742,
+              lineNumber: 9777,
               columnNumber: 17
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500", children: "Bind params to live telemetry" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9743,
+              lineNumber: 9778,
               columnNumber: 17
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 9741,
+            lineNumber: 9776,
             columnNumber: 15
           }, this),
           presetDef.params.filter((p2) => p2.type === "number").map((param) => {
@@ -98719,17 +99050,17 @@ function EffectsStackControls({
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1.5", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `text-[10px] font-semibold ${isBound ? "text-indigo-400" : "text-slate-400"}`, children: param.label }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9754,
+                    lineNumber: 9789,
                     columnNumber: 25
                   }, this),
                   isBound && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] bg-indigo-500/20 text-indigo-300 px-1 rounded font-mono uppercase tracking-tighter", children: "Live" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9757,
+                    lineNumber: 9792,
                     columnNumber: 37
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9753,
+                  lineNumber: 9788,
                   columnNumber: 23
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98762,7 +99093,7 @@ function EffectsStackControls({
                     className: `text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${isBound ? "text-rose-400 bg-rose-500/10 hover:bg-rose-500/20" : "text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-indigo-300"}`,
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: isBound ? "Unbind" : "Bind" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9790,
+                      lineNumber: 9825,
                       columnNumber: 25
                     }, this)
                   },
@@ -98770,14 +99101,14 @@ function EffectsStackControls({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9760,
+                    lineNumber: 9795,
                     columnNumber: 23
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9752,
+                lineNumber: 9787,
                 columnNumber: 21
               }, this),
               isBound && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 pt-1 border-t border-[rgba(255,255,255,0.03)] text-[10px]", children: [
@@ -98785,7 +99116,7 @@ function EffectsStackControls({
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-0.5", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[8px] text-slate-500 uppercase font-bold tracking-wider", children: "Source" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9798,
+                      lineNumber: 9833,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98814,7 +99145,7 @@ function EffectsStackControls({
                         className: `w-full ${uiClasses.field} text-[10px] px-1 py-0.5`,
                         children: SourceCatalog.filter((s2) => s2.id !== "custom_variables").map((s2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: s2.id, children: s2.label }, s2.id, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9822,
+                          lineNumber: 9857,
                           columnNumber: 33
                         }, this))
                       },
@@ -98822,20 +99153,20 @@ function EffectsStackControls({
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9799,
+                        lineNumber: 9834,
                         columnNumber: 29
                       },
                       this
                     )
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9797,
+                    lineNumber: 9832,
                     columnNumber: 27
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-0.5", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[8px] text-slate-500 uppercase font-bold tracking-wider", children: "Field" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9828,
+                      lineNumber: 9863,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98860,7 +99191,7 @@ function EffectsStackControls({
                         className: `w-full ${uiClasses.field} text-[10px] px-1 py-0.5`,
                         children: (((_b2 = SourceCatalog.find((s2) => s2.id === binding.sourceId)) == null ? void 0 : _b2.fields.filter((f2) => f2.type === "number")) || []).map((f2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: f2.id, children: f2.label }, f2.id, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9849,
+                          lineNumber: 9884,
                           columnNumber: 33
                         }, this))
                       },
@@ -98868,26 +99199,26 @@ function EffectsStackControls({
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9829,
+                        lineNumber: 9864,
                         columnNumber: 29
                       },
                       this
                     )
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9827,
+                    lineNumber: 9862,
                     columnNumber: 27
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9796,
+                  lineNumber: 9831,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2 pt-1", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[8px] text-slate-500 uppercase font-bold tracking-wider", children: "Input Telemetry Range" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9857,
+                      lineNumber: 9892,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1.5", children: [
@@ -98918,14 +99249,14 @@ function EffectsStackControls({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9859,
+                          lineNumber: 9894,
                           columnNumber: 31
                         },
                         this
                       ),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-600", children: "to" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9880,
+                        lineNumber: 9915,
                         columnNumber: 31
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -98955,25 +99286,25 @@ function EffectsStackControls({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9881,
+                          lineNumber: 9916,
                           columnNumber: 31
                         },
                         this
                       )
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9858,
+                      lineNumber: 9893,
                       columnNumber: 29
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9856,
+                    lineNumber: 9891,
                     columnNumber: 27
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[8px] text-slate-500 uppercase font-bold tracking-wider", children: "Target Value Range" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9906,
+                      lineNumber: 9941,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1.5", children: [
@@ -99005,14 +99336,14 @@ function EffectsStackControls({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9908,
+                          lineNumber: 9943,
                           columnNumber: 31
                         },
                         this
                       ),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-600", children: "to" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 9930,
+                        lineNumber: 9965,
                         columnNumber: 31
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -99043,45 +99374,45 @@ function EffectsStackControls({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 9931,
+                          lineNumber: 9966,
                           columnNumber: 31
                         },
                         this
                       )
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 9907,
+                      lineNumber: 9942,
                       columnNumber: 29
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 9905,
+                    lineNumber: 9940,
                     columnNumber: 27
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 9855,
+                  lineNumber: 9890,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 9795,
+                lineNumber: 9830,
                 columnNumber: 23
               }, this)
             ] }, param.key, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 9751,
+              lineNumber: 9786,
               columnNumber: 19
             }, this);
           })
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 9740,
+          lineNumber: 9775,
           columnNumber: 13
         }, this)
       ] }, index, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9602,
+        lineNumber: 9637,
         columnNumber: 11
       }, this);
     }),
@@ -99107,14 +99438,14 @@ function EffectsStackControls({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 9966,
+        lineNumber: 10001,
         columnNumber: 7
       },
       this
     )
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 9246,
+    lineNumber: 9281,
     columnNumber: 5
   }, this);
 }
@@ -99233,7 +99564,7 @@ const CanvasElement = React.memo(function CanvasElement2({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10149,
+              lineNumber: 10184,
               columnNumber: 7
             },
             this
@@ -99243,7 +99574,7 @@ const CanvasElement = React.memo(function CanvasElement2({
             isLocked ? " (Locked)" : ""
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10164,
+            lineNumber: 10199,
             columnNumber: 9
           }, this),
           showTransformOverlay && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 overflow-visible pointer-events-none", children: [
@@ -99260,7 +99591,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10173,
+                lineNumber: 10208,
                 columnNumber: 11
               },
               this
@@ -99291,7 +99622,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10191,
+                lineNumber: 10226,
                 columnNumber: 13
               },
               this
@@ -99313,14 +99644,14 @@ const CanvasElement = React.memo(function CanvasElement2({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 10214,
+                  lineNumber: 10249,
                   columnNumber: 21
                 },
                 this
               );
             }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10207,
+              lineNumber: 10242,
               columnNumber: 13
             }, this),
             renderedEl.type === "path" && pathHandles.filter((handle) => (selectedPathAnchor == null ? void 0 : selectedPathAnchor.elementId) === el.id && selectedPathAnchor.commandIndex === handle.anchorCommandIndex).map((handle) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -99341,13 +99672,13 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10228,
+                lineNumber: 10263,
                 columnNumber: 17
               },
               this
             ) }, `${el.id}_handle_${handle.curveCommandIndex}_${handle.role}`, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10227,
+              lineNumber: 10262,
               columnNumber: 15
             }, this)),
             renderedEl.type === "path" && pathAnchors.map((anchor, anchorIndex) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -99374,7 +99705,7 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10244,
+                lineNumber: 10279,
                 columnNumber: 13
               },
               this
@@ -99401,14 +99732,14 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10270,
+                lineNumber: 10305,
                 columnNumber: 13
               },
               this
             ),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute left-1/2 -top-6 h-6 w-px -translate-x-1/2 pointer-events-none", style: { background: ACCENT_TINT } }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10289,
+              lineNumber: 10324,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -99430,14 +99761,14 @@ const CanvasElement = React.memo(function CanvasElement2({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10290,
+                lineNumber: 10325,
                 columnNumber: 11
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10171,
+            lineNumber: 10206,
             columnNumber: 9
           }, this)
         ]
@@ -99446,7 +99777,7 @@ const CanvasElement = React.memo(function CanvasElement2({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10134,
+        lineNumber: 10169,
         columnNumber: 5
       },
       this
@@ -99507,7 +99838,7 @@ const CanvasElement = React.memo(function CanvasElement2({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10310,
+        lineNumber: 10345,
         columnNumber: 7
       },
       this
@@ -99572,7 +99903,7 @@ const CanvasElement = React.memo(function CanvasElement2({
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10363,
+      lineNumber: 10398,
       columnNumber: 5
     },
     this
@@ -99622,13 +99953,13 @@ function SocialIconsPanel({ onAddToCanvas }) {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10458,
+        lineNumber: 10493,
         columnNumber: 9
       },
       this
     ) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10457,
+      lineNumber: 10492,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 overflow-y-auto p-2 space-y-3 custom-scrollbar", children: [
@@ -99638,7 +99969,7 @@ function SocialIconsPanel({ onAddToCanvas }) {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500 px-1 mb-1", children: cat }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10472,
+            lineNumber: 10507,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-4 gap-1", children: icons.map((icon) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -99660,14 +99991,14 @@ function SocialIconsPanel({ onAddToCanvas }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 10487,
+                    lineNumber: 10522,
                     columnNumber: 21
                   },
                   this
                 ),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-400 text-center leading-tight truncate w-full", children: icon.name }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 10491,
+                  lineNumber: 10526,
                   columnNumber: 21
                 }, this)
               ]
@@ -99676,34 +100007,34 @@ function SocialIconsPanel({ onAddToCanvas }) {
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10475,
+              lineNumber: 10510,
               columnNumber: 19
             },
             this
           )) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10473,
+            lineNumber: 10508,
             columnNumber: 15
           }, this)
         ] }, cat, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10471,
+          lineNumber: 10506,
           columnNumber: 13
         }, this);
       }),
       filtered.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-500 text-center py-8", children: "No icons found" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10499,
+        lineNumber: 10534,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10466,
+      lineNumber: 10501,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 10456,
+    lineNumber: 10491,
     columnNumber: 5
   }, this);
 }
@@ -99785,7 +100116,7 @@ function AngleDial({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10596,
+            lineNumber: 10631,
             columnNumber: 9
           },
           this
@@ -99810,7 +100141,7 @@ function AngleDial({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10612,
+              lineNumber: 10647,
               columnNumber: 13
             },
             this
@@ -99831,7 +100162,7 @@ function AngleDial({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10624,
+            lineNumber: 10659,
             columnNumber: 9
           },
           this
@@ -99850,14 +100181,14 @@ function AngleDial({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10634,
+            lineNumber: 10669,
             columnNumber: 9
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10595,
+        lineNumber: 10630,
         columnNumber: 7
       }, this)
     },
@@ -99865,7 +100196,7 @@ function AngleDial({
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10587,
+      lineNumber: 10622,
       columnNumber: 5
     },
     this
@@ -99922,7 +100253,7 @@ function InspectorPanel({
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `block ${uiClasses.label}`, children: "Layer" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10680,
+        lineNumber: 10715,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -99939,7 +100270,7 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10682,
+            lineNumber: 10717,
             columnNumber: 11
           },
           this
@@ -99952,11 +100283,11 @@ function InspectorPanel({
             title: "Toggle Visibility",
             children: isVisible ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(EyeIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10694,
+              lineNumber: 10729,
               columnNumber: 26
             }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(EyeOffIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10694,
+              lineNumber: 10729,
               columnNumber: 40
             }, this)
           },
@@ -99964,7 +100295,7 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10689,
+            lineNumber: 10724,
             columnNumber: 11
           },
           this
@@ -99977,11 +100308,11 @@ function InspectorPanel({
             title: "Toggle Lock",
             children: isLocked ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(LockIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10701,
+              lineNumber: 10736,
               columnNumber: 25
             }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(UnlockIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10701,
+              lineNumber: 10736,
               columnNumber: 40
             }, this)
           },
@@ -99989,14 +100320,14 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10696,
+            lineNumber: 10731,
             columnNumber: 11
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10681,
+        lineNumber: 10716,
         columnNumber: 9
       }, this),
       (timelineState2 == null ? void 0 : timelineState2.hasAnimatedProperties) && element.type !== "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
@@ -100005,44 +100336,44 @@ function InspectorPanel({
           formatTimelineTime(timelineState2.playheadMs)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10706,
+          lineNumber: 10741,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: "Marked properties have timeline tracks. Editing them here updates keyframes at the current playhead." }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10709,
+          lineNumber: 10744,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10705,
+        lineNumber: 10740,
         columnNumber: 11
       }, this),
       element.type === "mask" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: "Mask group selected" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10716,
+          lineNumber: 10751,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: "This container uses its first child as the mask shape and clips the content child beneath it." }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10717,
+          lineNumber: 10752,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10715,
+        lineNumber: 10750,
         columnNumber: 11
       }, this),
       (element.type === "path" || element.type === "boolean") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: element.type === "path" ? "Path geometry" : "Boolean geometry" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10724,
+          lineNumber: 10759,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: element.type === "path" ? `This layer renders from ${pathCommandCount != null ? pathCommandCount : 0} local path commands.` : `This container resolves ${(_g = (_f = element.childIds) == null ? void 0 : _f.length) != null ? _g : 0} child shapes into one cached path.` }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10727,
+          lineNumber: 10762,
           columnNumber: 13
         }, this),
         element.type === "boolean" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 flex flex-wrap gap-2", children: [
@@ -100057,7 +100388,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10734,
+              lineNumber: 10769,
               columnNumber: 17
             },
             this
@@ -100073,14 +100404,14 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10740,
+              lineNumber: 10775,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10733,
+          lineNumber: 10768,
           columnNumber: 15
         }, this),
         element.type === "path" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 flex flex-wrap gap-2", children: [
@@ -100095,7 +100426,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10750,
+              lineNumber: 10785,
               columnNumber: 17
             },
             this
@@ -100112,7 +100443,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10756,
+              lineNumber: 10791,
               columnNumber: 17
             },
             this
@@ -100129,7 +100460,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10763,
+              lineNumber: 10798,
               columnNumber: 17
             },
             this
@@ -100146,7 +100477,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10770,
+              lineNumber: 10805,
               columnNumber: 17
             },
             this
@@ -100162,7 +100493,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10777,
+              lineNumber: 10812,
               columnNumber: 17
             },
             this
@@ -100179,35 +100510,35 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10783,
+              lineNumber: 10818,
               columnNumber: 17
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: selectedPathAnchor == null ? "Select a path point to edit it." : `Selected point #${selectedPathAnchor + 1}` }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10790,
+            lineNumber: 10825,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10749,
+          lineNumber: 10784,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10723,
+        lineNumber: 10758,
         columnNumber: 11
       }, this),
       (element.type === "shape" || element.type === "box") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: "Primitive geometry" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10799,
+          lineNumber: 10834,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: "This layer is rendered through the shared path model and can be converted into an editable path element." }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10800,
+          lineNumber: 10835,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 flex flex-wrap gap-2", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -100221,23 +100552,23 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10804,
+            lineNumber: 10839,
             columnNumber: 15
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10803,
+          lineNumber: 10838,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10798,
+        lineNumber: 10833,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10679,
+      lineNumber: 10714,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Transform", defaultOpen: true, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
@@ -100245,148 +100576,148 @@ function InspectorPanel({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "X", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.x, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("x") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10820,
+            lineNumber: 10855,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10820,
+            lineNumber: 10855,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_h2 = element.x) != null ? _h2 : 0, onChange: (v2) => onChange({ x: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10821,
+            lineNumber: 10856,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10819,
+          lineNumber: 10854,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Y", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.y, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("y") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10824,
+            lineNumber: 10859,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10824,
+            lineNumber: 10859,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_i2 = element.y) != null ? _i2 : 0, onChange: (v2) => onChange({ y: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10825,
+            lineNumber: 10860,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10823,
+          lineNumber: 10858,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10818,
+        lineNumber: 10853,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "W", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.width, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("width") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10830,
+            lineNumber: 10865,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10830,
+            lineNumber: 10865,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_j = element.width) != null ? _j : 0, onChange: (v2) => onChange({ width: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10831,
+            lineNumber: 10866,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10829,
+          lineNumber: 10864,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "H", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.height, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("height") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10834,
+            lineNumber: 10869,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10834,
+            lineNumber: 10869,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_k = element.height) != null ? _k : 0, onChange: (v2) => onChange({ height: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10835,
+            lineNumber: 10870,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10833,
+          lineNumber: 10868,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10828,
+        lineNumber: 10863,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SX", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.scaleX, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("scaleX") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10840,
+            lineNumber: 10875,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10840,
+            lineNumber: 10875,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: typeof element.scaleX === "number" ? element.scaleX : 1, onChange: (v2) => onChange({ scaleX: Math.max(0.01, v2) }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10841,
+            lineNumber: 10876,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10839,
+          lineNumber: 10874,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "SY", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.scaleY, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("scaleY") : void 0 }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10844,
+            lineNumber: 10879,
             columnNumber: 59
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10844,
+            lineNumber: 10879,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: typeof element.scaleY === "number" ? element.scaleY : 1, onChange: (v2) => onChange({ scaleY: Math.max(0.01, v2) }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10845,
+            lineNumber: 10880,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10843,
+          lineNumber: 10878,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10838,
+        lineNumber: 10873,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Rotation", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.rotationDeg, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("rotationDeg") : void 0 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10850,
+          lineNumber: 10885,
           columnNumber: 68
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10850,
+          lineNumber: 10885,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex items-center gap-2", children: [
@@ -100401,7 +100732,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10852,
+              lineNumber: 10887,
               columnNumber: 15
             },
             this
@@ -100420,34 +100751,34 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10857,
+              lineNumber: 10892,
               columnNumber: 15
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-12", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_n2 = element.rotationDeg) != null ? _n2 : 0, onChange: (v2) => onChange({ rotationDeg: snapRotationValue(v2, altDown) }), noLabel: true }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10864,
+            lineNumber: 10899,
             columnNumber: 17
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10863,
+            lineNumber: 10898,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10851,
+          lineNumber: 10886,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10849,
+        lineNumber: 10884,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "border-t border-[rgba(255,255,255,0.06)] pt-2 space-y-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} text-slate-500`, children: "3D Transform" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10871,
+          lineNumber: 10906,
           columnNumber: 13
         }, this),
         [
@@ -100470,13 +100801,13 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10882,
+                lineNumber: 10917,
                 columnNumber: 21
               },
               this
             ) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10881,
+              lineNumber: 10916,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -100494,7 +100825,7 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10888,
+                lineNumber: 10923,
                 columnNumber: 19
               },
               this
@@ -100504,12 +100835,12 @@ function InspectorPanel({
               "°"
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10894,
+              lineNumber: 10929,
               columnNumber: 19
             }, this)
           ] }, key, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10880,
+            lineNumber: 10915,
             columnNumber: 17
           }, this);
         }),
@@ -100525,13 +100856,13 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10900,
+              lineNumber: 10935,
               columnNumber: 17
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10899,
+            lineNumber: 10934,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -100549,7 +100880,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10906,
+              lineNumber: 10941,
               columnNumber: 15
             },
             this
@@ -100559,32 +100890,32 @@ function InspectorPanel({
             "px"
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10912,
+            lineNumber: 10947,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10898,
+          lineNumber: 10933,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10870,
+        lineNumber: 10905,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10817,
+      lineNumber: 10852,
       columnNumber: 9
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10816,
+      lineNumber: 10851,
       columnNumber: 7
     }, this),
     parentFrame && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Constraints", defaultOpen: false, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-500", children: "Controls how this element repositions when its parent frame is resized." }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10922,
+        lineNumber: 10957,
         columnNumber: 13
       }, this),
       ["horizontal", "vertical"].map((axis) => {
@@ -100594,7 +100925,7 @@ function InspectorPanel({
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none capitalize`, children: axis }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10930,
+            lineNumber: 10965,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -100605,7 +100936,7 @@ function InspectorPanel({
               onChange: (e2) => onChange({ constraints: { ...element.constraints, [axis]: e2.target.value } }),
               children: options.map((o2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o2.value, children: o2.label }, o2.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10936,
+                lineNumber: 10971,
                 columnNumber: 39
               }, this))
             },
@@ -100613,35 +100944,35 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10931,
+              lineNumber: 10966,
               columnNumber: 19
             },
             this
           )
         ] }, axis, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10929,
+          lineNumber: 10964,
           columnNumber: 17
         }, this);
       })
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10921,
+      lineNumber: 10956,
       columnNumber: 11
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10920,
+      lineNumber: 10955,
       columnNumber: 9
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Appearance", defaultOpen: true, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-4", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(TimelineFieldLabel, { label: "Opacity", timelineState: timelineState2 == null ? void 0 : timelineState2.properties.opacity, onToggleKeyframe: onToggleTimelineKeyframe2 ? () => onToggleTimelineKeyframe2("opacity") : void 0 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10951,
+          lineNumber: 10986,
           columnNumber: 68
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10951,
+          lineNumber: 10986,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex items-center gap-2", children: [
@@ -100660,7 +100991,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10953,
+              lineNumber: 10988,
               columnNumber: 15
             },
             this
@@ -100678,106 +101009,106 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 10960,
+                lineNumber: 10995,
                 columnNumber: 17
               },
               this
             ),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-2 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 10966,
+              lineNumber: 11001,
               columnNumber: 17
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10959,
+            lineNumber: 10994,
             columnNumber: 15
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10952,
+          lineNumber: 10987,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10950,
+        lineNumber: 10985,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10971,
+        lineNumber: 11006,
         columnNumber: 11
       }, this),
       element.type !== "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: "Blend Mode" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10976,
+          lineNumber: 11011,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_q = element.blendMode) != null ? _q : "normal", onChange: (e2) => onChange({ blendMode: e2.target.value }), children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10978,
+            lineNumber: 11013,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "screen", children: "Screen" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10979,
+            lineNumber: 11014,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "multiply", children: "Multiply" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10980,
+            lineNumber: 11015,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "overlay", children: "Overlay" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10981,
+            lineNumber: 11016,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "hard-light", children: "Hard Light" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10982,
+            lineNumber: 11017,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "soft-light", children: "Soft Light" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10983,
+            lineNumber: 11018,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "color-dodge", children: "Color Dodge" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10984,
+            lineNumber: 11019,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "color-burn", children: "Color Burn" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10985,
+            lineNumber: 11020,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "difference", children: "Difference" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10986,
+            lineNumber: 11021,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "exclusion", children: "Exclusion" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 10987,
+            lineNumber: 11022,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 10977,
+          lineNumber: 11012,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10975,
+        lineNumber: 11010,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 10992,
+        lineNumber: 11027,
         columnNumber: 11
       }, this),
       element.type === "widget" && (() => {
@@ -100820,34 +101151,34 @@ function InspectorPanel({
           widgetId
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11035,
+          lineNumber: 11070,
           columnNumber: 35
         }, this);
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 px-1", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] font-semibold text-indigo-400", children: manifest.displayName }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11039,
+              lineNumber: 11074,
               columnNumber: 19
             }, this),
             manifest.invisible && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded", children: "invisible" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11040,
+              lineNumber: 11075,
               columnNumber: 42
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11038,
+            lineNumber: 11073,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-500 px-1 leading-snug", children: manifest.description }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11042,
+            lineNumber: 11077,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Widget Settings" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11044,
+            lineNumber: 11079,
             columnNumber: 21
           }, this),
           schema.map((field) => {
@@ -100898,7 +101229,7 @@ function InspectorPanel({
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Alert Events" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11094,
+                  lineNumber: 11129,
                   columnNumber: 29
                 }, this),
                 ALERT_EVENTS.map(({ key: evKey, label: evLabel, color: evDefaultColor }) => {
@@ -100907,40 +101238,40 @@ function InspectorPanel({
                   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "flex items-center gap-2", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full flex-shrink-0", style: { background: ec.color || evDefaultColor } }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11100,
+                      lineNumber: 11135,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: evLabel }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11101,
+                      lineNumber: 11136,
                       columnNumber: 37
                     }, this),
                     !ec.enabled && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-600 ml-auto", children: "off" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11102,
+                      lineNumber: 11137,
                       columnNumber: 53
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11099,
+                    lineNumber: 11134,
                     columnNumber: 35
                   }, this), defaultOpen: false, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[11px] text-slate-300", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: !!ec.enabled, onChange: (e2) => updateEvent(evKey, { enabled: e2.target.checked }), className: "accent-indigo-500" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11108,
+                        lineNumber: 11143,
                         columnNumber: 39
                       }, this),
                       "Enabled"
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11107,
+                      lineNumber: 11142,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Platforms" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11113,
+                        lineNumber: 11148,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1", children: [["kick", "#53fc18"], ["youtube", "#ff0000"], ["twitch", "#9146ff"]].map(([plat, col]) => {
@@ -100959,169 +101290,169 @@ function InspectorPanel({
                           false,
                           {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11119,
+                            lineNumber: 11154,
                             columnNumber: 45
                           },
                           this
                         );
                       }) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11114,
+                        lineNumber: 11149,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11112,
+                      lineNumber: 11147,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Template" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11130,
+                        lineNumber: 11165,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { className: `flex-1 ${fieldClass2} text-[11px]`, value: ec.template || "", onChange: (e2) => updateEvent(evKey, { template: e2.target.value }), placeholder: "{username} just followed!" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11131,
+                        lineNumber: 11166,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11129,
+                      lineNumber: 11164,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Accent" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11136,
+                          lineNumber: 11171,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: ec.color || evDefaultColor, onChange: (v2) => updateEvent(evKey, { color: v2 }) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11137,
+                          lineNumber: 11172,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11135,
+                        lineNumber: 11170,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "BG" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11140,
+                          lineNumber: 11175,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: ec.bg || "rgba(0,0,0,0.85)", onChange: (v2) => updateEvent(evKey, { bg: v2 }), showAlpha: true }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11141,
+                          lineNumber: 11176,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11139,
+                        lineNumber: 11174,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11134,
+                      lineNumber: 11169,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Anim" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11147,
+                          lineNumber: 11182,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2} text-[11px]`, value: ec.animation || "fade", onChange: (e2) => updateEvent(evKey, { animation: e2.target.value }), children: ANIM_OPTIONS.map((a2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: a2, children: a2 }, a2, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11149,
+                          lineNumber: 11184,
                           columnNumber: 66
                         }, this)) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11148,
+                          lineNumber: 11183,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11146,
+                        lineNumber: 11181,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Dur ms" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11153,
+                          lineNumber: 11188,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "number", className: `flex-1 ${fieldClass2} text-[11px]`, value: ec.duration || 5e3, min: 1e3, max: 3e4, step: 500, onChange: (e2) => updateEvent(evKey, { duration: Number(e2.target.value) }) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11154,
+                          lineNumber: 11189,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11152,
+                        lineNumber: 11187,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11145,
+                      lineNumber: 11180,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Sound" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11160,
+                          lineNumber: 11195,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2} text-[11px]`, value: ec.sound || "none", onChange: (e2) => updateEvent(evKey, { sound: e2.target.value }), children: SOUND_OPTIONS.map((s2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: s2, children: s2 }, s2, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11162,
+                          lineNumber: 11197,
                           columnNumber: 67
                         }, this)) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11161,
+                          lineNumber: 11196,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11159,
+                        lineNumber: 11194,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-12 flex-none`, children: "Vol" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11166,
+                          lineNumber: 11201,
                           columnNumber: 41
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "range", min: "0", max: "1", step: "0.1", className: "flex-1 h-1 accent-indigo-500", value: (_a6 = ec.soundVol) != null ? _a6 : 0.8, onChange: (e2) => updateEvent(evKey, { soundVol: parseFloat(e2.target.value) }) }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11167,
+                          lineNumber: 11202,
                           columnNumber: 41
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11165,
+                        lineNumber: 11200,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11158,
+                      lineNumber: 11193,
                       columnNumber: 37
                     }, this),
                     ec.sound === "custom" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Sound file" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11172,
+                        lineNumber: 11207,
                         columnNumber: 41
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-1 items-center", children: [
                         ec.soundUrl && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-emerald-400 truncate max-w-[80px]", children: "✓ uploaded" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11174,
+                          lineNumber: 11209,
                           columnNumber: 59
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
@@ -101145,39 +101476,39 @@ function InspectorPanel({
                             e2.target.value = "";
                           } }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11177,
+                            lineNumber: 11212,
                             columnNumber: 45
                           }, this)
                         ] }, void 0, true, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11175,
+                          lineNumber: 11210,
                           columnNumber: 43
                         }, this),
                         ec.soundUrl && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { type: "button", onClick: () => updateEvent(evKey, { soundUrl: "" }), className: "text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400", children: "✕" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11191,
+                          lineNumber: 11226,
                           columnNumber: 59
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11173,
+                        lineNumber: 11208,
                         columnNumber: 41
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11171,
+                      lineNumber: 11206,
                       columnNumber: 39
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Image/GIF" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11197,
+                        lineNumber: 11232,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-1 items-center", children: [
                         ec.image && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("img", { src: ec.image, alt: "", className: "h-8 w-8 object-cover rounded border border-[rgba(255,255,255,0.08)] flex-shrink-0" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11199,
+                          lineNumber: 11234,
                           columnNumber: 54
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
@@ -101201,39 +101532,39 @@ function InspectorPanel({
                             e2.target.value = "";
                           } }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11202,
+                            lineNumber: 11237,
                             columnNumber: 43
                           }, this)
                         ] }, void 0, true, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11200,
+                          lineNumber: 11235,
                           columnNumber: 41
                         }, this),
                         ec.image && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { type: "button", onClick: () => updateEvent(evKey, { image: "" }), className: "text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400", children: "✕" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11216,
+                          lineNumber: 11251,
                           columnNumber: 54
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11198,
+                        lineNumber: 11233,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11196,
+                      lineNumber: 11231,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Custom sound" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11221,
+                        lineNumber: 11256,
                         columnNumber: 39
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-1 items-center", children: [
                         ec.soundUrl && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-emerald-400 truncate max-w-[80px]", children: "✓ uploaded" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11223,
+                          lineNumber: 11258,
                           columnNumber: 57
                         }, this),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 cursor-pointer text-[10px] py-1 px-2 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-indigo-500/50 text-center truncate text-slate-400", children: [
@@ -101255,55 +101586,55 @@ function InspectorPanel({
                             e2.target.value = "";
                           } }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11226,
+                            lineNumber: 11261,
                             columnNumber: 43
                           }, this)
                         ] }, void 0, true, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11224,
+                          lineNumber: 11259,
                           columnNumber: 41
                         }, this),
                         ec.soundUrl && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { type: "button", onClick: () => updateEvent(evKey, { soundUrl: "", sound: "pop" }), className: "text-[10px] px-1.5 rounded bg-[#1a1a2a] border border-[rgba(255,255,255,0.08)] hover:border-red-500/50 text-slate-500 hover:text-red-400", children: "✕" }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11238,
+                          lineNumber: 11273,
                           columnNumber: 57
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11222,
+                        lineNumber: 11257,
                         columnNumber: 39
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11220,
+                      lineNumber: 11255,
                       columnNumber: 37
                     }, this),
                     (evKey === "tip" || evKey === "gift_sub") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${uiClasses.fieldLabel} w-16 flex-none`, children: "Min amount" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11244,
+                        lineNumber: 11279,
                         columnNumber: 41
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "number", className: `flex-1 ${fieldClass2} text-[11px]`, value: (_b2 = ec.minAmount) != null ? _b2 : 0, min: 0, step: 1, onChange: (e2) => updateEvent(evKey, { minAmount: Number(e2.target.value) }) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11245,
+                        lineNumber: 11280,
                         columnNumber: 41
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11243,
+                      lineNumber: 11278,
                       columnNumber: 39
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[11px] text-slate-300", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: !!ec.tts, onChange: (e2) => updateEvent(evKey, { tts: e2.target.checked }), className: "accent-indigo-500" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11250,
+                        lineNumber: 11285,
                         columnNumber: 39
                       }, this),
                       "Read user message via TTS"
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11249,
+                      lineNumber: 11284,
                       columnNumber: 37
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101338,31 +101669,31 @@ function InspectorPanel({
                       true,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11254,
+                        lineNumber: 11289,
                         columnNumber: 37
                       },
                       this
                     )
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11105,
+                    lineNumber: 11140,
                     columnNumber: 35
                   }, this) }, evKey, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11098,
+                    lineNumber: 11133,
                     columnNumber: 33
                   }, this);
                 })
               ] }, field.key, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11093,
+                lineNumber: 11128,
                 columnNumber: 27
               }, this);
             }
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-24 truncate text-[11px] leading-[1.4] text-slate-500 flex-shrink-0", title: field.label, children: field.label }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11286,
+                lineNumber: 11321,
                 columnNumber: 27
               }, this),
               field.type === "boolean" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101381,7 +101712,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11288,
+                  lineNumber: 11323,
                   columnNumber: 29
                 },
                 this
@@ -101397,7 +101728,7 @@ function InspectorPanel({
                   },
                   children: (field.options || []).map((opt) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: opt, children: opt }, opt, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11301,
+                    lineNumber: 11336,
                     columnNumber: 33
                   }, this))
                 },
@@ -101405,7 +101736,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11295,
+                  lineNumber: 11330,
                   columnNumber: 29
                 },
                 this
@@ -101427,7 +101758,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11305,
+                  lineNumber: 11340,
                   columnNumber: 29
                 },
                 this
@@ -101445,7 +101776,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11314,
+                  lineNumber: 11349,
                   columnNumber: 29
                 },
                 this
@@ -101464,14 +101795,14 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11319,
+                  lineNumber: 11354,
                   columnNumber: 29
                 },
                 this
               )
             ] }, field.key, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11285,
+              lineNumber: 11320,
               columnNumber: 25
             }, this);
           }),
@@ -101480,13 +101811,13 @@ function InspectorPanel({
             manifest.dataContract.sseEventType
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11329,
+            lineNumber: 11364,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "pt-2 border-t border-[rgba(255,255,255,0.06)] mt-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Test Fire" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11334,
+              lineNumber: 11369,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
@@ -101503,7 +101834,7 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11338,
+                    lineNumber: 11373,
                     columnNumber: 25
                   },
                   this
@@ -101526,18 +101857,18 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11346,
+                    lineNumber: 11381,
                     columnNumber: 29
                   },
                   this
                 )) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11344,
+                  lineNumber: 11379,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11337,
+                lineNumber: 11372,
                 columnNumber: 23
               }, this),
               widgetId === "raffle" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101554,7 +101885,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11365,
+                  lineNumber: 11400,
                   columnNumber: 23
                 },
                 this
@@ -101573,7 +101904,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11371,
+                  lineNumber: 11406,
                   columnNumber: 23
                 },
                 this
@@ -101614,7 +101945,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11377,
+                  lineNumber: 11412,
                   columnNumber: 23
                 },
                 this
@@ -101630,22 +101961,22 @@ function InspectorPanel({
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "10", height: "10", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11418,
+                        lineNumber: 11453,
                         columnNumber: 123
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "15 3 21 3 21 9" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11418,
+                        lineNumber: 11453,
                         columnNumber: 191
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "10", y1: "14", x2: "21", y2: "3" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11418,
+                        lineNumber: 11453,
                         columnNumber: 226
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11418,
+                      lineNumber: 11453,
                       columnNumber: 25
                     }, this),
                     "Advanced TTS settings in Scrapbot"
@@ -101655,44 +101986,44 @@ function InspectorPanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11412,
+                  lineNumber: 11447,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11335,
+              lineNumber: 11370,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11333,
+            lineNumber: 11368,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11037,
+          lineNumber: 11072,
           columnNumber: 15
         }, this);
       })(),
       element.type === "componentInstance" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-4", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Component Properties" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11431,
+          lineNumber: 11466,
           columnNumber: 15
         }, this),
         (() => {
           const def = overlayComponents.find((c2) => c2.id === element.componentId);
           if (!def) return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] text-red-400", children: "Master Definition Missing" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11434,
+            lineNumber: 11469,
             columnNumber: 34
           }, this);
           if (!def.propsSchema || Object.keys(def.propsSchema).length === 0) {
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: "No properties exposed by master." }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11436,
+              lineNumber: 11471,
               columnNumber: 26
             }, this);
           }
@@ -101704,12 +102035,12 @@ function InspectorPanel({
             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-16 truncate text-[11px] leading-[1.4] text-slate-500", title: fieldDef.label || key, children: fieldDef.label || key }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11445,
+                lineNumber: 11480,
                 columnNumber: 23
               }, this),
               fieldDef.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: val, onChange: (v2) => onChange({ propOverrides: { ...overrides, [key]: v2 } }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11447,
+                lineNumber: 11482,
                 columnNumber: 25
               }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                 "input",
@@ -101722,14 +102053,14 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11449,
+                  lineNumber: 11484,
                   columnNumber: 25
                 },
                 this
               )
             ] }, key, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11444,
+              lineNumber: 11479,
               columnNumber: 21
             }, this);
           });
@@ -101743,17 +102074,17 @@ function InspectorPanel({
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 20h9" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11464,
+                  lineNumber: 11499,
                   columnNumber: 45
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11464,
+                  lineNumber: 11499,
                   columnNumber: 71
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11464,
+                lineNumber: 11499,
                 columnNumber: 19
               }, this),
               "Edit Master Component"
@@ -101763,13 +102094,13 @@ function InspectorPanel({
           true,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11460,
+            lineNumber: 11495,
             columnNumber: 17
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11459,
+          lineNumber: 11494,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
@@ -101784,7 +102115,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11469,
+              lineNumber: 11504,
               columnNumber: 17
             },
             this
@@ -101800,14 +102131,14 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11475,
+              lineNumber: 11510,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11468,
+          lineNumber: 11503,
           columnNumber: 15
         }, this),
         (() => {
@@ -101817,7 +102148,7 @@ function InspectorPanel({
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Variant" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11488,
+              lineNumber: 11523,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101829,12 +102160,12 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "Default" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11494,
+                    lineNumber: 11529,
                     columnNumber: 23
                   }, this),
                   comp.variants.map((v2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: v2.id, children: v2.name }, v2.id, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11496,
+                    lineNumber: 11531,
                     columnNumber: 25
                   }, this))
                 ]
@@ -101843,27 +102174,27 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11489,
+                lineNumber: 11524,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11487,
+            lineNumber: 11522,
             columnNumber: 19
           }, this);
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 11430,
+        lineNumber: 11465,
         columnNumber: 13
       }, this),
       element.type === "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-4", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Name" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11511,
+            lineNumber: 11546,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101878,49 +102209,49 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11512,
+              lineNumber: 11547,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11510,
+          lineNumber: 11545,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 -mt-2", children: [
           "Use this name with ",
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { className: "text-slate-400", children: "!lowerthird @name" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11520,
+            lineNumber: 11555,
             columnNumber: 36
           }, this),
           " or ",
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { className: "text-slate-400", children: "/lower-third template:name" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11520,
+            lineNumber: 11555,
             columnNumber: 97
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11519,
+          lineNumber: 11554,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-1 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11523,
+          lineNumber: 11558,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Layout" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11526,
+            lineNumber: 11561,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Mode" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11528,
+              lineNumber: 11563,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101932,17 +102263,17 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "stacked", children: "Stacked" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11534,
+                    lineNumber: 11569,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "single", children: "Single Line" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11535,
+                    lineNumber: 11570,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "split", children: "Split" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11536,
+                    lineNumber: 11571,
                     columnNumber: 21
                   }, this)
                 ]
@@ -101951,20 +102282,20 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11529,
+                lineNumber: 11564,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11527,
+            lineNumber: 11562,
             columnNumber: 17
           }, this),
           ((_u = element.layout) == null ? void 0 : _u.mode) === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Ratio" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11541,
+              lineNumber: 11576,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -101982,21 +102313,21 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11542,
+                lineNumber: 11577,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11540,
+            lineNumber: 11575,
             columnNumber: 19
           }, this),
           ((_y = (_x = element.layout) == null ? void 0 : _x.mode) != null ? _y : "stacked") === "stacked" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-3 space-y-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[11px] text-slate-400 font-semibold uppercase tracking-wider", children: "Content Lines" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11555,
+                lineNumber: 11590,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102024,79 +102355,79 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11556,
+                  lineNumber: 11591,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11554,
+              lineNumber: 11589,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full bg-white/60 flex-none" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11580,
+                  lineNumber: 11615,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-400 flex-1", children: "Line 1 — Title" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11581,
+                  lineNumber: 11616,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_A = (_z = element.style) == null ? void 0 : _z.titleSizePx) != null ? _A : 40, onChange: (v2) => onChange({ style: { ...element.style, titleSizePx: v2 } }), noLabel: true, className: "w-14" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11583,
+                    lineNumber: 11618,
                     columnNumber: 27
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_B = element.style) == null ? void 0 : _B.titleColor, onChange: (v2) => onChange({ style: { ...element.style, titleColor: v2 } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11584,
+                    lineNumber: 11619,
                     columnNumber: 27
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11582,
+                  lineNumber: 11617,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11579,
+                lineNumber: 11614,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full bg-white/40 flex-none" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11588,
+                  lineNumber: 11623,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-400 flex-1", children: "Line 2 — Subtitle" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11589,
+                  lineNumber: 11624,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1 items-center", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_D = (_C = element.style) == null ? void 0 : _C.subtitleSizePx) != null ? _D : 26, onChange: (v2) => onChange({ style: { ...element.style, subtitleSizePx: v2 } }), noLabel: true, className: "w-14" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11591,
+                    lineNumber: 11626,
                     columnNumber: 27
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_E = element.style) == null ? void 0 : _E.subtitleColor, onChange: (v2) => onChange({ style: { ...element.style, subtitleColor: v2 } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11592,
+                    lineNumber: 11627,
                     columnNumber: 27
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11590,
+                  lineNumber: 11625,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11587,
+                lineNumber: 11622,
                 columnNumber: 23
               }, this),
               ((_F = element.contentLines) != null ? _F : []).map((line, i2) => {
@@ -102105,7 +102436,7 @@ function InspectorPanel({
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-2 h-2 rounded-full bg-white/20 flex-none" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11600,
+                      lineNumber: 11635,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102125,7 +102456,7 @@ function InspectorPanel({
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11601,
+                        lineNumber: 11636,
                         columnNumber: 29
                       },
                       this
@@ -102138,7 +102469,7 @@ function InspectorPanel({
                         onChange({ contentLines: lines });
                       }, noLabel: true, className: "w-14" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11612,
+                        lineNumber: 11647,
                         columnNumber: 31
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: line.color, onChange: (v2) => {
@@ -102148,7 +102479,7 @@ function InspectorPanel({
                         onChange({ contentLines: lines });
                       } }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11617,
+                        lineNumber: 11652,
                         columnNumber: 31
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102167,19 +102498,19 @@ function InspectorPanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11622,
+                          lineNumber: 11657,
                           columnNumber: 31
                         },
                         this
                       )
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11611,
+                      lineNumber: 11646,
                       columnNumber: 29
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11599,
+                    lineNumber: 11634,
                     columnNumber: 27
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "ml-4 flex gap-2", children: [
@@ -102197,17 +102528,17 @@ function InspectorPanel({
                         children: [
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "light", children: "Light" }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11642,
+                            lineNumber: 11677,
                             columnNumber: 31
                           }, this),
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11643,
+                            lineNumber: 11678,
                             columnNumber: 31
                           }, this),
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bold", children: "Bold" }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                            lineNumber: 11644,
+                            lineNumber: 11679,
                             columnNumber: 31
                           }, this)
                         ]
@@ -102216,7 +102547,7 @@ function InspectorPanel({
                       true,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11633,
+                        lineNumber: 11668,
                         columnNumber: 29
                       },
                       this
@@ -102239,7 +102570,7 @@ function InspectorPanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11647,
+                          lineNumber: 11682,
                           columnNumber: 31
                         },
                         this
@@ -102247,13 +102578,13 @@ function InspectorPanel({
                       "Italic"
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11646,
+                      lineNumber: 11681,
                       columnNumber: 29
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-500", children: "Bind key" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 11660,
+                        lineNumber: 11695,
                         columnNumber: 31
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102272,37 +102603,37 @@ function InspectorPanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                          lineNumber: 11661,
+                          lineNumber: 11696,
                           columnNumber: 31
                         },
                         this
                       )
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11659,
+                      lineNumber: 11694,
                       columnNumber: 29
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11632,
+                    lineNumber: 11667,
                     columnNumber: 27
                   }, this)
                 ] }, i2, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11598,
+                  lineNumber: 11633,
                   columnNumber: 25
                 }, this);
               })
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11578,
+              lineNumber: 11613,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 space-y-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[11px] text-slate-400 font-semibold uppercase tracking-wider", children: "Ticker Strip" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11679,
+                  lineNumber: 11714,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102317,7 +102648,7 @@ function InspectorPanel({
                     className: `relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${((_G = element.ticker) == null ? void 0 : _G.enabled) ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`,
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${((_H = element.ticker) == null ? void 0 : _H.enabled) ? "translate-x-3" : "translate-x-0"}` }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11688,
+                      lineNumber: 11723,
                       columnNumber: 27
                     }, this)
                   },
@@ -102325,21 +102656,21 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11680,
+                    lineNumber: 11715,
                     columnNumber: 25
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11678,
+                lineNumber: 11713,
                 columnNumber: 23
               }, this),
               ((_I = element.ticker) == null ? void 0 : _I.enabled) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-2 space-y-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Preview" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11694,
+                    lineNumber: 11729,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102354,20 +102685,20 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11695,
+                      lineNumber: 11730,
                       columnNumber: 29
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11693,
+                  lineNumber: 11728,
                   columnNumber: 27
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Text key" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11703,
+                    lineNumber: 11738,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102381,20 +102712,20 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11704,
+                      lineNumber: 11739,
                       columnNumber: 29
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11702,
+                  lineNumber: 11737,
                   columnNumber: 27
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Default" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11711,
+                    lineNumber: 11746,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102409,131 +102740,131 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11712,
+                      lineNumber: 11747,
                       columnNumber: 29
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11710,
+                  lineNumber: 11745,
                   columnNumber: 27
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} block mb-1`, children: "Speed (px/s)" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11721,
+                      lineNumber: 11756,
                       columnNumber: 31
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_P = (_O = element.ticker) == null ? void 0 : _O.speed) != null ? _P : 80, onChange: (v2) => onChange({ ticker: { ...element.ticker, speed: v2 } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11722,
+                      lineNumber: 11757,
                       columnNumber: 31
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11720,
+                    lineNumber: 11755,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} block mb-1`, children: "Height (px)" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11725,
+                      lineNumber: 11760,
                       columnNumber: 31
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_R = (_Q = element.ticker) == null ? void 0 : _Q.heightPx) != null ? _R : 32, onChange: (v2) => onChange({ ticker: { ...element.ticker, heightPx: v2 } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11726,
+                      lineNumber: 11761,
                       columnNumber: 31
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11724,
+                    lineNumber: 11759,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} block mb-1`, children: "Size (px)" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11729,
+                      lineNumber: 11764,
                       columnNumber: 31
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_T = (_S = element.ticker) == null ? void 0 : _S.sizePx) != null ? _T : 18, onChange: (v2) => onChange({ ticker: { ...element.ticker, sizePx: v2 } }), noLabel: true, className: "w-full" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 11730,
+                      lineNumber: 11765,
                       columnNumber: 31
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11728,
+                    lineNumber: 11763,
                     columnNumber: 29
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11719,
+                  lineNumber: 11754,
                   columnNumber: 27
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2 items-center", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Bg" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11734,
+                    lineNumber: 11769,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_W = (_U = element.ticker) == null ? void 0 : _U.bgColor) != null ? _W : (_V = element.style) == null ? void 0 : _V.accentColor, onChange: (v2) => onChange({ ticker: { ...element.ticker, bgColor: v2 } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11735,
+                    lineNumber: 11770,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Text" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11736,
+                    lineNumber: 11771,
                     columnNumber: 29
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_Y = (_X = element.ticker) == null ? void 0 : _X.color) != null ? _Y : "#ffffff", onChange: (v2) => onChange({ ticker: { ...element.ticker, color: v2 } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11737,
+                    lineNumber: 11772,
                     columnNumber: 29
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11733,
+                  lineNumber: 11768,
                   columnNumber: 27
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11692,
+                lineNumber: 11727,
                 columnNumber: 25
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11677,
+              lineNumber: 11712,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11553,
+            lineNumber: 11588,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11525,
+          lineNumber: 11560,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11746,
+          lineNumber: 11781,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Style" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11749,
+            lineNumber: 11784,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Variant" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11751,
+              lineNumber: 11786,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102545,22 +102876,22 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "solid", children: "Solid" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11757,
+                    lineNumber: 11792,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "glass", children: "Glass" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11758,
+                    lineNumber: 11793,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "minimal", children: "Minimal" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11759,
+                    lineNumber: 11794,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "accent-bar", children: "Accent Bar" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11760,
+                    lineNumber: 11795,
                     columnNumber: 21
                   }, this)
                 ]
@@ -102569,20 +102900,20 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11752,
+                lineNumber: 11787,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11750,
+            lineNumber: 11785,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Font" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11765,
+              lineNumber: 11800,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102594,87 +102925,87 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "Default (Inter)" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11771,
+                    lineNumber: 11806,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Inter", children: "Inter" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11772,
+                    lineNumber: 11807,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Roboto", children: "Roboto" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11773,
+                    lineNumber: 11808,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Roboto Condensed", children: "Roboto Condensed" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11774,
+                    lineNumber: 11809,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Oswald", children: "Oswald" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11775,
+                    lineNumber: 11810,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Montserrat", children: "Montserrat" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11776,
+                    lineNumber: 11811,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Bebas Neue", children: "Bebas Neue" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11777,
+                    lineNumber: 11812,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Anton", children: "Anton" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11778,
+                    lineNumber: 11813,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Barlow", children: "Barlow" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11779,
+                    lineNumber: 11814,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Barlow Condensed", children: "Barlow Condensed" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11780,
+                    lineNumber: 11815,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Source Sans Pro", children: "Source Sans Pro" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11781,
+                    lineNumber: 11816,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Noto Sans", children: "Noto Sans" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11782,
+                    lineNumber: 11817,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Open Sans", children: "Open Sans" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11783,
+                    lineNumber: 11818,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Lato", children: "Lato" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11784,
+                    lineNumber: 11819,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Raleway", children: "Raleway" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11785,
+                    lineNumber: 11820,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Exo 2", children: "Exo 2" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11786,
+                    lineNumber: 11821,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "Orbitron", children: "Orbitron" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11787,
+                    lineNumber: 11822,
                     columnNumber: 21
                   }, this)
                 ]
@@ -102683,20 +103014,20 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11766,
+                lineNumber: 11801,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11764,
+            lineNumber: 11799,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Weight" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11792,
+              lineNumber: 11827,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102708,12 +103039,12 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11798,
+                    lineNumber: 11833,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bold", children: "Bold" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11799,
+                    lineNumber: 11834,
                     columnNumber: 21
                   }, this)
                 ]
@@ -102722,31 +103053,31 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11793,
+                lineNumber: 11828,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11791,
+            lineNumber: 11826,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Bg" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11804,
+              lineNumber: 11839,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2 items-center", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_da = element.style) == null ? void 0 : _da.bgColor, onChange: (v2) => onChange({ style: { ...element.style, bgColor: v2 } }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11806,
+                lineNumber: 11841,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ea = element.style) == null ? void 0 : _ea.accentColor, onChange: (v2) => onChange({ style: { ...element.style, accentColor: v2 } }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11807,
+                lineNumber: 11842,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102765,131 +103096,131 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11808,
+                  lineNumber: 11843,
                   columnNumber: 21
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11805,
+              lineNumber: 11840,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11803,
+            lineNumber: 11838,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Title" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11818,
+              lineNumber: 11853,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ja = element.style) == null ? void 0 : _ja.titleColor, onChange: (v2) => onChange({ style: { ...element.style, titleColor: v2 } }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11819,
+              lineNumber: 11854,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11817,
+            lineNumber: 11852,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Sub" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11822,
+              lineNumber: 11857,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_ka = element.style) == null ? void 0 : _ka.subtitleColor, onChange: (v2) => onChange({ style: { ...element.style, subtitleColor: v2 } }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11823,
+              lineNumber: 11858,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11821,
+            lineNumber: 11856,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Pad/Rad" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11826,
+              lineNumber: 11861,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ma = (_la = element.style) == null ? void 0 : _la.paddingPx) != null ? _ma : 0, onChange: (v2) => onChange({ style: { ...element.style, paddingPx: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11827,
+              lineNumber: 11862,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_oa = (_na = element.style) == null ? void 0 : _na.cornerRadiusPx) != null ? _oa : 0, onChange: (v2) => onChange({ style: { ...element.style, cornerRadiusPx: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11828,
+              lineNumber: 11863,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11825,
+            lineNumber: 11860,
             columnNumber: 17
           }, this),
           ((_pa = element.layout) == null ? void 0 : _pa.mode) === "split" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "L/R size" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11833,
+              lineNumber: 11868,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ta = (_sa = (_qa = element.layout) == null ? void 0 : _qa.leftSizePx) != null ? _sa : (_ra = element.style) == null ? void 0 : _ra.titleSizePx) != null ? _ta : 40, onChange: (v2) => onChange({ layout: { ...element.layout, leftSizePx: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11834,
+              lineNumber: 11869,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_xa = (_wa = (_ua = element.layout) == null ? void 0 : _ua.rightSizePx) != null ? _wa : (_va = element.style) == null ? void 0 : _va.subtitleSizePx) != null ? _xa : 26, onChange: (v2) => onChange({ layout: { ...element.layout, rightSizePx: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11835,
+              lineNumber: 11870,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11832,
+            lineNumber: 11867,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11748,
+          lineNumber: 11783,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11840,
+          lineNumber: 11875,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Preview (Editor Only)" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11843,
+            lineNumber: 11878,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-2 text-[11px] leading-[1.4] text-slate-500", children: "Auto-preview active when selected." }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11844,
+            lineNumber: 11879,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between mb-2 p-2 rounded-md border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)]", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] text-slate-200 font-medium", children: "Lock visible" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11851,
+                lineNumber: 11886,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] leading-[1.4] text-slate-500 mt-0.5", children: "Stay visible while adding primitives" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11852,
+                lineNumber: 11887,
                 columnNumber: 21
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11850,
+              lineNumber: 11885,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102900,7 +103231,7 @@ function InspectorPanel({
                 className: `relative h-5 w-9 flex-none rounded-full transition-colors overflow-hidden ${ltPinned ? "bg-amber-500" : "bg-[rgba(255,255,255,0.1)]"}`,
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ltPinned ? "translate-x-4" : "translate-x-0"}` }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11859,
+                  lineNumber: 11894,
                   columnNumber: 21
                 }, this)
               },
@@ -102908,14 +103239,14 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11854,
+                lineNumber: 11889,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11849,
+            lineNumber: 11884,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2 mb-2", children: [
@@ -102930,7 +103261,7 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11864,
+                lineNumber: 11899,
                 columnNumber: 19
               },
               this
@@ -102946,25 +103277,25 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11870,
+                lineNumber: 11905,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11863,
+            lineNumber: 11898,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(SaveLowerThirdButton, { element }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11879,
+            lineNumber: 11914,
             columnNumber: 17
           }, this),
           ((_ya = element.layout) == null ? void 0 : _ya.mode) === "single" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Text" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11883,
+              lineNumber: 11918,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -102978,20 +103309,20 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11884,
+                lineNumber: 11919,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11882,
+            lineNumber: 11917,
             columnNumber: 19
           }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Title" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11893,
+                lineNumber: 11928,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103005,20 +103336,20 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11894,
+                  lineNumber: 11929,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11892,
+              lineNumber: 11927,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Sub" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11901,
+                lineNumber: 11936,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103032,41 +103363,41 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11902,
+                  lineNumber: 11937,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11900,
+              lineNumber: 11935,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11891,
+            lineNumber: 11926,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11842,
+          lineNumber: 11877,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11912,
+          lineNumber: 11947,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Animation" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11915,
+            lineNumber: 11950,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "In/Out" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11917,
+              lineNumber: 11952,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103078,27 +103409,27 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fade", children: "Fade" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11923,
+                    lineNumber: 11958,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "slideUp", children: "Slide Up" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11924,
+                    lineNumber: 11959,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "slideRight", children: "Slide Right" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11925,
+                    lineNumber: 11960,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "scale", children: "Scale" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11926,
+                    lineNumber: 11961,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "none", children: "None" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11927,
+                    lineNumber: 11962,
                     columnNumber: 21
                   }, this)
                 ]
@@ -103107,7 +103438,7 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11918,
+                lineNumber: 11953,
                 columnNumber: 19
               },
               this
@@ -103121,27 +103452,27 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fade", children: "Fade" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11934,
+                    lineNumber: 11969,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "slideDown", children: "Slide Down" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11935,
+                    lineNumber: 11970,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "slideLeft", children: "Slide Left" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11936,
+                    lineNumber: 11971,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "scale", children: "Scale" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11937,
+                    lineNumber: 11972,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "none", children: "None" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11938,
+                    lineNumber: 11973,
                     columnNumber: 21
                   }, this)
                 ]
@@ -103150,36 +103481,36 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11929,
+                lineNumber: 11964,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11916,
+            lineNumber: 11951,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Dur (ms)" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11942,
+              lineNumber: 11977,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ea = (_Da = element.animation) == null ? void 0 : _Da.durationMs) != null ? _Ea : 450, onChange: (v2) => onChange({ animation: { ...element.animation, durationMs: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11943,
+              lineNumber: 11978,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11941,
+            lineNumber: 11976,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Easing" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11946,
+              lineNumber: 11981,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103191,32 +103522,32 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ease-out", children: "Ease Out (default)" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11952,
+                    lineNumber: 11987,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ease-in", children: "Ease In" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11953,
+                    lineNumber: 11988,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ease-in-out", children: "Ease In-Out" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11954,
+                    lineNumber: 11989,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "linear", children: "Linear" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11955,
+                    lineNumber: 11990,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "cubic-bezier(0.2, 0.9, 0.2, 1)", children: "Broadcast (snappy)" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11956,
+                    lineNumber: 11991,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "cubic-bezier(0.34, 1.56, 0.64, 1)", children: "Spring (overshoot)" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 11957,
+                    lineNumber: 11992,
                     columnNumber: 21
                   }, this)
                 ]
@@ -103225,52 +103556,52 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11947,
+                lineNumber: 11982,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11945,
+            lineNumber: 11980,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Show for" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11961,
+              lineNumber: 11996,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ha = element.defaultDurationMs) != null ? _Ha : 8e3, onChange: (v2) => onChange({ defaultDurationMs: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11962,
+              lineNumber: 11997,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-500", children: "ms" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11963,
+              lineNumber: 11998,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11960,
+            lineNumber: 11995,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between pt-1", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] text-slate-300", children: "Always visible" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11968,
+                lineNumber: 12003,
                 columnNumber: 21
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500", children: "Bypass show/hide — stays on permanently" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11969,
+                lineNumber: 12004,
                 columnNumber: 21
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11967,
+              lineNumber: 12002,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103284,7 +103615,7 @@ function InspectorPanel({
                 className: `relative h-4 w-7 flex-none rounded-full transition-colors overflow-hidden ${element.alwaysOn ? "bg-indigo-600" : "bg-[rgba(255,255,255,0.1)]"}`,
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${element.alwaysOn ? "translate-x-3" : "translate-x-0"}` }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 11976,
+                  lineNumber: 12011,
                   columnNumber: 21
                 }, this)
               },
@@ -103292,25 +103623,25 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 11971,
+                lineNumber: 12006,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11966,
+            lineNumber: 12001,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11914,
+          lineNumber: 11949,
           columnNumber: 15
         }, this),
         ((_Ia = element.ticker) == null ? void 0 : _Ia.enabled) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Separator" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 11984,
+            lineNumber: 12019,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103325,30 +103656,30 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 11985,
+              lineNumber: 12020,
               columnNumber: 19
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11983,
+          lineNumber: 12018,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 11994,
+          lineNumber: 12029,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 11507,
+        lineNumber: 11542,
         columnNumber: 13
       }, this),
       element.type === "box" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FillStackControls, { element, onChange, onPickPatternImage }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12e3,
+          lineNumber: 12035,
           columnNumber: 15
         }, this),
         (() => {
@@ -103359,17 +103690,17 @@ function InspectorPanel({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Radius" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12007,
+                lineNumber: 12042,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_d2 = (_c2 = element.borderRadius) != null ? _c2 : element.borderRadiusPx) != null ? _d2 : 0, onChange: (v2) => onChange({ borderRadius: v2, borderRadiusPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12008,
+                lineNumber: 12043,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12006,
+              lineNumber: 12041,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2 ml-14", children: [
@@ -103382,7 +103713,7 @@ function InspectorPanel({
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12018,
+                  lineNumber: 12053,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103398,25 +103729,25 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12019,
+                    lineNumber: 12054,
                     columnNumber: 21
                   },
                   this
                 )
               ] }, key, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12017,
+                lineNumber: 12052,
                 columnNumber: 19
               }, this);
             }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12010,
+              lineNumber: 12045,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Corner" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12030,
+                lineNumber: 12065,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103427,7 +103758,7 @@ function InspectorPanel({
                   onChange: (e2) => onChange({ cornerType: e2.target.value }),
                   children: CORNER_TYPE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12037,
+                    lineNumber: 12072,
                     columnNumber: 21
                   }, this))
                 },
@@ -103435,19 +103766,19 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12031,
+                  lineNumber: 12066,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12029,
+              lineNumber: 12064,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12041,
+              lineNumber: 12076,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -103462,34 +103793,34 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12044,
+                  lineNumber: 12079,
                   columnNumber: 19
                 },
                 this
               ) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12043,
+                lineNumber: 12078,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: (_f2 = element.strokeColor) != null ? _f2 : "#ffffff", onChange: (v2) => onChange({ strokeColor: v2 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12051,
+                  lineNumber: 12086,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: (_g2 = element.strokeColor) != null ? _g2 : "", onChange: (e2) => onChange({ strokeColor: e2.target.value }), placeholder: "None" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12052,
+                  lineNumber: 12087,
                   columnNumber: 19
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12050,
+                lineNumber: 12085,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12042,
+              lineNumber: 12077,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -103504,19 +103835,19 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12057,
+                  lineNumber: 12092,
                   columnNumber: 19
                 },
                 this
               ) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12056,
+                lineNumber: 12091,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_h3 = element.strokeWidthPx) != null ? _h3 : 0, onChange: (v2) => onChange({ strokeWidthPx: v2 }), noLabel: true, className: "w-16" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12064,
+                  lineNumber: 12099,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103528,12 +103859,12 @@ function InspectorPanel({
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "solid", children: "Solid" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 12070,
+                        lineNumber: 12105,
                         columnNumber: 21
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "dashed", children: "Dashed" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 12071,
+                        lineNumber: 12106,
                         columnNumber: 21
                       }, this)
                     ]
@@ -103542,25 +103873,25 @@ function InspectorPanel({
                   true,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12065,
+                    lineNumber: 12100,
                     columnNumber: 19
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12063,
+                lineNumber: 12098,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12055,
+              lineNumber: 12090,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-20", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Align" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12076,
+                lineNumber: 12111,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103571,7 +103902,7 @@ function InspectorPanel({
                   onChange: (e2) => onChange({ strokeAlign: e2.target.value }),
                   children: STROKE_ALIGN_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12083,
+                    lineNumber: 12118,
                     columnNumber: 21
                   }, this))
                 },
@@ -103579,20 +103910,20 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12077,
+                  lineNumber: 12112,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12075,
+              lineNumber: 12110,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-20", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Join" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12088,
+                lineNumber: 12123,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103604,17 +103935,17 @@ function InspectorPanel({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "miter", children: "Miter" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12094,
+                      lineNumber: 12129,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "round", children: "Round" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12095,
+                      lineNumber: 12130,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bevel", children: "Bevel" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12096,
+                      lineNumber: 12131,
                       columnNumber: 19
                     }, this)
                   ]
@@ -103623,7 +103954,7 @@ function InspectorPanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12089,
+                  lineNumber: 12124,
                   columnNumber: 17
                 },
                 this
@@ -103637,17 +103968,17 @@ function InspectorPanel({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "butt", children: "Butt" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12103,
+                      lineNumber: 12138,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "round", children: "Round" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12104,
+                      lineNumber: 12139,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "square", children: "Square" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12105,
+                      lineNumber: 12140,
                       columnNumber: 19
                     }, this)
                   ]
@@ -103656,20 +103987,20 @@ function InspectorPanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12098,
+                  lineNumber: 12133,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12087,
+              lineNumber: 12122,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-14", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Sides" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12109,
+                lineNumber: 12144,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-1 gap-1", children: [
@@ -103703,37 +104034,37 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12119,
+                    lineNumber: 12154,
                     columnNumber: 23
                   },
                   this
                 );
               }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12110,
+                lineNumber: 12145,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12108,
+              lineNumber: 12143,
               columnNumber: 15
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12005,
+            lineNumber: 12040,
             columnNumber: 19
           }, this);
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 11999,
+        lineNumber: 12034,
         columnNumber: 13
       }, this),
       (element.type === "shape" || element.type === "path" || element.type === "boolean") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
         element.type === "shape" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Shape" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12152,
+            lineNumber: 12187,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103745,37 +104076,37 @@ function InspectorPanel({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "rect", children: "Rectangle" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12158,
+                  lineNumber: 12193,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "circle", children: "Circle" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12159,
+                  lineNumber: 12194,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "triangle", children: "Triangle" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12160,
+                  lineNumber: 12195,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "polygon", children: "Polygon" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12161,
+                  lineNumber: 12196,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "star", children: "Star" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12162,
+                  lineNumber: 12197,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "arrow", children: "Arrow" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12163,
+                  lineNumber: 12198,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "line", children: "Line" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12164,
+                  lineNumber: 12199,
                   columnNumber: 21
                 }, this)
               ]
@@ -103784,20 +104115,20 @@ function InspectorPanel({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12153,
+              lineNumber: 12188,
               columnNumber: 19
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12151,
+          lineNumber: 12186,
           columnNumber: 17
         }, this),
         element.type === "shape" && element.shape === "polygon" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Sides" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12171,
+            lineNumber: 12206,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103813,21 +104144,21 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12172,
+              lineNumber: 12207,
               columnNumber: 19
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12170,
+          lineNumber: 12205,
           columnNumber: 17
         }, this),
         element.type === "shape" && element.shape === "star" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Points" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12185,
+              lineNumber: 12220,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103843,20 +104174,20 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12186,
+                lineNumber: 12221,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12184,
+            lineNumber: 12219,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Inner" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12195,
+              lineNumber: 12230,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-16 relative", children: [
@@ -103872,36 +104203,36 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12197,
+                  lineNumber: 12232,
                   columnNumber: 23
                 },
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12203,
+                lineNumber: 12238,
                 columnNumber: 23
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12196,
+              lineNumber: 12231,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12194,
+            lineNumber: 12229,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12183,
+          lineNumber: 12218,
           columnNumber: 17
         }, this),
         element.type === "shape" && element.shape === "arrow" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Dir" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12212,
+              lineNumber: 12247,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -103913,22 +104244,22 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "right", children: "Right" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12218,
+                    lineNumber: 12253,
                     columnNumber: 23
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "left", children: "Left" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12219,
+                    lineNumber: 12254,
                     columnNumber: 23
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "up", children: "Up" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12220,
+                    lineNumber: 12255,
                     columnNumber: 23
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "down", children: "Down" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12221,
+                    lineNumber: 12256,
                     columnNumber: 23
                   }, this)
                 ]
@@ -103937,20 +104268,20 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12213,
+                lineNumber: 12248,
                 columnNumber: 21
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12211,
+            lineNumber: 12246,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Shaft" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12225,
+              lineNumber: 12260,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-16 relative", children: [
@@ -103966,35 +104297,35 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12227,
+                  lineNumber: 12262,
                   columnNumber: 23
                 },
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500", children: "%" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12233,
+                lineNumber: 12268,
                 columnNumber: 23
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12226,
+              lineNumber: 12261,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12224,
+            lineNumber: 12259,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12210,
+          lineNumber: 12245,
           columnNumber: 17
         }, this),
         element.type === "boolean" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Op" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12241,
+            lineNumber: 12276,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104006,22 +104337,22 @@ function InspectorPanel({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "union", children: "Union" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12247,
+                  lineNumber: 12282,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "subtract", children: "Subtract" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12248,
+                  lineNumber: 12283,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "intersect", children: "Intersect" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12249,
+                  lineNumber: 12284,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "exclude", children: "Exclude" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12250,
+                  lineNumber: 12285,
                   columnNumber: 21
                 }, this)
               ]
@@ -104030,29 +104361,29 @@ function InspectorPanel({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12242,
+              lineNumber: 12277,
               columnNumber: 19
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12240,
+          lineNumber: 12275,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FillStackControls, { element, onChange, onPickPatternImage }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12255,
+          lineNumber: 12290,
           columnNumber: 15
         }, this),
         element.type === "shape" && element.shape === "line" && getElementFills(element).some((fill) => fill.type === "pattern") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "ml-14 text-[11px] leading-[1.4] text-slate-500", children: "Pattern fill is ignored for line shapes in this pass." }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12257,
+          lineNumber: 12292,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12262,
+          lineNumber: 12297,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104067,34 +104398,34 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12266,
+              lineNumber: 12301,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12265,
+            lineNumber: 12300,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.strokeColor, onChange: (v2) => onChange({ strokeColor: v2 }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12273,
+              lineNumber: 12308,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: (_Xa = element.strokeColor) != null ? _Xa : "", onChange: (e2) => onChange({ strokeColor: e2.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12274,
+              lineNumber: 12309,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12272,
+            lineNumber: 12307,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12264,
+          lineNumber: 12299,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104109,19 +104440,19 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12279,
+              lineNumber: 12314,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12278,
+            lineNumber: 12313,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ya = element.strokeWidthPx) != null ? _Ya : 0, onChange: (v2) => onChange({ strokeWidthPx: v2, strokeWidth: v2 }), noLabel: true, className: "w-16" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12286,
+              lineNumber: 12321,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104133,12 +104464,12 @@ function InspectorPanel({
                 children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "solid", children: "Solid" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12292,
+                    lineNumber: 12327,
                     columnNumber: 21
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "dashed", children: "Dashed" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12293,
+                    lineNumber: 12328,
                     columnNumber: 21
                   }, this)
                 ]
@@ -104147,25 +104478,25 @@ function InspectorPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12287,
+                lineNumber: 12322,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12285,
+            lineNumber: 12320,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12277,
+          lineNumber: 12312,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-20", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Align" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12298,
+            lineNumber: 12333,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104176,7 +104507,7 @@ function InspectorPanel({
               onChange: (e2) => onChange({ strokeAlign: e2.target.value }),
               children: STROKE_ALIGN_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12305,
+                lineNumber: 12340,
                 columnNumber: 21
               }, this))
             },
@@ -104184,20 +104515,20 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12299,
+              lineNumber: 12334,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12297,
+          lineNumber: 12332,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-20", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Join" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12310,
+            lineNumber: 12345,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104209,17 +104540,17 @@ function InspectorPanel({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "miter", children: "Miter" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12316,
+                  lineNumber: 12351,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "round", children: "Round" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12317,
+                  lineNumber: 12352,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "bevel", children: "Bevel" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12318,
+                  lineNumber: 12353,
                   columnNumber: 19
                 }, this)
               ]
@@ -104228,7 +104559,7 @@ function InspectorPanel({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12311,
+              lineNumber: 12346,
               columnNumber: 17
             },
             this
@@ -104242,17 +104573,17 @@ function InspectorPanel({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "butt", children: "Butt" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12325,
+                  lineNumber: 12360,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "round", children: "Round" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12326,
+                  lineNumber: 12361,
                   columnNumber: 19
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "square", children: "Square" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12327,
+                  lineNumber: 12362,
                   columnNumber: 19
                 }, this)
               ]
@@ -104261,20 +104592,20 @@ function InspectorPanel({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12320,
+              lineNumber: 12355,
               columnNumber: 17
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12309,
+          lineNumber: 12344,
           columnNumber: 15
         }, this),
         (element.type === "box" || element.type === "shape" && element.shape === "rect") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 ml-14", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-8 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Sides" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12332,
+            lineNumber: 12367,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-1 gap-1", children: [
@@ -104308,19 +104639,19 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12342,
+                lineNumber: 12377,
                 columnNumber: 25
               },
               this
             );
           }) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12333,
+            lineNumber: 12368,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12331,
+          lineNumber: 12366,
           columnNumber: 17
         }, this),
         element.type === "shape" && (() => {
@@ -104331,17 +104662,17 @@ function InspectorPanel({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Radius" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12373,
+                lineNumber: 12408,
                 columnNumber: 25
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: uniformRadius, onChange: (v2) => onChange({ cornerRadiusPx: v2, cornerRadius: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12374,
+                lineNumber: 12409,
                 columnNumber: 25
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12372,
+              lineNumber: 12407,
               columnNumber: 23
             }, this),
             element.shape === "rect" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
@@ -104355,7 +104686,7 @@ function InspectorPanel({
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-6 flex-none text-[11px] leading-[1.4] text-slate-500", children: label }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12386,
+                    lineNumber: 12421,
                     columnNumber: 33
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104371,25 +104702,25 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12387,
+                      lineNumber: 12422,
                       columnNumber: 33
                     },
                     this
                   )
                 ] }, key, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12385,
+                  lineNumber: 12420,
                   columnNumber: 31
                 }, this);
               }) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12378,
+                lineNumber: 12413,
                 columnNumber: 27
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Corner" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12398,
+                  lineNumber: 12433,
                   columnNumber: 29
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104400,7 +104731,7 @@ function InspectorPanel({
                     onChange: (e2) => onChange({ cornerType: e2.target.value }),
                     children: CORNER_TYPE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12405,
+                      lineNumber: 12440,
                       columnNumber: 33
                     }, this))
                   },
@@ -104408,30 +104739,30 @@ function InspectorPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12399,
+                    lineNumber: 12434,
                     columnNumber: 29
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12397,
+                lineNumber: 12432,
                 columnNumber: 27
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12377,
+              lineNumber: 12412,
               columnNumber: 25
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12371,
+            lineNumber: 12406,
             columnNumber: 21
           }, this);
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12149,
+        lineNumber: 12184,
         columnNumber: 13
       }, this),
       element.type === "text" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
@@ -104439,7 +104770,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between mb-1", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[12px] leading-[1.4] font-semibold text-slate-300", children: "Content" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12423,
+              lineNumber: 12458,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104460,24 +104791,24 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12425,
+                  lineNumber: 12460,
                   columnNumber: 21
                 },
                 this
               ),
               isComponentMaster && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ExposeButton, { element, propPath: "text", propsSchema, onUpdateSchema, onChange }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12436,
+                lineNumber: 12471,
                 columnNumber: 43
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12424,
+              lineNumber: 12459,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12422,
+            lineNumber: 12457,
             columnNumber: 17
           }, this),
           !((_bb = element.bindings) == null ? void 0 : _bb["text"]) ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104492,7 +104823,7 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12440,
+              lineNumber: 12475,
               columnNumber: 19
             },
             this
@@ -104503,18 +104834,18 @@ function InspectorPanel({
               return s2.id === ((_b2 = (_a4 = element.bindings) == null ? void 0 : _a4["text"]) == null ? void 0 : _b2.sourceId);
             })) == null ? void 0 : _db.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12448,
+              lineNumber: 12483,
               columnNumber: 30
             }, this),
             "."
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12447,
+            lineNumber: 12482,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12421,
+          lineNumber: 12456,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104529,13 +104860,13 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12455,
+              lineNumber: 12490,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12454,
+            lineNumber: 12489,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104549,18 +104880,18 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12462,
+              lineNumber: 12497,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12461,
+            lineNumber: 12496,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12453,
+          lineNumber: 12488,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104575,91 +104906,91 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12472,
+              lineNumber: 12507,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12471,
+            lineNumber: 12506,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_fb = (_eb = element.fontSizePx) != null ? _eb : element.fontSize) != null ? _fb : 24, onChange: (v2) => onChange({ fontSizePx: v2, fontSize: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12478,
+            lineNumber: 12513,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12470,
+          lineNumber: 12505,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: "Wgt" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12482,
+            lineNumber: 12517,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_gb = element.fontWeight) != null ? _gb : "400", onChange: (e2) => onChange({ fontWeight: e2.target.value }), children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "100", children: "100 Thin" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12484,
+              lineNumber: 12519,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "200", children: "200 ExtraLight" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12485,
+              lineNumber: 12520,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "300", children: "300 Light" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12486,
+              lineNumber: 12521,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "400", children: "400 Regular" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12487,
+              lineNumber: 12522,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "500", children: "500 Medium" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12488,
+              lineNumber: 12523,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "600", children: "600 SemiBold" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12489,
+              lineNumber: 12524,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "700", children: "700 Bold" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12490,
+              lineNumber: 12525,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "800", children: "800 ExtraBold" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12491,
+              lineNumber: 12526,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "900", children: "900 Black" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12492,
+              lineNumber: 12527,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12483,
+            lineNumber: 12518,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12481,
+          lineNumber: 12516,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Style" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12496,
+            lineNumber: 12531,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-1 overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]", children: ["normal", "italic", "oblique"].map((s2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104673,24 +105004,24 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12499,
+              lineNumber: 12534,
               columnNumber: 21
             },
             this
           )) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12497,
+            lineNumber: 12532,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12495,
+          lineNumber: 12530,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Align" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12508,
+            lineNumber: 12543,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-1 overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]", children: ["left", "center", "right"].map((a2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104704,23 +105035,23 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12511,
+              lineNumber: 12546,
               columnNumber: 21
             },
             this
           )) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12509,
+            lineNumber: 12544,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12507,
+          lineNumber: 12542,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12524,
+          lineNumber: 12559,
           columnNumber: 15
         }, this),
         (() => {
@@ -104730,7 +105061,7 @@ function InspectorPanel({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "On Path" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12532,
+                lineNumber: 12567,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104742,7 +105073,7 @@ function InspectorPanel({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "", children: "None" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12538,
+                      lineNumber: 12573,
                       columnNumber: 25
                     }, this),
                     pathEls.map((p2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: p2.id, children: [
@@ -104752,7 +105083,7 @@ function InspectorPanel({
                       ")"
                     ] }, p2.id, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12540,
+                      lineNumber: 12575,
                       columnNumber: 27
                     }, this))
                   ]
@@ -104761,20 +105092,20 @@ function InspectorPanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12533,
+                  lineNumber: 12568,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12531,
+              lineNumber: 12566,
               columnNumber: 21
             }, this),
             element.textOnPathId && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Offset" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12546,
+                lineNumber: 12581,
                 columnNumber: 25
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -104792,7 +105123,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12547,
+                  lineNumber: 12582,
                   columnNumber: 25
                 },
                 this
@@ -104802,23 +105133,23 @@ function InspectorPanel({
                 "%"
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12551,
+                lineNumber: 12586,
                 columnNumber: 25
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12545,
+              lineNumber: 12580,
               columnNumber: 23
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12530,
+            lineNumber: 12565,
             columnNumber: 19
           }, this);
         })(),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12558,
+          lineNumber: 12593,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104833,34 +105164,34 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12562,
+              lineNumber: 12597,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12561,
+            lineNumber: 12596,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.color, onChange: (v2) => onChange({ color: v2 }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12569,
+              lineNumber: 12604,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: (_hb = element.color) != null ? _hb : "", onChange: (e2) => onChange({ color: e2.target.value }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12570,
+              lineNumber: 12605,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12568,
+            lineNumber: 12603,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12560,
+          lineNumber: 12595,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104875,34 +105206,34 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12576,
+              lineNumber: 12611,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12575,
+            lineNumber: 12610,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: element.strokeColor, onChange: (v2) => onChange({ strokeColor: v2 }) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12583,
+              lineNumber: 12618,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: (_ib = element.strokeColor) != null ? _ib : "", onChange: (e2) => onChange({ strokeColor: e2.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12584,
+              lineNumber: 12619,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12582,
+            lineNumber: 12617,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12574,
+          lineNumber: 12609,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104917,23 +105248,23 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12590,
+              lineNumber: 12625,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12589,
+            lineNumber: 12624,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_jb = element.strokeWidthPx) != null ? _jb : 0, onChange: (v2) => onChange({ strokeWidthPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12596,
+            lineNumber: 12631,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12588,
+          lineNumber: 12623,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -104948,13 +105279,13 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12601,
+              lineNumber: 12636,
               columnNumber: 19
             },
             this
           ) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12600,
+            lineNumber: 12635,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex items-center gap-2", children: [
@@ -104973,7 +105304,7 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12608,
+                lineNumber: 12643,
                 columnNumber: 19
               },
               this
@@ -104991,34 +105322,34 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12615,
+                  lineNumber: 12650,
                   columnNumber: 21
                 },
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "absolute right-1 top-[5px] text-[9px] text-slate-500", children: "%" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12621,
+                lineNumber: 12656,
                 columnNumber: 21
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12614,
+              lineNumber: 12649,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12607,
+            lineNumber: 12642,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12599,
+          lineNumber: 12634,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12420,
+        lineNumber: 12455,
         columnNumber: 13
       }, this),
       (element.type === "image" || element.type === "video") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
@@ -105028,7 +105359,7 @@ function InspectorPanel({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Keying" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12636,
+                lineNumber: 12671,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105042,22 +105373,22 @@ function InspectorPanel({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "none", children: "None" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12648,
+                      lineNumber: 12683,
                       columnNumber: 25
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "alphaBlack", children: "Alpha from Black" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12649,
+                      lineNumber: 12684,
                       columnNumber: 25
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "alphaWhite", children: "Alpha from White" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12650,
+                      lineNumber: 12685,
                       columnNumber: 25
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "chromaKey", children: "Chroma Key" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12651,
+                      lineNumber: 12686,
                       columnNumber: 25
                     }, this)
                   ]
@@ -105066,14 +105397,14 @@ function InspectorPanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12637,
+                  lineNumber: 12672,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12635,
+              lineNumber: 12670,
               columnNumber: 21
             }, this),
             keying.mode !== "none" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
@@ -105081,7 +105412,7 @@ function InspectorPanel({
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Threshold" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12659,
+                    lineNumber: 12694,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105098,25 +105429,25 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12660,
+                      lineNumber: 12695,
                       columnNumber: 31
                     },
                     this
                   ),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: Math.round(keying.threshold * 100) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12668,
+                    lineNumber: 12703,
                     columnNumber: 31
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12658,
+                  lineNumber: 12693,
                   columnNumber: 29
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Softness" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12671,
+                    lineNumber: 12706,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105133,36 +105464,36 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12672,
+                      lineNumber: 12707,
                       columnNumber: 31
                     },
                     this
                   ),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: Math.round(keying.softness * 100) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12680,
+                    lineNumber: 12715,
                     columnNumber: 31
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12670,
+                  lineNumber: 12705,
                   columnNumber: 29
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12657,
+                lineNumber: 12692,
                 columnNumber: 27
               }, this),
               keying.mode === "chromaKey" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Color" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12687,
+                    lineNumber: 12722,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ColorSwatch, { value: keying.keyColor, onChange: (v2) => onChange({ keying: { ...keying, keyColor: v2 } }) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12688,
+                    lineNumber: 12723,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105177,20 +105508,20 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12689,
+                      lineNumber: 12724,
                       columnNumber: 31
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12686,
+                  lineNumber: 12721,
                   columnNumber: 29
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Tolerance" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12697,
+                    lineNumber: 12732,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105207,25 +105538,25 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12698,
+                      lineNumber: 12733,
                       columnNumber: 31
                     },
                     this
                   ),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: Math.round(keying.tolerance * 100) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12706,
+                    lineNumber: 12741,
                     columnNumber: 31
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12696,
+                  lineNumber: 12731,
                   columnNumber: 29
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Softness" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12709,
+                    lineNumber: 12744,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105242,25 +105573,25 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12710,
+                      lineNumber: 12745,
                       columnNumber: 31
                     },
                     this
                   ),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: Math.round(keying.softness * 100) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12718,
+                    lineNumber: 12753,
                     columnNumber: 31
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12708,
+                  lineNumber: 12743,
                   columnNumber: 29
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Spill" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12721,
+                    lineNumber: 12756,
                     columnNumber: 31
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105277,34 +105608,34 @@ function InspectorPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 12722,
+                      lineNumber: 12757,
                       columnNumber: 31
                     },
                     this
                   ),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400", children: Math.round(keying.spillReduction * 100) }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12730,
+                    lineNumber: 12765,
                     columnNumber: 31
                   }, this)
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12720,
+                  lineNumber: 12755,
                   columnNumber: 29
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12685,
+                lineNumber: 12720,
                 columnNumber: 27
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12655,
+              lineNumber: 12690,
               columnNumber: 23
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12634,
+            lineNumber: 12669,
             columnNumber: 19
           }, this);
         })(),
@@ -105312,7 +105643,7 @@ function InspectorPanel({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between mb-1.5", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-[12px] leading-[1.4] font-semibold text-slate-300", children: "Source" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12741,
+              lineNumber: 12776,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105332,34 +105663,34 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12742,
+                lineNumber: 12777,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12740,
+            lineNumber: 12775,
             columnNumber: 17
           }, this),
           !((_lb = element.bindings) == null ? void 0 : _lb["src"]) ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass2}`, value: (_mb = element.src) != null ? _mb : "", onChange: (e2) => onChange({ src: e2.target.value }), placeholder: "URL" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12756,
+              lineNumber: 12791,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: element.type === "image" ? onPickImage : onPickVideo, className: uiClasses.button, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FolderIcon, {}, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12757,
+              lineNumber: 12792,
               columnNumber: 121
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12757,
+              lineNumber: 12792,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12755,
+            lineNumber: 12790,
             columnNumber: 19
           }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3 text-[11px] leading-[1.4] italic text-indigo-300", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: [
             "Bound to ",
@@ -105368,179 +105699,78 @@ function InspectorPanel({
               return s2.id === ((_b2 = (_a4 = element.bindings) == null ? void 0 : _a4["src"]) == null ? void 0 : _b2.sourceId);
             })) == null ? void 0 : _nb.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12761,
+              lineNumber: 12796,
               columnNumber: 36
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12761,
+            lineNumber: 12796,
             columnNumber: 21
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12760,
+            lineNumber: 12795,
             columnNumber: 19
-          }, this)
-        ] }, void 0, true, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12739,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Fit" }, void 0, false, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12767,
-            columnNumber: 17
-          }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_ob = element.fit) != null ? _ob : "cover", onChange: (e2) => onChange({ fit: e2.target.value }), children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "cover", children: "Cover" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12769,
-              columnNumber: 19
-            }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "contain", children: "Contain" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12770,
-              columnNumber: 19
-            }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fill", children: "Fill" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12771,
-              columnNumber: 19
-            }, this)
-          ] }, void 0, true, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12768,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, true, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12766,
-          columnNumber: 15
-        }, this),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: "Blend Mode" }, void 0, false, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12775,
-            columnNumber: 17
-          }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_pb = element.blendMode) != null ? _pb : "normal", onChange: (e2) => onChange({ blendMode: e2.target.value }), children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12777,
-              columnNumber: 19
-            }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "screen", children: "Screen" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12778,
-              columnNumber: 19
-            }, this),
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "multiply", children: "Multiply" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12779,
-              columnNumber: 19
-            }, this)
-          ] }, void 0, true, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12776,
-            columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
           lineNumber: 12774,
           columnNumber: 15
         }, this),
-        ((_qb = element.blendMode) != null ? _qb : "normal") !== "normal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Screen is useful for effects on black backgrounds." }, void 0, false, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12783,
-          columnNumber: 17
-        }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Radius" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Fit" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12788,
+            lineNumber: 12802,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_sb = (_rb = element.borderRadius) != null ? _rb : element.borderRadiusPx) != null ? _sb : 0, onChange: (v2) => onChange({ borderRadius: v2, borderRadiusPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_ob = element.fit) != null ? _ob : "cover", onChange: (e2) => onChange({ fit: e2.target.value }), children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "cover", children: "Cover" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12804,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "contain", children: "Contain" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12805,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "fill", children: "Fill" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12806,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12789,
+            lineNumber: 12803,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12787,
-          columnNumber: 15
-        }, this),
-        element.type === "video" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.autoplay !== false, onChange: (e2) => onChange({ autoplay: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12794,
-              columnNumber: 124
-            }, this),
-            " Auto"
-          ] }, void 0, true, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12794,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.loop !== false, onChange: (e2) => onChange({ loop: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12795,
-              columnNumber: 124
-            }, this),
-            " Loop"
-          ] }, void 0, true, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12795,
-            columnNumber: 19
-          }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
-            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.muted !== false, onChange: (e2) => onChange({ muted: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
-              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12796,
-              columnNumber: 124
-            }, this),
-            " Mute"
-          ] }, void 0, true, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12796,
-            columnNumber: 19
-          }, this)
-        ] }, void 0, true, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12793,
-          columnNumber: 17
-        }, this)
-      ] }, void 0, true, {
-        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12630,
-        columnNumber: 13
-      }, this),
-      (element.type === "progressBar" || element.type === "progressRing") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Fill" }, void 0, false, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12806,
-            columnNumber: 17
-          }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: element.fillColor, onChange: (e2) => onChange({ fillColor: e2.target.value }) }, void 0, false, {
-            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12807,
-            columnNumber: 17
-          }, this)
-        ] }, void 0, true, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12805,
+          lineNumber: 12801,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Track" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-20 flex-none`, children: "Blend Mode" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12810,
             columnNumber: 17
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: element.backgroundColor, onChange: (e2) => onChange({ backgroundColor: e2.target.value }) }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_pb = element.blendMode) != null ? _pb : "normal", onChange: (e2) => onChange({ blendMode: e2.target.value }), children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "normal", children: "Normal" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12812,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "screen", children: "Screen" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12813,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "multiply", children: "Multiply" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12814,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
             lineNumber: 12811,
             columnNumber: 17
@@ -105550,156 +105780,257 @@ function InspectorPanel({
           lineNumber: 12809,
           columnNumber: 15
         }, this),
-        element.type === "progressRing" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Stroke" }, void 0, false, {
+        ((_qb = element.blendMode) != null ? _qb : "normal") !== "normal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Screen is useful for effects on black backgrounds." }, void 0, false, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+          lineNumber: 12818,
+          columnNumber: 17
+        }, this),
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Radius" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12815,
+            lineNumber: 12823,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_sb = (_rb = element.borderRadius) != null ? _rb : element.borderRadiusPx) != null ? _sb : 0, onChange: (v2) => onChange({ borderRadius: v2, borderRadiusPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12824,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+          lineNumber: 12822,
+          columnNumber: 15
+        }, this),
+        element.type === "video" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2", children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.autoplay !== false, onChange: (e2) => onChange({ autoplay: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12829,
+              columnNumber: 124
+            }, this),
+            " Auto"
+          ] }, void 0, true, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12829,
             columnNumber: 19
           }, this),
-          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_tb = element.strokeWidthPx) != null ? _tb : 4, onChange: (v2) => onChange({ strokeWidthPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.loop !== false, onChange: (e2) => onChange({ loop: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12830,
+              columnNumber: 124
+            }, this),
+            " Loop"
+          ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12816,
+            lineNumber: 12830,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-400 hover:text-slate-200", children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "checkbox", checked: element.muted !== false, onChange: (e2) => onChange({ muted: e2.target.checked }), className: "rounded border-[rgba(255,255,255,0.08)] bg-[#161618] accent-indigo-500" }, void 0, false, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+              lineNumber: 12831,
+              columnNumber: 124
+            }, this),
+            " Mute"
+          ] }, void 0, true, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12831,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12814,
+          lineNumber: 12828,
+          columnNumber: 17
+        }, this)
+      ] }, void 0, true, {
+        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+        lineNumber: 12665,
+        columnNumber: 13
+      }, this),
+      (element.type === "progressBar" || element.type === "progressRing") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Fill" }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12841,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: element.fillColor, onChange: (e2) => onChange({ fillColor: e2.target.value }) }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12842,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+          lineNumber: 12840,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Track" }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12845,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 font-mono ${fieldClass2}`, value: element.backgroundColor, onChange: (e2) => onChange({ backgroundColor: e2.target.value }) }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12846,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+          lineNumber: 12844,
+          columnNumber: 15
+        }, this),
+        element.type === "progressRing" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Stroke" }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12850,
+            columnNumber: 19
+          }, this),
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_tb = element.strokeWidthPx) != null ? _tb : 4, onChange: (v2) => onChange({ strokeWidthPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+            lineNumber: 12851,
+            columnNumber: 19
+          }, this)
+        ] }, void 0, true, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
+          lineNumber: 12849,
           columnNumber: 17
         }, this),
         element.type === "progressBar" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Radius" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12821,
+            lineNumber: 12856,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_ub = element.borderRadiusPx) != null ? _ub : 0, onChange: (v2) => onChange({ borderRadiusPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12822,
+            lineNumber: 12857,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12820,
+          lineNumber: 12855,
           columnNumber: 17
         }, this),
         element.type === "progressBar" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Dir" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12828,
+            lineNumber: 12863,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: (_vb = element.direction) != null ? _vb : "ltr", onChange: (e2) => onChange({ direction: e2.target.value }), children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ltr", children: "L → R" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12830,
+              lineNumber: 12865,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "rtl", children: "R → L" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12831,
+              lineNumber: 12866,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "ttb", children: "T → B" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12832,
+              lineNumber: 12867,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "btt", children: "B → T" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12833,
+              lineNumber: 12868,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12829,
+            lineNumber: 12864,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12827,
+          lineNumber: 12862,
           columnNumber: 17
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12804,
+        lineNumber: 12839,
         columnNumber: 13
       }, this),
       (element.type === "group" || element.type === "frame") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Bg" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12844,
+            lineNumber: 12879,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass2}`, value: (_wb = element.backgroundColor) != null ? _wb : "", onChange: (e2) => onChange({ backgroundColor: e2.target.value }), placeholder: "Transparent" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12845,
+            lineNumber: 12880,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12843,
+          lineNumber: 12878,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Border" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12848,
+            lineNumber: 12883,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 flex gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "text", className: `flex-1 ${fieldClass2}`, value: (_xb = element.borderColor) != null ? _xb : "", onChange: (e2) => onChange({ borderColor: e2.target.value }), placeholder: "None" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12850,
+              lineNumber: 12885,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_yb = element.borderWidth) != null ? _yb : 0, onChange: (v2) => onChange({ borderWidth: v2 }), noLabel: true, className: "w-12" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12851,
+              lineNumber: 12886,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12849,
+            lineNumber: 12884,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12847,
+          lineNumber: 12882,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12`, children: "Radius" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12855,
+            lineNumber: 12890,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_zb = element.borderRadiusPx) != null ? _zb : 0, onChange: (v2) => onChange({ borderRadiusPx: v2 }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12856,
+            lineNumber: 12891,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12854,
+          lineNumber: 12889,
           columnNumber: 15
         }, this),
         element.type === "frame" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "my-2 h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12860,
+            lineNumber: 12895,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Frame Layout" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12862,
+              lineNumber: 12897,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Mode" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12864,
+                lineNumber: 12899,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105710,7 +106041,7 @@ function InspectorPanel({
                   onChange: (e2) => onChange({ layout: { ...ensureFrameLayout(element.layout), mode: e2.target.value } }),
                   children: FRAME_LAYOUT_MODE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 12871,
+                    lineNumber: 12906,
                     columnNumber: 27
                   }, this))
                 },
@@ -105718,98 +106049,98 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12865,
+                  lineNumber: 12900,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12863,
+              lineNumber: 12898,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Gap" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12877,
+                  lineNumber: 12912,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Ab = ensureFrameLayout(element.layout).gap) != null ? _Ab : 12, onChange: (v2) => onChange({ layout: { ...ensureFrameLayout(element.layout), gap: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12878,
+                  lineNumber: 12913,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12876,
+                lineNumber: 12911,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Pad" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12881,
+                  lineNumber: 12916,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Bb = ensureFrameLayout(element.layout).padding) != null ? _Bb : 16, onChange: (v2) => onChange({ layout: { ...ensureFrameLayout(element.layout), padding: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12882,
+                  lineNumber: 12917,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12880,
+                lineNumber: 12915,
                 columnNumber: 23
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12875,
+              lineNumber: 12910,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Align" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12887,
+                  lineNumber: 12922,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: ensureFrameLayout(element.layout).align, onChange: (e2) => onChange({ layout: { ...ensureFrameLayout(element.layout), align: e2.target.value } }), children: FRAME_ALIGN_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12890,
+                  lineNumber: 12925,
                   columnNumber: 29
                 }, this)) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12888,
+                  lineNumber: 12923,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12886,
+                lineNumber: 12921,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-16 flex-none`, children: "Justify" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12895,
+                  lineNumber: 12930,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("select", { className: `flex-1 ${fieldClass2}`, value: ensureFrameLayout(element.layout).justify, onChange: (e2) => onChange({ layout: { ...ensureFrameLayout(element.layout), justify: e2.target.value } }), children: FRAME_JUSTIFY_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12898,
+                  lineNumber: 12933,
                   columnNumber: 29
                 }, this)) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12896,
+                  lineNumber: 12931,
                   columnNumber: 25
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12894,
+                lineNumber: 12929,
                 columnNumber: 23
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12885,
+              lineNumber: 12920,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300", children: [
@@ -105825,7 +106156,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12904,
+                  lineNumber: 12939,
                   columnNumber: 23
                 },
                 this
@@ -105833,7 +106164,7 @@ function InspectorPanel({
               "Wrap items"
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12903,
+              lineNumber: 12938,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center gap-2 text-[12px] leading-[1.4] text-slate-300", children: [
@@ -105849,7 +106180,7 @@ function InspectorPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12913,
+                  lineNumber: 12948,
                   columnNumber: 23
                 },
                 this
@@ -105857,29 +106188,29 @@ function InspectorPanel({
               "Clip content to frame"
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12912,
+              lineNumber: 12947,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12861,
+            lineNumber: 12896,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12859,
+          lineNumber: 12894,
           columnNumber: 17
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12842,
+        lineNumber: 12877,
         columnNumber: 13
       }, this),
       parentFrame && element.type !== "frame" && element.type !== "componentInstance" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3 rounded-md border border-indigo-500/10 bg-indigo-500/5 px-3 py-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] tracking-[-0.02em] text-indigo-100", children: "Frame constraints" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12930,
+            lineNumber: 12965,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[11px] leading-[1.4] tracking-[-0.02em] text-indigo-200/80", children: [
@@ -105888,19 +106219,19 @@ function InspectorPanel({
             ". Constraints apply when the frame is resized."
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12931,
+            lineNumber: 12966,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12929,
+          lineNumber: 12964,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-2 gap-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8 flex-none`, children: "H" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12937,
+              lineNumber: 12972,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105911,7 +106242,7 @@ function InspectorPanel({
                 onChange: (e2) => onChange({ constraints: { ...ensureConstraints(element.constraints), horizontal: e2.target.value } }),
                 children: CONSTRAINT_MODE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12944,
+                  lineNumber: 12979,
                   columnNumber: 23
                 }, this))
               },
@@ -105919,20 +106250,20 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12938,
+                lineNumber: 12973,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12936,
+            lineNumber: 12971,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-8 flex-none`, children: "V" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12949,
+              lineNumber: 12984,
               columnNumber: 19
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -105943,7 +106274,7 @@ function InspectorPanel({
                 onChange: (e2) => onChange({ constraints: { ...ensureConstraints(element.constraints), vertical: e2.target.value } }),
                 children: CONSTRAINT_MODE_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, option.value, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 12956,
+                  lineNumber: 12991,
                   columnNumber: 23
                 }, this))
               },
@@ -105951,127 +106282,127 @@ function InspectorPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 12950,
+                lineNumber: 12985,
                 columnNumber: 19
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12948,
+            lineNumber: 12983,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12935,
+          lineNumber: 12970,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12928,
+        lineNumber: 12963,
         columnNumber: 13
       }, this),
       element.type === "mask" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-indigo-500/10 bg-indigo-500/5 p-3", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 mb-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex h-6 w-6 items-center justify-center rounded-md border border-indigo-400/20 bg-[#161618] text-indigo-300", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(MaskIcon, {}, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12970,
+            lineNumber: 13005,
             columnNumber: 21
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12969,
+            lineNumber: 13004,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] font-semibold text-indigo-300", children: element.invert ? "Inverse Mask" : "Mask Group" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12973,
+              lineNumber: 13008,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: element.invert ? "The shape cuts a hole through the content so only the outside remains visible." : "The shape clips the content so only the area inside the mask stays visible." }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12976,
+              lineNumber: 13011,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12972,
+            lineNumber: 13007,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12968,
+          lineNumber: 13003,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2 mt-3", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] px-3 py-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Mask workflow" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12986,
+              lineNumber: 13021,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200", children: "Child 1 is the mask shape. Child 2 is the clipped content." }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12987,
+              lineNumber: 13022,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12985,
+            lineNumber: 13020,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex justify-between text-[11px] leading-[1.4]", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-500", children: "Mask Shape:" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12992,
+              lineNumber: 13027,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: (_Cb = element.childIds) == null ? void 0 : _Cb[0] }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12993,
+              lineNumber: 13028,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12991,
+            lineNumber: 13026,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex justify-between text-[11px] leading-[1.4]", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-500", children: "Content Layer:" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12996,
+              lineNumber: 13031,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300 font-mono", children: (_Db = element.childIds) == null ? void 0 : _Db[1] }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 12997,
+              lineNumber: 13032,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 12995,
+            lineNumber: 13030,
             columnNumber: 19
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 12984,
+          lineNumber: 13019,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-4 pt-3 border-t border-indigo-500/10", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex items-center justify-between gap-3 cursor-pointer", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] font-semibold text-slate-200", children: "Invert Mask" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13004,
+              lineNumber: 13039,
               columnNumber: 23
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: "Cut a hole instead of clipping to the shape" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13005,
+              lineNumber: 13040,
               columnNumber: 23
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13003,
+            lineNumber: 13038,
             columnNumber: 21
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106086,24 +106417,24 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13010,
+              lineNumber: 13045,
               columnNumber: 21
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13002,
+          lineNumber: 13037,
           columnNumber: 19
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13001,
+          lineNumber: 13036,
           columnNumber: 17
         }, this),
         onReleaseMask && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-4 space-y-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: "Release keeps the underlying layers and removes this mask container." }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13021,
+            lineNumber: 13056,
             columnNumber: 21
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106117,38 +106448,38 @@ function InspectorPanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13024,
+              lineNumber: 13059,
               columnNumber: 21
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13020,
+          lineNumber: 13055,
           columnNumber: 19
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12967,
+        lineNumber: 13002,
         columnNumber: 15
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 12966,
+        lineNumber: 13001,
         columnNumber: 13
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10947,
+      lineNumber: 10982,
       columnNumber: 9
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 10946,
+      lineNumber: 10981,
       columnNumber: 7
     }, this),
     element.type !== "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Animation", defaultOpen: true, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: "Delay is in milliseconds. Start always resets the element to its hidden baseline first, then runs the configured enter animation without saving visibility changes." }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13042,
+        lineNumber: 13077,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
@@ -106164,7 +106495,7 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13047,
+            lineNumber: 13082,
             columnNumber: 15
           },
           this
@@ -106181,7 +106512,7 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13054,
+            lineNumber: 13089,
             columnNumber: 15
           },
           this
@@ -106198,32 +106529,32 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13061,
+            lineNumber: 13096,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13046,
+        lineNumber: 13081,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: [
         "Preview state: ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-300", children: previewVisible ? "Visible" : "Hidden" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13071,
+          lineNumber: 13106,
           columnNumber: 30
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13070,
+        lineNumber: 13105,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Enter" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13075,
+          lineNumber: 13110,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106239,7 +106570,7 @@ function InspectorPanel({
             }),
             children: GENERIC_MOTION_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, `enter-${option.value}`, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13089,
+              lineNumber: 13124,
               columnNumber: 19
             }, this))
           },
@@ -106247,20 +106578,20 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13076,
+            lineNumber: 13111,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13074,
+        lineNumber: 13109,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Exit" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13097,
+          lineNumber: 13132,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106276,7 +106607,7 @@ function InspectorPanel({
             }),
             children: GENERIC_MOTION_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option.value, children: option.label }, `exit-${option.value}`, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13111,
+              lineNumber: 13146,
               columnNumber: 19
             }, this))
           },
@@ -106284,20 +106615,20 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13098,
+            lineNumber: 13133,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13096,
+        lineNumber: 13131,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Dur" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13119,
+          lineNumber: 13154,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106318,20 +106649,20 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13120,
+            lineNumber: 13155,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13118,
+        lineNumber: 13153,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Delay" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13137,
+          lineNumber: 13172,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106352,20 +106683,20 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13138,
+            lineNumber: 13173,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13136,
+        lineNumber: 13171,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `${fieldLabelClass2} w-12 flex-none`, children: "Ease" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13155,
+          lineNumber: 13190,
           columnNumber: 15
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106381,7 +106712,7 @@ function InspectorPanel({
             }),
             children: GENERIC_EASING_OPTIONS.map((option) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: option, children: option }, option, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13169,
+              lineNumber: 13204,
               columnNumber: 19
             }, this))
           },
@@ -106389,32 +106720,32 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13156,
+            lineNumber: 13191,
             columnNumber: 15
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13154,
+        lineNumber: 13189,
         columnNumber: 13
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13041,
+      lineNumber: 13076,
       columnNumber: 11
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13040,
+      lineNumber: 13075,
       columnNumber: 9
     }, this),
     element.type === "lower_third" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Automations", defaultOpen: false, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(LowerThirdAutomationsPanel, { element, onChange }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13182,
+      lineNumber: 13217,
       columnNumber: 11
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13181,
+      lineNumber: 13216,
       columnNumber: 9
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Effects", defaultOpen: false, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-4", children: [
@@ -106429,21 +106760,21 @@ function InspectorPanel({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13190,
+          lineNumber: 13225,
           columnNumber: 11
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13194,
+        lineNumber: 13229,
         columnNumber: 11
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 mb-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "flex-1 text-[12px] leading-[1.4] font-semibold text-slate-300", children: "Masking" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13199,
+            lineNumber: 13234,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106455,17 +106786,17 @@ function InspectorPanel({
               children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "none", children: "None" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13205,
+                  lineNumber: 13240,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "roundRect", children: "Frame" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13206,
+                  lineNumber: 13241,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "circle", children: "Circle" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13207,
+                  lineNumber: 13242,
                   columnNumber: 17
                 }, this)
               ]
@@ -106474,44 +106805,44 @@ function InspectorPanel({
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13200,
+              lineNumber: 13235,
               columnNumber: 15
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13198,
+          lineNumber: 13233,
           columnNumber: 13
         }, this),
         ((_Qb = element.clip) == null ? void 0 : _Qb.type) === "roundRect" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 ml-1 flex items-center gap-2 border-l-2 border-[rgba(255,255,255,0.08)] pl-2", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "w-10 flex-none text-[11px] leading-[1.4] text-slate-500", children: "Radius" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13212,
+            lineNumber: 13247,
             columnNumber: 17
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(NumberField, { label: "", value: (_Sb = (_Rb = element.clip) == null ? void 0 : _Rb.radius) != null ? _Sb : 0, onChange: (v2) => onChange({ clip: { ...element.clip, radius: v2 } }), noLabel: true, className: "flex-1" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13213,
+            lineNumber: 13248,
             columnNumber: 17
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13211,
+          lineNumber: 13246,
           columnNumber: 15
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13197,
+        lineNumber: 13232,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13189,
+      lineNumber: 13224,
       columnNumber: 9
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13188,
+      lineNumber: 13223,
       columnNumber: 7
     }, this),
     (element.type === "text" || element.type === "progressBar" || element.type === "progressRing") && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(AccordionSection, { title: "Data & Binding", defaultOpen: false, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3", children: [
@@ -106522,7 +106853,7 @@ function InspectorPanel({
           "%)"
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13227,
+          lineNumber: 13262,
           columnNumber: 19
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106540,46 +106871,46 @@ function InspectorPanel({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13228,
+            lineNumber: 13263,
             columnNumber: 19
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13226,
+        lineNumber: 13261,
         columnNumber: 17
       }, this),
       element.type === "text" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-2 text-[12px] leading-[1.4] text-slate-400", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-1 text-[12px] leading-[1.4] font-semibold text-slate-300", children: "Variable Injection" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13238,
+          lineNumber: 13273,
           columnNumber: 19
         }, this),
         "Use ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { children: `{{variable}}` }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13239,
+          lineNumber: 13274,
           columnNumber: 23
         }, this),
         " in the text content to bind data from the Test Data panel."
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13237,
+        lineNumber: 13272,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13224,
+      lineNumber: 13259,
       columnNumber: 13
     }, this) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13223,
+      lineNumber: 13258,
       columnNumber: 11
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 10677,
+    lineNumber: 10712,
     columnNumber: 5
   }, this);
 }
@@ -106646,12 +106977,12 @@ function LowerThirdAutomationsPanel({
         children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] font-semibold uppercase tracking-wider text-slate-400", children: "Automations" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13326,
+            lineNumber: 13361,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[11px] text-slate-600", children: open ? "▲" : "▼" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13329,
+            lineNumber: 13364,
             columnNumber: 9
           }, this)
         ]
@@ -106660,7 +106991,7 @@ function LowerThirdAutomationsPanel({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13321,
+        lineNumber: 13356,
         columnNumber: 7
       },
       this
@@ -106670,27 +107001,27 @@ function LowerThirdAutomationsPanel({
         "Automatically show this lower third when a platform event fires. Use ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { className: "text-slate-400", children: "{actor}" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13336,
+          lineNumber: 13371,
           columnNumber: 17
         }, this),
         ",",
         " ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { className: "text-slate-400", children: "{viewers}" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13337,
+          lineNumber: 13372,
           columnNumber: 13
         }, this),
         ",",
         " ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { className: "text-slate-400", children: "{amount}" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13338,
+          lineNumber: 13373,
           columnNumber: 13
         }, this),
         " in templates."
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13334,
+        lineNumber: 13369,
         columnNumber: 11
       }, this),
       LT_TRIGGERS.map((tpl) => {
@@ -106714,7 +107045,7 @@ function LowerThirdAutomationsPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 13356,
+                    lineNumber: 13391,
                     columnNumber: 21
                   },
                   this
@@ -106724,26 +107055,26 @@ function LowerThirdAutomationsPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13349,
+                lineNumber: 13384,
                 columnNumber: 19
               },
               this
             ),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `flex-1 text-[12px] leading-[1.4] ${enabled ? "text-slate-200" : "text-slate-500"}`, children: tpl.label }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13362,
+              lineNumber: 13397,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13348,
+            lineNumber: 13383,
             columnNumber: 17
           }, this),
           enabled && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "ml-9 space-y-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: labelClass, children: "Title" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13371,
+                lineNumber: 13406,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106758,20 +107089,20 @@ function LowerThirdAutomationsPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13372,
+                  lineNumber: 13407,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13370,
+              lineNumber: 13405,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: labelClass, children: "Subtitle" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13380,
+                lineNumber: 13415,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106786,21 +107117,21 @@ function LowerThirdAutomationsPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13381,
+                  lineNumber: 13416,
                   columnNumber: 23
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13379,
+              lineNumber: 13414,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: labelClass, children: "Duration (ms)" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13390,
+                  lineNumber: 13425,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106817,20 +107148,20 @@ function LowerThirdAutomationsPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 13391,
+                    lineNumber: 13426,
                     columnNumber: 25
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13389,
+                lineNumber: 13424,
                 columnNumber: 23
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: labelClass, children: "Cooldown (ms)" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13401,
+                  lineNumber: 13436,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106847,45 +107178,45 @@ function LowerThirdAutomationsPanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 13402,
+                    lineNumber: 13437,
                     columnNumber: 25
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13400,
+                lineNumber: 13435,
                 columnNumber: 23
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13388,
+              lineNumber: 13423,
               columnNumber: 21
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13369,
+            lineNumber: 13404,
             columnNumber: 19
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-px bg-[rgba(255,255,255,0.04)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13415,
+            lineNumber: 13450,
             columnNumber: 17
           }, this)
         ] }, tpl.value, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13346,
+          lineNumber: 13381,
           columnNumber: 15
         }, this);
       })
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13333,
+      lineNumber: 13368,
       columnNumber: 9
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13320,
+    lineNumber: 13355,
     columnNumber: 5
   }, this);
 }
@@ -106897,7 +107228,7 @@ function NumberField({ label, value, onChange, className, noLabel }) {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className, children: [
     !noLabel && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `mb-1 block ${uiClasses.fieldLabel}`, children: label }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13434,
+      lineNumber: 13469,
       columnNumber: 20
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106924,14 +107255,14 @@ function NumberField({ label, value, onChange, className, noLabel }) {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13435,
+        lineNumber: 13470,
         columnNumber: 7
       },
       this
     )
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13433,
+    lineNumber: 13468,
     columnNumber: 5
   }, this);
 }
@@ -106978,7 +107309,7 @@ function AssetPickerModal({
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "fixed inset-0 z-[9999]", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 bg-black/70", onMouseDown: onClose }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13513,
+      lineNumber: 13548,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "absolute inset-0 flex items-center justify-center p-4", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -106990,7 +107321,7 @@ function AssetPickerModal({
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-4 py-3", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[14px] leading-[1.4] font-semibold text-slate-100", children: title }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13520,
+              lineNumber: 13555,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -107004,14 +107335,14 @@ function AssetPickerModal({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13521,
+                lineNumber: 13556,
                 columnNumber: 13
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13519,
+            lineNumber: 13554,
             columnNumber: 11
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-4 space-y-3", children: [
@@ -107020,19 +107351,19 @@ function AssetPickerModal({
                 "Scope: ",
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-200", children: scope }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13532,
+                  lineNumber: 13567,
                   columnNumber: 24
                 }, this),
                 " • Kind:",
                 " ",
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-slate-200", children: kind }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13533,
+                  lineNumber: 13568,
                   columnNumber: 17
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13531,
+                lineNumber: 13566,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
@@ -107055,7 +107386,7 @@ function AssetPickerModal({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 13537,
+                    lineNumber: 13572,
                     columnNumber: 17
                   },
                   this
@@ -107072,7 +107403,7 @@ function AssetPickerModal({
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FolderIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 13554,
+                        lineNumber: 13589,
                         columnNumber: 19
                       }, this),
                       busy ? "Uploading..." : "Upload file"
@@ -107082,39 +107413,39 @@ function AssetPickerModal({
                   true,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 13549,
+                    lineNumber: 13584,
                     columnNumber: 17
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13536,
+                lineNumber: 13571,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13530,
+              lineNumber: 13565,
               columnNumber: 13
             }, this),
             err && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[12px] leading-[1.4] text-red-400", children: err }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13560,
+              lineNumber: 13595,
               columnNumber: 21
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "overflow-hidden rounded-md border border-[rgba(255,255,255,0.08)]", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400", children: "Recent" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13564,
+                lineNumber: 13599,
                 columnNumber: 17
               }, this) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13563,
+                lineNumber: 13598,
                 columnNumber: 15
               }, this),
               recent.length === 0 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-4 text-[12px] leading-[1.4] text-slate-500", children: "No recent uploads yet. Upload something." }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13568,
+                lineNumber: 13603,
                 columnNumber: 17
               }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-3 grid grid-cols-2 md:grid-cols-3 gap-3", children: recent.map((a2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                 "button",
@@ -107125,31 +107456,31 @@ function AssetPickerModal({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "aspect-video bg-black/30 flex items-center justify-center overflow-hidden", children: kind === "images" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("img", { src: a2.url, alt: "", className: "w-full h-full object-cover", draggable: false }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 13580,
+                      lineNumber: 13615,
                       columnNumber: 27
                     }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("video", { src: a2.url, className: "w-full h-full object-cover", muted: true, playsInline: true }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 13582,
+                      lineNumber: 13617,
                       columnNumber: 27
                     }, this) }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 13578,
+                      lineNumber: 13613,
                       columnNumber: 23
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-2", children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "truncate text-[12px] leading-[1.4] text-slate-200", children: a2.name || a2.url.split("/").pop() || a2.url }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 13586,
+                        lineNumber: 13621,
                         columnNumber: 25
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "truncate text-[11px] leading-[1.4] text-slate-500", children: a2.url }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 13587,
+                        lineNumber: 13622,
                         columnNumber: 25
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 13585,
+                      lineNumber: 13620,
                       columnNumber: 23
                     }, this)
                   ]
@@ -107158,28 +107489,28 @@ function AssetPickerModal({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13572,
+                  lineNumber: 13607,
                   columnNumber: 21
                 },
                 this
               )) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13570,
+                lineNumber: 13605,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13562,
+              lineNumber: 13597,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: "Phase 1: “recent” is localStorage-based (no DB, no server directory listing yet)." }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13595,
+              lineNumber: 13630,
               columnNumber: 13
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13529,
+            lineNumber: 13564,
             columnNumber: 11
           }, this)
         ]
@@ -107188,18 +107519,18 @@ function AssetPickerModal({
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13515,
+        lineNumber: 13550,
         columnNumber: 9
       },
       this
     ) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13514,
+      lineNumber: 13549,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13512,
+    lineNumber: 13547,
     columnNumber: 5
   }, this);
 }
@@ -107208,14 +107539,14 @@ function TestDataPanel({ data, onChange }) {
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-4", children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-2 text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400", children: "Test Data (Variables)" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13610,
+      lineNumber: 13645,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-2", children: [
       Object.entries(data).map(([k2, v2]) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-1/3 truncate font-mono text-[12px] leading-[1.4] text-slate-500", title: k2, children: k2 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13614,
+          lineNumber: 13649,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -107230,7 +107561,7 @@ function TestDataPanel({ data, onChange }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13615,
+            lineNumber: 13650,
             columnNumber: 13
           },
           this
@@ -107238,26 +107569,26 @@ function TestDataPanel({ data, onChange }) {
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: () => onChange(k2, ""), className: "flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-red-400", "aria-label": `Clear ${k2}`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "6", y1: "6", x2: "18", y2: "18" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13622,
+            lineNumber: 13657,
             columnNumber: 41
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "18", y1: "6", x2: "6", y2: "18" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13622,
+            lineNumber: 13657,
             columnNumber: 79
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13622,
+          lineNumber: 13657,
           columnNumber: 15
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13621,
+          lineNumber: 13656,
           columnNumber: 13
         }, this)
       ] }, k2, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13613,
+        lineNumber: 13648,
         columnNumber: 11
       }, this)),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2", children: [
@@ -107274,7 +107605,7 @@ function TestDataPanel({ data, onChange }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13627,
+            lineNumber: 13662,
             columnNumber: 11
           },
           this
@@ -107295,36 +107626,36 @@ function TestDataPanel({ data, onChange }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13634,
+            lineNumber: 13669,
             columnNumber: 11
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13626,
+        lineNumber: 13661,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] leading-[1.4] text-slate-500", children: [
         "Use in text as ",
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("code", { children: `{{key}}` }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13647,
+          lineNumber: 13682,
           columnNumber: 26
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13646,
+        lineNumber: 13681,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13611,
+      lineNumber: 13646,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13609,
+    lineNumber: 13644,
     columnNumber: 5
   }, this);
 }
@@ -107339,12 +107670,12 @@ function AccordionSection({ title, children, defaultOpen = true }) {
         children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: title }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13710,
+            lineNumber: 13745,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: `transform transition-transform text-slate-500 ${open ? "rotate-90" : ""}`, children: "›" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13711,
+            lineNumber: 13746,
             columnNumber: 9
           }, this)
         ]
@@ -107353,19 +107684,19 @@ function AccordionSection({ title, children, defaultOpen = true }) {
       true,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13706,
+        lineNumber: 13741,
         columnNumber: 7
       },
       this
     ),
     open && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3 bg-[#111113] p-3", children }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13713,
+      lineNumber: 13748,
       columnNumber: 16
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13705,
+    lineNumber: 13740,
     columnNumber: 5
   }, this);
 }
@@ -107389,7 +107720,7 @@ function ToolButton({
       title: label,
       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "relative -top-px flex items-center justify-center", children: icon }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13745,
+        lineNumber: 13780,
         columnNumber: 7
       }, this)
     },
@@ -107397,7 +107728,7 @@ function ToolButton({
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13732,
+      lineNumber: 13767,
       columnNumber: 5
     },
     this
@@ -107406,215 +107737,215 @@ function ToolButton({
 const TOOLBAR_ICONS = {
   text: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-serif text-[14px] font-bold leading-none", children: "T" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13751,
+    lineNumber: 13786,
     columnNumber: 9
   }, void 0),
   box: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-4 w-4 rounded-sm border-[1.5px] border-current" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13752,
+    lineNumber: 13787,
     columnNumber: 8
   }, void 0),
   pen: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 20h9" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13753,
+      lineNumber: 13788,
       columnNumber: 34
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13753,
+      lineNumber: 13788,
       columnNumber: 55
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13753,
+    lineNumber: 13788,
     columnNumber: 8
   }, void 0),
   image: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13754,
+      lineNumber: 13789,
       columnNumber: 36
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "8.5", cy: "8.5", r: "1.5" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13754,
+      lineNumber: 13789,
       columnNumber: 86
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M21 15l-5-5L5 21" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13754,
+      lineNumber: 13789,
       columnNumber: 122
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13754,
+    lineNumber: 13789,
     columnNumber: 10
   }, void 0),
   video: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "2", width: "20", height: "20", rx: "2.18", ry: "2.18" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 36
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "7", y1: "2", x2: "7", y2: "22" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 99
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "17", y1: "2", x2: "17", y2: "22" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 136
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "2", y1: "12", x2: "22", y2: "12" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 175
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "2", y1: "7", x2: "7", y2: "7" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 214
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "2", y1: "17", x2: "7", y2: "17" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 250
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "17", y1: "17", x2: "22", y2: "17" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 288
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "17", y1: "7", x2: "22", y2: "7" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13755,
+      lineNumber: 13790,
       columnNumber: 328
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13755,
+    lineNumber: 13790,
     columnNumber: 10
   }, void 0),
   frame: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13756,
+      lineNumber: 13791,
       columnNumber: 36
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "7", y: "7", width: "10", height: "10", rx: "1.5" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13756,
+      lineNumber: 13791,
       columnNumber: 86
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13756,
+    lineNumber: 13791,
     columnNumber: 10
   }, void 0),
   bar: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "10", width: "20", height: "4", rx: "2" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13757,
+    lineNumber: 13792,
     columnNumber: 34
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13757,
+    lineNumber: 13792,
     columnNumber: 8
   }, void 0),
   ring: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "8" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13758,
+    lineNumber: 13793,
     columnNumber: 35
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13758,
+    lineNumber: 13793,
     columnNumber: 9
   }, void 0),
   rect: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "4", y: "4", width: "16", height: "16", rx: "1" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13759,
+    lineNumber: 13794,
     columnNumber: 35
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13759,
+    lineNumber: 13794,
     columnNumber: 9
   }, void 0),
   circle: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { cx: "12", cy: "12", r: "9" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13760,
+    lineNumber: 13795,
     columnNumber: 37
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13760,
+    lineNumber: 13795,
     columnNumber: 11
   }, void 0),
   triangle: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3l10 18H2L12 3z" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13761,
+    lineNumber: 13796,
     columnNumber: 39
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13761,
+    lineNumber: 13796,
     columnNumber: 13
   }, void 0),
   polygon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 3l8 5v8l-8 5-8-5V8l8-5Z" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13762,
+    lineNumber: 13797,
     columnNumber: 38
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13762,
+    lineNumber: 13797,
     columnNumber: 12
   }, void 0),
   star: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "m12 3 2.6 5.8 6.4.6-4.8 4.2 1.4 6.4L12 17l-5.6 3 1.4-6.4L3 9.4l6.4-.6L12 3Z" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13763,
+    lineNumber: 13798,
     columnNumber: 35
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13763,
+    lineNumber: 13798,
     columnNumber: 9
   }, void 0),
   arrow: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 12h10" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13764,
+      lineNumber: 13799,
       columnNumber: 36
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "m11 6 7 6-7 6" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13764,
+      lineNumber: 13799,
       columnNumber: 57
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13764,
+    lineNumber: 13799,
     columnNumber: 10
   }, void 0),
   line: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "4", y1: "20", x2: "20", y2: "4" }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13765,
+    lineNumber: 13800,
     columnNumber: 35
   }, void 0) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13765,
+    lineNumber: 13800,
     columnNumber: 9
   }, void 0),
   lower_third: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "2", y: "14", width: "20", height: "6", rx: "1" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13766,
+      lineNumber: 13801,
       columnNumber: 42
     }, void 0),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "2", y1: "14", x2: "22", y2: "14" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13766,
+      lineNumber: 13801,
       columnNumber: 92
     }, void 0)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13766,
+    lineNumber: 13801,
     columnNumber: 16
   }, void 0)
 };
@@ -107650,7 +107981,7 @@ function CreationToolbar({
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-1 flex items-center justify-between", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: uiClasses.label, children: "Tools" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13825,
+        lineNumber: 13860,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-1", children: [
@@ -107663,11 +107994,11 @@ function CreationToolbar({
             title: formatShortcutTooltip("group"),
             children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 4h6M4 9v6M20 9v6M9 20h6" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13834,
+              lineNumber: 13869,
               columnNumber: 39
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13834,
+              lineNumber: 13869,
               columnNumber: 13
             }, this)
           },
@@ -107675,7 +108006,7 @@ function CreationToolbar({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13828,
+            lineNumber: 13863,
             columnNumber: 11
           },
           this
@@ -107690,27 +108021,27 @@ function CreationToolbar({
             children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "3", width: "7", height: "7" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13842,
+                lineNumber: 13877,
                 columnNumber: 39
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "14", y: "3", width: "7", height: "7" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13842,
+                lineNumber: 13877,
                 columnNumber: 80
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "14", y: "14", width: "7", height: "7" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13842,
+                lineNumber: 13877,
                 columnNumber: 122
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "3", y: "14", width: "7", height: "7" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13842,
+                lineNumber: 13877,
                 columnNumber: 165
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13842,
+              lineNumber: 13877,
               columnNumber: 13
             }, this)
           },
@@ -107718,55 +108049,55 @@ function CreationToolbar({
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13836,
+            lineNumber: 13871,
             columnNumber: 11
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13827,
+        lineNumber: 13862,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13824,
+      lineNumber: 13859,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "grid grid-cols-6 gap-2", children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.text, label: "Add Text", onClick: onAddText }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13849,
+        lineNumber: 13884,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.box, label: "Add Box", onClick: onAddBox }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13850,
+        lineNumber: 13885,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.pen, label: "Pen Tool", onClick: onTogglePenTool, active: penToolActive }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13851,
+        lineNumber: 13886,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.image, label: "Add Image", onClick: onAddImage }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13852,
+        lineNumber: 13887,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.video, label: "Add Video", onClick: onAddVideo }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13853,
+        lineNumber: 13888,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.frame, label: "Add Frame", onClick: onAddFrame }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13854,
+        lineNumber: 13889,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.lower_third, label: "Add Lower Third", onClick: onAddLowerThird }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13855,
+        lineNumber: 13890,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -107774,11 +108105,11 @@ function CreationToolbar({
         {
           icon: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13857,
+            lineNumber: 13892,
             columnNumber: 43
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13857,
+            lineNumber: 13892,
             columnNumber: 17
           }, this),
           label: "Conversion Selection to Component",
@@ -107789,59 +108120,59 @@ function CreationToolbar({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13856,
+          lineNumber: 13891,
           columnNumber: 9
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.bar, label: "Add Progress Bar", onClick: () => onAddProgress("bar") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13864,
+        lineNumber: 13899,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.ring, label: "Add Progress Ring", onClick: () => onAddProgress("ring") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13865,
+        lineNumber: 13900,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.rect, label: "Add Rectangle", onClick: () => onAddShape("rect") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13866,
+        lineNumber: 13901,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.circle, label: "Add Circle", onClick: () => onAddShape("circle") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13867,
+        lineNumber: 13902,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.triangle, label: "Add Triangle", onClick: () => onAddShape("triangle") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13868,
+        lineNumber: 13903,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.line, label: "Add Line", onClick: () => onAddShape("line") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13869,
+        lineNumber: 13904,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.polygon, label: "Add Polygon", onClick: () => onAddShape("polygon") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13870,
+        lineNumber: 13905,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.star, label: "Add Star", onClick: () => onAddShape("star") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13871,
+        lineNumber: 13906,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ToolButton, { icon: TOOLBAR_ICONS.arrow, label: "Add Arrow", onClick: () => onAddShape("arrow") }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13872,
+        lineNumber: 13907,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13847,
+      lineNumber: 13882,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mt-1 flex gap-2 border-t border-[rgba(255,255,255,0.08)] pt-3", children: [
@@ -107856,59 +108187,59 @@ function CreationToolbar({
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { className: "animate-spin h-3 w-3 text-white", xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("circle", { className: "opacity-25", cx: "12", cy: "12", r: "10", stroke: "currentColor", strokeWidth: "4" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13886,
+                  lineNumber: 13921,
                   columnNumber: 131
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { className: "opacity-75", fill: "currentColor", d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 13886,
+                  lineNumber: 13921,
                   columnNumber: 232
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13886,
+                lineNumber: 13921,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Saving..." }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13887,
+                lineNumber: 13922,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13885,
+              lineNumber: 13920,
               columnNumber: 13
             }, this) : saveOk ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "20 6 9 17 4 12" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13890,
+                lineNumber: 13925,
                 columnNumber: 41
               }, this) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13890,
+                lineNumber: 13925,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Saved" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13890,
+                lineNumber: 13925,
                 columnNumber: 83
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13890,
+              lineNumber: 13925,
               columnNumber: 13
             }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "Save Changes" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13892,
+              lineNumber: 13927,
               columnNumber: 15
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13892,
+              lineNumber: 13927,
               columnNumber: 13
             }, this),
             saveError && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "ml-1 text-[11px] leading-[1.4] opacity-80", children: "(Error)" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13895,
+              lineNumber: 13930,
               columnNumber: 25
             }, this)
           ]
@@ -107917,7 +108248,7 @@ function CreationToolbar({
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13876,
+          lineNumber: 13911,
           columnNumber: 9
         },
         this
@@ -107931,22 +108262,22 @@ function CreationToolbar({
           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13906,
+              lineNumber: 13941,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "7 10 12 15 17 10" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13906,
+              lineNumber: 13941,
               columnNumber: 68
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "15", x2: "12", y2: "3" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13906,
+              lineNumber: 13941,
               columnNumber: 105
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13905,
+            lineNumber: 13940,
             columnNumber: 13
           }, this)
         },
@@ -107954,7 +108285,7 @@ function CreationToolbar({
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13900,
+          lineNumber: 13935,
           columnNumber: 11
         },
         this
@@ -107963,22 +108294,22 @@ function CreationToolbar({
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "1.5", strokeLinecap: "round", strokeLinejoin: "round", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13913,
+            lineNumber: 13948,
             columnNumber: 15
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "17 8 12 3 7 8" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13913,
+            lineNumber: 13948,
             columnNumber: 68
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "3", x2: "12", y2: "15" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 13913,
+            lineNumber: 13948,
             columnNumber: 102
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13912,
+          lineNumber: 13947,
           columnNumber: 13
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("input", { type: "file", accept: ".json,.scraplet.json", className: "hidden", onChange: (e2) => {
@@ -107999,12 +108330,12 @@ function CreationToolbar({
           e2.target.value = "";
         } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13915,
+          lineNumber: 13950,
           columnNumber: 13
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 13911,
+        lineNumber: 13946,
         columnNumber: 11
       }, this),
       overlayId && !editingMasterId && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -108055,22 +108386,22 @@ Continue?`
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "11", height: "11", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13970,
+                lineNumber: 14005,
                 columnNumber: 111
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "17 8 12 3 7 8" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13970,
+                lineNumber: 14005,
                 columnNumber: 164
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "3", x2: "12", y2: "15" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 13970,
+                lineNumber: 14005,
                 columnNumber: 198
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 13970,
+              lineNumber: 14005,
               columnNumber: 13
             }, this),
             "Publish"
@@ -108080,19 +108411,19 @@ Continue?`
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 13932,
+          lineNumber: 13967,
           columnNumber: 54
         },
         this
       )
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 13875,
+      lineNumber: 13910,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 13823,
+    lineNumber: 13858,
     columnNumber: 5
   }, this);
 }
@@ -108218,7 +108549,7 @@ function LayersPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14126,
+                lineNumber: 14161,
                 columnNumber: 13
               },
               this
@@ -108234,7 +108565,7 @@ function LayersPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 14136,
+                  lineNumber: 14171,
                   columnNumber: 19
                 },
                 this
@@ -108249,7 +108580,7 @@ function LayersPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 14143,
+                  lineNumber: 14178,
                   columnNumber: 15
                 },
                 this
@@ -108264,14 +108595,14 @@ function LayersPanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 14147,
+                  lineNumber: 14182,
                   columnNumber: 15
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 14133,
+              lineNumber: 14168,
               columnNumber: 13
             }, this),
             isRenaming ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -108294,24 +108625,24 @@ function LayersPanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14156,
+                lineNumber: 14191,
                 columnNumber: 13
               },
               this
             ) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "min-w-0 flex-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium", children: el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14172,
+                lineNumber: 14207,
                 columnNumber: 15
               }, this),
               roleLabel && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "truncate text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500", children: roleLabel }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14176,
+                lineNumber: 14211,
                 columnNumber: 17
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 14171,
+              lineNumber: 14206,
               columnNumber: 13
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -108330,15 +108661,15 @@ function LayersPanel({
                       title: isLocked ? "Unlock" : "Lock",
                       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: isLocked ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(LockIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14194,
+                        lineNumber: 14229,
                         columnNumber: 29
                       }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(UnlockIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14194,
+                        lineNumber: 14229,
                         columnNumber: 44
                       }, this) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14193,
+                        lineNumber: 14228,
                         columnNumber: 15
                       }, this)
                     },
@@ -108346,7 +108677,7 @@ function LayersPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14188,
+                      lineNumber: 14223,
                       columnNumber: 13
                     },
                     this
@@ -108362,15 +108693,15 @@ function LayersPanel({
                       title: isVisible ? "Hide" : "Show",
                       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: isVisible ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(EyeIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14204,
+                        lineNumber: 14239,
                         columnNumber: 30
                       }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(EyeOffIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14204,
+                        lineNumber: 14239,
                         columnNumber: 44
                       }, this) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14203,
+                        lineNumber: 14238,
                         columnNumber: 15
                       }, this)
                     },
@@ -108378,7 +108709,7 @@ function LayersPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14198,
+                      lineNumber: 14233,
                       columnNumber: 13
                     },
                     this
@@ -108394,11 +108725,11 @@ function LayersPanel({
                       title: "Use as Mask",
                       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(MaskIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14215,
+                        lineNumber: 14250,
                         columnNumber: 19
                       }, this) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14214,
+                        lineNumber: 14249,
                         columnNumber: 17
                       }, this)
                     },
@@ -108406,7 +108737,7 @@ function LayersPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14209,
+                      lineNumber: 14244,
                       columnNumber: 15
                     },
                     this
@@ -108422,11 +108753,11 @@ function LayersPanel({
                       title: "Release Mask",
                       children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "relative -top-px flex items-center justify-center", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(UnlockIcon, {}, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14227,
+                        lineNumber: 14262,
                         columnNumber: 19
                       }, this) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14226,
+                        lineNumber: 14261,
                         columnNumber: 17
                       }, this)
                     },
@@ -108434,7 +108765,7 @@ function LayersPanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14221,
+                      lineNumber: 14256,
                       columnNumber: 15
                     },
                     this
@@ -108445,7 +108776,7 @@ function LayersPanel({
               true,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14184,
+                lineNumber: 14219,
                 columnNumber: 11
               },
               this
@@ -108456,7 +108787,7 @@ function LayersPanel({
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 14070,
+          lineNumber: 14105,
           columnNumber: 9
         },
         this
@@ -108471,25 +108802,25 @@ function LayersPanel({
         )
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14236,
+        lineNumber: 14271,
         columnNumber: 11
       }, this)
     ] }, el.id, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14069,
+      lineNumber: 14104,
       columnNumber: 7
     }, this);
   };
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: containerRef, className: "flex h-full flex-col overflow-y-auto bg-[#111113] pb-10 custom-scrollbar", children: [
     roots.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "p-4 text-center text-[12px] leading-[1.4] italic text-slate-600", children: "No layers" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14254,
+      lineNumber: 14289,
       columnNumber: 30
     }, this),
     roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 14253,
+    lineNumber: 14288,
     columnNumber: 5
   }, this);
 }
@@ -108547,7 +108878,7 @@ function SaveLowerThirdButton({ element }) {
     false,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14310,
+      lineNumber: 14345,
       columnNumber: 5
     },
     this
@@ -108568,26 +108899,26 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between px-1 mb-1.5", children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold", children: "Lower Thirds" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 14352,
+          lineNumber: 14387,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("a", { href: "/dashboard/overlays", target: "_blank", className: "text-[10px] text-indigo-400 hover:text-indigo-300", children: "Manage →" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 14353,
+          lineNumber: 14388,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14351,
+        lineNumber: 14386,
         columnNumber: 9
       }, this),
       !ltLoaded ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-600 px-1", children: "Loading…" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14356,
+        lineNumber: 14391,
         columnNumber: 11
       }, this) : ltTemplates.length === 0 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[11px] text-slate-600 px-1", children: "No saved lower thirds yet. Name and save one from the inspector." }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14358,
+        lineNumber: 14393,
         columnNumber: 11
       }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col gap-1", children: ltTemplates.map((tmpl) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
         "div",
@@ -108599,7 +108930,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col truncate", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[12px] font-semibold text-slate-200 truncate", children: tmpl.name }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14369,
+                lineNumber: 14404,
                 columnNumber: 19
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 font-mono", children: [
@@ -108607,17 +108938,17 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                 tmpl.name.toLowerCase().replace(/\s+/g, "-")
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14370,
+                lineNumber: 14405,
                 columnNumber: 19
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 14368,
+              lineNumber: 14403,
               columnNumber: 17
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity flex-none ml-2", children: "+ Insert" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-              lineNumber: 14372,
+              lineNumber: 14407,
               columnNumber: 17
             }, this)
           ]
@@ -108626,38 +108957,38 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-          lineNumber: 14362,
+          lineNumber: 14397,
           columnNumber: 15
         },
         this
       )) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14360,
+        lineNumber: 14395,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14350,
+      lineNumber: 14385,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "h-px bg-[rgba(255,255,255,0.06)]" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14379,
+      lineNumber: 14414,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-1 mb-1.5", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] uppercase tracking-[0.18em] text-slate-500 font-semibold", children: "Components" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14384,
+        lineNumber: 14419,
         columnNumber: 11
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14383,
+        lineNumber: 14418,
         columnNumber: 9
       }, this),
       !components || components.length === 0 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-1 text-[11px] text-slate-600", children: 'Select elements and click "Create Component" to build reusable blocks.' }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14387,
+        lineNumber: 14422,
         columnNumber: 11
       }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col gap-1", children: components.map((comp) => {
         var _a3;
@@ -108671,7 +109002,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex flex-col truncate", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "truncate pr-2 text-[13px] leading-[1.4] font-semibold text-slate-200", title: comp.name, children: comp.name }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 14399,
+                  lineNumber: 14434,
                   columnNumber: 21
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "mt-1 text-[11px] leading-[1.4] text-slate-500", children: [
@@ -108680,12 +109011,12 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   comp.variantName ? ` • ${comp.variantName}` : ""
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                  lineNumber: 14400,
+                  lineNumber: 14435,
                   columnNumber: 21
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14398,
+                lineNumber: 14433,
                 columnNumber: 19
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100", children: [
@@ -108701,22 +109032,22 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M5 5h6v6H5z" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14411,
+                        lineNumber: 14446,
                         columnNumber: 49
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M13 13h6v6h-6z" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14411,
+                        lineNumber: 14446,
                         columnNumber: 73
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M8 8l8 8" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14411,
+                        lineNumber: 14446,
                         columnNumber: 100
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14411,
+                      lineNumber: 14446,
                       columnNumber: 23
                     }, this)
                   },
@@ -108724,7 +109055,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 14406,
+                    lineNumber: 14441,
                     columnNumber: 21
                   },
                   this
@@ -108741,17 +109072,17 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M12 20h9" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14418,
+                        lineNumber: 14453,
                         columnNumber: 49
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14418,
+                        lineNumber: 14453,
                         columnNumber: 75
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14418,
+                      lineNumber: 14453,
                       columnNumber: 23
                     }, this)
                   },
@@ -108759,7 +109090,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 14413,
+                    lineNumber: 14448,
                     columnNumber: 21
                   },
                   this
@@ -108776,27 +109107,27 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("polyline", { points: "3 6 5 6 21 6" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14426,
+                        lineNumber: 14461,
                         columnNumber: 51
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14426,
+                        lineNumber: 14461,
                         columnNumber: 94
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "10", y1: "11", x2: "10", y2: "17" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14426,
+                        lineNumber: 14461,
                         columnNumber: 190
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "14", y1: "11", x2: "14", y2: "17" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14426,
+                        lineNumber: 14461,
                         columnNumber: 235
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14426,
+                      lineNumber: 14461,
                       columnNumber: 25
                     }, this)
                   },
@@ -108804,7 +109135,7 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 14421,
+                    lineNumber: 14456,
                     columnNumber: 23
                   },
                   this
@@ -108817,17 +109148,17 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                     children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { ...TOOL_ICON_PROPS, children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "12", y1: "5", x2: "12", y2: "19" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14433,
+                        lineNumber: 14468,
                         columnNumber: 49
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: "5", y1: "12", x2: "19", y2: "12" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                        lineNumber: 14433,
+                        lineNumber: 14468,
                         columnNumber: 88
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                      lineNumber: 14433,
+                      lineNumber: 14468,
                       columnNumber: 23
                     }, this)
                   },
@@ -108835,14 +109166,14 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                    lineNumber: 14429,
+                    lineNumber: 14464,
                     columnNumber: 21
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-                lineNumber: 14405,
+                lineNumber: 14440,
                 columnNumber: 19
               }, this)
             ]
@@ -108851,24 +109182,24 @@ function ComponentLibraryPanel({ components, onInsert, onEdit, onDelete, onCreat
           true,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-            lineNumber: 14393,
+            lineNumber: 14428,
             columnNumber: 17
           },
           this
         );
       }) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-        lineNumber: 14389,
+        lineNumber: 14424,
         columnNumber: 11
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-      lineNumber: 14382,
+      lineNumber: 14417,
       columnNumber: 7
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
-    lineNumber: 14347,
+    lineNumber: 14382,
     columnNumber: 5
   }, this);
 }

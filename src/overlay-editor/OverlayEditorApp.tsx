@@ -2272,6 +2272,40 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     });
   }
 
+  function removeElementTracks(elementId: string) {
+    setConfig((prev) => {
+      const currentEventTl = activeEventTimeline
+        ? (prev as any).eventTimelines?.[activeEventTimeline]
+        : null;
+      
+      if (currentEventTl) {
+        const ensured = ensureTimeline(currentEventTl);
+        const filteredTracks = ensured.tracks.filter((t: any) => t.elementId !== elementId);
+        return {
+          ...prev,
+          eventTimelines: {
+            ...((prev as any).eventTimelines || {}),
+            [activeEventTimeline!]: {
+              ...ensured,
+              tracks: filteredTracks,
+            }
+          }
+        };
+      } else {
+        const ensured = ensureTimeline(prev.timeline);
+        const filteredTracks = ensured.tracks.filter((t: any) => t.elementId !== elementId);
+        return {
+          ...prev,
+          timeline: {
+            ...ensured,
+            tracks: filteredTracks,
+          }
+        };
+      }
+    });
+  }
+
+
   function toggleTimelineKeyframe(elementId: string, property: OverlayTimelineProperty) {
     const element = previewElementsById[elementId];
     if (!element) return;
@@ -7907,6 +7941,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         }}
         onSetSelectedKeyframeEasing={updateSelectedTimelineKeyframeEasing}
         onAddTrack={addTimelineTrack}
+        onRemoveElementTracks={removeElementTracks}
         onMoveKeyframe={moveTimelineKeyframe}
         onDuplicateKeyframe={duplicateTimelineKeyframe}
         onAddKeyframeAtTime={addTimelineKeyframeAtTime}
