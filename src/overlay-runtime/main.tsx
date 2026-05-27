@@ -767,7 +767,17 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         "cheer": "cheer",
         "host": "host",
       };
-      const tlName = eventMap[type];
+      let tlName = eventMap[type];
+      if (!tlName) {
+        // Fallback for platform-scoped event strings (e.g. "platform.kick.raid")
+        const lowerType = type.toLowerCase();
+        if (lowerType.includes("raid")) tlName = "raid";
+        else if (lowerType.includes("follow")) tlName = "follow";
+        else if (lowerType.includes("subscription") || lowerType.includes("sub")) tlName = "sub";
+        else if (lowerType.includes("donation")) tlName = "donation";
+        else if (lowerType.includes("cheer")) tlName = "cheer";
+        else if (lowerType.includes("host")) tlName = "host";
+      }
       if (tlName && (overlay as any)?.eventTimelines?.[tlName]) {
         setActiveEventTl({ name: tlName, startedAt: performance.now() });
       }

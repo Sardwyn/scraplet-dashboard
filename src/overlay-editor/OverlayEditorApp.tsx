@@ -1546,16 +1546,25 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     () =>
       config.elements.map((el) => {
         const overrideVisible = previewVisibilityOverrides[el.id];
-        const visibilityResolved =
+        let visibilityResolved =
           typeof overrideVisible === "boolean"
             ? ({ ...el, visible: overrideVisible } as OverlayElement)
             : el;
+
+        if (activeEventTimeline) {
+          const hasTrack = timeline.tracks.some((t) => t.elementId === el.id);
+          const isSelected = selectedIds.includes(el.id);
+          if (hasTrack || isSelected) {
+            visibilityResolved = { ...visibilityResolved, visible: true } as OverlayElement;
+          }
+        }
+
         return applyTimelineOverridesToElement(
           visibilityResolved,
           timelineValues[el.id]
         ) as AnyEl;
       }),
-    [config.elements, previewVisibilityOverrides, timelineValues]
+    [config.elements, previewVisibilityOverrides, timelineValues, activeEventTimeline, timeline, selectedIds]
   );
 
   // Memoize elementsById using the SAME logic as runtime
