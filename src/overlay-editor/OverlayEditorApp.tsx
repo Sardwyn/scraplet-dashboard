@@ -244,6 +244,7 @@ function ensureTimeline(timeline?: OverlayTimeline): OverlayTimeline {
       loop: timeline?.playback?.loop ?? false,
       reverse: timeline?.playback?.reverse ?? false,
     },
+    markers: timeline?.markers ? [...timeline.markers] : [],
   };
 }
 
@@ -7952,6 +7953,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           setActiveEventTimeline(name);
           setTimelinePlayheadMs(0);
           setIsTimelinePlaying(false);
+        }}
+        onUpdateMarkers={(updatedMarkers) => {
+          setTimeline((currentTimeline) => ({
+            ...currentTimeline,
+            markers: updatedMarkers,
+          }));
         }}
       />
       <ShortcutCheatsheetModal open={showShortcutModal} onClose={() => setShowShortcutModal(false)} />

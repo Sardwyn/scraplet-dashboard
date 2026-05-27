@@ -84059,6 +84059,7 @@ ${parts.join("\n")}
     const [playheadMs, setPlayheadMs] = reactExports.useState(0);
     const [isTimelinePlaying, setIsTimelinePlaying] = reactExports.useState(false);
     const playbackStartRef = reactExports.useRef(null);
+    const lastExecutedMarkersRef = reactExports.useRef(/* @__PURE__ */ new Set());
     const overlayConfigHashRef = reactExports.useRef("");
     const baseW = (_c = (_b = (_a3 = overlay == null ? void 0 : overlay.baseResolution) == null ? void 0 : _a3.width) != null ? _b : window.__OVERLAY_BASE_W__) != null ? _c : 1920;
     const baseH = (_f = (_e2 = (_d = overlay == null ? void 0 : overlay.baseResolution) == null ? void 0 : _d.height) != null ? _e2 : window.__OVERLAY_BASE_H__) != null ? _f : 1080;
@@ -84555,13 +84556,41 @@ ${parts.join("\n")}
       let frameId = 0;
       const playheadRef = { current: reverse ? durationMs : 0 };
       playbackStartRef.current = performance.now();
+      lastExecutedMarkersRef.current.clear();
+      let previousPlayhead = playheadRef.current;
       const tick = (now) => {
-        var _a5;
+        var _a5, _b3, _c3;
         const startedAt = (_a5 = playbackStartRef.current) != null ? _a5 : now;
         const elapsed = Math.max(0, now - startedAt);
         const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
         const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
+        const tStart = previousPlayhead;
+        const tEnd = next;
+        previousPlayhead = next;
         playheadRef.current = next;
+        const looped = reverse ? tEnd > tStart : tEnd < tStart;
+        if (looped) {
+          lastExecutedMarkersRef.current.clear();
+        }
+        const markers = (_c3 = (_b3 = overlay == null ? void 0 : overlay.timeline) == null ? void 0 : _b3.markers) != null ? _c3 : [];
+        markers.forEach((marker) => {
+          const isCrossed = reverse ? marker.t <= tStart && marker.t >= tEnd : marker.t >= tStart && marker.t <= tEnd;
+          if (isCrossed && !lastExecutedMarkersRef.current.has(marker.id)) {
+            lastExecutedMarkersRef.current.add(marker.id);
+            if (marker.actionType === "pause") {
+              setIsTimelinePlaying(false);
+            } else if (marker.actionType === "audio" && marker.soundUrl) {
+              const audio = new Audio(marker.soundUrl);
+              audio.play().catch((err) => console.error("Error playing marker sfx:", err));
+            } else if (marker.actionType === "trigger" && marker.triggerId) {
+              window.dispatchEvent(
+                new CustomEvent("scraplet:overlay:event", {
+                  detail: { header: { type: marker.triggerId } }
+                })
+              );
+            }
+          }
+        });
         if (!loop && elapsed >= durationMs) {
           setPlayheadMs(reverse ? 0 : durationMs);
           setIsTimelinePlaying(false);
@@ -84765,7 +84794,7 @@ ${parts.join("\n")}
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1614,
+        lineNumber: 1653,
         columnNumber: 7
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84813,7 +84842,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1642,
+                    lineNumber: 1681,
                     columnNumber: 11
                   },
                   this
@@ -84837,7 +84866,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1657,
+                    lineNumber: 1696,
                     columnNumber: 11
                   },
                   this
@@ -84879,7 +84908,7 @@ ${parts.join("\n")}
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                          lineNumber: 1685,
+                          lineNumber: 1724,
                           columnNumber: 17
                         },
                         this
@@ -84890,7 +84919,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1672,
+                    lineNumber: 1711,
                     columnNumber: 13
                   },
                   this
@@ -84918,14 +84947,14 @@ ${parts.join("\n")}
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                      lineNumber: 1712,
+                      lineNumber: 1751,
                       columnNumber: 17
                     },
                     this
                   );
                 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 1710,
+                  lineNumber: 1749,
                   columnNumber: 13
                 }, this)
               ]
@@ -84934,7 +84963,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1630,
+              lineNumber: 1669,
               columnNumber: 9
             },
             this
@@ -84944,7 +84973,7 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1617,
+          lineNumber: 1656,
           columnNumber: 7
         },
         this
@@ -84973,7 +85002,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1749,
+              lineNumber: 1788,
               columnNumber: 9
             },
             this
@@ -84983,19 +85012,19 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1738,
+          lineNumber: 1777,
           columnNumber: 7
         },
         this
       ),
       !isOBS && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(DebugHud, { state, data: eventData }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1757,
+        lineNumber: 1796,
         columnNumber: 18
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1613,
+      lineNumber: 1652,
       columnNumber: 5
     }, this);
   }
@@ -85003,7 +85032,7 @@ ${parts.join("\n")}
   if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
     clientExports.createRoot(rootEl).render(/* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(OverlayRuntimeRoot, { publicId: window.__OVERLAY_PUBLIC_ID__ }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1768,
+      lineNumber: 1807,
       columnNumber: 29
     }, void 0));
   }

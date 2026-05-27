@@ -713,6 +713,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [playheadMs, setPlayheadMs] = useState(0);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const playbackStartRef = useRef<number | null>(null);
+  const lastExecutedMarkersRef = useRef<Set<string>>(new Set());
   const overlayConfigHashRef = useRef<string>("");
 
   const baseW = overlay?.baseResolution?.width ?? (window as any).__OVERLAY_BASE_W__ ?? 1920;
@@ -1328,13 +1329,51 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     // Use a ref to track playhead without triggering re-renders on every frame
     const playheadRef = { current: reverse ? durationMs : 0 };
     playbackStartRef.current = performance.now();
+    lastExecutedMarkersRef.current.clear();
+
+    let previousPlayhead = playheadRef.current;
 
     const tick = (now: number) => {
       const startedAt = playbackStartRef.current ?? now;
       const elapsed = Math.max(0, now - startedAt);
       const clampedElapsed = loop && durationMs > 0 ? elapsed % durationMs : Math.min(durationMs, elapsed);
       const next = reverse ? durationMs - clampedElapsed : clampedElapsed;
+
+      // Marker evaluation
+      const tStart = previousPlayhead;
+      const tEnd = next;
+      previousPlayhead = next;
       playheadRef.current = next;
+
+      // Detect looping reset
+      const looped = reverse ? (tEnd > tStart) : (tEnd < tStart);
+      if (looped) {
+        lastExecutedMarkersRef.current.clear();
+      }
+
+      const markers = overlay?.timeline?.markers ?? [];
+      markers.forEach((marker) => {
+        const isCrossed = reverse
+          ? (marker.t <= tStart && marker.t >= tEnd)
+          : (marker.t >= tStart && marker.t <= tEnd);
+
+        if (isCrossed && !lastExecutedMarkersRef.current.has(marker.id)) {
+          lastExecutedMarkersRef.current.add(marker.id);
+
+          if (marker.actionType === "pause") {
+            setIsTimelinePlaying(false);
+          } else if (marker.actionType === "audio" && marker.soundUrl) {
+            const audio = new Audio(marker.soundUrl);
+            audio.play().catch((err) => console.error("Error playing marker sfx:", err));
+          } else if (marker.actionType === "trigger" && marker.triggerId) {
+            window.dispatchEvent(
+              new CustomEvent("scraplet:overlay:event", {
+                detail: { header: { type: marker.triggerId } },
+              })
+            );
+          }
+        }
+      });
 
       if (!loop && elapsed >= durationMs) {
         // Timeline finished — update React state once

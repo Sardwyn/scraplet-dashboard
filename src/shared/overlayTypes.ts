@@ -429,10 +429,20 @@ export interface OverlayTimelineTrack {
   enabled?: boolean;
 }
 
+export interface OverlayTimelineMarker {
+  id: string;
+  t: number;                  // Timestamp in milliseconds
+  name: string;               // Display name / label
+  actionType: "audio" | "pause" | "trigger";
+  soundUrl?: string;          // Used if actionType === "audio"
+  triggerId?: string;         // Used if actionType === "trigger"
+}
+
 export interface OverlayTimeline {
   durationMs: number;
   tracks: OverlayTimelineTrack[];
   playback?: OverlayTimelinePlayback;
+  markers?: OverlayTimelineMarker[]; // NEW: Optional action markers track
 }
 
 /* =========================

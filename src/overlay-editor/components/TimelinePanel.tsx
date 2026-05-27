@@ -6,6 +6,7 @@ import {
   OverlayTimelineKeyframe,
   OverlayTimelineProperty,
   OverlayTimelineTrack,
+  OverlayTimelineMarker,
 } from "../../shared/overlayTypes";
 import { uiClasses, uiTokens } from "../uiTokens";
 
@@ -514,6 +515,7 @@ type Props = {
   onMoveMultipleKeyframes?: (moves: Array<{ trackId: string; keyframeId: string; nextTimeMs: number }>) => void;
   onSetKeyframeBezier?: (trackId: string, keyframeId: string, bezier: [number,number,number,number]) => void;
   isTriggerMode?: boolean;
+  onUpdateMarkers?: (markers: OverlayTimelineMarker[]) => void;
 };
 
 
@@ -528,6 +530,7 @@ export function TimelinePanel({
   onMoveMultipleKeyframes, onSetKeyframeBezier,
   activeEventTimeline, eventTimelines, onSetActiveEventTimeline,
   isTriggerMode,
+  onUpdateMarkers,
 }: Props) {
   const activeColor = activeEventTimeline ? (EVENT_COLORS[activeEventTimeline] ?? "#6366f1") : null;
   const isNeonColor = isTriggerMode;
@@ -538,6 +541,8 @@ export function TimelinePanel({
   // ── Sequencer-style tracking state ──
   const [manuallyTrackedElementIds, setManuallyTrackedElementIds] = useState<Set<string>>(new Set());
   const [showElementPicker, setShowElementPicker] = useState(false);
+  const [editingMarker, setEditingMarker] = useState<OverlayTimelineMarker | null>(null);
+  const markers = useMemo(() => timeline.markers ?? [], [timeline.markers]);
   const [activePropertyPickerElementId, setActivePropertyPickerElementId] = useState<string | null>(null);
 
   // ── zoom / scroll ──────────────────────────────────────────────────────────
@@ -993,6 +998,108 @@ export function TimelinePanel({
             );
           })()}
           <div ref={trackAreaRef} style={{ position: 'relative', minHeight: '100%' }} onMouseDown={onTrackAreaMouseDown}>
+            {/* Markers Track */}
+            <div className="flex items-center border-b border-[rgba(255,255,255,0.08)] bg-[#141416]/20" style={{ height: TRACK_HEIGHT + 4 }}>
+              <div
+                className="flex-none flex items-center justify-between px-3 text-[11px] font-bold text-amber-400 uppercase tracking-[0.05em] border-r border-[rgba(255,255,255,0.04)] bg-[#09090b]"
+                style={{ width: HEADER_WIDTH, height: "100%" }}
+              >
+                <span className="flex items-center gap-1.5">
+                  <span>📍 Markers</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = `marker_${Math.random().toString(36).substr(2, 9)}`;
+                    const newMarker: OverlayTimelineMarker = {
+                      id,
+                      t: playheadMs,
+                      name: `Marker ${markers.length + 1}`,
+                      actionType: "pause",
+                    };
+                    const updated = [...markers, newMarker];
+                    onUpdateMarkers?.(updated);
+                    setEditingMarker(newMarker);
+                  }}
+                  className="flex h-4 w-4 items-center justify-center rounded bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-extrabold transition-all shadow-sm"
+                  title="Add Marker at Playhead"
+                >
+                  +
+                </button>
+              </div>
+              <div
+                className={`relative h-full flex-none ${uiClasses.timelineLane} bg-amber-500/5`}
+                style={{ width: totalWidth }}
+                onDoubleClick={(e) => {
+                  if (e.button !== 0) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const px = e.clientX - rect.left;
+                  const clickTimeMs = Math.max(0, Math.min(timeline.durationMs, (px / totalWidth) * timeline.durationMs));
+                  const id = `marker_${Math.random().toString(36).substr(2, 9)}`;
+                  const newMarker: OverlayTimelineMarker = {
+                    id,
+                    t: clickTimeMs,
+                    name: `Marker ${markers.length + 1}`,
+                    actionType: "pause",
+                  };
+                  const updated = [...markers, newMarker];
+                  onUpdateMarkers?.(updated);
+                  setEditingMarker(newMarker);
+                }}
+              >
+                {markers.map((marker) => {
+                  const markerPlayheadPx = (marker.t / Math.max(1, timeline.durationMs)) * totalWidth;
+                  return (
+                    <div
+                      key={marker.id}
+                      style={{
+                        position: "absolute",
+                        left: markerPlayheadPx,
+                        top: 0,
+                        bottom: 0,
+                        transform: "translateX(-50%)",
+                        zIndex: 30,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const lane = e.currentTarget.parentElement?.parentElement;
+                          if (!lane) return;
+                          const laneRect = lane.getBoundingClientRect();
+                          const onMove = (me: MouseEvent) => {
+                            const px = me.clientX - laneRect.left;
+                            const nextTimeMs = Math.max(0, Math.min(timeline.durationMs, (px / totalWidth) * timeline.durationMs));
+                            const updated = markers.map(m => m.id === marker.id ? { ...m, t: Math.round(nextTimeMs) } : m);
+                            onUpdateMarkers?.(updated);
+                          };
+                          const onUp = () => {
+                            window.removeEventListener("mousemove", onMove);
+                            window.removeEventListener("mouseup", onUp);
+                          };
+                          window.addEventListener("mousemove", onMove);
+                          window.addEventListener("mouseup", onUp);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingMarker(marker);
+                        }}
+                        className="group/marker flex flex-col items-center h-full cursor-grab active:cursor-grabbing focus:outline-none"
+                      >
+                        <div className="bg-amber-500 hover:bg-amber-400 text-[9px] font-bold text-slate-950 px-1.5 py-0.5 rounded shadow flex items-center gap-1 border border-amber-300/30">
+                          <span>{marker.name}</span>
+                          <span className="text-[7px] bg-amber-950/20 px-1 rounded uppercase">{marker.actionType}</span>
+                        </div>
+                        <div className="w-px flex-1 border-l border-dashed border-amber-500/50 group-hover/marker:border-amber-400 group-hover/marker:border-solid" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           {visibleElements.length === 0 && (
             <div className="px-5 py-8 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-3">
               <p>No elements are currently added to the timeline sequencer.</p>
@@ -1150,6 +1257,135 @@ export function TimelinePanel({
           </div>{/* end trackAreaRef */}
         </div>
       </div>
+
+      {/* Marker Editor Popover Modal */}
+      {editingMarker && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-xs">
+          <div className="w-80 rounded-xl border border-amber-500/30 bg-[#111113]/90 backdrop-blur-md p-4 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-2">
+              <span className="text-[12px] font-bold text-amber-400 uppercase tracking-wider">Edit Marker</span>
+              <button
+                type="button"
+                onClick={() => setEditingMarker(null)}
+                className="text-slate-400 hover:text-slate-200 text-xs"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-3 text-[11px]">
+              <div className="space-y-1">
+                <label className="text-slate-400 block font-medium">Marker Name</label>
+                <input
+                  type="text"
+                  value={editingMarker.name}
+                  onChange={(e) => {
+                    const next = { ...editingMarker, name: e.target.value };
+                    setEditingMarker(next);
+                    const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                    onUpdateMarkers?.(updated);
+                  }}
+                  className={`w-full ${uiClasses.field} text-slate-200`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400 block font-medium">Time (ms)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={timeline.durationMs}
+                  value={editingMarker.t}
+                  onChange={(e) => {
+                    const next = { ...editingMarker, t: Math.max(0, Math.min(timeline.durationMs, Number(e.target.value) || 0)) };
+                    setEditingMarker(next);
+                    const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                    onUpdateMarkers?.(updated);
+                  }}
+                  className={`w-full ${uiClasses.field} text-slate-200`}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400 block font-medium">Action Type</label>
+                <select
+                  value={editingMarker.actionType}
+                  onChange={(e) => {
+                    const next = { ...editingMarker, actionType: e.target.value as any };
+                    setEditingMarker(next);
+                    const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                    onUpdateMarkers?.(updated);
+                  }}
+                  className={`w-full ${uiClasses.field} text-slate-200 appearance-none`}
+                >
+                  <option value="pause">Pause Playback</option>
+                  <option value="audio">Play Audio (SFX)</option>
+                  <option value="trigger">Emit Local Trigger</option>
+                </select>
+              </div>
+
+              {editingMarker.actionType === "audio" && (
+                <div className="space-y-1">
+                  <label className="text-slate-400 block font-medium">Audio URL / Upload</label>
+                  <input
+                    type="text"
+                    placeholder="/dashboard/api/uploads/overlay/audio/sfx.mp3"
+                    value={editingMarker.soundUrl || ""}
+                    onChange={(e) => {
+                      const next = { ...editingMarker, soundUrl: e.target.value };
+                      setEditingMarker(next);
+                      const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                      onUpdateMarkers?.(updated);
+                    }}
+                    className={`w-full ${uiClasses.field} text-slate-200`}
+                  />
+                  <span className="text-[9px] text-slate-500 block">Relative URL or full public audio URL.</span>
+                </div>
+              )}
+
+              {editingMarker.actionType === "trigger" && (
+                <div className="space-y-1">
+                  <label className="text-slate-400 block font-medium">Trigger Event ID / Name</label>
+                  <input
+                    type="text"
+                    placeholder="alert_custom_sfx"
+                    value={editingMarker.triggerId || ""}
+                    onChange={(e) => {
+                      const next = { ...editingMarker, triggerId: e.target.value };
+                      setEditingMarker(next);
+                      const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                      onUpdateMarkers?.(updated);
+                    }}
+                    className={`w-full ${uiClasses.field} text-slate-200`}
+                  />
+                  <span className="text-[9px] text-slate-500 block">Event triggered in active widgets.</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 border-t border-white/10 pt-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = markers.filter(m => m.id !== editingMarker.id);
+                  onUpdateMarkers?.(updated);
+                  setEditingMarker(null);
+                }}
+                className="flex-1 rounded border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-300 py-1.5 transition-colors font-medium text-xs"
+              >
+                Delete Marker
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingMarker(null)}
+                className="flex-1 rounded border border-slate-500/30 bg-slate-500/10 hover:bg-slate-500/20 text-slate-200 py-1.5 transition-colors font-medium text-xs"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
