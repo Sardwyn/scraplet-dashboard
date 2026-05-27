@@ -2186,7 +2186,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     };
   }
 
-  function addTimelineTrack(elementId: string, property: OverlayTimelineProperty) {
+  function addTimelineTrack(elementId: string, property: OverlayTimelineProperty, timeMs?: number) {
     const element = previewElementsById[elementId];
     if (!element) return;
 
@@ -2202,9 +2202,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
       const value = Number((element as any)[property] ?? fallbackValue);
+      const targetTime = timeMs !== undefined ? timeMs : timelinePlayheadMs;
       const keyframe: OverlayTimelineKeyframe = {
         id: genId("kf"),
-        t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
+        t: clamp(Math.round(targetTime), 0, ensured.durationMs),
         value,
         easing: "linear",
       };
@@ -2224,6 +2225,107 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       setSelectedTimelineTrackId(nextTimeline.tracks[nextTimeline.tracks.length - 1].id);
       setSelectedTimelineKeyframeId(keyframe.id);
+      if (activeEventTimeline) {
+        return {
+          ...prev,
+          eventTimelines: {
+            ...((prev as any).eventTimelines ?? {}),
+            [activeEventTimeline]: nextTimeline,
+          },
+        };
+      }
+      return { ...prev, timeline: nextTimeline };
+    });
+  }
+
+  function toggleTimelineKeyframe(elementId: string, property: OverlayTimelineProperty) {
+    const element = previewElementsById[elementId];
+    if (!element) return;
+
+    setConfig((prev) => {
+      const currentEventTl = activeEventTimeline
+        ? (prev as any).eventTimelines?.[activeEventTimeline]
+        : null;
+      const ensured = ensureTimeline(currentEventTl ?? prev.timeline);
+      const trackIndex = ensured.tracks.findIndex(
+        (track) => track.elementId === elementId && track.property === property
+      );
+
+      let nextTimeline: OverlayTimeline;
+
+      if (trackIndex === -1) {
+        const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
+        const value = Number((element as any)[property] ?? fallbackValue);
+        const keyframe: OverlayTimelineKeyframe = {
+          id: genId("kf"),
+          t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
+          value,
+          easing: "linear",
+        };
+
+        nextTimeline = {
+          ...ensured,
+          tracks: [
+            ...ensured.tracks,
+            {
+              id: genId("track"),
+              elementId,
+              property,
+              keyframes: [keyframe],
+            },
+          ],
+        };
+
+        setSelectedTimelineTrackId(nextTimeline.tracks[nextTimeline.tracks.length - 1].id);
+        setSelectedTimelineKeyframeId(keyframe.id);
+      } else {
+        const track = ensured.tracks[trackIndex];
+        const existingKfIndex = track.keyframes.findIndex(
+          (kf) => Math.abs(kf.t - timelinePlayheadMs) <= KEYFRAME_TIME_EPSILON_MS
+        );
+
+        if (existingKfIndex >= 0) {
+          const nextKeyframes = track.keyframes.filter((_, i) => i !== existingKfIndex);
+          if (nextKeyframes.length === 0) {
+            nextTimeline = {
+              ...ensured,
+              tracks: ensured.tracks.filter((_, i) => i !== trackIndex),
+            };
+            setSelectedTimelineTrackId(null);
+            setSelectedTimelineKeyframeId(null);
+          } else {
+            nextTimeline = {
+              ...ensured,
+              tracks: ensured.tracks.map((t, i) =>
+                i === trackIndex ? { ...t, keyframes: nextKeyframes } : t
+              ),
+            };
+            setSelectedTimelineTrackId(track.id);
+            setSelectedTimelineKeyframeId(null);
+          }
+        } else {
+          const fallbackValue = property === "scaleX" || property === "scaleY" ? 1 : 0;
+          const value = Number((element as any)[property] ?? fallbackValue);
+          const newKf: OverlayTimelineKeyframe = {
+            id: genId("kf"),
+            t: clamp(Math.round(timelinePlayheadMs), 0, ensured.durationMs),
+            value,
+            easing: "linear",
+          };
+
+          nextTimeline = {
+            ...ensured,
+            tracks: ensured.tracks.map((t, i) =>
+              i === trackIndex
+                ? { ...t, keyframes: [...t.keyframes, newKf].sort((a, b) => a.t - b.t) }
+                : t
+            ),
+          };
+          setSelectedTimelineTrackId(track.id);
+          setSelectedTimelineKeyframeId(newKf.id);
+        }
+      }
+
       if (activeEventTimeline) {
         return {
           ...prev,
@@ -7521,6 +7623,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
                   onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
                   timelineState={selectedTimelineState}
+                  onToggleTimelineKeyframe={(property) => toggleTimelineKeyframe(selectedIds[0], property)}
                 />
               </div>
             )}
@@ -7634,6 +7737,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             previewVisible={previewElementsById[selectedIds[0]]?.visible !== false}
             onPreviewVisibilityAction={(action) => triggerPreviewVisibility(selectedIds[0], action)}
             timelineState={selectedTimelineState}
+            onToggleTimelineKeyframe={(property) => toggleTimelineKeyframe(selectedIds[0], property)}
           />
         ) : (
           <div className="flex h-40 flex-col items-center justify-center text-[12px] leading-[1.4] text-slate-500">
@@ -7816,6 +7920,7 @@ interface InspectorProps {
     hasAnimatedProperties: boolean;
     properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>;
   };
+  onToggleTimelineKeyframe?: (property: OverlayTimelineProperty) => void;
   isInline?: boolean;
 }
 
@@ -7825,20 +7930,42 @@ function formatTimelineTime(ms: number) {
 
 function TimelinePropertyMarker({
   state,
+  onClick,
 }: {
   state?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+  onClick?: () => void;
 }) {
+  const isInteractive = !!onClick;
+
   if (!state?.hasTrack) {
-    return <span className="inline-block h-2.5 w-2.5 rounded-sm border border-[rgba(255,255,255,0.08)] bg-transparent rotate-45" />;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClick?.();
+        }}
+        className={`inline-block h-2.5 w-2.5 rounded-sm border border-[rgba(255,255,255,0.18)] hover:border-indigo-400 bg-transparent rotate-45 transition-colors focus:outline-none ${isInteractive ? "cursor-pointer" : ""}`}
+        title="Enable keyframing for this property"
+      />
+    );
   }
 
   return (
-    <span
-      className={`inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] border ${
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick?.();
+      }}
+      className={`inline-block h-2.5 w-2.5 rotate-45 rounded-[2px] border transition-all focus:outline-none ${
         state.hasKeyframeAtPlayhead
-          ? "border-indigo-200 bg-indigo-300 shadow-[0_0_0_1px_rgba(99,102,241,0.22)]"
-          : "border-indigo-300/60 bg-indigo-500/20"
+          ? "border-indigo-200 bg-indigo-300 hover:bg-indigo-400 shadow-[0_0_4px_rgba(99,102,241,0.5)] cursor-pointer"
+          : "border-indigo-400/60 bg-indigo-500/20 hover:bg-indigo-500/40 cursor-pointer"
       }`}
+      title={state.hasKeyframeAtPlayhead ? "Remove keyframe at playhead" : "Add keyframe at playhead"}
     />
   );
 }
@@ -7846,13 +7973,15 @@ function TimelinePropertyMarker({
 function TimelineFieldLabel({
   label,
   timelineState,
+  onToggleKeyframe,
 }: {
   label: string;
   timelineState?: { hasTrack: boolean; hasKeyframeAtPlayhead: boolean };
+  onToggleKeyframe?: () => void;
 }) {
   return (
     <span className="flex items-center gap-1.5">
-      <TimelinePropertyMarker state={timelineState} />
+      <TimelinePropertyMarker state={timelineState} onClick={onToggleKeyframe} />
       <span>{label}</span>
     </span>
   );
@@ -10409,6 +10538,7 @@ function InspectorPanel({
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
+  onToggleTimelineKeyframe,
   isInline,
 }: InspectorProps) {
   const isVisible = element.visible !== false;
@@ -10570,37 +10700,37 @@ function InspectorPanel({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="X" timelineState={timelineState?.properties.x} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="X" timelineState={timelineState?.properties.x} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("x") : undefined} /></label>
               <NumberField label="" value={element.x ?? 0} onChange={(v) => onChange({ x: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="Y" timelineState={timelineState?.properties.y} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="Y" timelineState={timelineState?.properties.y} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("y") : undefined} /></label>
               <NumberField label="" value={element.y ?? 0} onChange={(v) => onChange({ y: v })} noLabel className="flex-1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="W" timelineState={timelineState?.properties.width} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="W" timelineState={timelineState?.properties.width} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("width") : undefined} /></label>
               <NumberField label="" value={element.width ?? 0} onChange={(v) => onChange({ width: v })} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="H" timelineState={timelineState?.properties.height} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("height") : undefined} /></label>
               <NumberField label="" value={element.height ?? 0} onChange={(v) => onChange({ height: v })} noLabel className="flex-1" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SX" timelineState={timelineState?.properties.scaleX} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SX" timelineState={timelineState?.properties.scaleX} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("scaleX") : undefined} /></label>
               <NumberField label="" value={typeof (element as any).scaleX === "number" ? (element as any).scaleX : 1} onChange={(v) => onChange({ scaleX: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
             </div>
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SY" timelineState={timelineState?.properties.scaleY} /></label>
+              <label className={`${fieldLabelClass} w-8`}><TimelineFieldLabel label="SY" timelineState={timelineState?.properties.scaleY} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("scaleY") : undefined} /></label>
               <NumberField label="" value={typeof (element as any).scaleY === "number" ? (element as any).scaleY : 1} onChange={(v) => onChange({ scaleY: Math.max(0.01, v) } as any)} noLabel className="flex-1" />
             </div>
           </div>
 
           <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.06)] pt-1">
-            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Rotation" timelineState={timelineState?.properties.rotationDeg} /></label>
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Rotation" timelineState={timelineState?.properties.rotationDeg} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("rotationDeg") : undefined} /></label>
             <div className="flex-1 flex items-center gap-2">
               <AngleDial
                 value={(element as any).rotationDeg ?? 0}
@@ -10689,7 +10819,7 @@ function InspectorPanel({
 
           {/* Opacity (Global) */}
           <div className="flex items-center gap-2">
-            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Opacity" timelineState={timelineState?.properties.opacity} /></label>
+            <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Opacity" timelineState={timelineState?.properties.opacity} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("opacity") : undefined} /></label>
             <div className="flex-1 flex items-center gap-2">
               <input
                 type="range" min="0" max="1" step="0.01"

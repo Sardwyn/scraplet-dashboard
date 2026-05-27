@@ -220,7 +220,7 @@ type TrackRowProps = {
   onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
   onCopyKeyframes: () => void;
   isInherited?: boolean;
-  onOverride?: (property: OverlayTimelineProperty) => void;
+  onOverride?: (property: OverlayTimelineProperty, timeMs?: number) => void;
 };
 
 function TimelineTrackRow({
@@ -287,6 +287,19 @@ function TimelineTrackRow({
     window.addEventListener("mouseup", onUp);
   };
 
+  const handleLaneClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    
+    const t = msFromClientX(e.clientX);
+    if (isInherited) {
+      onOverride?.(track.property, t);
+    } else {
+      onAddKeyframeAtTime(track.id, t);
+    }
+  };
+
   const playheadPx = (playheadMs / Math.max(1, durationMs)) * totalWidth;
 
   return (
@@ -312,14 +325,8 @@ function TimelineTrackRow({
         ref={laneRef}
         className={`relative h-full flex-none ${uiClasses.timelineLane} ${isInherited ? "opacity-60 cursor-pointer" : ""}`}
         style={{ width: totalWidth }}
-        onDoubleClick={(e) => {
-          if (isInherited) {
-            onOverride?.(track.property);
-          } else {
-            const t = msFromClientX(e.clientX);
-            onAddKeyframeAtTime(track.id, t);
-          }
-        }}
+        onClick={handleLaneClick}
+        onDoubleClick={handleLaneClick}
       >
         {/* playhead */}
         <div className="pointer-events-none absolute top-0 bottom-0 w-px bg-amber-400/80"
@@ -464,7 +471,7 @@ type Props = {
   onDeleteSelectedKeyframe: () => void;
   onSetPlayback: (patch: { loop?: boolean; reverse?: boolean }) => void;
   onSetSelectedKeyframeEasing: (easing: OverlayTimelineEasing) => void;
-  onAddTrack: (elementId: string, property: OverlayTimelineProperty) => void;
+  onAddTrack: (elementId: string, property: OverlayTimelineProperty, timeMs?: number) => void;
   onMoveKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => void;
   onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
   onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
@@ -924,7 +931,7 @@ export function TimelinePanel({
                     onAddKeyframeAtTime={onAddKeyframeAtTime}
                     onCopyKeyframes={copySelected}
                     isInherited={item.isInherited}
-                    onOverride={(property) => onAddTrack(element.id, property)}
+                    onOverride={(property, timeMs) => onAddTrack(element.id, property, timeMs)}
                   />
                 ))}
               </div>
