@@ -175,6 +175,11 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "rotationDeg",
   "scaleX",
   "scaleY",
+  "tiltX",
+  "tiltY",
+  "skewX",
+  "skewY",
+  "perspective",
 ];
 
 const DEFAULT_TIMELINE_DURATION_MS = 5000;
@@ -1537,10 +1542,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
     return ensureTimeline(config.timeline);
   }, [config.timeline, (config as any).eventTimelines, activeEventTimeline]);
-  const timelineValues = useMemo(
-    () => evaluateTimeline(timeline, timelinePlayheadMs),
-    [timeline, timelinePlayheadMs]
-  );
+  const timelineValues = useMemo(() => {
+    const base = evaluateTimeline(ensureTimeline(config.timeline), timelinePlayheadMs);
+    if (!activeEventTimeline) return base;
+    const eventValues = evaluateTimeline(timeline, timelinePlayheadMs);
+    const merged: typeof base = { ...base };
+    for (const [elId, props] of Object.entries(eventValues)) {
+      merged[elId] = { ...(merged[elId] ?? {}), ...props };
+    }
+    return merged;
+  }, [config.timeline, timeline, activeEventTimeline, timelinePlayheadMs]);
 
   const previewElements = useMemo(
     () =>
@@ -4429,7 +4440,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
         setConfig((prev) => {
           const sel = new Set(selectedIds);
-          let nextTimeline = prev.timeline;
+          const currentEventTl = activeEventTimeline
+            ? (prev as any).eventTimelines?.[activeEventTimeline]
+            : null;
+          let nextTimeline = ensureTimeline(currentEventTl ?? prev.timeline);
           let lastTimelineTrackId: string | null = null;
           let lastTimelineKeyframeId: string | null = null;
           const next = prev.elements.map((raw) => {
@@ -4475,6 +4489,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
           if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
+          if (activeEventTimeline) {
+            return {
+              ...prev,
+              elements: next,
+              eventTimelines: {
+                ...((prev as any).eventTimelines ?? {}),
+                [activeEventTimeline]: nextTimeline,
+              },
+            };
+          }
           return { ...prev, elements: next, timeline: nextTimeline };
         });
         if (touchedTimelineProperties.length > 0) {
@@ -4776,7 +4800,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       } else {
         setConfig((prev) => {
           const activeElement = prev.elements.find((element) => element.id === active.id) as AnyEl | undefined;
-          let nextTimeline = prev.timeline;
+          const currentEventTl = activeEventTimeline
+            ? (prev as any).eventTimelines?.[activeEventTimeline]
+            : null;
+          let nextTimeline = ensureTimeline(currentEventTl ?? prev.timeline);
           let lastTimelineTrackId: string | null = null;
           let lastTimelineKeyframeId: string | null = null;
           const shouldScaleFrameText = !(activeElement?.type === "frame" && ensureFrameLayout((activeElement as OverlayFrameElement).layout).mode !== "free");
@@ -4865,6 +4892,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
           if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
 
+          if (activeEventTimeline) {
+            return {
+              ...prev,
+              elements: finalizedElements,
+              eventTimelines: {
+                ...((prev as any).eventTimelines ?? {}),
+                [activeEventTimeline]: nextTimeline,
+              },
+            };
+          }
           return {
             ...prev,
             elements: finalizedElements,
@@ -5203,7 +5240,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const prevMap = Object.fromEntries(prev.elements.map((item) => [item.id, item as AnyEl])) as Record<string, AnyEl>;
       const descendantIds = duplicate ? [] : Array.from(collectDescendantIds(prevMap, elId));
       const movedIds = new Set([commitId, ...descendantIds]);
-      let nextTimeline = prev.timeline;
+      const currentEventTl = activeEventTimeline
+        ? (prev as any).eventTimelines?.[activeEventTimeline]
+        : null;
+      let nextTimeline = ensureTimeline(currentEventTl ?? prev.timeline);
       let lastTimelineTrackId: string | null = null;
       let lastTimelineKeyframeId: string | null = null;
 
@@ -5241,6 +5281,16 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (lastTimelineTrackId) setSelectedTimelineTrackId(lastTimelineTrackId);
       if (lastTimelineKeyframeId) setSelectedTimelineKeyframeId(lastTimelineKeyframeId);
 
+      if (activeEventTimeline) {
+        return {
+          ...prev,
+          elements: nextElements,
+          eventTimelines: {
+            ...((prev as any).eventTimelines ?? {}),
+            [activeEventTimeline]: nextTimeline,
+          },
+        };
+      }
       return {
         ...prev,
         elements: nextElements,
@@ -10775,7 +10825,13 @@ function InspectorPanel({
               const val = (element as any)[key] ?? 0;
               return (
                 <div key={key} className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12 flex-none`}>{label}</label>
+                  <label className={`${fieldLabelClass} w-20 flex-none`}>
+                    <TimelineFieldLabel
+                      label={label}
+                      timelineState={timelineState?.properties[key]}
+                      onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe(key) : undefined}
+                    />
+                  </label>
                   <input
                     type="range" min={min} max={max} step={1}
                     className="flex-1 h-1 accent-indigo-500"
@@ -10787,7 +10843,13 @@ function InspectorPanel({
               );
             })}
             <div className="flex items-center gap-2">
-              <label className={`${fieldLabelClass} w-12 flex-none`}>Persp</label>
+              <label className={`${fieldLabelClass} w-20 flex-none`}>
+                <TimelineFieldLabel
+                  label="Persp"
+                  timelineState={timelineState?.properties.perspective}
+                  onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("perspective") : undefined}
+                />
+              </label>
               <input
                 type="range" min={200} max={2000} step={50}
                 className="flex-1 h-1 accent-indigo-500"
