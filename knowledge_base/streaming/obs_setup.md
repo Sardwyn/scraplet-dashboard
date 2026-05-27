@@ -140,3 +140,4 @@ Browser sources load web pages as overlay elements. This is how Scraplet overlay
 - Right-click → Refresh to reload the overlay without restarting OBS
 - Use "Interact" to click elements inside the browser source
 - Custom CSS can hide scrollbars: `body { overflow: hidden; }`
+- **Warning for Custom Overlay Developers**: Older versions of OBS CEF (Chromium Embedded Framework) fail to composite hardware-accelerated canvas layers (WebGL, 2D canvases, or elements with 3D transforms) when they are nested inside any parent with `overflow: hidden`. Ensure the root/viewport container uses `overflow: visible` to prevent canvas layers from failing to render.
