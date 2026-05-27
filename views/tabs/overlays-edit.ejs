@@ -1,17 +1,17 @@
-<div class="pc-page w-full max-w-none">
-  <div class="pc-panel mb-4">
-    <div class="pc-panel-bd flex justify-between items-center py-3">
-      <div>
-        <h1 class="text-xl font-bold text-white">Edit Overlay</h1>
-        <p class="pc-text-muted text-xs">Drag, resize, and configure elements. Save to publish.</p>
-      </div>
-      <div>
-        <a href="/dashboard/overlays" class="pc-btn pc-btn--ghost">Back</a>
-      </div>
+<div class="pc-page w-full h-full max-w-none flex flex-col overflow-hidden bg-[#070708]">
+  <!-- Top compact header -->
+  <div class="flex-none bg-[#0d0d0f] border-b border-[rgba(255,255,255,0.06)] px-4 py-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h1 class="text-sm font-bold tracking-wider text-slate-200 uppercase">Overlay Editor</h1>
+      <span class="text-xs text-slate-500">•</span>
+      <p class="text-[11px] text-slate-400">Configure visual components, active event interactions, and animations.</p>
+    </div>
+    <div>
+      <a href="/dashboard/overlays" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-1.5 rounded transition-all">← Back to Dashboard</a>
     </div>
   </div>
 
-  <div id="overlay-editor-root" class="w-full"></div>
+  <div id="overlay-editor-root" class="flex-1 min-h-0 w-full overflow-hidden"></div>
 </div>
 
 <script>

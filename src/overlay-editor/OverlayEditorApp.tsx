@@ -2358,7 +2358,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       const oldEl = nextEls[idx];
       nextEls[idx] = { ...oldEl, ...patch } as any;
-      let nextTimeline = prev.timeline;
+
+      // Use event timeline if active, otherwise base timeline
+      const currentEventTl = activeEventTimeline
+        ? (prev as any).eventTimelines?.[activeEventTimeline]
+        : null;
+      let nextTimeline = ensureTimeline(currentEventTl ?? prev.timeline);
+
       const timelineElement = nextEls[idx] as OverlayElement;
       let timelineKeyframeId: string | null = null;
       let timelineTrackId: string | null = null;
@@ -2416,6 +2422,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       if (timelineKeyframeId) {
         setSelectedTimelineTrackId(timelineTrackId);
         setSelectedTimelineKeyframeId(timelineKeyframeId);
+      }
+
+      if (activeEventTimeline) {
+        return {
+          ...prev,
+          elements: nextEls,
+          eventTimelines: {
+            ...((prev as any).eventTimelines ?? {}),
+            [activeEventTimeline]: nextTimeline,
+          },
+        };
       }
       return { ...prev, elements: nextEls, timeline: nextTimeline };
     });
@@ -5942,7 +5959,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-2rem)] w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
+    <div className="flex h-full w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (
@@ -6337,8 +6354,8 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         </div>
       </div>
 
-      <div className="flex-1 min-w-0 flex flex-col">
-      <div className="flex-1 min-h-0 flex min-w-0">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 flex min-w-0 overflow-hidden">
       {/* CENTER: Canvas */}
       <div className="relative flex min-w-0 flex-1 flex-col bg-[#0b0b0c]" onMouseDown={() => { /* clear selection if bg click? handled in canvas */ }}>
 
@@ -7262,7 +7279,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       </div> {/* Close Center Column */}
 
       {/* Right Column / Inspector */}
-      <div className="flex w-80 flex-col overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
+      <div className="flex w-80 flex-col min-h-0 h-full overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {/* Version History Panel */}
         {showVersionHistory && (
           <div className="flex flex-col border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f]">
@@ -7326,7 +7343,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           </div>
         )}
         {editorMode === "triggers" ? (
-          <div className="flex flex-col h-full overflow-y-auto divide-y divide-slate-850 bg-slate-950/80 backdrop-blur-md">
+          <div className="flex flex-col divide-y divide-slate-850 bg-slate-950/80 backdrop-blur-md">
             <div className="flex-none">
               <TriggerModePanel
                 elements={config.elements}
@@ -7378,12 +7395,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               />
             </div>
             {primarySelectedEl && (
-              <div className="flex-1 border-t border-slate-900 p-4 bg-slate-950/40">
+              <div className="border-t border-slate-900 p-4 bg-slate-950/40">
                 <div className="mb-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Design Properties</h3>
                   <p className="text-[10px] text-slate-500 mt-1">Keyframe selected properties directly on active event timeline.</p>
                 </div>
                 <InspectorPanel
+                  isInline={true}
                   element={(previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as AnyEl}
                   elements={elementsAny}
                   onChange={(u) => updateElement(selectedIds[0], u)}
@@ -7797,6 +7815,7 @@ interface InspectorProps {
     hasAnimatedProperties: boolean;
     properties: Partial<Record<OverlayTimelineProperty, { hasTrack: boolean; hasKeyframeAtPlayhead: boolean }>>;
   };
+  isInline?: boolean;
 }
 
 function formatTimelineTime(ms: number) {
@@ -10389,6 +10408,7 @@ function InspectorPanel({
   previewVisible,
   onPreviewVisibilityAction,
   timelineState,
+  isInline,
 }: InspectorProps) {
   const isVisible = element.visible !== false;
   const isLocked = element.locked === true;
@@ -10406,7 +10426,7 @@ function InspectorPanel({
         : null;
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar">
+    <div className={isInline ? "flex flex-col pb-10" : "flex h-full flex-col overflow-y-auto pb-10 custom-scrollbar"}>
       {/* Header: Name & Global Status */}
       <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-3">
         <label className={`block ${uiClasses.label}`}>Layer</label>

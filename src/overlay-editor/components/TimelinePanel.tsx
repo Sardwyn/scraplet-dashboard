@@ -669,7 +669,7 @@ export function TimelinePanel({
 
   return (
     <div
-      className="flex h-72 flex-col border-t bg-[#111113] transition-all duration-300"
+      className="flex h-72 flex-shrink-0 flex-col border-t bg-[#111113] transition-all duration-300"
       style={{
         borderTopColor: borderCol,
         borderTopWidth: borderWidth,
