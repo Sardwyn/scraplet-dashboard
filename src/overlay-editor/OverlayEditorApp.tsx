@@ -1775,6 +1775,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setTimelinePlayheadMs((prev) => clamp(prev, 0, durationMs));
   }, [timeline.durationMs]);
 
+  const playheadMsRef = useRef(timelinePlayheadMs);
+  useEffect(() => {
+    playheadMsRef.current = timelinePlayheadMs;
+  }, [timelinePlayheadMs]);
+
   useEffect(() => {
     if (!isTimelinePlaying) return;
 
@@ -1787,7 +1792,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     const reverse = timeline.playback?.reverse === true;
     const loop = timeline.playback?.loop === true;
     let frameId = 0;
-    const startOffset = reverse ? durationMs - timelinePlayheadMs : timelinePlayheadMs;
+    const startOffset = reverse ? durationMs - playheadMsRef.current : playheadMsRef.current;
     timelinePlaybackStartRef.current = performance.now() - startOffset;
 
     const tick = (now: number) => {
@@ -1813,7 +1818,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       window.cancelAnimationFrame(frameId);
       timelinePlaybackStartRef.current = null;
     };
-  }, [isTimelinePlaying, timeline.durationMs, timeline.playback?.loop, timeline.playback?.reverse, timelinePlayheadMs]);
+  }, [isTimelinePlaying, timeline.durationMs, timeline.playback?.loop, timeline.playback?.reverse]);
 
   // Test Data for variable substitution ({{var}})
   const [testData, setTestData] = useState<Record<string, string>>({
