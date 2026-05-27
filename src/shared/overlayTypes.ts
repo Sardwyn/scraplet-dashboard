@@ -388,7 +388,19 @@ export type OverlayTimelineProperty =
   | "tiltY"
   | "skewX"
   | "skewY"
-  | "perspective";
+  | "perspective"
+  // Typography properties
+  | "fontFamily"
+  | "fontSizePx"
+  | "color"
+  // Fill & Stroke properties
+  | "fillColor"
+  | "strokeColor"
+  | "strokeWidthPx"
+  | "strokeOpacity"
+  // Parametric effect properties
+  | "effect_enabled"
+  | "effect_opacity";
 
 export type OverlayTimelineEasing =
   | "linear"
@@ -405,7 +417,7 @@ export interface OverlayTimelinePlayback {
 export interface OverlayTimelineKeyframe {
   id: string;
   t: number;
-  value: number;
+  value: number | string;
   easing?: OverlayTimelineEasing;
 }
 

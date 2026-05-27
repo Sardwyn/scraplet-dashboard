@@ -180,6 +180,15 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "skewX",
   "skewY",
   "perspective",
+  "fontFamily",
+  "fontSizePx",
+  "color",
+  "fillColor",
+  "strokeColor",
+  "strokeWidthPx",
+  "strokeOpacity",
+  "effect_enabled",
+  "effect_opacity",
 ];
 
 const DEFAULT_TIMELINE_DURATION_MS = 5000;
@@ -9521,6 +9530,50 @@ function EffectsStackControls({
         Static filters (Colorize, Neon Glow) or animated effects with keyframes
       </div>
 
+      <div className="flex items-center gap-2 mb-2">
+        <label className={`${fieldLabelClass} w-20 flex-none`}>
+          <TimelineFieldLabel
+            label="Effects On"
+            timelineState={timelineState?.properties.effect_enabled}
+            onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("effect_enabled") : undefined}
+          />
+        </label>
+        <input
+          type="checkbox"
+          className="rounded border-[rgba(255,255,255,0.15)] bg-[#161618] text-indigo-500 focus:ring-indigo-500 focus:ring-offset-[#1e1e24]"
+          checked={(element as any).effect_enabled !== false}
+          onChange={(e) => onChange({ effect_enabled: e.target.checked } as any)}
+        />
+        <span className="text-[11px] text-slate-400">Enable parametric effects</span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <label className={`${fieldLabelClass} w-20 flex-none`}>
+          <TimelineFieldLabel
+            label="Effect Op"
+            timelineState={timelineState?.properties.effect_opacity}
+            onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("effect_opacity") : undefined}
+          />
+        </label>
+        <div className="flex-1 flex items-center gap-2">
+          <input
+            type="range" min="0" max="1" step="0.01"
+            className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+            value={typeof (element as any).effect_opacity === "number" ? (element as any).effect_opacity : 1}
+            onChange={(e) => onChange({ effect_opacity: clamp(Number(e.target.value), 0, 1) } as any)}
+          />
+          <div className="w-12 relative">
+            <input
+              type="number"
+              className={`w-full pr-3 text-right ${fieldClass}`}
+              value={Math.round((typeof (element as any).effect_opacity === "number" ? (element as any).effect_opacity : 1) * 100)}
+              onChange={(e) => onChange({ effect_opacity: clamp(Number(e.target.value) / 100, 0, 1) } as any)}
+            />
+            <span className="absolute right-1 top-[5px] text-[9px] text-slate-500">%</span>
+          </div>
+        </div>
+      </div>
+
       {(element as any).parametricEffects?.map((pe: any, index: number) => {
         const presetDef = EFFECT_PRESETS[pe.preset];
         const animatableParams = (presetDef?.params ?? []).filter((p: any) => p.animatable && p.type === 'number');
@@ -11987,24 +12040,39 @@ function InspectorPanel({
               </div>
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke"
+                    timelineState={timelineState?.properties.strokeColor}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeColor") : undefined}
+                  />
+                </label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor ?? "#ffffff"} onChange={(v) => onChange({ strokeColor: v } as any)} />
                   <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-14">
-                <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-16" />
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
-                  onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                </select>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke W"
+                    timelineState={timelineState?.properties.strokeWidthPx}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeWidthPx") : undefined}
+                  />
+                </label>
+                <div className="flex-1 flex gap-2">
+                  <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-16" />
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
+                    onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-14">
+              <div className="flex items-center gap-2 ml-20">
                 <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
                 <select
                   className={`flex-1 ${fieldClass}`}
@@ -12016,7 +12084,7 @@ function InspectorPanel({
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 ml-14">
+              <div className="flex items-center gap-2 ml-20">
                 <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
                 <select
                   className={`flex-1 ${fieldClass}`}
@@ -12194,24 +12262,39 @@ function InspectorPanel({
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke"
+                    timelineState={timelineState?.properties.strokeColor}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeColor") : undefined}
+                  />
+                </label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
                   <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-14">
-                <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v, strokeWidth: v } as any)} noLabel className="w-16" />
-                <select
-                  className={`flex-1 ${fieldClass}`}
-                  value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
-                  onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
-                >
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                </select>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke W"
+                    timelineState={timelineState?.properties.strokeWidthPx}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeWidthPx") : undefined}
+                  />
+                </label>
+                <div className="flex-1 flex gap-2">
+                  <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v, strokeWidth: v } as any)} noLabel className="w-16" />
+                  <select
+                    className={`flex-1 ${fieldClass}`}
+                    value={Array.isArray((element as any).strokeDash) && (element as any).strokeDash.length > 0 ? "dashed" : "solid"}
+                    onChange={(e) => onChange({ strokeDash: e.target.value === "dashed" ? [6, 4] : [] } as any)}
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-14">
+              <div className="flex items-center gap-2 ml-20">
                 <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Align</label>
                 <select
                   className={`flex-1 ${fieldClass}`}
@@ -12223,7 +12306,7 @@ function InspectorPanel({
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 ml-14">
+              <div className="flex items-center gap-2 ml-20">
                 <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Join</label>
                 <select
                   className={`flex-1 ${fieldClass}`}
@@ -12368,7 +12451,13 @@ function InspectorPanel({
               </div>
 
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Font</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Font"
+                    timelineState={timelineState?.properties.fontFamily}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("fontFamily") : undefined}
+                  />
+                </label>
                 <div className="flex-1">
                   <FontPicker
                     value={(element as any).fontFamily}
@@ -12378,25 +12467,30 @@ function InspectorPanel({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2">
-                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Size</label>
-                  <NumberField label="" value={(element as any).fontSize ?? 24} onChange={(v) => onChange({ fontSize: v } as any)} noLabel className="flex-1" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <label className="w-8 flex-none text-[11px] leading-[1.4] text-slate-500">Wgt</label>
-                  <select className={`flex-1 ${fieldClass}`} value={(element as any).fontWeight ?? "400"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
-                    <option value="100">100 Thin</option>
-                    <option value="200">200 ExtraLight</option>
-                    <option value="300">300 Light</option>
-                    <option value="400">400 Regular</option>
-                    <option value="500">500 Medium</option>
-                    <option value="600">600 SemiBold</option>
-                    <option value="700">700 Bold</option>
-                    <option value="800">800 ExtraBold</option>
-                    <option value="900">900 Black</option>
-                  </select>
-                </div>
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Size"
+                    timelineState={timelineState?.properties.fontSizePx}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("fontSizePx") : undefined}
+                  />
+                </label>
+                <NumberField label="" value={(element as any).fontSizePx ?? (element as any).fontSize ?? 24} onChange={(v) => onChange({ fontSizePx: v, fontSize: v } as any)} noLabel className="flex-1" />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>Wgt</label>
+                <select className={`flex-1 ${fieldClass}`} value={(element as any).fontWeight ?? "400"} onChange={(e) => onChange({ fontWeight: e.target.value } as any)}>
+                  <option value="100">100 Thin</option>
+                  <option value="200">200 ExtraLight</option>
+                  <option value="300">300 Light</option>
+                  <option value="400">400 Regular</option>
+                  <option value="500">500 Medium</option>
+                  <option value="600">600 SemiBold</option>
+                  <option value="700">700 Bold</option>
+                  <option value="800">800 ExtraBold</option>
+                  <option value="900">900 Black</option>
+                </select>
               </div>
               <div className="flex items-center gap-2">
                 <label className={`${fieldLabelClass} w-12 flex-none`}>Style</label>
@@ -12464,18 +12558,68 @@ function InspectorPanel({
               <div className="my-2 h-px bg-[rgba(255,255,255,0.06)]" />
 
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Color</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Color"
+                    timelineState={timelineState?.properties.color}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("color") : undefined}
+                  />
+                </label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).color} onChange={(v) => onChange({ color: v } as any)} />
                   <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).color ?? ""} onChange={(e) => onChange({ color: e.target.value } as any)} />
                 </div>
               </div>
+
               <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12 flex-none`}>Stroke</label>
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke"
+                    timelineState={timelineState?.properties.strokeColor}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeColor") : undefined}
+                  />
+                </label>
                 <div className="flex-1 flex gap-2">
                   <ColorSwatch value={(element as any).strokeColor} onChange={(v) => onChange({ strokeColor: v } as any)} />
                   <input type="text" className={`flex-1 font-mono ${fieldClass}`} value={(element as any).strokeColor ?? ""} onChange={(e) => onChange({ strokeColor: e.target.value } as any)} placeholder="None" />
-                  <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="w-12" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke W"
+                    timelineState={timelineState?.properties.strokeWidthPx}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeWidthPx") : undefined}
+                  />
+                </label>
+                <NumberField label="" value={(element as any).strokeWidthPx ?? 0} onChange={(v) => onChange({ strokeWidthPx: v } as any)} noLabel className="flex-1" />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className={`${fieldLabelClass} w-20 flex-none`}>
+                  <TimelineFieldLabel
+                    label="Stroke Op"
+                    timelineState={timelineState?.properties.strokeOpacity}
+                    onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeOpacity") : undefined}
+                  />
+                </label>
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type="range" min="0" max="1" step="0.01"
+                    className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                    value={typeof (element as any).strokeOpacity === "number" ? (element as any).strokeOpacity : 1}
+                    onChange={(e) => onChange({ strokeOpacity: clamp(Number(e.target.value), 0, 1) } as any)}
+                  />
+                  <div className="w-12 relative">
+                    <input
+                      type="number"
+                      className={`w-full pr-3 text-right ${fieldClass}`}
+                      value={Math.round((typeof (element as any).strokeOpacity === "number" ? (element as any).strokeOpacity : 1) * 100)}
+                      onChange={(e) => onChange({ strokeOpacity: clamp(Number(e.target.value) / 100, 0, 1) } as any)}
+                    />
+                    <span className="absolute right-1 top-[5px] text-[9px] text-slate-500">%</span>
+                  </div>
                 </div>
               </div>
             </div>

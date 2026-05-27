@@ -60,6 +60,20 @@ const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "rotationDeg",
   "scaleX",
   "scaleY",
+  "tiltX",
+  "tiltY",
+  "skewX",
+  "skewY",
+  "perspective",
+  "fontFamily",
+  "fontSizePx",
+  "color",
+  "fillColor",
+  "strokeColor",
+  "strokeWidthPx",
+  "strokeOpacity",
+  "effect_enabled",
+  "effect_opacity",
 ];
 
 function applyTimelineOverrides(

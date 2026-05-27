@@ -6,7 +6,7 @@ import {
 
 export type OverlayTimelineResolvedValues = Record<
   string,
-  Partial<Record<OverlayTimelineProperty, number>>
+  Partial<Record<OverlayTimelineProperty, number | string>>
 >;
 
 function clamp(value: number, min: number, max: number) {
@@ -31,15 +31,58 @@ function applyEasing(progress: number, easing: OverlayTimelineEasing) {
   }
 }
 
+function interpolateColor(fromColor: string, toColor: string, progress: number): string {
+  const parseHex = (hex: string) => {
+    let clean = hex.replace("#", "");
+    if (clean.length === 3) {
+      clean = clean[0] + clean[0] + clean[1] + clean[1] + clean[2] + clean[2];
+    }
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    const a = clean.length === 8 ? parseInt(clean.slice(6, 8), 16) / 255 : 1;
+    return { r, g, b, a };
+  };
+
+  try {
+    const cA = parseHex(fromColor);
+    const cB = parseHex(toColor);
+
+    const r = Math.round(cA.r + (cB.r - cA.r) * progress);
+    const g = Math.round(cA.g + (cB.g - cA.g) * progress);
+    const b = Math.round(cA.b + (cB.b - cA.b) * progress);
+    const a = cA.a + (cB.a - cA.a) * progress;
+
+    const toHexPart = (v: number) => {
+      const s = Math.max(0, Math.min(255, v)).toString(16);
+      return s.length === 1 ? "0" + s : s;
+    };
+
+    if (cA.a === 1 && cB.a === 1) {
+      return `#${toHexPart(r)}${toHexPart(g)}${toHexPart(b)}`;
+    } else {
+      return `rgba(${r},${g},${b},${a.toFixed(2)})`;
+    }
+  } catch (e) {
+    return progress >= 0.5 ? toColor : fromColor;
+  }
+}
+
 function interpolateValue(
-  fromValue: number,
-  toValue: number,
+  fromValue: number | string,
+  toValue: number | string,
   progress: number,
   easing: OverlayTimelineEasing
 ) {
-  if (easing === "hold") {
-    return progress >= 1 ? toValue : fromValue;
+  if (easing === "hold" || typeof fromValue === "string" || typeof toValue === "string") {
+    const isColor = (val: any) => typeof val === "string" && (val.startsWith("#") || val.startsWith("rgb"));
+    if (isColor(fromValue) && isColor(toValue) && easing !== "hold") {
+      const eased = applyEasing(progress, easing);
+      return interpolateColor(String(fromValue), String(toValue), eased);
+    }
+    return progress >= 0.5 ? toValue : fromValue;
   }
+
   const eased = applyEasing(progress, easing);
   return fromValue + (toValue - fromValue) * eased;
 }

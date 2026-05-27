@@ -20,6 +20,9 @@ const DEFAULT_PX_PER_SEC = 120;
 const TIMELINE_PROPERTIES: OverlayTimelineProperty[] = [
   "x","y","width","height","opacity","rotationDeg",
   "scaleX","scaleY","tiltX","tiltY","skewX","skewY","perspective",
+  "fontFamily", "fontSizePx", "color",
+  "fillColor", "strokeColor", "strokeWidthPx", "strokeOpacity",
+  "effect_enabled", "effect_opacity",
 ];
 
 const PROPERTY_LABELS: Record<OverlayTimelineProperty, string> = {
@@ -27,6 +30,15 @@ const PROPERTY_LABELS: Record<OverlayTimelineProperty, string> = {
   rotationDeg:"Rotation", scaleX:"Scale X", scaleY:"Scale Y",
   tiltX:"Tilt X (3D)", tiltY:"Tilt Y (3D)", skewX:"Skew X", skewY:"Skew Y",
   perspective:"Perspective",
+  fontFamily: "Font Family",
+  fontSizePx: "Font Size",
+  color: "Text Color",
+  fillColor: "Fill Color",
+  strokeColor: "Stroke Color",
+  strokeWidthPx: "Stroke Width",
+  strokeOpacity: "Stroke Opacity",
+  effect_enabled: "Effect Enabled",
+  effect_opacity: "Effect Opacity",
 };
 
 const EASING_OPTIONS: Array<{ value: OverlayTimelineEasing; label: string }> = [

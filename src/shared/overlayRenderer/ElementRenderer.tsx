@@ -567,6 +567,14 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
     const now2 = t ?? performance.now();
     svgFilterParametric.forEach((e: any, pi: number) => {
         const params = resolveEffectParams(e, now2, data);
+        const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
+        if (typeof params.opacity === "number") {
+            params.opacity = params.opacity * overallOpacity;
+        } else if (typeof params.opacity === "string") {
+            params.opacity = Number(params.opacity) * overallOpacity;
+        } else {
+            params.opacity = overallOpacity;
+        }
         const speed = Number(params.speed ?? 1);
         const intensity = Number(params.intensity ?? 4);
         const angle = Number(params.angle ?? 0) * Math.PI / 180;
@@ -1326,7 +1334,8 @@ function useParametricCss(effects: OverlayEffect[], data?: Record<string, any>):
             for (const e of active) {
                 const params = resolveEffectParams(e, t, dataRef.current);
                 const css = renderParametricEffectCSS(e.preset, params, t);
-                const _effOpacity = Number(params.opacity ?? 1);
+                const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
+                const _effOpacity = Number(params.opacity ?? 1) * overallOpacity;
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;
                 if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
@@ -1570,7 +1579,8 @@ function ParametricEffectOverlay({
             for (const e of cssEffects) {
                 const params = resolveEffectParams(e, t, dataRef.current);
                 const css = renderParametricEffectCSS(e.preset, params, t);
-                const _effOpacity = Number(params.opacity ?? 1);
+                const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
+                const _effOpacity = Number(params.opacity ?? 1) * overallOpacity;
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;
                 if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
@@ -1605,6 +1615,8 @@ function ParametricEffectOverlay({
                 const params = resolveEffectParams(e, t, dataRef.current);
                 const clipMode = String(params.clipMode ?? "none");
                 ctx.save();
+                const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
+                ctx.globalAlpha = overallOpacity;
                 if (shapePath && clipMode !== "none") {
                     try {
                         if (clipMode === "surface") {
@@ -1974,8 +1986,10 @@ export function ElementRenderer({
 
     // Apply parametric CSS effects directly to the element's baseStyle
     const _legacyEffects: OverlayEffect[] = Array.isArray(el.effects) ? el.effects : [];
-    const _parametricAsEffects: OverlayEffect[] = Array.isArray((el as any).parametricEffects)
-      ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric' } as any))
+    const _effectsEnabled = (el as any).effect_enabled !== false && (el as any).effect_enabled !== 0 && (el as any).effect_enabled !== "false";
+    const _overallOpacity = typeof (el as any).effect_opacity === "number" ? (el as any).effect_opacity : 1;
+    const _parametricAsEffects: OverlayEffect[] = _effectsEnabled && Array.isArray((el as any).parametricEffects)
+      ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _overallOpacity } as any))
       : [];
     const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects];
     const _paramCss = useParametricCss(_elEffects, data);
