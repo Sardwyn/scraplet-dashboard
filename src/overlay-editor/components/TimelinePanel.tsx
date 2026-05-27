@@ -219,12 +219,15 @@ type TrackRowProps = {
   onDuplicateKeyframe: (trackId: string, keyframeId: string, nextTimeMs: number) => string | null;
   onAddKeyframeAtTime: (trackId: string, timeMs: number) => void;
   onCopyKeyframes: () => void;
+  isInherited?: boolean;
+  onOverride?: (property: OverlayTimelineProperty) => void;
 };
 
 function TimelineTrackRow({
   durationMs, pxPerSec, track, allTracks, selectedKeyframeIds, playheadMs,
   onSelectKeyframe, onMoveKeyframe, onMoveSelectedKeyframes,
   onDuplicateKeyframe, onAddKeyframeAtTime,
+  isInherited, onOverride,
 }: TrackRowProps) {
   const laneRef = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -241,6 +244,10 @@ function TimelineTrackRow({
   const onMouseDown = (keyframeId: string) => (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isInherited) {
+      onOverride?.(track.property);
+      return;
+    }
     const additive = e.shiftKey || e.metaKey || e.ctrlKey;
     onSelectKeyframe(track.id, keyframeId, additive);
     setDraggingId(keyframeId);
@@ -283,20 +290,35 @@ function TimelineTrackRow({
   const playheadPx = (playheadMs / Math.max(1, durationMs)) * totalWidth;
 
   return (
-    <div className="flex items-center border-b border-[rgba(255,255,255,0.04)]" style={{ height: TRACK_HEIGHT }}>
+    <div className={`flex items-center border-b border-[rgba(255,255,255,0.04)] ${isInherited ? "bg-[#141416]/40 text-slate-500" : ""}`} style={{ height: TRACK_HEIGHT }}>
       <div
-        className="flex-none truncate px-3 text-[11px] leading-[1.4] text-slate-400 uppercase tracking-[0.05em]"
+        className="flex-none flex items-center justify-between px-3 text-[11px] leading-[1.4] text-slate-400 uppercase tracking-[0.05em]"
         style={{ width: HEADER_WIDTH }}
       >
-        {PROPERTY_LABELS[track.property] ?? track.property}
+        <span className={isInherited ? "text-slate-500 italic" : "text-slate-300"}>
+          {PROPERTY_LABELS[track.property] ?? track.property} {isInherited ? "(base)" : ""}
+        </span>
+        {isInherited && (
+          <button
+            type="button"
+            onClick={() => onOverride?.(track.property)}
+            className="text-[8px] bg-slate-800 hover:bg-indigo-950 text-indigo-300 hover:text-indigo-200 px-1 py-0.5 rounded border border-[rgba(255,255,255,0.06)] transition-colors"
+          >
+            Override
+          </button>
+        )}
       </div>
       <div
         ref={laneRef}
-        className={`relative h-full flex-none ${uiClasses.timelineLane}`}
+        className={`relative h-full flex-none ${uiClasses.timelineLane} ${isInherited ? "opacity-60 cursor-pointer" : ""}`}
         style={{ width: totalWidth }}
         onDoubleClick={(e) => {
-          const t = msFromClientX(e.clientX);
-          onAddKeyframeAtTime(track.id, t);
+          if (isInherited) {
+            onOverride?.(track.property);
+          } else {
+            const t = msFromClientX(e.clientX);
+            onAddKeyframeAtTime(track.id, t);
+          }
         }}
       >
         {/* playhead */}
@@ -311,6 +333,7 @@ function TimelineTrackRow({
               type="button"
               onMouseDown={onMouseDown(kf.id)}
               className={`absolute top-1/2 -translate-y-1/2 rotate-45 border transition-colors focus:outline-none ${
+                isInherited ? "bg-slate-700/60 border-slate-600/60 cursor-pointer" :
                 isSelected  ? "bg-indigo-300 border-white z-10" :
                 isDragging  ? "bg-amber-400 border-white z-10"  :
                               "bg-slate-300 border-[#0f1012]"
@@ -320,7 +343,9 @@ function TimelineTrackRow({
                 width: KF_SIZE, height: KF_SIZE,
                 marginLeft: -(KF_SIZE / 2),
               }}
-              title={`${track.property} @ ${formatMs(kf.t)} = ${Math.round(kf.value * 1000) / 1000}`}
+              title={isInherited
+                ? `${track.property} (base inherited) @ ${formatMs(kf.t)} = ${Math.round(kf.value * 1000) / 1000}`
+                : `${track.property} @ ${formatMs(kf.t)} = ${Math.round(kf.value * 1000) / 1000}`}
             />
           );
         })}
@@ -833,9 +858,21 @@ export function TimelinePanel({
           )}
 
           {visibleElements.map(element => {
-            const tracks = tracksByElement.get(element.id) || [];
-            const existing = new Set(tracks.map(t => t.property));
+            const activeTracks = tracksByElement.get(element.id) || [];
+            const baseTracks = baseTracksByElement.get(element.id) || [];
+            const existing = new Set(activeTracks.map(t => t.property));
             const isCollapsed = collapsedElements.has(element.id);
+
+            const tracksToRender: Array<{ track: OverlayTimelineTrack; isInherited: boolean }> = [
+              ...activeTracks.map(t => ({ track: t, isInherited: false })),
+              ...baseTracks
+                .filter(t => !existing.has(t.property))
+                .map(t => ({ track: t, isInherited: true }))
+            ];
+
+            tracksToRender.sort((a, b) => {
+              return TIMELINE_PROPERTIES.indexOf(a.track.property) - TIMELINE_PROPERTIES.indexOf(b.track.property);
+            });
 
             return (
               <div key={element.id} className="border-b border-[rgba(255,255,255,0.06)]">
@@ -871,12 +908,12 @@ export function TimelinePanel({
                 </div>
 
                 {/* Track rows */}
-                {!isCollapsed && tracks.map(track => (
+                {!isCollapsed && tracksToRender.map(item => (
                   <TimelineTrackRow
-                    key={track.id}
+                    key={item.track.id}
                     durationMs={timeline.durationMs}
                     pxPerSec={pxPerSec}
-                    track={track}
+                    track={item.track}
                     allTracks={timeline.tracks}
                     selectedKeyframeIds={selectedKfIds}
                     playheadMs={playheadMs}
@@ -886,6 +923,8 @@ export function TimelinePanel({
                     onDuplicateKeyframe={onDuplicateKeyframe}
                     onAddKeyframeAtTime={onAddKeyframeAtTime}
                     onCopyKeyframes={copySelected}
+                    isInherited={item.isInherited}
+                    onOverride={(property) => onAddTrack(element.id, property)}
                   />
                 ))}
               </div>
