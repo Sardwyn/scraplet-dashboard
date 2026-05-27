@@ -417,6 +417,7 @@ const EVENT_COLORS: Record<string, string> = {
 
 type Props = {
   timeline: OverlayTimeline;
+  baseTimeline?: OverlayTimeline;
   elements: OverlayElement[];
   selectedIds: string[];
   playheadMs: number;
@@ -451,7 +452,7 @@ type Props = {
 
 // ── Main Panel ────────────────────────────────────────────────────────────────
 export function TimelinePanel({
-  timeline, elements, selectedIds, playheadMs, isPlaying,
+  timeline, baseTimeline, elements, selectedIds, playheadMs, isPlaying,
   selectedTrackId, selectedKeyframeId, selectedKeyframeIds, selectedKeyframeEasing,
   onSelectKeyframe, onPlay, onPause, onStop, onSetPlayhead, onSetDuration,
   onDeleteSelectedKeyframe, onSetPlayback, onSetSelectedKeyframeEasing,
@@ -496,10 +497,20 @@ export function TimelinePanel({
     return map;
   }, [timeline.tracks]);
 
+  const baseTracksByElement = useMemo(() => {
+    const map = new Map<string, OverlayTimelineTrack[]>();
+    if (!baseTimeline) return map;
+    for (const track of sortTracks(baseTimeline.tracks || [])) {
+      if (!map.has(track.elementId)) map.set(track.elementId, []);
+      map.get(track.elementId)!.push(track);
+    }
+    return map;
+  }, [baseTimeline]);
+
   const visibleElements = useMemo(() => {
     const sel = new Set(selectedIds);
-    return timelineElements.filter(el => sel.has(el.id) || tracksByElement.has(el.id));
-  }, [timelineElements, selectedIds, tracksByElement]);
+    return timelineElements.filter(el => sel.has(el.id) || tracksByElement.has(el.id) || baseTracksByElement.has(el.id));
+  }, [timelineElements, selectedIds, tracksByElement, baseTracksByElement]);
 
   const totalWidth = (timeline.durationMs / 1000) * pxPerSec;
 

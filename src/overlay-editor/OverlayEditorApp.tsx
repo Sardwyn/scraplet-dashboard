@@ -7682,6 +7682,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       <TimelinePanel
         timeline={timeline}
+        baseTimeline={config.timeline}
         elements={config.elements}
         selectedIds={selectedIds}
         playheadMs={timelinePlayheadMs}
