@@ -84775,7 +84775,7 @@ ${parts.join("\n")}
             width: "100vw",
             height: "100vh",
             background: (overlay == null ? void 0 : overlay.backgroundColor) && overlay.backgroundColor !== "transparent" ? overlay.backgroundColor : "transparent",
-            overflow: finalElements.some((el) => {
+            overflow: isOBS || finalElements.some((el) => {
               var _a4, _b2, _c2, _d2;
               return ((_a4 = el.tiltX) != null ? _a4 : 0) !== 0 || ((_b2 = el.tiltY) != null ? _b2 : 0) !== 0 || ((_c2 = el.skewX) != null ? _c2 : 0) !== 0 || ((_d2 = el.skewY) != null ? _d2 : 0) !== 0;
             }) ? "visible" : "hidden",

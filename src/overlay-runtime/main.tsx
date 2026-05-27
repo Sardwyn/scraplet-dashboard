@@ -1622,7 +1622,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
             overlay?.backgroundColor && overlay.backgroundColor !== "transparent"
               ? overlay.backgroundColor
               : "transparent",
-          overflow: finalElements.some((el: any) => (el.tiltX ?? 0) !== 0 || (el.tiltY ?? 0) !== 0 || (el.skewX ?? 0) !== 0 || (el.skewY ?? 0) !== 0) ? "visible" : "hidden",
+          overflow: (isOBS || finalElements.some((el: any) => (el.tiltX ?? 0) !== 0 || (el.tiltY ?? 0) !== 0 || (el.skewX ?? 0) !== 0 || (el.skewY ?? 0) !== 0)) ? "visible" : "hidden",
           position: "relative",
         }}
       >
