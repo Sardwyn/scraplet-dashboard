@@ -542,6 +542,7 @@ export function TimelinePanel({
   const [manuallyTrackedElementIds, setManuallyTrackedElementIds] = useState<Set<string>>(new Set());
   const [showElementPicker, setShowElementPicker] = useState(false);
   const [editingMarker, setEditingMarker] = useState<OverlayTimelineMarker | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const markers = useMemo(() => timeline.markers ?? [], [timeline.markers]);
   const [activePropertyPickerElementId, setActivePropertyPickerElementId] = useState<string | null>(null);
 
@@ -1327,19 +1328,63 @@ export function TimelinePanel({
               {editingMarker.actionType === "audio" && (
                 <div className="space-y-1">
                   <label className="text-slate-400 block font-medium">Audio URL / Upload</label>
-                  <input
-                    type="text"
-                    placeholder="/dashboard/api/uploads/overlay/audio/sfx.mp3"
-                    value={editingMarker.soundUrl || ""}
-                    onChange={(e) => {
-                      const next = { ...editingMarker, soundUrl: e.target.value };
-                      setEditingMarker(next);
-                      const updated = markers.map(m => m.id === editingMarker.id ? next : m);
-                      onUpdateMarkers?.(updated);
-                    }}
-                    className={`w-full ${uiClasses.field} text-slate-200`}
-                  />
-                  <span className="text-[9px] text-slate-500 block">Relative URL or full public audio URL.</span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="/dashboard/api/uploads/overlay/audio/sfx.mp3"
+                      value={editingMarker.soundUrl || ""}
+                      onChange={(e) => {
+                        const next = { ...editingMarker, soundUrl: e.target.value };
+                        setEditingMarker(next);
+                        const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                        onUpdateMarkers?.(updated);
+                      }}
+                      className={`flex-1 min-w-0 ${uiClasses.field} text-slate-200`}
+                    />
+                    <label className={`flex-shrink-0 cursor-pointer text-[10px] py-1 px-3 rounded bg-amber-500/10 border flex items-center justify-center font-bold transition-all ${
+                      isUploading
+                        ? "border-amber-500/30 text-amber-300 opacity-50 cursor-not-allowed"
+                        : "border-amber-500/25 hover:bg-amber-500/20 hover:border-amber-400 text-amber-300"
+                    }`}>
+                      {isUploading ? "Uploading..." : "Upload"}
+                      {!isUploading && (
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setIsUploading(true);
+                            const fd = new FormData();
+                            fd.append("file", file);
+                            try {
+                              const r = await fetch("/dashboard/api/uploads/overlay/audio", {
+                                method: "POST",
+                                body: fd,
+                                credentials: "same-origin",
+                              });
+                              if (r.ok) {
+                                const d = await r.json();
+                                if (d.url) {
+                                  const next = { ...editingMarker, soundUrl: d.url };
+                                  setEditingMarker(next);
+                                  const updated = markers.map(m => m.id === editingMarker.id ? next : m);
+                                  onUpdateMarkers?.(updated);
+                                }
+                              }
+                            } catch (err) {
+                              console.error("Audio upload failed:", err);
+                            } finally {
+                              setIsUploading(false);
+                              e.target.value = "";
+                            }
+                          }}
+                        />
+                      )}
+                    </label>
+                  </div>
+                  <span className="text-[9px] text-slate-500 block">Relative URL, full public audio URL, or upload local file (MP3/WAV).</span>
                 </div>
               )}
 

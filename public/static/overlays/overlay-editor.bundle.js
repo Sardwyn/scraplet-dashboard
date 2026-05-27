@@ -84299,6 +84299,7 @@ function TimelinePanel({
   const [manuallyTrackedElementIds, setManuallyTrackedElementIds] = reactExports.useState(/* @__PURE__ */ new Set());
   const [showElementPicker, setShowElementPicker] = reactExports.useState(false);
   const [editingMarker, setEditingMarker] = reactExports.useState(null);
+  const [isUploading, setIsUploading] = reactExports.useState(false);
   const markers = reactExports.useMemo(() => {
     var _a4;
     return (_a4 = timeline.markers) != null ? _a4 : [];
@@ -84544,7 +84545,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 818,
+              lineNumber: 819,
               columnNumber: 9
             },
             this
@@ -84561,14 +84562,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 822,
+              lineNumber: 823,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 825,
+            lineNumber: 826,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84583,7 +84584,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 828,
+              lineNumber: 829,
               columnNumber: 9
             },
             this
@@ -84610,7 +84611,7 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 836,
+                lineNumber: 837,
                 columnNumber: 13
               },
               this
@@ -84618,17 +84619,17 @@ function TimelinePanel({
           }),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 848,
+            lineNumber: 849,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "font-mono text-[11px] text-slate-300 flex-shrink-0", children: formatMs(playheadMs) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 850,
+            lineNumber: 851,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-600 flex-shrink-0", children: "/" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 851,
+            lineNumber: 852,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84645,19 +84646,19 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 852,
+              lineNumber: 853,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 flex-shrink-0", children: "ms" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 855,
+            lineNumber: 856,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 857,
+            lineNumber: 858,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84675,7 +84676,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 859,
+              lineNumber: 860,
               columnNumber: 9
             },
             this
@@ -84695,14 +84696,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 863,
+              lineNumber: 864,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 868,
+            lineNumber: 869,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84714,7 +84715,7 @@ function TimelinePanel({
               className: "h-6 rounded border border-[rgba(255,255,255,0.08)] bg-[#161618] px-1.5 text-[11px] leading-none text-slate-200 transition-colors focus:border-indigo-500/70 focus:outline-none appearance-none flex-shrink-0 disabled:opacity-40",
               children: EASING_OPTIONS.map((o2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: o2.value, children: o2.label }, o2.value, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 873,
+                lineNumber: 874,
                 columnNumber: 36
               }, this))
             },
@@ -84722,7 +84723,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 870,
+              lineNumber: 871,
               columnNumber: 9
             },
             this
@@ -84740,7 +84741,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 876,
+              lineNumber: 877,
               columnNumber: 9
             },
             this
@@ -84758,14 +84759,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 882,
+              lineNumber: 883,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mx-1 h-3 w-px bg-[rgba(255,255,255,0.08)]" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 887,
+            lineNumber: 888,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84780,7 +84781,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 889,
+              lineNumber: 890,
               columnNumber: 9
             },
             this
@@ -84790,7 +84791,7 @@ function TimelinePanel({
             "px/s"
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 892,
+            lineNumber: 893,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84805,7 +84806,7 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 893,
+              lineNumber: 894,
               columnNumber: 9
             },
             this
@@ -84821,25 +84822,25 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 896,
+              lineNumber: 897,
               columnNumber: 9
             },
             this
           ),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: `ml-auto text-[10px] flex-shrink-0 ${isPlaying ? "text-emerald-400" : "text-slate-600"}`, children: isPlaying ? "▶ Playing" : "■ Stopped" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 899,
+            lineNumber: 900,
             columnNumber: 9
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 816,
+          lineNumber: 817,
           columnNumber: 7
         }, this),
         showBezier && selectedTrackId && selectedKeyframeId && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f] p-3", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "text-[10px] text-slate-500 mb-2 uppercase tracking-wider", children: "Easing Curve" }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 907,
+            lineNumber: 908,
             columnNumber: 11
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84856,14 +84857,14 @@ function TimelinePanel({
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 908,
+              lineNumber: 909,
               columnNumber: 11
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 906,
+          lineNumber: 907,
           columnNumber: 9
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex min-h-0 flex-1 flex-col overflow-hidden", children: [
@@ -84871,7 +84872,7 @@ function TimelinePanel({
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-none flex items-center justify-between px-3 relative border-r border-[rgba(255,255,255,0.04)] bg-[#09090b]", style: { width: HEADER_WIDTH }, children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-500 font-bold uppercase tracking-wider", children: "Tracks" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 924,
+                lineNumber: 925,
                 columnNumber: 13
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84887,7 +84888,7 @@ function TimelinePanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 925,
+                  lineNumber: 926,
                   columnNumber: 13
                 },
                 this
@@ -84896,7 +84897,7 @@ function TimelinePanel({
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1.5 mb-1 bg-white/2 rounded-t", children: [
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[10px] text-slate-400 font-bold uppercase tracking-wider", children: "Add Element Track" }, void 0, false, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 938,
+                    lineNumber: 939,
                     columnNumber: 19
                   }, this),
                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84911,19 +84912,19 @@ function TimelinePanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 939,
+                      lineNumber: 940,
                       columnNumber: 19
                     },
                     this
                   )
                 ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 937,
+                  lineNumber: 938,
                   columnNumber: 17
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "max-h-48 overflow-y-auto", children: eligibleElementsToTrack.length === 0 ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-3 py-4 text-[11px] text-slate-500 text-center italic", children: "No other elements on canvas." }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 949,
+                  lineNumber: 950,
                   columnNumber: 21
                 }, this) : eligibleElementsToTrack.map((el) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
                   "button",
@@ -84937,12 +84938,12 @@ function TimelinePanel({
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "truncate font-medium", children: el.name || el.type }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 963,
+                        lineNumber: 964,
                         columnNumber: 25
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500 uppercase font-mono px-1.5 py-0.5 rounded bg-white/5", children: el.type }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 964,
+                        lineNumber: 965,
                         columnNumber: 25
                       }, this)
                     ]
@@ -84951,23 +84952,23 @@ function TimelinePanel({
                   true,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 954,
+                    lineNumber: 955,
                     columnNumber: 23
                   },
                   this
                 )) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 947,
+                  lineNumber: 948,
                   columnNumber: 17
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 936,
+                lineNumber: 937,
                 columnNumber: 15
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 923,
+              lineNumber: 924,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex-1 overflow-hidden", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -84983,18 +84984,18 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 973,
+                lineNumber: 974,
                 columnNumber: 13
               },
               this
             ) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 972,
+              lineNumber: 973,
               columnNumber: 11
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 922,
+            lineNumber: 923,
             columnNumber: 9
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: scrollRef, className: "flex-1 overflow-auto", onScroll: syncScroll, children: [
@@ -85016,7 +85017,7 @@ function TimelinePanel({
                 zIndex: 50
               } }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 992,
+                lineNumber: 993,
                 columnNumber: 15
               }, this);
             })(),
@@ -85030,11 +85031,11 @@ function TimelinePanel({
                     children: [
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "flex items-center gap-1.5", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "📍 Markers" }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 1008,
+                        lineNumber: 1009,
                         columnNumber: 19
                       }, this) }, void 0, false, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 1007,
+                        lineNumber: 1008,
                         columnNumber: 17
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85061,7 +85062,7 @@ function TimelinePanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1010,
+                          lineNumber: 1011,
                           columnNumber: 17
                         },
                         this
@@ -85072,7 +85073,7 @@ function TimelinePanel({
                   true,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 1003,
+                    lineNumber: 1004,
                     columnNumber: 15
                   },
                   this
@@ -85144,22 +85145,22 @@ function TimelinePanel({
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "bg-amber-500 hover:bg-amber-400 text-[9px] font-bold text-slate-950 px-1.5 py-0.5 rounded shadow flex items-center gap-1 border border-amber-300/30", children: [
                                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: marker.name }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                    lineNumber: 1092,
+                                    lineNumber: 1093,
                                     columnNumber: 27
                                   }, this),
                                   /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[7px] bg-amber-950/20 px-1 rounded uppercase", children: marker.actionType }, void 0, false, {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                    lineNumber: 1093,
+                                    lineNumber: 1094,
                                     columnNumber: 27
                                   }, this)
                                 ] }, void 0, true, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                  lineNumber: 1091,
+                                  lineNumber: 1092,
                                   columnNumber: 25
                                 }, this),
                                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-px flex-1 border-l border-dashed border-amber-500/50 group-hover/marker:border-amber-400 group-hover/marker:border-solid" }, void 0, false, {
                                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                  lineNumber: 1095,
+                                  lineNumber: 1096,
                                   columnNumber: 25
                                 }, this)
                               ]
@@ -85168,7 +85169,7 @@ function TimelinePanel({
                             true,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                              lineNumber: 1064,
+                              lineNumber: 1065,
                               columnNumber: 23
                             },
                             this
@@ -85178,7 +85179,7 @@ function TimelinePanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1053,
+                          lineNumber: 1054,
                           columnNumber: 21
                         },
                         this
@@ -85189,20 +85190,20 @@ function TimelinePanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 1030,
+                    lineNumber: 1031,
                     columnNumber: 15
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1002,
+                lineNumber: 1003,
                 columnNumber: 13
               }, this),
               visibleElements.length === 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-5 py-8 text-[11px] text-slate-500 flex flex-col items-center justify-center gap-3", children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("p", { children: "No elements are currently added to the timeline sequencer." }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1105,
+                  lineNumber: 1106,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85217,14 +85218,14 @@ function TimelinePanel({
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 1106,
+                    lineNumber: 1107,
                     columnNumber: 15
                   },
                   this
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1104,
+                lineNumber: 1105,
                 columnNumber: 13
               }, this),
               visibleElements.map((element) => {
@@ -85260,19 +85261,19 @@ function TimelinePanel({
                           false,
                           {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                            lineNumber: 1139,
+                            lineNumber: 1140,
                             columnNumber: 23
                           },
                           this
                         ),
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "truncate text-[11px] font-semibold text-slate-200", title: element.name || element.type, children: element.name || element.type }, void 0, false, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1151,
+                          lineNumber: 1152,
                           columnNumber: 23
                         }, this)
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 1138,
+                        lineNumber: 1139,
                         columnNumber: 21
                       }, this),
                       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85288,14 +85289,14 @@ function TimelinePanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1157,
+                          lineNumber: 1158,
                           columnNumber: 21
                         },
                         this
                       )
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1137,
+                      lineNumber: 1138,
                       columnNumber: 19
                     }, this),
                     !isCollapsed && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "relative pl-2", children: [
@@ -85307,7 +85308,7 @@ function TimelinePanel({
                           className: "h-5 rounded border border-indigo-500/25 bg-indigo-500/10 px-2 text-[10px] text-indigo-300 hover:text-indigo-200 transition-colors flex items-center gap-1 font-medium",
                           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: "+ Track" }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                            lineNumber: 1174,
+                            lineNumber: 1175,
                             columnNumber: 25
                           }, this)
                         },
@@ -85315,7 +85316,7 @@ function TimelinePanel({
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1169,
+                          lineNumber: 1170,
                           columnNumber: 23
                         },
                         this
@@ -85324,7 +85325,7 @@ function TimelinePanel({
                         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] px-2.5 py-1 mb-1 bg-white/2 rounded-t", children: [
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-400 font-bold uppercase tracking-wider", children: "Add Property" }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                            lineNumber: 1181,
+                            lineNumber: 1182,
                             columnNumber: 29
                           }, this),
                           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85339,14 +85340,14 @@ function TimelinePanel({
                             false,
                             {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                              lineNumber: 1182,
+                              lineNumber: 1183,
                               columnNumber: 29
                             },
                             this
                           )
                         ] }, void 0, true, {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                          lineNumber: 1180,
+                          lineNumber: 1181,
                           columnNumber: 27
                         }, this),
                         (() => {
@@ -85359,7 +85360,7 @@ function TimelinePanel({
                             return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "mb-2 last:mb-0", children: [
                               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-2 py-0.5 text-[8px] text-slate-500 uppercase tracking-widest font-bold bg-white/2 rounded mb-1", children: cat.name }, void 0, false, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                lineNumber: 1199,
+                                lineNumber: 1200,
                                 columnNumber: 35
                               }, this),
                               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-0.5", children: availableProps.map((prop) => {
@@ -85379,41 +85380,41 @@ function TimelinePanel({
                                   false,
                                   {
                                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                    lineNumber: 1204,
+                                    lineNumber: 1205,
                                     columnNumber: 39
                                   },
                                   this
                                 );
                               }) }, void 0, false, {
                                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                                lineNumber: 1202,
+                                lineNumber: 1203,
                                 columnNumber: 35
                               }, this)
                             ] }, cat.name, true, {
                               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                              lineNumber: 1198,
+                              lineNumber: 1199,
                               columnNumber: 33
                             }, this);
                           });
                           return hasAny ? renderedCategories : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "px-2 py-4 text-[10px] text-slate-500 text-center italic", children: "All properties are animated." }, void 0, false, {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                            lineNumber: 1221,
+                            lineNumber: 1222,
                             columnNumber: 31
                           }, this);
                         })()
                       ] }, void 0, true, {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                        lineNumber: 1179,
+                        lineNumber: 1180,
                         columnNumber: 25
                       }, this)
                     ] }, void 0, true, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1168,
+                      lineNumber: 1169,
                       columnNumber: 21
                     }, this)
                   ] }, void 0, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                    lineNumber: 1136,
+                    lineNumber: 1137,
                     columnNumber: 17
                   }, this),
                   !isCollapsed && tracksToRender.map((item) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85438,42 +85439,42 @@ function TimelinePanel({
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1234,
+                      lineNumber: 1235,
                       columnNumber: 19
                     },
                     this
                   ))
                 ] }, element.id, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1134,
+                  lineNumber: 1135,
                   columnNumber: 15
                 }, this);
               }),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { height: 32 } }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1256,
+                lineNumber: 1257,
                 columnNumber: 11
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1e3,
+              lineNumber: 1001,
               columnNumber: 11
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 984,
+            lineNumber: 985,
             columnNumber: 9
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 920,
+          lineNumber: 921,
           columnNumber: 7
         }, this),
         editingMarker && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-xs", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "w-80 rounded-xl border border-amber-500/30 bg-[#111113]/90 backdrop-blur-md p-4 shadow-2xl space-y-4", children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center justify-between border-b border-white/10 pb-2", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[12px] font-bold text-amber-400 uppercase tracking-wider", children: "Edit Marker" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1266,
+              lineNumber: 1267,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85488,21 +85489,21 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1267,
+                lineNumber: 1268,
                 columnNumber: 15
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 1265,
+            lineNumber: 1266,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-3 text-[11px]", children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-slate-400 block font-medium", children: "Marker Name" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1278,
+                lineNumber: 1279,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85522,20 +85523,20 @@ function TimelinePanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1279,
+                  lineNumber: 1280,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1277,
+              lineNumber: 1278,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-slate-400 block font-medium", children: "Time (ms)" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1293,
+                lineNumber: 1294,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85557,20 +85558,20 @@ function TimelinePanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1294,
+                  lineNumber: 1295,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1292,
+              lineNumber: 1293,
               columnNumber: 15
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-slate-400 block font-medium", children: "Action Type" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1310,
+                lineNumber: 1311,
                 columnNumber: 17
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85587,17 +85588,17 @@ function TimelinePanel({
                   children: [
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "pause", children: "Pause Playback" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1321,
+                      lineNumber: 1322,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "audio", children: "Play Audio (SFX)" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1322,
+                      lineNumber: 1323,
                       columnNumber: 19
                     }, this),
                     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: "trigger", children: "Emit Local Trigger" }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                      lineNumber: 1323,
+                      lineNumber: 1324,
                       columnNumber: 19
                     }, this)
                   ]
@@ -85606,59 +85607,117 @@ function TimelinePanel({
                 true,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1311,
+                  lineNumber: 1312,
                   columnNumber: 17
                 },
                 this
               )
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1309,
+              lineNumber: 1310,
               columnNumber: 15
             }, this),
             editingMarker.actionType === "audio" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-slate-400 block font-medium", children: "Audio URL / Upload" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1329,
+                lineNumber: 1330,
                 columnNumber: 19
               }, this),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-                "input",
-                {
-                  type: "text",
-                  placeholder: "/dashboard/api/uploads/overlay/audio/sfx.mp3",
-                  value: editingMarker.soundUrl || "",
-                  onChange: (e2) => {
-                    const next = { ...editingMarker, soundUrl: e2.target.value };
-                    setEditingMarker(next);
-                    const updated = markers.map((m2) => m2.id === editingMarker.id ? next : m2);
-                    onUpdateMarkers == null ? void 0 : onUpdateMarkers(updated);
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex gap-2", children: [
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                  "input",
+                  {
+                    type: "text",
+                    placeholder: "/dashboard/api/uploads/overlay/audio/sfx.mp3",
+                    value: editingMarker.soundUrl || "",
+                    onChange: (e2) => {
+                      const next = { ...editingMarker, soundUrl: e2.target.value };
+                      setEditingMarker(next);
+                      const updated = markers.map((m2) => m2.id === editingMarker.id ? next : m2);
+                      onUpdateMarkers == null ? void 0 : onUpdateMarkers(updated);
+                    },
+                    className: `flex-1 min-w-0 ${uiClasses.field} text-slate-200`
                   },
-                  className: `w-full ${uiClasses.field} text-slate-200`
-                },
-                void 0,
-                false,
-                {
+                  void 0,
+                  false,
+                  {
+                    fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                    lineNumber: 1332,
+                    columnNumber: 21
+                  },
+                  this
+                ),
+                /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: `flex-shrink-0 cursor-pointer text-[10px] py-1 px-3 rounded bg-amber-500/10 border flex items-center justify-center font-bold transition-all ${isUploading ? "border-amber-500/30 text-amber-300 opacity-50 cursor-not-allowed" : "border-amber-500/25 hover:bg-amber-500/20 hover:border-amber-400 text-amber-300"}`, children: [
+                  isUploading ? "Uploading..." : "Upload",
+                  !isUploading && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+                    "input",
+                    {
+                      type: "file",
+                      accept: "audio/*",
+                      className: "hidden",
+                      onChange: async (e2) => {
+                        var _a4;
+                        const file = (_a4 = e2.target.files) == null ? void 0 : _a4[0];
+                        if (!file) return;
+                        setIsUploading(true);
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        try {
+                          const r2 = await fetch("/dashboard/api/uploads/overlay/audio", {
+                            method: "POST",
+                            body: fd,
+                            credentials: "same-origin"
+                          });
+                          if (r2.ok) {
+                            const d2 = await r2.json();
+                            if (d2.url) {
+                              const next = { ...editingMarker, soundUrl: d2.url };
+                              setEditingMarker(next);
+                              const updated = markers.map((m2) => m2.id === editingMarker.id ? next : m2);
+                              onUpdateMarkers == null ? void 0 : onUpdateMarkers(updated);
+                            }
+                          }
+                        } catch (err) {
+                          console.error("Audio upload failed:", err);
+                        } finally {
+                          setIsUploading(false);
+                          e2.target.value = "";
+                        }
+                      }
+                    },
+                    void 0,
+                    false,
+                    {
+                      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                      lineNumber: 1351,
+                      columnNumber: 25
+                    },
+                    this
+                  )
+                ] }, void 0, true, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1330,
-                  columnNumber: 19
-                },
-                this
-              ),
-              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500 block", children: "Relative URL or full public audio URL." }, void 0, false, {
+                  lineNumber: 1344,
+                  columnNumber: 21
+                }, this)
+              ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1342,
+                lineNumber: 1331,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500 block", children: "Relative URL, full public audio URL, or upload local file (MP3/WAV)." }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
+                lineNumber: 1387,
                 columnNumber: 19
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1328,
+              lineNumber: 1329,
               columnNumber: 17
             }, this),
             editingMarker.actionType === "trigger" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "space-y-1", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { className: "text-slate-400 block font-medium", children: "Trigger Event ID / Name" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1348,
+                lineNumber: 1393,
                 columnNumber: 19
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -85679,24 +85738,24 @@ function TimelinePanel({
                 false,
                 {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                  lineNumber: 1349,
+                  lineNumber: 1394,
                   columnNumber: 19
                 },
                 this
               ),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { className: "text-[9px] text-slate-500 block", children: "Event triggered in active widgets." }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1361,
+                lineNumber: 1406,
                 columnNumber: 19
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-              lineNumber: 1347,
+              lineNumber: 1392,
               columnNumber: 17
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 1276,
+            lineNumber: 1277,
             columnNumber: 13
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { className: "flex items-center gap-2 border-t border-white/10 pt-3", children: [
@@ -85716,7 +85775,7 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1367,
+                lineNumber: 1412,
                 columnNumber: 15
               },
               this
@@ -85733,23 +85792,23 @@ function TimelinePanel({
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-                lineNumber: 1378,
+                lineNumber: 1423,
                 columnNumber: 15
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-            lineNumber: 1366,
+            lineNumber: 1411,
             columnNumber: 13
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 1264,
+          lineNumber: 1265,
           columnNumber: 11
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-          lineNumber: 1263,
+          lineNumber: 1264,
           columnNumber: 9
         }, this)
       ]
@@ -85758,7 +85817,7 @@ function TimelinePanel({
     true,
     {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/TimelinePanel.tsx",
-      lineNumber: 806,
+      lineNumber: 807,
       columnNumber: 5
     },
     this
