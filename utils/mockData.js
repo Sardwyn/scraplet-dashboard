@@ -97,7 +97,42 @@ export function getWidgetById(id) {
 }
 
 export const overlays = [
-  { id: "overlay-1", name: "Intro Splash", description: "Animated intro overlay for stream start", status: "installed", icon: "🎬" },
-  { id: "overlay-2", name: "Break Screen", description: "AFK overlay with music and countdown", status: "unlocked", icon: "⏸️" },
-  { id: "overlay-3", name: "End Credits", description: "Outro overlay with supporter names", status: "locked", icon: "🎞️" },
+  {
+    id: "overlay-1",
+    name: "Intro Splash",
+    description: "Animated intro overlay for stream start",
+    status: "installed",
+    icon: "🎬",
+    elements: [
+      { name: "Neon Glow Backdrop", type: "shape" },
+      { name: "Welcome Message", type: "text" },
+      { name: "Social Link Rotator", type: "widget" },
+      { name: "Camera Frame Overlay", type: "shape" }
+    ]
+  },
+  {
+    id: "overlay-2",
+    name: "Break Screen",
+    description: "AFK overlay with music and countdown",
+    status: "unlocked",
+    icon: "⏸️",
+    elements: [
+      { name: "Retro Countdown Clock", type: "widget" },
+      { name: "BRB Banner Text", type: "text" },
+      { name: "Scanline Overlay Card", type: "shape" }
+    ]
+  },
+  {
+    id: "overlay-3",
+    name: "End Credits",
+    description: "Outro overlay with supporter names",
+    status: "locked",
+    icon: "🎞️",
+    elements: [
+      { name: "Supporter Credits Scroll", type: "lower_third" },
+      { name: "Thank You Header", type: "text" },
+      { name: "Logo Image Frame", type: "image" }
+    ]
+  },
 ];
+

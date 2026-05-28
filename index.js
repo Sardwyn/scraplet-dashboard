@@ -25,6 +25,7 @@ import kickAuthRoutes from './routes/kickAuth.js';
 import twitchAuthRoutes from './routes/twitchAuth.js';
 import accountRoutes from './routes/account.js';
 import publicRoutes from './routes/public.js';
+import publicStatusRouter from './routes/publicStatus.js';
 import profileRoutes from './routes/profile.js';
 import adminRoutes from './routes/admin.js';
 import assetsRouter from "./routes/assets.js";
@@ -421,6 +422,7 @@ app.use('/auth', authRoutes);
 
 app.use('/account', accountRoutes);
 app.use('/', publicRoutes);
+app.use('/', publicStatusRouter);
 app.use('/profile', profileRoutes);
 app.use('/admin', adminRoutes);
 app.use(dashboardScrapbotRoutes);

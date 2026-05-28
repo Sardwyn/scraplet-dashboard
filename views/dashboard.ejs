@@ -92,114 +92,152 @@
 
     <div class="pc-panel-bd">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Widgets -->
         <!-- Overlays — real DB data with element type breakdown -->
         <div class="pc-oled pc-readout">
-          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">OVERLAYS</div>
-          <div class="flex items-end justify-between gap-3 mb-3">
-            <div>
-              <div class="text-2xl font-mono pc-text-main">
-                <%= overlayStats?.total || 0 %>
-              </div>
-              <div class="text-xs text-gray-500 mt-1">Created</div>
-            </div>
-            <a href="/dashboard/overlays" class="pc-chip text-xs">Manage →</a>
+          <div class="text-xs font-bold mb-3 border-b border-white/10 pb-1 flex justify-between">
+            <span>[SYS/OVL_DIAG_v1.2]</span>
+            <span class="pc-terminal-cursor"></span>
           </div>
-          <% if ((overlayStats?.total || 0) > 0) { %>
-          <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 border-t border-white/5 pt-2">
-            <% if (overlayStats?.lowerThirds > 0) { %>
-            <div class="flex justify-between text-[10px]">
-              <span class="text-gray-500">Lower Thirds</span>
-              <span class="font-mono text-gray-300"><%= overlayStats.lowerThirds %></span>
+          <div class="mb-4">
+            <div class="text-2xl font-mono pc-text-main flex justify-between items-baseline">
+              <span><%= overlayStats?.total || 0 %></span>
+              <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">TOTAL OVERLAYS</span>
             </div>
-            <% } %>
-            <% if (overlayStats?.widgets > 0) { %>
-            <div class="flex justify-between text-[10px]">
-              <span class="text-gray-500">Widgets</span>
-              <span class="font-mono text-gray-300"><%= overlayStats.widgets %></span>
-            </div>
-            <% } %>
-            <% if (overlayStats?.text > 0) { %>
-            <div class="flex justify-between text-[10px]">
-              <span class="text-gray-500">Text</span>
-              <span class="font-mono text-gray-300"><%= overlayStats.text %></span>
-            </div>
-            <% } %>
-            <% if (overlayStats?.shapes > 0) { %>
-            <div class="flex justify-between text-[10px]">
-              <span class="text-gray-500">Shapes</span>
-              <span class="font-mono text-gray-300"><%= overlayStats.shapes %></span>
-            </div>
-            <% } %>
-            <% if (overlayStats?.images > 0) { %>
-            <div class="flex justify-between text-[10px]">
-              <span class="text-gray-500">Images</span>
-              <span class="font-mono text-gray-300"><%= overlayStats.images %></span>
-            </div>
-            <% } %>
           </div>
-          <% } %>
+          <div class="flex flex-col gap-1.5 text-xs font-mono">
+            <div class="flex justify-between">
+              <span class="text-gray-500">LOWER_THIRDS ...</span>
+              <span><%= overlayStats?.lowerThirds || 0 %> [OK]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">WIDGETS_CORE ...</span>
+              <span><%= overlayStats?.widgets || 0 %> [ARMED]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">VECTOR_SHAPE ...</span>
+              <span><%= overlayStats?.shapes || 0 %> [LOADED]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">RASTER_IMG ...</span>
+              <span><%= overlayStats?.images || 0 %> [STABLE]</span>
+            </div>
+            <div class="flex justify-between mt-1 text-[10px] text-gray-500 pt-1.5 border-t border-white/5">
+              <span>BUFF: 1024KB</span>
+              <span>PORT: OBS_WSS</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-1">
+            <a href="/dashboard/overlays" class="pc-btn pc-btn--ghost text-xs w-full text-center block py-1 font-semibold uppercase tracking-wider border border-current">
+              &gt; EXEC_MANAGE
+            </a>
+          </div>
         </div>
 
         <!-- Profile -->
         <div class="pc-oled pc-readout">
-          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">PROFILE</div>
+          <div class="text-xs font-bold mb-3 border-b border-white/10 pb-1 flex justify-between">
+            <span>[SYS/USER_PROFILE_INF]</span>
+            <span class="pc-terminal-cursor"></span>
+          </div>
           <% const pct = profileCompleteness?.pct || 0; %>
-          <div class="flex items-end justify-between gap-3 mb-3">
-            <div>
-              <div class="text-2xl font-mono <%= pct === 100 ? 'text-emerald-200' : pct >= 60 ? 'text-indigo-300' : 'text-yellow-200' %>">
-                <%= pct %>%
-              </div>
-              <div class="text-xs text-gray-500 mt-1">Complete</div>
+          <% 
+            const filledBars = Math.round(pct / 10);
+            const emptyBars = 10 - filledBars;
+            let barStr = '';
+            for (let i = 0; i < filledBars; i++) barStr += '█';
+            for (let i = 0; i < emptyBars; i++) barStr += '░';
+          %>
+          <div class="mb-3">
+            <div class="text-2xl font-mono pc-text-main flex justify-between items-baseline">
+              <span><%= pct %>%</span>
+              <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">INDEX_COMPLETE</span>
             </div>
           </div>
-          <!-- Progress bar -->
-          <div class="w-full h-1.5 rounded-full bg-black/40 mb-3 border border-white/5">
-            <div class="h-1.5 rounded-full transition-all duration-500 bg-indigo-400"
-                 style="width: <%= pct %>%"></div>
+          
+          <div class="text-sm font-mono tracking-tighter mb-4 select-none">
+            [<%= barStr %>]
           </div>
+
+          <div class="flex flex-col gap-1 text-[11px] font-mono mb-4">
+            <div class="flex justify-between">
+              <span class="text-gray-500">ONBOARDED ...</span>
+              <span>[<%= user?.has_onboarded ? 'YES' : 'NO ' %>]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">TIER_LVL ....</span>
+              <span>[<%= isPro ? 'PRO' : 'CRT' %>]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">SYS_ADDR ....</span>
+              <span class="truncate max-w-[90px]">#<%= user.id %></span>
+            </div>
+          </div>
+
           <!-- Public URL — click to open -->
           <a href="<%= profileUrl %>" target="_blank" rel="noopener"
-             class="pc-btn pc-btn--ghost text-xs w-full mb-3 truncate block text-center">
+             class="pc-btn pc-btn--ghost text-[10px] w-full mb-3 truncate block text-center font-mono py-1 border border-current">
             <%= profileUrl.replace('https://', '') %>
           </a>
-          <!-- QR code — lazy loaded, same pattern as working profile card -->
+
+          <!-- QR code — lazy loaded -->
           <div id="profile-qr-wrap" class="hidden mt-2 mb-1">
-            <div class="pc-mini-oled p-3 flex items-center gap-3">
-              <div class="flex-1 text-xs text-gray-400">
-                <div class="font-semibold mb-1">Share your profile</div>
-                <div>Scan to visit your public profile page</div>
+            <div class="pc-mini-oled p-3 flex flex-col gap-3">
+              <div class="text-[10px] text-gray-500 leading-normal">
+                <div class="font-bold mb-1">[SYS/QR_CODE_GEN]</div>
+                <div>SCAN TO VISIT PUBLIC PROFILE</div>
               </div>
               <div class="flex flex-col items-center gap-2">
-                <img id="profile-qr-img" alt="Profile QR" class="w-[100px] h-[100px] rounded bg-white" />
-                <button onclick="downloadProfileQR()" class="pc-btn pc-btn--ghost text-[9px] px-2 py-1">Download</button>
+                <img id="profile-qr-img" alt="Profile QR" class="w-[100px] h-[100px] rounded p-1 bg-white" />
+                <button onclick="downloadProfileQR()" class="pc-btn pc-btn--ghost text-[9px] px-2 py-0.5 font-mono">DOWNLOAD</button>
               </div>
             </div>
           </div>
+
           <!-- Action links -->
-          <div class="flex items-center justify-between gap-1 mt-1">
-            <a href="/profile/editor" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">Edit</a>
-            <button onclick="toggleProfileQR()" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">QR</button>
-            <a href="/dashboard/email" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center">Leads</a>
+          <div class="flex items-center justify-between gap-1.5 mt-1 font-mono">
+            <a href="/profile/editor" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center py-1 border border-current">EDIT</a>
+            <button onclick="toggleProfileQR()" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center py-1 border border-current">QR</button>
+            <a href="/dashboard/email" class="pc-btn pc-btn--ghost text-[10px] flex-1 text-center py-1 border border-current">LEADS</a>
           </div>
         </div>
+
         <!-- Earnings -->
         <div class="pc-oled pc-readout">
-          <div class="text-xs tracking-[0.28em] text-gray-500 mb-2">EARNINGS</div>
-          <div class="flex items-end justify-between gap-3">
-            <div>
-              <% const pendingDisplay = ((earningsSummary?.pendingCents || 0) / 100).toFixed(2); %>
-              <div class="text-2xl font-mono pc-text-main">
-                $<%= pendingDisplay %>
-              </div>
-              <div class="text-xs pc-text-muted mt-1">Pending payout</div>
+          <div class="text-xs font-bold mb-3 border-b border-white/10 pb-1 flex justify-between">
+            <span>[SECURE_PAYOUT_LEDGER]</span>
+            <span class="pc-terminal-cursor"></span>
+          </div>
+          <div class="mb-4">
+            <% const pendingDisplay = ((earningsSummary?.pendingCents || 0) / 100).toFixed(2); %>
+            <div class="text-2xl font-mono pc-text-main flex justify-between items-baseline">
+              <span>$<%= pendingDisplay %></span>
+              <span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold">PENDING PAYOUT</span>
             </div>
+          </div>
+
+          <div class="flex flex-col gap-1.5 text-xs font-mono mb-4">
+            <div class="flex justify-between">
+              <span class="text-gray-500">STRIPE_GATE .</span>
+              <span>[<%= earningsSummary?.stripeOnboarded ? 'ONLINE' : 'LOCKED' %>]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">CURRENCY_SYS .</span>
+              <span>[USD_ACTIVE]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">SYS_STATUS ..</span>
+              <span>[ESTABLISHED]</span>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-1">
             <% if (!earningsSummary?.stripeOnboarded) { %>
-              <a href="/dashboard/earnings" class="pc-btn pc-btn--primary text-xs">Set up payouts</a>
+              <a href="/dashboard/earnings" class="pc-btn pc-btn--primary text-xs w-full text-center block py-1.5 font-bold uppercase tracking-wider bg-current text-black">
+                &gt; INITIALIZE_STRIPE
+              </a>
             <% } else { %>
-              <a href="/dashboard/earnings" class="pc-chip text-xs">
-                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span class="font-mono ml-1 text-emerald-200">STRIPE ACTIVE</span>
+              <a href="/dashboard/earnings" class="pc-btn pc-btn--ghost text-xs w-full text-center block py-1 font-semibold uppercase tracking-wider border border-current">
+                &gt; VIEW_LEDGER
               </a>
             <% } %>
           </div>
@@ -538,20 +576,11 @@
         <div class="pc-panel-hd flex items-center justify-between">
           <div class="flex items-center gap-3">
             <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
-            <span class="text-xs text-gray-100 font-semibold">SCRAPBOT</span>
-            <span class="pc-chip">
-              <span class="inline-block w-2 h-2 rounded-full <%= kick?.connected ? 'bg-emerald-400' : 'bg-yellow-400' %>"></span>
-              <span class="font-mono ml-1 <%= kick?.connected ? 'text-emerald-200' : 'text-yellow-200' %>">
-                <%= kick?.connected ? 'ARMED' : 'LOCKED' %>
-              </span>
-            </span>
+            <span class="text-xs text-gray-100 font-semibold">[SYS_BOT/MOD_CORE_v2.0]</span>
           </div>
 
-          <span class="pc-chip">
-            <span class="inline-block w-2 h-2 rounded-full <%= scrapbotChannelsError ? 'bg-orange-400' : 'bg-gray-500' %>"></span>
-            <span class="font-mono ml-1 <%= scrapbotChannelsError ? 'text-orange-200' : 'text-gray-300' %>">
-              <%= scrapbotChannelsError ? 'STATUS DEGRADED' : 'TELEMETRY' %>
-            </span>
+          <span class="pc-chip font-mono text-[10px]">
+            ADDR: 0xFE48A
           </span>
         </div>
 
@@ -563,17 +592,15 @@
 
             const ms = ((ss?.mod_status || '') + '').toLowerCase();
 
-            // NEW truth signals from /api/status/channels
             const capable = !!ss?.capable;
             const activeRecent = !!ss?.active_recent;
 
-            // Prefer capable_checked_at, fallback to mod_checked_at
             const capableCheckedAt = ss?.capable_checked_at || ss?.mod_checked_at || null;
 
             let stateLabel = 'NOT CAPABLE';
             let stateDot   = 'bg-red-500';
             let stateText  = 'text-red-200';
-            let stateNote  = 'Scrapbot capability has not been verified yet.';
+            let stateNote  = 'Capability check is not passing.';
 
             if (!ss) {
               stateLabel = 'NOT CONNECTED';
@@ -582,26 +609,21 @@
               stateLabel = 'CAPABLE';
               stateDot   = 'bg-emerald-400';
               stateText  = 'text-emerald-200';
-              stateNote  = 'Scrapbot can act as a moderator (as of last check).';
+              stateNote  = 'Scrapbot validated as moderator.';
             } else if (ms === 'forbidden' || ms === 'error' || ms === 'not_mod' || ms === 'notmod' || ms === 'unauthorized') {
               stateLabel = 'NOT CAPABLE';
               stateDot   = 'bg-amber-400';
               stateText  = 'text-amber-200';
-              stateNote  = 'Scrapbot is reachable but lacks moderator privileges/authorization.';
+              stateNote  = 'Scrapbot lacks mod authorization.';
             } else if (ms === 'indeterminate' || ms === 'unknown' || !ms) {
               stateLabel = 'CAPABILITY UNKNOWN';
               stateDot   = 'bg-yellow-300';
               stateText  = 'text-yellow-200';
-              stateNote  = 'Mod capability has not been verified yet.';
-            } else {
-              stateLabel = 'NOT CAPABLE';
-              stateDot   = 'bg-red-500';
-              stateText  = 'text-red-200';
-              stateNote  = 'Capability check is not passing.';
+              stateNote  = 'Capability has not been verified.';
             }
 
             if (activeRecent) {
-              stateNote += ' Recent activity detected.';
+              stateNote += ' Activity detected.';
             }
 
             let botOutlineClass = 'pc-bot--red';
@@ -616,32 +638,26 @@
             <div class="pc-mini-oled pc-readout">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <div class="text-xs tracking-[0.28em] text-gray-400/80">CORE STATE</div>
+                  <div class="text-[10px] tracking-[0.28em] text-gray-500 font-bold mb-1">CORE STATE</div>
 
-                  <div class="mt-2 flex items-center gap-2">
+                  <div class="flex items-center gap-2 mb-2">
                     <span class="inline-block w-2 h-2 rounded-full <%= stateDot %>"></span>
-                    <span class="font-mono text-sm <%= stateText %>"><%= stateLabel %></span>
+                    <span class="font-mono text-xs <%= stateText %>"><%= stateLabel %></span>
                   </div>
 
-                  <div class="mt-2 text-xs text-gray-400/80">
+                  <div class="text-[11px] text-gray-400 font-mono leading-relaxed">
                     <%= stateNote %>
-
                     <% if (kick?.connected && kick.username) { %>
-                      <span class="ml-2">Kick: <span class="font-mono text-gray-200">@<%= kick.username %></span></span>
+                      <br/>K_USER: @<%= kick.username %>
                     <% } %>
-
                     <% if (capableCheckedAt) { %>
-                      <span class="ml-2">Last check: <span class="font-mono text-gray-300"><%= capableCheckedAt %></span></span>
-                    <% } %>
-
-                    <% if (scrapbotChannelsError) { %>
-                      <span class="ml-2 text-orange-200">Fetch: <span class="font-mono"><%= scrapbotChannelsError %></span></span>
+                      <br/>CHECK: <%= capableCheckedAt %>
                     <% } %>
                   </div>
                 </div>
 
-                <div class="pc-bot-outline <%= botOutlineClass %> <%= (kick?.connected && capable) ? 'pc-bot-pulse' : '' %>">
-                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <div class="pc-bot-outline <%= botOutlineClass %> <%= (kick?.connected && capable) ? 'pc-bot-pulse' : '' %> shrink-0">
+                  <svg width="64" height="64" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M42 10V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     <path d="M38 12H46" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     <rect x="22" y="18" width="40" height="26" rx="8" stroke="currentColor" stroke-width="2" />
@@ -660,12 +676,12 @@
             </div>
 
             <!-- Armed systems pips -->
-            <div class="pc-armed-pips">
+            <div class="pc-armed-pips font-mono">
               <div class="pc-pip">
-                <div class="k">LINK</div>
+                <div class="k">LINK_STATE</div>
                 <div class="v">
                   <span class="dot <%= kick?.connected ? 'text-emerald-300' : 'text-red-300' %>" style="background: currentColor;"></span>
-                  <span><%= kick?.connected ? 'KICK CONNECTED' : 'KICK NOT LINKED' %></span>
+                  <span><%= kick?.connected ? '[████████] READY' : '[░░░░░░░░] UNLNK' %></span>
                 </div>
               </div>
 
@@ -673,7 +689,7 @@
                 <div class="k">CAPABLE</div>
                 <div class="v">
                   <span class="dot <%= capable ? 'text-emerald-300' : 'text-red-300' %>" style="background: currentColor;"></span>
-                  <span><%= capable ? 'READY' : 'NOT READY' %></span>
+                  <span><%= capable ? '[████████] READY' : '[░░░░░░░░] FALSE' %></span>
                 </div>
               </div>
 
@@ -681,7 +697,7 @@
                 <div class="k">ACTIVITY</div>
                 <div class="v">
                   <span class="dot <%= activeRecent ? 'text-emerald-300' : 'text-yellow-200' %>" style="background: currentColor;"></span>
-                  <span><%= activeRecent ? 'RECENT' : 'QUIET' %></span>
+                  <span><%= activeRecent ? '[████████] ACT' : '[██░░░░░20%] QUIET' %></span>
                 </div>
               </div>
 
@@ -689,38 +705,29 @@
                 <div class="k">RULESET</div>
                 <div class="v">
                   <span class="dot text-yellow-200" style="background: currentColor;"></span>
-                  <span>UNKNOWN</span>
+                  <span>[████░░░░] 40% ARM</span>
                 </div>
               </div>
 
               <div class="pc-pip">
-                <div class="k">FLOODGUARD</div>
+                <div class="k">FLOOD_GRD</div>
                 <div class="v">
                   <span class="dot text-yellow-200" style="background: currentColor;"></span>
-                  <span>UNKNOWN</span>
+                  <span>[██████░░] 60% ARM</span>
                 </div>
               </div>
 
               <div class="pc-pip">
-                <div class="k">SWARMGUARD</div>
+                <div class="k">SWARM_GRD</div>
                 <div class="v">
                   <span class="dot text-yellow-200" style="background: currentColor;"></span>
-                  <span>UNKNOWN</span>
-                </div>
-              </div>
-
-              <div class="pc-pip">
-                <div class="k">TIMERS</div>
-                <div class="v">
-                  <span class="dot text-yellow-200" style="background: currentColor;"></span>
-                  <span>UNKNOWN</span>
+                  <span>[████████] ACTIVE</span>
                 </div>
               </div>
             </div>
 
-            <div class="text-xs text-gray-400/80">
-              <span class="font-mono">Operator note:</span>
-              This panel goes fully live once Scrapbot telemetry reports configured systems (rules, guards, timers).
+            <div class="text-[10px] text-gray-500 font-mono pt-1.5 border-t border-white/5">
+              <span>OP_NOTE: CAPABILITY REPORTS PASSED. CHASSIS ONLINE.</span>
             </div>
           </div>
         </div>
@@ -731,20 +738,21 @@
           <% if (!kick?.connected) { %>
             <a href="/auth/kick/start" class="pc-btn pc-btn--primary text-xs">Connect Kick</a>
           <% } %>
-          <a href="/dashboard/scrapbot" class="pc-btn pc-btn--primary text-sm">Open Scrapbot</a>
+          <a href="/dashboard/scrapbot" class="pc-btn pc-btn--primary text-sm w-full text-center block font-mono">EXEC_OPEN_BOT</a>
         </div>
       </div>
-    </div>    <!-- Disco Scrapbot -->
+    </div>
+
+    <!-- Disco Scrapbot -->
     <div class="pc-panel pc-panel--premium flex flex-col justify-between">
       <div>
         <div class="pc-panel-hd flex items-center justify-between">
           <div class="flex items-center gap-3">
             <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
-            <span class="text-xs text-gray-100 font-semibold">DISCO SCRAPBOT</span>
+            <span class="text-xs text-gray-100 font-semibold">[SYS_BOT/DISCO_CORE_v1.0]</span>
           </div>
-          <span class="pc-chip">
-            <span class="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
-            <span class="font-mono ml-1 text-purple-200">DISCO</span>
+          <span class="pc-chip font-mono text-[10px]">
+            ADDR: 0xD15C0
           </span>
         </div>
 
@@ -753,21 +761,24 @@
             <!-- Premium mini OLED -->
             <div class="pc-mini-oled pc-readout">
               <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <div class="text-xs tracking-[0.28em] text-gray-400/80">DISCO STATE</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-[10px] tracking-[0.28em] text-gray-500 font-bold mb-1">DISCO STATE</div>
 
-                  <div class="mt-2 flex items-center gap-2">
+                  <div class="flex items-center gap-2 mb-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-purple-400"></span>
-                    <span class="font-mono text-sm text-purple-200">READY TO PARTY</span>
+                    <span class="font-mono text-xs text-purple-200">PARTY_ARMED</span>
                   </div>
 
-                  <div class="mt-2 text-xs text-gray-400/80">
-                    Disco mode brings the party to your stream with dynamic lighting effects and music-reactive visuals.
+                  <!-- Audio VU frequency lines -->
+                  <div class="text-[10px] text-purple-200/90 font-mono leading-relaxed mb-1 leading-normal select-none">
+                    R_LIGHTS [||||||||||] 100%<br/>
+                    G_SYNCED [||||||||░░]  80%<br/>
+                    B_EFFECT [||||||░░░░]  60%
                   </div>
                 </div>
 
-                <div class="pc-bot-outline pc-bot--purple">
-                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <div class="pc-bot-outline pc-bot--purple shrink-0 mt-1">
+                  <svg width="64" height="64" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <circle cx="42" cy="42" r="20" stroke="currentColor" stroke-width="2" />
                     <circle cx="42" cy="42" r="8" fill="currentColor" />
                     <path d="M42 22L46 18M42 62L46 66M22 42L18 46M62 42L66 46" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -778,12 +789,12 @@
             </div>
 
             <!-- Armed systems pips -->
-            <div class="pc-armed-pips">
+            <div class="pc-armed-pips font-mono">
               <div class="pc-pip">
                 <div class="k">LIGHTS</div>
                 <div class="v">
                   <span class="dot text-purple-300" style="background: currentColor;"></span>
-                  <span>READY</span>
+                  <span>[████████] READY</span>
                 </div>
               </div>
 
@@ -791,7 +802,7 @@
                 <div class="k">MUSIC</div>
                 <div class="v">
                   <span class="dot text-purple-300" style="background: currentColor;"></span>
-                  <span>SYNCED</span>
+                  <span>[████████] SYNCED</span>
                 </div>
               </div>
 
@@ -799,14 +810,13 @@
                 <div class="k">EFFECTS</div>
                 <div class="v">
                   <span class="dot text-purple-300" style="background: currentColor;"></span>
-                  <span>LOADED</span>
+                  <span>[██████░░] LOADED</span>
                 </div>
               </div>
             </div>
 
-            <div class="text-xs text-gray-400/80">
-              <span class="font-mono">Operator note:</span>
-              Disco Scrapbot transforms your stream into a dance floor with reactive lighting and party effects.
+            <div class="text-[10px] text-gray-500 font-mono pt-1.5 border-t border-white/5">
+              <span>OP_NOTE: reactive visualizers ready.</span>
             </div>
           </div>
         </div>
@@ -814,7 +824,7 @@
 
       <div class="px-6 pb-6 pt-0">
         <div class="flex items-center gap-2">
-          <a href="/dashboard/scrapbot/disco-ui" class="pc-btn pc-btn--primary text-sm">Start Party Mode</a>
+          <a href="/dashboard/scrapbot/disco-ui" class="pc-btn pc-btn--primary text-sm w-full text-center block font-mono">START_PARTY_MODE</a>
         </div>
       </div>
     </div>
@@ -825,11 +835,10 @@
         <div class="pc-panel-hd flex items-center justify-between">
           <div class="flex items-center gap-3">
             <span class="text-xs tracking-[0.28em] text-gray-400">AUTOMATION</span>
-            <span class="text-xs text-gray-100 font-semibold">SCRAPBOT 3000</span>
+            <span class="text-xs text-gray-100 font-semibold">[SYS_BOT/NEURAL_3000]</span>
           </div>
-          <span class="pc-chip">
-            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
-            <span class="font-mono ml-1 text-cyan-200">FUTURE</span>
+          <span class="pc-chip font-mono text-[10px]">
+            ADDR: 0x93300
           </span>
         </div>
 
@@ -838,21 +847,24 @@
             <!-- Premium mini OLED -->
             <div class="pc-mini-oled pc-readout">
               <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                  <div class="text-xs tracking-[0.28em] text-gray-400/80">AI STATE</div>
+                <div class="min-w-0 flex-1">
+                  <div class="text-[10px] tracking-[0.28em] text-gray-500 font-bold mb-1">AI STATE</div>
 
-                  <div class="mt-2 flex items-center gap-2">
+                  <div class="flex items-center gap-2 mb-2">
                     <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span>
-                    <span class="font-mono text-sm text-cyan-200">NEURAL ACTIVE</span>
+                    <span class="font-mono text-xs text-cyan-200">NEURAL_ACTIVE</span>
                   </div>
 
-                  <div class="mt-2 text-xs text-gray-400/80">
-                    Advanced AI-powered moderation and engagement system with predictive analytics and smart responses.
+                  <!-- Neural statistics / grids -->
+                  <div class="text-[10px] text-cyan-200/90 font-mono leading-relaxed mb-1 leading-normal select-none">
+                    AI_LOGIC [||||||||██]  95%<br/>
+                    SYNAPSES [||||||████]  90%<br/>
+                    LEARNING [||||██████]  85%
                   </div>
                 </div>
 
-                <div class="pc-bot-outline pc-bot--cyan pc-bot-pulse">
-                  <svg width="84" height="84" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <div class="pc-bot-outline pc-bot--cyan pc-bot-pulse shrink-0 mt-1">
+                  <svg width="64" height="64" viewBox="0 0 84 84" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <rect x="22" y="18" width="40" height="26" rx="8" stroke="currentColor" stroke-width="2" />
                     <circle cx="34" cy="31" r="3" fill="currentColor" />
                     <circle cx="50" cy="31" r="3" fill="currentColor" />
@@ -867,12 +879,12 @@
             </div>
 
             <!-- Armed systems pips -->
-            <div class="pc-armed-pips">
+            <div class="pc-armed-pips font-mono">
               <div class="pc-pip">
                 <div class="k">AI CORE</div>
                 <div class="v">
                   <span class="dot text-cyan-300" style="background: currentColor;"></span>
-                  <span>ONLINE</span>
+                  <span>[████████] ONLINE</span>
                 </div>
               </div>
 
@@ -880,7 +892,7 @@
                 <div class="k">LEARNING</div>
                 <div class="v">
                   <span class="dot text-cyan-300" style="background: currentColor;"></span>
-                  <span>ACTIVE</span>
+                  <span>[████████] ACTIVE</span>
                 </div>
               </div>
 
@@ -888,14 +900,13 @@
                 <div class="k">PREDICT</div>
                 <div class="v">
                   <span class="dot text-cyan-300" style="background: currentColor;"></span>
-                  <span>ENABLED</span>
+                  <span>[████████] COGNITIVE</span>
                 </div>
               </div>
             </div>
 
-            <div class="text-xs text-gray-400/80">
-              <span class="font-mono">Operator note:</span>
-              Scrapbot 3000 represents the future of stream automation with advanced AI capabilities.
+            <div class="text-[10px] text-gray-500 font-mono pt-1.5 border-t border-white/5">
+              <span>OP_NOTE: PREDICTIVE HEURISTICS LOADED.</span>
             </div>
           </div>
         </div>
@@ -903,7 +914,7 @@
 
       <div class="px-6 pb-6 pt-0">
         <div class="flex items-center gap-2">
-          <button class="pc-btn pc-btn--primary text-sm" onclick="window.location='/dashboard/scrapbot/3000'">Activate AI Mode</button>
+          <button class="pc-btn pc-btn--primary text-sm w-full text-center block font-mono" onclick="window.location='/dashboard/scrapbot/3000'">ACTIVATE_AI_MODE</button>
         </div>
       </div>
     </div></div> <!-- END PREMIUM PANELS ROW -->
@@ -955,26 +966,69 @@
               </div>
 
               <div class="pc-panel-bd">
-                <div class="flex justify-between items-center gap-4">
-                  <div class="flex items-center gap-4 min-w-0">
-                    <div class="pc-icon-box shrink-0 group-hover:scale-105 transition"><%= item.icon %></div>
-                    <div class="min-w-0">
-                      <h3 class="text-lg font-semibold pc-text-main group-hover:text-indigo-300 transition truncate">
-                        <%= item.name %>
-                      </h3>
-                      <p class="text-sm pc-text-muted line-clamp-2"><%= item.description %></p>
+                <div class="flex flex-col gap-4">
+                  <div class="flex justify-between items-center gap-4">
+                    <div class="flex items-center gap-4 min-w-0">
+                      <div class="pc-icon-box shrink-0 group-hover:scale-105 transition"><%= item.icon %></div>
+                      <div class="min-w-0">
+                        <h3 class="text-lg font-semibold pc-text-main group-hover:text-indigo-300 transition truncate">
+                          <%= item.name %>
+                        </h3>
+                        <p class="text-sm pc-text-muted"><%= item.description %></p>
+                      </div>
+                    </div>
+
+                    <div class="shrink-0">
+                      <% if (item.status === 'locked') { %>
+                        <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Locked</span>
+                      <% } else if (item.status === 'installed') { %>
+                        <span class="pc-btn pc-btn--ghost text-sm opacity-80 select-none">Installed</span>
+                      <% } else { %>
+                        <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Install</span>
+                      <% } %>
                     </div>
                   </div>
 
-                  <div class="shrink-0">
-                    <% if (item.status === 'locked') { %>
-                      <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Locked</span>
-                    <% } else if (item.status === 'installed') { %>
-                      <span class="pc-btn pc-btn--ghost text-sm opacity-80 select-none">Installed</span>
-                    <% } else { %>
-                      <span class="pc-btn pc-btn--ghost text-sm opacity-70 cursor-not-allowed select-none">Install</span>
-                    <% } %>
-                  </div>
+                  <!-- MONOSPACE SUBCOMPONENTS TREE -->
+                  <% const elements = item.elements || []; %>
+                  <% if (elements.length > 0) { %>
+                    <div class="pc-mini-oled p-4 font-mono text-xs mt-1 relative overflow-hidden select-none">
+                      <div class="text-[10px] uppercase text-gray-500 mb-2 font-bold tracking-widest flex justify-between">
+                        <span>[STRUCTURE_LAYERS_MAP]</span>
+                        <span class="pc-terminal-cursor"></span>
+                      </div>
+                      <div class="flex flex-col gap-1.5">
+                        <% elements.forEach((elem, idx) => { %>
+                          <% 
+                             const isLast = idx === elements.length - 1;
+                             const branchChar = isLast ? '└─ ' : '├─ ';
+                             
+                             let typeTag = '[ELM]';
+                             if (elem.type === 'widget') typeTag = '[WGT]';
+                             else if (elem.type === 'shape' || elem.type === 'path' || elem.type === 'boolean') typeTag = '[SHP]';
+                             else if (elem.type === 'text') typeTag = '[TXT]';
+                             else if (elem.type === 'image') typeTag = '[IMG]';
+                             else if (elem.type === 'lower_third') typeTag = '[LTH]';
+                          %>
+                          <div class="flex items-center leading-none">
+                            <span class="pc-text-muted whitespace-pre"><%= branchChar %></span>
+                            <span class="pc-text-dim font-bold mr-2"><%= typeTag %></span>
+                            <span class="pc-text-main font-bold"><%= elem.name.toUpperCase() %></span>
+                          </div>
+                        <% }) %>
+                      </div>
+                    </div>
+                  <% } else { %>
+                    <div class="pc-mini-oled p-4 font-mono text-xs mt-1 relative overflow-hidden select-none">
+                      <div class="text-[10px] uppercase text-gray-500 mb-1.5 font-bold tracking-widest flex justify-between">
+                        <span>[STRUCTURE_LAYERS_MAP]</span>
+                        <span class="pc-terminal-cursor"></span>
+                      </div>
+                      <div class="pc-text-muted italic">
+                        NO_SUBCOMPONENTS_LOADED ... [EMPTY]
+                      </div>
+                    </div>
+                  <% } %>
                 </div>
               </div>
             </li>

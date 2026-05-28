@@ -186,90 +186,91 @@ html[data-theme="analog-synth"] .pc-panel-bd {
 }
 
 html[data-theme="analog-synth"] .pc-oled.pc-readout {
-  /* Background set above with scanlines */
-  
-  border: 4px solid var(--as-charcoal);
-  border-radius: 6px;
-  
-  padding: 18px;
-  
-  /* Deep recessed display with inner bezel */
-  box-shadow:
-    /* Outer shadow */
-    0 2px 0 rgba(0, 0, 0, 0.3),
-    /* Deep inset */
-    inset 0 4px 12px rgba(0, 0, 0, 0.8),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.5),
-    /* Inner bezel highlight */
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  
-  color: var(--as-coral-bright);
-  font-family: 'Share Tech Mono', monospace;
-  
   position: relative;
+  background: #050200 !important;
+  border: 6px solid #331f11 !important;
+  border-radius: var(--pc-r-md) !important;
+  box-shadow: 
+    0 12px 28px rgba(0,0,0,0.6),
+    inset 0 0 45px rgba(0,0,0,0.95),
+    inset 0 0 15px rgba(255,157,0,0.15) !important;
   overflow: hidden;
+  color: #ff9d00 !important;
+  font-family: 'Share Tech Mono', monospace;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 20px !important;
 }
 
-/* Glass reflection effect - big OLEDs only, not mini */
-html[data-theme="analog-synth"] .pc-oled.pc-readout:not(.pc-mini-oled)::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  right: 4px;
-  height: 35%;
-  
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    transparent 100%
-  );
-  
-  border-radius: 3px 3px 50% 50% / 3px 3px 20% 20%;
-  pointer-events: none;
-  z-index: 1;
+/* Amber Glass Vignette & Lens Flare Reflection */
+html[data-theme="analog-synth"] .pc-oled.pc-readout::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: 
+    radial-gradient(circle at center, rgba(255, 157, 0, 0.05) 0%, rgba(0, 0, 0, 0.6) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 20%, transparent 45%) !important;
+  z-index: 10 !important;
+  opacity: 0.9 !important;
 }
 
-/* Explicitly no ::after on mini OLEDs */
+/* Amber Moving Raster Scanlines & Flicker */
+html[data-theme="analog-synth"] .pc-oled.pc-readout::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background-image: 
+    repeating-linear-gradient(0deg, rgba(255, 157, 0, 0.06) 0px, rgba(255, 157, 0, 0.06) 1px, transparent 1px, transparent 4px),
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%) !important;
+  background-size: 100% 4px, 100% 8px !important;
+  z-index: 9 !important;
+  opacity: 0.85 !important;
+  animation: pc-raster-scroll 18s linear infinite, pc-flicker 0.2s infinite !important;
+}
+
+/* Explicitly override mini OLEDs for Amber */
+html[data-theme="analog-synth"] .pc-mini-oled {
+  position: relative !important;
+  background: #050200 !important;
+  border: 3px solid #331f11 !important;
+  border-radius: var(--pc-r-sm) !important;
+  padding: 12px !important;
+  overflow: hidden !important;
+  color: #ff9d00 !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,0.4),
+    inset 0 0 25px rgba(0,0,0,0.9),
+    inset 0 0 8px rgba(255,157,0,0.1) !important;
+}
+
+html[data-theme="analog-synth"] .pc-mini-oled::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle at center, rgba(255, 157, 0, 0.03) 0%, rgba(0, 0, 0, 0.45) 100%) !important;
+  z-index: 10 !important;
+  opacity: 0.9 !important;
+}
+
 html[data-theme="analog-synth"] .pc-mini-oled::after {
-  display: none;
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background-image: repeating-linear-gradient(0deg, rgba(255, 157, 0, 0.04) 0px, rgba(255, 157, 0, 0.04) 1px, transparent 1px, transparent 4px) !important;
+  background-size: 100% 4px !important;
+  z-index: 9 !important;
+  opacity: 0.85 !important;
 }
 
-/* Animated scanlines - big OLEDs get the radial gradient glow */
-html[data-theme="analog-synth"] .pc-oled.pc-readout {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.2) 2px,
-      rgba(0, 0, 0, 0.2) 4px
-    ),
-    radial-gradient(ellipse at 50% 30%, #1a1f28 0%, #0d1015 100%);
-  background-size: 100% 4px, 100% 100%;
-  animation: scanlines 0.3s linear infinite;
-}
-
-/* Mini OLEDs get a flat dark background - no glow, no blur */
-html[data-theme="analog-synth"] .pc-mini-oled.pc-readout {
-  background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.2) 2px,
-      rgba(0, 0, 0, 0.2) 4px
-    ),
-    linear-gradient(180deg, #0d1015 0%, #080a0d 100%);
-  background-size: 100% 4px, 100% 100%;
-  animation: scanlines 0.3s linear infinite;
-}
-
-/* Children sit above the wave layer */
+/* Children sit above scanlines */
 html[data-theme="analog-synth"] .pc-oled.pc-readout > *,
 html[data-theme="analog-synth"] .pc-mini-oled.pc-readout > * {
-  position: relative;
-  z-index: 3;
+  position: relative !important;
+  z-index: 12 !important;
 }
 
 /* Traveling distortion wave on both oled types */
@@ -300,14 +301,13 @@ html[data-theme="analog-synth"] .pc-readout::before {
   mix-blend-mode: screen;
 }
 
-/* Main readout numbers - bright cyan/green for high contrast */
+/* Main readout numbers - warm amber-plasma for high contrast */
 html[data-theme="analog-synth"] .pc-readout .text-2xl,
 html[data-theme="analog-synth"] .pc-readout .pc-text-main {
-  color: #00ff9f;
+  color: #ff9d00 !important;
   text-shadow: 
-    0 0 10px #00ff9f,
-    0 0 20px rgba(0, 255, 159, 0.6),
-    0 0 30px rgba(0, 255, 159, 0.3);
+    0 0 4px rgba(255, 157, 0, 0.8),
+    0 0 12px rgba(255, 157, 0, 0.35);
   font-weight: 700;
   font-family: 'Share Tech Mono', monospace;
   letter-spacing: 0.05em;
@@ -315,7 +315,7 @@ html[data-theme="analog-synth"] .pc-readout .pc-text-main {
 
 /* Labels and secondary text - bright amber, no glow on small text */
 html[data-theme="analog-synth"] .pc-readout .text-xs {
-  color: #ffd080;
+  color: #ffb84d !important;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   font-size: 10px;
@@ -326,7 +326,7 @@ html[data-theme="analog-synth"] .pc-readout .text-xs {
 /* Muted text in readouts - dimmer amber, no glow */
 html[data-theme="analog-synth"] .pc-readout .pc-text-muted,
 html[data-theme="analog-synth"] .pc-readout .text-gray-500 {
-  color: #c8a060;
+  color: #b37400 !important;
   text-shadow: none;
 }
 
@@ -335,18 +335,29 @@ html[data-theme="analog-synth"] .pc-readout p,
 html[data-theme="analog-synth"] .pc-readout div,
 html[data-theme="analog-synth"] .pc-readout span {
   text-shadow: none;
-  color: #d4c090;
+  color: #e6a133;
 }
 
 /* Only these specific elements get the glow treatment */
 html[data-theme="analog-synth"] .pc-readout .text-2xl,
 html[data-theme="analog-synth"] .pc-readout .pc-text-main,
 html[data-theme="analog-synth"] .pc-readout .font-mono.text-sm,
-html[data-theme="analog-synth"] .pc-readout .font-mono.text-lg {
+html[data-theme="analog-synth"] .pc-readout .font-mono.text-lg,
+html[data-theme="analog-synth"] .pc-mini-oled .pc-text-main,
+html[data-theme="analog-synth"] .pc-mini-oled .font-mono,
+html[data-theme="analog-synth"] .pc-mini-oled .text-sm,
+html[data-theme="analog-synth"] .pc-mini-oled .text-purple-200,
+html[data-theme="analog-synth"] .pc-mini-oled .text-cyan-200 {
+  color: #ff9d00 !important;
   text-shadow: 
-    0 0 10px #00ff9f,
-    0 0 20px rgba(0, 255, 159, 0.6),
-    0 0 30px rgba(0, 255, 159, 0.3);
+    0 0 4px rgba(255, 157, 0, 0.8),
+    0 0 12px rgba(255, 157, 0, 0.35);
+}
+
+/* Custom blip cursor for amber terminal */
+html[data-theme="analog-synth"] .pc-terminal-cursor {
+  background-color: #ff9d00 !important;
+  box-shadow: 0 0 6px #ff9d00 !important;
 }
 
 /* Mini OLED displays (smaller nested displays) - sharp, no blur */

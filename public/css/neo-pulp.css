@@ -405,72 +405,101 @@ body.np .pc-panel .pc-btn--ghost {
    ───────────────────────────────────────────────────────────── */
 .pc-oled {
   position: relative;
-  background: var(--oled-bg);
-  border: var(--pc-border-w) solid var(--np-border);
+  background: #020603 !important;
+  border: 6px solid #1c2e1f;
   border-radius: var(--pc-r-md);
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.9);
+  box-shadow: 
+    0 12px 28px rgba(0,0,0,0.6),
+    inset 0 0 45px rgba(0,0,0,0.95),
+    inset 0 0 15px rgba(37,255,117,0.15);
   overflow: hidden;
-  color: var(--oled-accent);
+  color: #25ff75 !important;
   font-family: 'Share Tech Mono', monospace;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 20px;
 }
 
-/* The Scanlines */
+/* Glass Vignette & Lens Flare Reflection */
 .pc-oled::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%,
-    rgba(0, 0, 0, 0.2) 50%
-  ), linear-gradient(
-    90deg,
-    rgba(255, 0, 0, 0.03),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.03)
-  );
-  background-size: 100% 3px, 3px 100%;
-  z-index: 2;
-  opacity: 0.8;
+  background: 
+    radial-gradient(circle at center, rgba(37, 255, 117, 0.05) 0%, rgba(0, 0, 0, 0.6) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.02) 20%, transparent 45%);
+  z-index: 10;
+  opacity: 0.9;
 }
 
-/* The CRT Flicker & Grid Overlay */
+/* Moving Raster Scanlines & Flicker */
 .pc-oled::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    var(--oled-glass),
-    radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%),
-    repeating-linear-gradient(0deg, var(--oled-grid) 0, var(--oled-grid) 1px, transparent 1px, transparent 20px),
-    repeating-linear-gradient(90deg, var(--oled-grid) 0, var(--oled-grid) 1px, transparent 1px, transparent 20px);
-  z-index: 3;
-  animation: pc-flicker 0.15s infinite;
+  background-image: 
+    repeating-linear-gradient(0deg, rgba(37, 255, 117, 0.06) 0px, rgba(37, 255, 117, 0.06) 1px, transparent 1px, transparent 4px),
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px, 100% 8px;
+  z-index: 9;
+  opacity: 0.85;
+  animation: pc-raster-scroll 18s linear infinite, pc-flicker 0.2s infinite;
+}
+
+@keyframes pc-raster-scroll {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 0 -100px, 0 100%; }
 }
 
 @keyframes pc-flicker {
-  0% { opacity: 0.98; }
-  5% { opacity: 0.95; }
-  10% { opacity: 0.99; }
-  15% { opacity: 0.96; }
-  20% { opacity: 0.98; }
-  25% { opacity: 0.99; }
-  30% { opacity: 0.97; }
-  100% { opacity: 1; }
+  0% { opacity: 0.83; }
+  5% { opacity: 0.80; }
+  10% { opacity: 0.84; }
+  15% { opacity: 0.81; }
+  20% { opacity: 0.83; }
+  25% { opacity: 0.85; }
+  30% { opacity: 0.82; }
+  100% { opacity: 0.84; }
 }
 
-/* High Contrast Content for OLED */
-.pc-oled .pc-text-main {
-  color: var(--oled-accent) !important;
-  text-shadow: 0 0 10px var(--oled-accent);
+/* Phosphor Glow Text Styling */
+.pc-oled .pc-text-main,
+.pc-oled h1,
+.pc-oled h2,
+.pc-oled h3,
+.pc-oled .text-2xl,
+.pc-oled .text-xl {
+  color: #25ff75 !important;
+  text-shadow: 
+    0 0 4px rgba(37, 255, 117, 0.7),
+    0 0 12px rgba(37, 255, 117, 0.35);
   filter: brightness(1.2);
 }
 
-.pc-oled .pc-text-muted {
-  color: var(--oled-accent) !important;
-  opacity: 0.6;
+.pc-oled .pc-text-muted,
+.pc-oled .text-gray-500,
+.pc-oled .text-gray-400 {
+  color: rgba(37, 255, 117, 0.65) !important;
+  text-shadow: 0 0 2px rgba(37, 255, 117, 0.3);
+  opacity: 0.75;
+}
+
+/* Custom blip cursor */
+.pc-terminal-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  background-color: #25ff75;
+  box-shadow: 0 0 6px #25ff75;
+  margin-left: 2px;
+  animation: pc-cursor-blink 1s step-end infinite;
+  vertical-align: middle;
+}
+
+@keyframes pc-cursor-blink {
+  from, to { background-color: transparent; box-shadow: none; }
+  50% { background-color: #25ff75; box-shadow: 0 0 6px #25ff75; }
 }
 
 .pc-chart-viewport {
@@ -693,10 +722,56 @@ body.np .pc-panel .pc-btn--ghost {
 
 /* Premium Mini OLED */
 .pc-mini-oled {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  background: #020603 !important;
+  border: 3px solid #1c2e1f;
   border-radius: var(--pc-r-sm);
   padding: 12px;
+  overflow: hidden;
+  color: #25ff75 !important;
+  font-family: 'Share Tech Mono', monospace;
+  box-shadow: 
+    0 4px 10px rgba(0,0,0,0.4),
+    inset 0 0 25px rgba(0,0,0,0.9),
+    inset 0 0 8px rgba(37,255,117,0.1);
+}
+
+.pc-mini-oled::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(37, 255, 117, 0.03) 0%, rgba(0, 0, 0, 0.45) 100%);
+  z-index: 10;
+  opacity: 0.9;
+}
+
+.pc-mini-oled::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, rgba(37, 255, 117, 0.04) 0px, rgba(37, 255, 117, 0.04) 1px, transparent 1px, transparent 4px);
+  background-size: 100% 4px;
+  z-index: 9;
+  opacity: 0.85;
+}
+
+.pc-mini-oled .pc-text-main,
+.pc-mini-oled .font-mono,
+.pc-mini-oled .text-sm,
+.pc-mini-oled .text-purple-200,
+.pc-mini-oled .text-cyan-200 {
+  color: #25ff75 !important;
+  text-shadow: 0 0 3px rgba(37, 255, 117, 0.6);
+}
+
+.pc-mini-oled .pc-text-muted,
+.pc-mini-oled .text-gray-400,
+.pc-mini-oled .text-gray-500 {
+  color: rgba(37, 255, 117, 0.6) !important;
+  text-shadow: none;
+  opacity: 0.7;
 }
 
 /* Scrapbot Visuals */
