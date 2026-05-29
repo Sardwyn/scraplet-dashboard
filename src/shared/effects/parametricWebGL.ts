@@ -400,13 +400,18 @@ float getFogChannel(vec2 uv, float offsetTime) {
     return mix(f1, f2, 0.5);
 }
 
-float getSporesChannel(vec2 uv, float aspect) {
+float hash2(vec2 co);
+
+vec3 getSporesChannel(vec2 uv, float aspect, vec2 caOffset) {
     // Grid density for atmospheric particles
     vec2 gridUv = uv * vec2(15.0 * aspect, 15.0);
     vec2 cellId = floor(gridUv);
     vec2 cellUv = fract(gridUv) - 0.5;
     
-    float spores = 0.0;
+    // Scale caOffset to cell-grid space
+    vec2 cellOffset = caOffset * vec2(15.0 * aspect, 15.0);
+    
+    vec3 spores = vec3(0.0);
     for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
             vec2 neighbor = vec2(float(x), float(y));
@@ -439,10 +444,15 @@ float getSporesChannel(vec2 uv, float aspect) {
                     cos(tY + seed * 6.28) * 0.35 + sin(tY * 0.37 + seed * 3.14) * 0.15
                 );
                 
-                float distToSpore = length(cellUv - neighbor - sporePos);
+                // Standard subpixel chromatic aberration offsets inside the same grid cell
+                float distR = length(cellUv - cellOffset - neighbor - sporePos);
+                float distG = length(cellUv - neighbor - sporePos);
+                float distB = length(cellUv + cellOffset - neighbor - sporePos);
                 
                 // DoF physical lens blurring using smoothstep
-                float glow = smoothstep(size + blur, max(0.0, size - blur), distToSpore);
+                float glowR = smoothstep(size + blur, max(0.0, size - blur), distR);
+                float glowG = smoothstep(size + blur, max(0.0, size - blur), distG);
+                float glowB = smoothstep(size + blur, max(0.0, size - blur), distB);
                 
                 // Bokeh brightness attenuation (energy conservation)
                 float intensityMultiplier = 1.0 / (1.0 + defocus * 5.0);
@@ -450,7 +460,10 @@ float getSporesChannel(vec2 uv, float aspect) {
                 // Individual particle breathing
                 float breathing = 0.6 + 0.4 * sin(uTime * 0.5 + seed * 10.0);
                 
-                spores += glow * intensityMultiplier * breathing;
+                float factor = intensityMultiplier * breathing;
+                spores.r += glowR * factor;
+                spores.g += glowG * factor;
+                spores.b += glowB * factor;
             }
         }
     }
@@ -461,8 +474,8 @@ void main() {
     vec2 radialDir = vUv - 0.5;
     float distFromCenter = length(radialDir);
     
-    // Radial Chromatic Aberration offset scaled near corners
-    vec2 caOffset = normalize(radialDir) * distFromCenter * distFromCenter * chromaSpread * 0.45;
+    // Radial Chromatic Aberration offset scaled near corners (multiplied slightly for better visibility)
+    vec2 caOffset = normalize(radialDir) * distFromCenter * distFromCenter * chromaSpread * 0.95;
     
     vec2 uvR = vUv - caOffset;
     vec2 uvG = vUv;
@@ -481,7 +494,8 @@ void main() {
     float smokeB = smoothstep(0.22, 0.78, fogB);
     
     // Sample Spores exactly once to completely prevent cell-grid RGB boundary-crossing jitter
-    float spores = getSporesChannel(vUv, aspect);
+    // Now with premium 3D subpixel chromatic aberration mapped on the spore geometry
+    vec3 spores = getSporesChannel(vUv, aspect, caOffset);
     
     // Color grade: deep eerie cyan-teal shadows & midtones
     vec3 baseTealShadow = vec3(0.01, 0.08, 0.11);
@@ -499,7 +513,7 @@ void main() {
     
     // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
     vec3 sporeColor = vec3(0.88, 0.94, 1.0);
-    vec3 sporeComp = vec3(spores) * sporeColor * 1.85;
+    vec3 sporeComp = spores * sporeColor * 1.85;
     
     vec3 finalRGB = bgAndFog + sporeComp;
     
@@ -515,7 +529,7 @@ void main() {
     
     // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
     // We boost the smokeG's alpha contribution significantly (scale by 1.2) so fog is beautiful and obvious when maxed
-    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + spores * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
+    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + spores.g * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
     alpha = clamp(alpha, 0.0, 0.98) * opacity;
     
     fragColor = vec4(finalRGB, alpha);
