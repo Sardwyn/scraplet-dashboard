@@ -27669,7 +27669,8 @@ void main() {
     
     // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
     // We boost the smokeG's alpha contribution significantly (scale by 1.2) so fog is beautiful and obvious when maxed
-    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + spores.g * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
+    float maxSpore = max(spores.r, max(spores.g, spores.b));
+    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + maxSpore * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
     alpha = clamp(alpha, 0.0, 0.98) * opacity;
     
     fragColor = vec4(finalRGB, alpha);
