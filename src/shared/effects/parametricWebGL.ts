@@ -475,6 +475,11 @@ void main() {
     float fogG = getFogChannel(uvG, 0.015);
     float fogB = getFogChannel(uvB, 0.03);
     
+    // Boost contrast to create distinct, beautiful rolling smoke wisps instead of flat fog
+    float smokeR = smoothstep(0.22, 0.78, fogR);
+    float smokeG = smoothstep(0.22, 0.78, fogG);
+    float smokeB = smoothstep(0.22, 0.78, fogB);
+    
     // Sample Spores exactly once to completely prevent cell-grid RGB boundary-crossing jitter
     float spores = getSporesChannel(vUv, aspect);
     
@@ -489,7 +494,7 @@ void main() {
     
     // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
     vec3 fogColor = vec3(0.12, 0.34, 0.40);
-    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.8;
+    vec3 fogComp = vec3(smokeR, smokeG, smokeB) * fogColor * fogIntensity * 2.5;
     vec3 bgAndFog = bgWash + (1.0 - bgWash) * fogComp;
     
     // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
@@ -509,8 +514,9 @@ void main() {
     finalRGB += vec3(grain);
     
     // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
-    float alpha = 0.25 * (1.0 - desaturation) + fogG * fogIntensity * 0.5 + spores * 0.8 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
-    alpha = clamp(alpha, 0.0, 0.95) * opacity;
+    // We boost the smokeG's alpha contribution significantly (scale by 1.2) so fog is beautiful and obvious when maxed
+    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + spores * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
+    alpha = clamp(alpha, 0.0, 0.98) * opacity;
     
     fragColor = vec4(finalRGB, alpha);
 }
@@ -553,7 +559,7 @@ function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fr
 }
 
 export function initWebGLRenderer(canvas: HTMLCanvasElement, activePresets?: string[]): WebGLRenderer | null {
-  const gl = canvas.getContext("webgl2", { alpha: true, preimageAlpha: false, antialias: true });
+  const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false, antialias: true });
   if (!gl) {
     console.warn("WebGL 2 context is not available.");
     return null;

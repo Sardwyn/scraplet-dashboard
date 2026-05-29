@@ -1692,7 +1692,12 @@ function ParametricEffectOverlay({
             
             for (const e of webglEffectsRef.current) {
                 const params = resolveEffectParams(e, t, dataRef.current);
-                renderWebGLFrame(renderer, e.preset, params, t, widthRef.current, heightRef.current);
+                const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
+                const finalParams = {
+                    ...params,
+                    opacity: Number(params.opacity ?? 0.7) * overallOpacity
+                };
+                renderWebGLFrame(renderer, e.preset, finalParams, t, widthRef.current, heightRef.current);
             }
         };
         
