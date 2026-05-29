@@ -347,6 +347,148 @@ void main() {
     
     fragColor = finalColor;
 }
+`,
+
+  upsideDown: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float desaturation;
+uniform float fogIntensity;
+uniform float sporeDensity;
+uniform float chromaSpread;
+uniform float vignetteStrength;
+uniform float grainIntensity;
+
+float hash2(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float noise(in vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    float a = hash2(i);
+    float b = hash2(i + vec2(1.0, 0.0));
+    float c = hash2(i + vec2(0.0, 1.0));
+    float d = hash2(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm(in vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 3; i++) {
+        v += a * noise(p);
+        p = rot * p * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
+float getFogChannel(vec2 uv, float offsetTime) {
+    vec2 p1 = uv * 2.8 + vec2(uTime * 0.045 + offsetTime, uTime * 0.025);
+    vec2 p2 = uv * 4.5 - vec2(uTime * 0.035, uTime * 0.04 + offsetTime);
+    float f1 = fbm(p1);
+    float f2 = fbm(p2);
+    return mix(f1, f2, 0.5);
+}
+
+float getSporesChannel(vec2 uv, float aspect) {
+    vec2 gridUv = uv * vec2(12.0 * aspect, 12.0);
+    vec2 cellId = floor(gridUv);
+    vec2 cellUv = fract(gridUv) - 0.5;
+    
+    float spores = 0.0;
+    for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+            vec2 neighbor = vec2(float(x), float(y));
+            vec2 currentCell = cellId + neighbor;
+            float h = hash2(currentCell);
+            
+            if (h < sporeDensity * 0.68) {
+                float seed = h * 827.41;
+                float speed = 0.4 + fract(seed * 0.1) * 0.6;
+                float size = 0.035 + fract(seed * 0.25) * 0.075;
+                
+                float t = uTime * speed * 0.75;
+                vec2 sporePos = vec2(
+                    sin(t + seed) * 0.35,
+                    fract(t * 0.25 + seed) - 0.5
+                );
+                
+                float distToSpore = length(cellUv - neighbor - sporePos);
+                float glow = smoothstep(size, 0.0, distToSpore);
+                glow = pow(glow, 2.2);
+                spores += glow;
+            }
+        }
+    }
+    return spores;
+}
+
+void main() {
+    vec2 radialDir = vUv - 0.5;
+    float distFromCenter = length(radialDir);
+    
+    // Radial Chromatic Aberration offset scaled near corners
+    vec2 caOffset = normalize(radialDir) * distFromCenter * distFromCenter * chromaSpread * 0.45;
+    
+    vec2 uvR = vUv - caOffset;
+    vec2 uvG = vUv;
+    vec2 uvB = vUv + caOffset;
+    
+    float aspect = uResolution.x / uResolution.y;
+    
+    // Evaluate chromatic splitting of Fog and Spores
+    float fogR = getFogChannel(uvR, 0.0);
+    float fogG = getFogChannel(uvG, 0.015);
+    float fogB = getFogChannel(uvB, 0.03);
+    
+    float sporesR = getSporesChannel(uvR, aspect);
+    float sporesG = getSporesChannel(uvG, aspect);
+    float sporesB = getSporesChannel(uvB, aspect);
+    
+    // Color grade: deep eerie cyan-teal shadows & midtones
+    vec3 baseTealShadow = vec3(0.01, 0.08, 0.11);
+    vec3 baseTealMid = vec3(0.03, 0.16, 0.20);
+    vec3 bgWash = mix(baseTealShadow, baseTealMid, 1.0 - distFromCenter * 1.1);
+    
+    // Desaturate background
+    float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
+    bgWash = mix(bgWash, vec3(lumaBg), desaturation);
+    
+    // Combine fog (pale green-cyan)
+    vec3 fogColor = vec3(0.10, 0.38, 0.44);
+    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.6;
+    
+    // Combine spores (contrasting warm red-orange embers)
+    vec3 sporeColor = vec3(0.92, 0.30, 0.06);
+    vec3 sporeComp = vec3(sporesR, sporesG, sporesB) * sporeColor * 1.85;
+    
+    vec3 finalRGB = bgWash + fogComp + sporeComp;
+    
+    // Vignette outer edge darkening
+    float vig = vUv.x * vUv.y * (1.0 - vUv.x) * (1.0 - vUv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.3 + vignetteStrength * 0.7), 0.0, 1.0);
+    finalRGB *= mix(1.0, vignetteVal, vignetteStrength);
+    
+    // Inject dynamic film grain
+    float grainNoise = hash2(vUv + fract(uTime));
+    float grain = (grainNoise - 0.5) * grainIntensity;
+    finalRGB += vec3(grain);
+    
+    // Atmospheric alpha calculation
+    float alpha = 0.25 * (1.0 - desaturation) + fogG * fogIntensity * 0.5 + sporesG * 0.8 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
+    alpha = clamp(alpha, 0.0, 0.95);
+    
+    fragColor = vec4(finalRGB, alpha);
+}
 `
 };
 
@@ -498,6 +640,13 @@ export function renderWebGLFrame(
     gl.uniform1f(gl.getUniformLocation(program, "chromaticSplit"), Number(params.chromaticSplit ?? 0.03));
     gl.uniform1f(gl.getUniformLocation(program, "noiseDensity"), Number(params.noiseDensity ?? 0.2));
     gl.uniform1f(gl.getUniformLocation(program, "speed"), Number(params.speed ?? 1.0));
+  } else if (preset === "upsideDown") {
+    gl.uniform1f(gl.getUniformLocation(program, "desaturation"), Number(params.desaturation ?? 0.3));
+    gl.uniform1f(gl.getUniformLocation(program, "fogIntensity"), Number(params.fogIntensity ?? 0.4));
+    gl.uniform1f(gl.getUniformLocation(program, "sporeDensity"), Number(params.sporeDensity ?? 0.5));
+    gl.uniform1f(gl.getUniformLocation(program, "chromaSpread"), Number(params.chromaSpread ?? 0.02));
+    gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number(params.vignetteStrength ?? 0.65));
+    gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number(params.grainIntensity ?? 0.04));
   }
 
 

@@ -885,6 +885,22 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "speed", label: "Speed", type: "number", default: 1.0, min: 0.1, max: 5, step: 0.1 },
     ],
   },
+  upsideDown: {
+    id: "upsideDown",
+    label: "Upside Down",
+    description: "Stranger Things Upside Down environment with scrolling cold fog, drifting spores, chromatic aberration, vignette, and grain",
+    category: "color",
+    defaultDuration: 4000,
+    produces: ["webgl"],
+    params: [
+      { key: "desaturation", label: "Desaturation", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "fogIntensity", label: "Fog Intensity", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "sporeDensity", label: "Spore Density", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "chromaSpread", label: "Chroma Spread", type: "number", default: 0.02, min: 0, max: 0.1, step: 0.005, animatable: true },
+      { key: "vignetteStrength", label: "Vignette Strength", type: "number", default: 0.65, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "grainIntensity", label: "Grain Intensity", type: "number", default: 0.04, min: 0, max: 0.15, step: 0.01, animatable: true },
+    ],
+  },
 };
 
 // ── Param interpolation ───────────────────────────────────────────────────────
