@@ -9244,12 +9244,18 @@ function EffectsStackControls({
   element,
   onChange,
   onOpenCurveEditor,
+  timelineState,
+  onToggleTimelineKeyframe,
 }: {
   element: AnyEl;
   onChange: (patch: Partial<AnyEl>) => void;
   onOpenCurveEditor?: (index: string) => void;
+  timelineState?: any;
+  onToggleTimelineKeyframe?: (property: string) => void;
 }) {
   const effects = getElementEffects(element);
+  const fieldClass = uiClasses.field;
+  const fieldLabelClass = uiClasses.fieldLabel;
 
   const setEffects = (nextEffects: OverlayEffect[]) => {
     const normalized = nextEffects.map((effect) => ensureEffect(effect));
@@ -13238,8 +13244,12 @@ function InspectorPanel({
       {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
         <div className="space-y-4">
-          <EffectsStackControls element={element} onChange={onChange}
+          <EffectsStackControls
+              element={element}
+              onChange={onChange}
               onOpenCurveEditor={(idx) => window.dispatchEvent(new CustomEvent('scraplet:open-curve-editor', { detail: idx }))}
+              timelineState={timelineState}
+              onToggleTimelineKeyframe={onToggleTimelineKeyframe}
             />
 
           <div className="h-px bg-[rgba(255,255,255,0.06)]" />
