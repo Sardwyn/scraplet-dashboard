@@ -24086,14 +24086,13 @@ void main() {
     
     float aspect = uResolution.x / uResolution.y;
     
-    // Evaluate chromatic splitting of Fog and Spores
+    // Evaluate chromatic splitting of Fog (smooth, continuous noise is safe for coordinate-splitting)
     float fogR = getFogChannel(uvR, 0.0);
     float fogG = getFogChannel(uvG, 0.015);
     float fogB = getFogChannel(uvB, 0.03);
     
-    float sporesR = getSporesChannel(uvR, aspect);
-    float sporesG = getSporesChannel(uvG, aspect);
-    float sporesB = getSporesChannel(uvB, aspect);
+    // Sample Spores exactly once to completely prevent cell-grid RGB boundary-crossing jitter
+    float spores = getSporesChannel(vUv, aspect);
     
     // Color grade: deep eerie cyan-teal shadows & midtones
     vec3 baseTealShadow = vec3(0.01, 0.08, 0.11);
@@ -24108,9 +24107,9 @@ void main() {
     vec3 fogColor = vec3(0.10, 0.38, 0.44);
     vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.6;
     
-    // Combine spores (contrasting warm red-orange embers)
+    // Combine spores (contrasting warm red-orange embers, perfectly aligned across RGB)
     vec3 sporeColor = vec3(0.92, 0.30, 0.06);
-    vec3 sporeComp = vec3(sporesR, sporesG, sporesB) * sporeColor * 1.85;
+    vec3 sporeComp = vec3(spores) * sporeColor * 1.85;
     
     vec3 finalRGB = bgWash + fogComp + sporeComp;
     
