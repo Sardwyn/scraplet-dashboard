@@ -487,15 +487,16 @@ void main() {
     float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
     bgWash = mix(bgWash, vec3(lumaBg), desaturation);
     
-    // Combine fog (pale green-cyan)
-    vec3 fogColor = vec3(0.10, 0.38, 0.44);
-    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.6;
+    // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
+    vec3 fogColor = vec3(0.12, 0.34, 0.40);
+    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.8;
+    vec3 bgAndFog = bgWash + (1.0 - bgWash) * fogComp;
     
-    // Combine spores (contrasting warm red-orange embers, perfectly aligned across RGB)
-    vec3 sporeColor = vec3(0.92, 0.30, 0.06);
+    // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
+    vec3 sporeColor = vec3(0.88, 0.94, 1.0);
     vec3 sporeComp = vec3(spores) * sporeColor * 1.85;
     
-    vec3 finalRGB = bgWash + fogComp + sporeComp;
+    vec3 finalRGB = bgAndFog + sporeComp;
     
     // Vignette outer edge darkening
     float vig = vUv.x * vUv.y * (1.0 - vUv.x) * (1.0 - vUv.y);

@@ -26169,23 +26169,35 @@ const EFFECT_PRESETS = {
   }
 };
 function interpolateParams(baseParams, keyframes, t2, duration) {
-  var _a3;
   if (!keyframes || keyframes.length === 0) return baseParams;
-  if (keyframes.length === 1) {
-    return { ...baseParams, ...keyframes[0].params };
-  }
-  const loopT = duration > 0 ? t2 % duration : t2;
-  const sorted = [...keyframes].sort((a2, b2) => a2.t - b2.t);
-  const before = sorted.filter((k2) => k2.t <= loopT).pop();
-  const after = sorted.find((k2) => k2.t > loopT);
-  if (!before && !after) return baseParams;
-  if (!before) return { ...baseParams, ...after.params };
-  if (!after) return { ...baseParams, ...before.params };
-  const progress = (loopT - before.t) / Math.max(1, after.t - before.t);
   const result = { ...baseParams };
-  for (const key of Object.keys(before.params)) {
+  const keys = Object.keys(baseParams);
+  const loopT = duration > 0 ? t2 % duration : t2;
+  for (const key of keys) {
+    const kfsForKey = keyframes.filter((kf) => kf.params && key in kf.params).sort((a22, b22) => a22.t - b22.t);
+    if (kfsForKey.length === 0) {
+      continue;
+    }
+    if (kfsForKey.length === 1) {
+      result[key] = kfsForKey[0].params[key];
+      continue;
+    }
+    const before = kfsForKey.filter((k2) => k2.t <= loopT).pop();
+    const after = kfsForKey.find((k2) => k2.t > loopT);
+    if (!before && !after) {
+      continue;
+    }
+    if (!before) {
+      result[key] = after.params[key];
+      continue;
+    }
+    if (!after) {
+      result[key] = before.params[key];
+      continue;
+    }
+    const progress = (loopT - before.t) / Math.max(1, after.t - before.t);
     const a2 = before.params[key];
-    const b2 = (_a3 = after.params[key]) != null ? _a3 : baseParams[key];
+    const b2 = after.params[key];
     if (typeof a2 === "number" && typeof b2 === "number") {
       result[key] = a2 + (b2 - a2) * progress;
     } else {
@@ -27615,15 +27627,16 @@ void main() {
     float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
     bgWash = mix(bgWash, vec3(lumaBg), desaturation);
     
-    // Combine fog (pale green-cyan)
-    vec3 fogColor = vec3(0.10, 0.38, 0.44);
-    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.6;
+    // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
+    vec3 fogColor = vec3(0.12, 0.34, 0.40);
+    vec3 fogComp = vec3(fogR, fogG, fogB) * fogColor * fogIntensity * 1.8;
+    vec3 bgAndFog = bgWash + (1.0 - bgWash) * fogComp;
     
-    // Combine spores (contrasting warm red-orange embers, perfectly aligned across RGB)
-    vec3 sporeColor = vec3(0.92, 0.30, 0.06);
+    // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
+    vec3 sporeColor = vec3(0.88, 0.94, 1.0);
     vec3 sporeComp = vec3(spores) * sporeColor * 1.85;
     
-    vec3 finalRGB = bgWash + fogComp + sporeComp;
+    vec3 finalRGB = bgAndFog + sporeComp;
     
     // Vignette outer edge darkening
     float vig = vUv.x * vUv.y * (1.0 - vUv.x) * (1.0 - vUv.y);
@@ -89007,7 +89020,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
       lineNumber: 153,
       columnNumber: 7
     }, this),
-    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", gap: 4, padding: "7px 14px", background: "#0d0d18", borderBottom: "1px solid rgba(255,255,255,0.05)" }, children: animatable.map((param, idx) => {
+    /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, padding: "7px 14px", background: "#0d0d18", borderBottom: "1px solid rgba(255,255,255,0.05)" }, children: animatable.map((param, idx) => {
       const color = COLORS[idx % COLORS.length];
       const sel = selParam === param.key;
       const nodeCount = getNodes(effect, param.key).length;

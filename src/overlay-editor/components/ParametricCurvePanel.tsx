@@ -169,7 +169,7 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
       </div>
 
       {/* Param tabs */}
-      <div style={{ display: 'flex', gap: 4, padding: '7px 14px', background: '#0d0d18', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '7px 14px', background: '#0d0d18', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {animatable.map((param, idx) => {
           const color = COLORS[idx % COLORS.length];
           const sel = selParam === param.key;

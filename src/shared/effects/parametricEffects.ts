@@ -913,30 +913,48 @@ export function interpolateParams(
 ): EffectParams {
   if (!keyframes || keyframes.length === 0) return baseParams;
 
-  // Single keyframe: hold that value indefinitely (no interpolation)
-  if (keyframes.length === 1) {
-    return { ...baseParams, ...keyframes[0].params };
-  }
+  const result = { ...baseParams };
+  const keys = Object.keys(baseParams);
 
   // Normalize t to loop duration
   const loopT = duration > 0 ? t % duration : t;
 
-  // Find surrounding keyframes
-  const sorted = [...keyframes].sort((a, b) => a.t - b.t);
-  const before = sorted.filter(k => k.t <= loopT).pop();
-  const after = sorted.find(k => k.t > loopT);
+  for (const key of keys) {
+    // Find all keyframes that define this specific parameter
+    const kfsForKey = keyframes
+      .filter(kf => kf.params && key in kf.params)
+      .sort((a, b) => a.t - b.t);
 
-  if (!before && !after) return baseParams;
-  if (!before) return { ...baseParams, ...after!.params };
-  if (!after) return { ...baseParams, ...before.params };
+    if (kfsForKey.length === 0) {
+      continue; // Use baseParams value
+    }
 
-  // Lerp between keyframes
-  const progress = (loopT - before.t) / Math.max(1, after.t - before.t);
-  const result = { ...baseParams };
+    if (kfsForKey.length === 1) {
+      result[key] = kfsForKey[0].params[key];
+      continue;
+    }
 
-  for (const key of Object.keys(before.params)) {
+    // Find surrounding keyframes for this key
+    const before = kfsForKey.filter(k => k.t <= loopT).pop();
+    const after = kfsForKey.find(k => k.t > loopT);
+
+    if (!before && !after) {
+      continue;
+    }
+    if (!before) {
+      result[key] = after!.params[key];
+      continue;
+    }
+    if (!after) {
+      result[key] = before.params[key];
+      continue;
+    }
+
+    // Lerp between the two keyframes for this key
+    const progress = (loopT - before.t) / Math.max(1, after.t - before.t);
     const a = before.params[key];
-    const b = after.params[key] ?? baseParams[key];
+    const b = after.params[key];
+
     if (typeof a === "number" && typeof b === "number") {
       result[key] = a + (b - a) * progress;
     } else {
