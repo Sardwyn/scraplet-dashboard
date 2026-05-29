@@ -22654,6 +22654,108 @@
         { key: "grainIntensity", label: "Grain Intensity", type: "number", default: 0.04, min: 0, max: 0.15, step: 0.01, animatable: true },
         { key: "opacity", label: "Opacity", type: "number", default: 0.7, min: 0, max: 1, step: 0.05, animatable: true }
       ]
+    },
+    silentHillFog: {
+      id: "silentHillFog",
+      label: "Silent Hill Fog",
+      description: "Creeping volumetric FBM dual-layer ash fog, heavy desaturation, and dynamic film grain",
+      category: "color",
+      defaultDuration: 5e3,
+      produces: ["webgl"],
+      params: [
+        { key: "desaturation", label: "Desaturation", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "fogDensity", label: "Fog Density", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "fogSpeed", label: "Fog Speed", type: "number", default: 1, min: 0.1, max: 3, step: 0.1, animatable: true },
+        { key: "contrast", label: "Fog Contrast", type: "number", default: 1.2, min: 0.5, max: 2.5, step: 0.05, animatable: true },
+        { key: "grainIntensity", label: "Grain Intensity", type: "number", default: 0.05, min: 0, max: 0.2, step: 0.01, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.8, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
+    },
+    bladeRunnerRain: {
+      id: "bladeRunnerRain",
+      label: "Blade Runner Neon Rain",
+      description: "Vertical falling neon rain streaks with randomized speed, splash ripples, and lower ambient reflection",
+      category: "particle",
+      defaultDuration: 4e3,
+      produces: ["webgl"],
+      params: [
+        { key: "rainDensity", label: "Rain Density", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "rainSpeed", label: "Rain Speed", type: "number", default: 1.2, min: 0.1, max: 3, step: 0.1, animatable: true },
+        { key: "neonColor1", label: "Neon Pink Color", type: "color", default: "#ff007f" },
+        { key: "neonColor2", label: "Neon Cyan Color", type: "color", default: "#00f3ff" },
+        { key: "ambientReflection", label: "Ambient Reflection", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.9, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
+    },
+    matrixHaze: {
+      id: "matrixHaze",
+      label: "The Matrix Green Code Haze",
+      description: "Vertical streaming digital code drops with fading glowing trails and toxic backdrop wash",
+      category: "particle",
+      defaultDuration: 5e3,
+      produces: ["webgl"],
+      params: [
+        { key: "codeSpeed", label: "Code Speed", type: "number", default: 1, min: 0.1, max: 3, step: 0.1, animatable: true },
+        { key: "trailLength", label: "Trail Length", type: "number", default: 0.7, min: 0.2, max: 0.95, step: 0.05, animatable: true },
+        { key: "glowIntensity", label: "Glow Intensity", type: "number", default: 1.2, min: 0.1, max: 3, step: 0.1, animatable: true },
+        { key: "codeColor", label: "Code Color", type: "color", default: "#00ff41" },
+        { key: "ambientHaze", label: "Ambient Haze", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.85, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
+    },
+    falloutRadiation: {
+      id: "falloutRadiation",
+      label: "Fallout Radiation Shimmer",
+      description: "Sickly green/yellow radiation heat waves, CRT scanline overlay, and Geiger dynamic screen flicker",
+      category: "distortion",
+      defaultDuration: 3e3,
+      produces: ["webgl"],
+      params: [
+        { key: "shimmerIntensity", label: "Shimmer Level", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "scanlineIntensity", label: "Scanlines", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "geigerFlicker", label: "Geiger Flicker", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "tintColor", label: "Radiation Tint", type: "color", default: "#22c55e" },
+        { key: "glowRadius", label: "Glow Radius", type: "number", default: 0.8, min: 0.1, max: 2, step: 0.05, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.8, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
+    },
+    cyberpunkSmear: {
+      id: "cyberpunkSmear",
+      label: "Cyberpunk Chroma Smear",
+      description: "High-frequency horizontal block shifts, scanning laser sweeping lines, retro digital grids, and chromatic lens split",
+      category: "distortion",
+      defaultDuration: 2e3,
+      produces: ["webgl"],
+      params: [
+        { key: "glitchFrequency", label: "Glitch Frequency", type: "number", default: 1.5, min: 0.1, max: 10, step: 0.1, animatable: true },
+        { key: "smearWidth", label: "Smear Width", type: "number", default: 0.45, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "chromaSplit", label: "Color Fringe", type: "number", default: 0.03, min: 0, max: 0.2, step: 5e-3, animatable: true },
+        { key: "laserScan", label: "Laser Sweeper", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "gridIntensity", label: "Grid Lines", type: "number", default: 0.25, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.8, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
+    },
+    horrorJitter: {
+      id: "horrorJitter",
+      label: "Horror Film Jitter",
+      description: "Extreme camera-shake jitter, gate-flicker dynamic brightness, procedural film scratches, dust blobs, and desaturated grade",
+      category: "distortion",
+      defaultDuration: 1500,
+      produces: ["webgl"],
+      params: [
+        { key: "desaturation", label: "Desaturation", type: "number", default: 0.8, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "shakeIntensity", label: "Camera Shake", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "flickerRate", label: "Gate Flicker", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "scratchDensity", label: "Hair & Scratches", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "vignetteStrength", label: "Shadow Vignette", type: "number", default: 0.7, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "opacity", label: "Opacity", type: "number", default: 0.95, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "none"] }
+      ]
     }
   };
   function interpolateParams(baseParams, keyframes, t2, duration) {
@@ -24163,6 +24265,436 @@ void main() {
     
     fragColor = vec4(finalRGB, alpha);
 }
+`,
+    silentHillFog: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float desaturation;
+uniform float fogDensity;
+uniform float fogSpeed;
+uniform float contrast;
+uniform float grainIntensity;
+uniform float opacity;
+
+float hash2_sh(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float noise_sh(in vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    float a = hash2_sh(i);
+    float b = hash2_sh(i + vec2(1.0, 0.0));
+    float c = hash2_sh(i + vec2(0.0, 1.0));
+    float d = hash2_sh(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm_sh(in vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 3; i++) {
+        v += a * noise_sh(p);
+        p = rot * p * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
+void main() {
+    vec2 uv = vUv;
+    float t = uTime * fogSpeed;
+    
+    // Slow drifting dual-layer FBM fog
+    vec2 p1 = uv * 2.5 + vec2(t * 0.03, t * 0.015);
+    vec2 p2 = uv * 3.8 - vec2(t * 0.02, t * 0.025);
+    float f1 = fbm_sh(p1);
+    float f2 = fbm_sh(p2);
+    float rawFog = mix(f1, f2, 0.5);
+    
+    // Apply contrast curves
+    float wisp = smoothstep(0.2, 0.8, rawFog);
+    wisp = pow(wisp, 1.0 / max(0.1, contrast));
+    
+    // Background color: dull greyish silent hill tones
+    vec3 shadowColor = vec3(0.12, 0.12, 0.13);
+    vec3 midColor = vec3(0.24, 0.25, 0.26);
+    float centerDist = length(uv - 0.5);
+    vec3 bg = mix(midColor, shadowColor, centerDist * 1.2);
+    
+    // Desaturate background
+    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+    bg = mix(bg, vec3(lumaBg), desaturation);
+    
+    // Composite fog
+    vec3 ashFogColor = vec3(0.48, 0.49, 0.51);
+    vec3 finalRGB = bg + wisp * ashFogColor * fogDensity * 1.8;
+    
+    // Vignette
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.4), 0.0, 1.0);
+    finalRGB *= mix(0.45, 1.0, vignetteVal);
+    
+    // Film grain
+    float grain = (hash2_sh(uv + fract(uTime)) - 0.5) * grainIntensity;
+    finalRGB += vec3(grain);
+    
+    // Calculate alpha
+    float alpha = (wisp * fogDensity * 1.1 + 0.15) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+    bladeRunnerRain: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float rainDensity;
+uniform float rainSpeed;
+uniform vec3 neonColor1;
+uniform vec3 neonColor2;
+uniform float ambientReflection;
+uniform float opacity;
+
+float hash_br(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    // Ambient neon bloom reflection at the bottom
+    float bloomY = smoothstep(0.0, 0.5, 1.0 - uv.y);
+    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(uTime * 0.5 + uv.x * 2.0) * 0.5 + 0.5);
+    vec3 finalRGB = ambientGlow * bloomY * ambientReflection * 0.45;
+    
+    // Scale coordinates for rain grid
+    vec2 gridUv = uv * vec2(40.0 * aspect, 12.0);
+    vec2 cellId = floor(gridUv);
+    vec2 cellUv = fract(gridUv);
+    
+    float accumRain = 0.0;
+    vec3 rainRGB = vec3(0.0);
+    
+    for (int x = -1; x <= 1; x++) {
+        float col = cellId.x + float(x);
+        float h = hash_br(vec2(col, 137.45));
+        
+        if (h < rainDensity * 0.75) {
+            float speed = rainSpeed * (1.2 + h * 0.8);
+            float offset = h * 50.0;
+            
+            float yPos = fract(uv.y + uTime * speed + offset);
+            
+            float streakWidth = 0.04 + h * 0.03;
+            float streakDistX = abs(cellUv.x - 0.5 - float(x));
+            float verticalTrail = smoothstep(0.0, 1.0, yPos);
+            
+            float droplet = smoothstep(streakWidth, 0.0, streakDistX) * verticalTrail * (1.0 - yPos);
+            
+            if (droplet > 0.0) {
+                vec3 colColor = mix(neonColor1, neonColor2, h);
+                rainRGB += colColor * droplet * 2.2;
+                accumRain += droplet;
+            }
+            
+            float splashH = hash_br(vec2(col, 255.12));
+            float rippleCenterY = 0.05 + splashH * 0.05;
+            float distToRipple = length(vec2((cellUv.x - 0.5 - float(x)) * aspect, cellUv.y - rippleCenterY));
+            float splashTime = fract(uTime * 2.5 + splashH * 10.0);
+            float ripple = smoothstep(0.02, 0.0, abs(distToRipple - splashTime * 0.15)) * (1.0 - splashTime);
+            
+            if (ripple > 0.0) {
+                vec3 colColor = mix(neonColor1, neonColor2, splashH);
+                rainRGB += colColor * ripple * 1.2;
+                accumRain += ripple;
+            }
+        }
+    }
+    
+    finalRGB += rainRGB;
+    
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.5), 0.0, 1.0);
+    finalRGB *= mix(0.2, 1.0, vignetteVal);
+    
+    float alpha = (accumRain * 1.1 + bloomY * ambientReflection * 0.25) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+    matrixHaze: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float codeSpeed;
+uniform float trailLength;
+uniform float glowIntensity;
+uniform vec3 codeColor;
+uniform float ambientHaze;
+uniform float opacity;
+
+float hash_mx(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float getGlyph_mx(vec2 p, float seed) {
+    vec2 grid = floor(p * 4.0);
+    float val = hash_mx(grid + vec2(seed, seed * 2.3));
+    return step(0.48, val);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    vec3 hazeColor = codeColor * 0.18;
+    float centerDist = length(uv - vec2(0.5, 0.7));
+    vec3 finalRGB = hazeColor * (1.0 - centerDist * 0.8) * ambientHaze;
+    
+    float colWidth = 32.0 * aspect;
+    vec2 gridUv = uv * vec2(colWidth, 1.0);
+    float colId = floor(gridUv.x);
+    float colHash = hash_mx(vec2(colId, 314.15));
+    
+    float codeAccum = 0.0;
+    float leadingHead = 0.0;
+    
+    if (colHash < 0.82) {
+        float speed = codeSpeed * (0.8 + colHash * 0.7);
+        float fallOffset = colHash * 100.0;
+        
+        float progress = uTime * speed + fallOffset;
+        float yCoord = uv.y * 14.0;
+        float currentDrop = floor(progress);
+        float fractDrop = fract(progress);
+        
+        float localY = fract(yCoord - progress);
+        float blockRow = floor(yCoord - progress);
+        
+        float distToHead = yCoord - progress;
+        float tail = trailLength * 12.0;
+        
+        if (distToHead < 0.0 && distToHead > -tail) {
+            float brightness = 1.0 - (abs(distToHead) / tail);
+            brightness = pow(brightness, 1.5);
+            
+            vec2 glyphUv = vec2(fract(gridUv.x), fract(yCoord));
+            float glyph = getGlyph_mx(glyphUv, colId + blockRow);
+            
+            codeAccum = glyph * brightness;
+            
+            if (distToHead > -0.4) {
+                leadingHead = smoothstep(-0.4, 0.0, distToHead);
+            }
+        }
+    }
+    
+    vec3 codeComp = codeColor * codeAccum * glowIntensity;
+    codeComp += vec3(1.0) * leadingHead * glowIntensity * 1.5;
+    
+    finalRGB += codeComp;
+    
+    float alpha = (codeAccum * 1.2 + leadingHead * 1.5 + ambientHaze * 0.25) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+    falloutRadiation: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float shimmerIntensity;
+uniform float scanlineIntensity;
+uniform float geigerFlicker;
+uniform vec3 tintColor;
+uniform float glowRadius;
+uniform float opacity;
+
+float hash_fo(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    float waveX = sin(uv.y * 14.5 + uTime * 4.2) * 0.015 * shimmerIntensity +
+                  cos(uv.y * 31.2 + uTime * 7.8) * 0.007 * shimmerIntensity;
+    float waveY = cos(uv.x * 12.8 + uTime * 3.8) * 0.010 * shimmerIntensity;
+    vec2 distortedUv = uv + vec2(waveX, waveY);
+    
+    float centerDist = length(distortedUv - 0.5);
+    float radGlow = smoothstep(glowRadius * 1.2, 0.0, centerDist);
+    
+    float flicker = hash_fo(vec2(uTime, 42.17));
+    float geigerAmp = 1.0 + (flicker - 0.5) * 0.25 * geigerFlicker;
+    
+    float scanline = sin(distortedUv.y * uResolution.y * 0.95) * 0.5 + 0.5;
+    float scanLineEffect = mix(1.0, 0.4 + scanline * 0.6, scanlineIntensity);
+    
+    vec3 baseColor = tintColor * radGlow * 1.5 * geigerAmp;
+    vec3 finalRGB = baseColor * scanLineEffect;
+    
+    float dust = hash_fo(distortedUv + fract(uTime));
+    if (dust < 0.015 * geigerFlicker) {
+        finalRGB += tintColor * 0.85;
+    }
+    
+    float alpha = (radGlow * 1.1 + 0.15) * scanLineEffect * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+    cyberpunkSmear: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float glitchFrequency;
+uniform float smearWidth;
+uniform float chromaSplit;
+uniform float laserScan;
+uniform float gridIntensity;
+uniform float opacity;
+
+float hash_cp(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    float timeBlock = floor(uTime * glitchFrequency * 8.0);
+    float rowBlock = floor(uv.y * 18.0);
+    float glitchVal = hash_cp(vec2(rowBlock, timeBlock));
+    
+    float shiftX = 0.0;
+    if (glitchVal < 0.18 * smearWidth) {
+        shiftX = (hash_cp(timeBlock + vec2(rowBlock + 12.3, 0.0)) - 0.5) * 0.12 * smearWidth;
+    }
+    
+    vec2 uvR = uv + vec2(shiftX + chromaSplit * 0.05, 0.0);
+    vec2 uvG = uv + vec2(shiftX, 0.0);
+    vec2 uvB = uv + vec2(shiftX - chromaSplit * 0.05, 0.0);
+    
+    vec3 finalRGB = vec3(0.0);
+    float alphaAccum = 0.0;
+    
+    vec2 gridSpace = vec2(16.0 * aspect, 16.0);
+    vec2 gridLineR = abs(fract(uvR * gridSpace - 0.5) - 0.5) / fwidth(uvR * gridSpace);
+    vec2 gridLineG = abs(fract(uvG * gridSpace - 0.5) - 0.5) / fwidth(uvG * gridSpace);
+    vec2 gridLineB = abs(fract(uvB * gridSpace - 0.5) - 0.5) / fwidth(uvB * gridSpace);
+    
+    float rGrid = smoothstep(1.0, 0.0, min(gridLineR.x, gridLineR.y));
+    float gGrid = smoothstep(1.0, 0.0, min(gridLineG.x, gridLineG.y));
+    float bGrid = smoothstep(1.0, 0.0, min(gridLineB.x, gridLineB.y));
+    
+    vec3 gridRGB = vec3(rGrid * 1.0, gGrid * 0.1, bGrid * 1.0) * gridIntensity * 1.5;
+    finalRGB += gridRGB;
+    alphaAccum += max(rGrid, max(gGrid, bGrid)) * gridIntensity * 0.7;
+    
+    float laserY = fract(uTime * 0.35);
+    float laserDist = abs(uv.y - laserY);
+    float laser = smoothstep(0.012, 0.0, laserDist) * laserScan;
+    float laserGlow = smoothstep(0.12, 0.0, laserDist) * 0.35 * laserScan;
+    
+    if (laser + laserGlow > 0.0) {
+        vec3 laserColor = vec3(0.0, 0.95, 1.0);
+        finalRGB += laserColor * (laser * 2.5 + laserGlow * 1.1);
+        alphaAccum += laser * 1.0 + laserGlow * 0.5;
+    }
+    
+    if (shiftX != 0.0) {
+        finalRGB += vec3(0.9, 0.0, 0.5) * 0.65;
+        alphaAccum += 0.45;
+    }
+    
+    float alpha = (alphaAccum + 0.15) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 0.98));
+}
+`,
+    horrorJitter: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float desaturation;
+uniform float shakeIntensity;
+uniform float flickerRate;
+uniform float scratchDensity;
+uniform float vignetteStrength;
+uniform float opacity;
+
+float hash_hj(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    float seedTime = floor(uTime * 24.0);
+    float jitterX = (hash_hj(vec2(seedTime, 1.0)) - 0.5) * 0.02 * shakeIntensity;
+    float jitterY = (hash_hj(vec2(seedTime, 2.0)) - 0.5) * 0.02 * shakeIntensity;
+    vec2 jitterUv = uv + vec2(jitterX, jitterY);
+    
+    float flicker = hash_hj(vec2(seedTime, 3.5));
+    float brightnessFlicker = 1.0 + (flicker - 0.5) * 0.28 * flickerRate;
+    
+    vec3 shadowColor = vec3(0.08, 0.08, 0.09);
+    vec3 midColor = vec3(0.20, 0.20, 0.18);
+    float centerDist = length(uv - 0.5);
+    vec3 bg = mix(midColor, shadowColor, centerDist * 1.3) * brightnessFlicker;
+    
+    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+    bg = mix(bg, vec3(lumaBg), desaturation);
+    
+    vec3 finalRGB = bg;
+    float scratchAccum = 0.0;
+    
+    for (int i = 0; i < 3; i++) {
+        float scratchId = float(i) * 31.42;
+        float sX = hash_hj(vec2(scratchId, seedTime * 0.05));
+        
+        if (hash_hj(vec2(scratchId, sX)) < scratchDensity * 0.65) {
+            float distToScratch = abs(jitterUv.x - sX);
+            float line = smoothstep(0.0015, 0.0, distToScratch);
+            scratchAccum += line * 0.75;
+        }
+    }
+    
+    float blobVal = hash_hj(floor(jitterUv * 8.0) + vec2(seedTime, seedTime * 1.5));
+    if (blobVal < 0.003 * scratchDensity) {
+        scratchAccum += 0.85;
+        finalRGB *= 0.15;
+    }
+    
+    finalRGB += vec3(scratchAccum) * 0.8;
+    
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.45 + vignetteStrength * 0.6), 0.0, 1.0);
+    finalRGB *= mix(1.0 - vignetteStrength * 0.9, 1.0, vignetteVal);
+    
+    float alpha = (0.2 + scratchAccum * 0.5 + (1.0 - vignetteVal) * vignetteStrength * 0.8) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
 `
   };
   function hexToRgb(hex) {
@@ -24245,7 +24777,7 @@ void main() {
     };
   }
   function renderWebGLFrame(renderer, preset, params, t2, width, height) {
-    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E;
+    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma;
     const { gl, programs, quadBuffer } = renderer;
     const program = programs[preset];
     if (!program) return;
@@ -24300,6 +24832,52 @@ void main() {
       gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number((_C = params.vignetteStrength) != null ? _C : 0.65));
       gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number((_D = params.grainIntensity) != null ? _D : 0.04));
       gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_E = params.opacity) != null ? _E : 0.7));
+    } else if (preset === "silentHillFog") {
+      gl.uniform1f(gl.getUniformLocation(program, "desaturation"), Number((_F = params.desaturation) != null ? _F : 0.6));
+      gl.uniform1f(gl.getUniformLocation(program, "fogDensity"), Number((_G = params.fogDensity) != null ? _G : 0.5));
+      gl.uniform1f(gl.getUniformLocation(program, "fogSpeed"), Number((_H = params.fogSpeed) != null ? _H : 1));
+      gl.uniform1f(gl.getUniformLocation(program, "contrast"), Number((_I = params.contrast) != null ? _I : 1.2));
+      gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number((_J = params.grainIntensity) != null ? _J : 0.05));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_K = params.opacity) != null ? _K : 0.8));
+    } else if (preset === "bladeRunnerRain") {
+      gl.uniform1f(gl.getUniformLocation(program, "rainDensity"), Number((_L = params.rainDensity) != null ? _L : 0.6));
+      gl.uniform1f(gl.getUniformLocation(program, "rainSpeed"), Number((_M = params.rainSpeed) != null ? _M : 1.2));
+      const [r1, g1, b1] = hexToRgb(String((_N = params.neonColor1) != null ? _N : "#ff007f"));
+      gl.uniform3f(gl.getUniformLocation(program, "neonColor1"), r1, g1, b1);
+      const [r2, g2, b2] = hexToRgb(String((_O = params.neonColor2) != null ? _O : "#00f3ff"));
+      gl.uniform3f(gl.getUniformLocation(program, "neonColor2"), r2, g2, b2);
+      gl.uniform1f(gl.getUniformLocation(program, "ambientReflection"), Number((_P = params.ambientReflection) != null ? _P : 0.5));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_Q = params.opacity) != null ? _Q : 0.9));
+    } else if (preset === "matrixHaze") {
+      gl.uniform1f(gl.getUniformLocation(program, "codeSpeed"), Number((_R = params.codeSpeed) != null ? _R : 1));
+      gl.uniform1f(gl.getUniformLocation(program, "trailLength"), Number((_S = params.trailLength) != null ? _S : 0.7));
+      gl.uniform1f(gl.getUniformLocation(program, "glowIntensity"), Number((_T = params.glowIntensity) != null ? _T : 1.2));
+      const [r2, g2, b2] = hexToRgb(String((_U = params.codeColor) != null ? _U : "#00ff41"));
+      gl.uniform3f(gl.getUniformLocation(program, "codeColor"), r2, g2, b2);
+      gl.uniform1f(gl.getUniformLocation(program, "ambientHaze"), Number((_V = params.ambientHaze) != null ? _V : 0.3));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_W = params.opacity) != null ? _W : 0.85));
+    } else if (preset === "falloutRadiation") {
+      gl.uniform1f(gl.getUniformLocation(program, "shimmerIntensity"), Number((_X = params.shimmerIntensity) != null ? _X : 0.4));
+      gl.uniform1f(gl.getUniformLocation(program, "scanlineIntensity"), Number((_Y = params.scanlineIntensity) != null ? _Y : 0.3));
+      gl.uniform1f(gl.getUniformLocation(program, "geigerFlicker"), Number((_Z = params.geigerFlicker) != null ? _Z : 0.5));
+      const [r2, g2, b2] = hexToRgb(String((__ = params.tintColor) != null ? __ : "#22c55e"));
+      gl.uniform3f(gl.getUniformLocation(program, "tintColor"), r2, g2, b2);
+      gl.uniform1f(gl.getUniformLocation(program, "glowRadius"), Number((_$ = params.glowRadius) != null ? _$ : 0.8));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_aa = params.opacity) != null ? _aa : 0.8));
+    } else if (preset === "cyberpunkSmear") {
+      gl.uniform1f(gl.getUniformLocation(program, "glitchFrequency"), Number((_ba = params.glitchFrequency) != null ? _ba : 1.5));
+      gl.uniform1f(gl.getUniformLocation(program, "smearWidth"), Number((_ca = params.smearWidth) != null ? _ca : 0.45));
+      gl.uniform1f(gl.getUniformLocation(program, "chromaSplit"), Number((_da = params.chromaSplit) != null ? _da : 0.03));
+      gl.uniform1f(gl.getUniformLocation(program, "laserScan"), Number((_ea = params.laserScan) != null ? _ea : 0.6));
+      gl.uniform1f(gl.getUniformLocation(program, "gridIntensity"), Number((_fa = params.gridIntensity) != null ? _fa : 0.25));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_ga = params.opacity) != null ? _ga : 0.8));
+    } else if (preset === "horrorJitter") {
+      gl.uniform1f(gl.getUniformLocation(program, "desaturation"), Number((_ha = params.desaturation) != null ? _ha : 0.8));
+      gl.uniform1f(gl.getUniformLocation(program, "shakeIntensity"), Number((_ia = params.shakeIntensity) != null ? _ia : 0.3));
+      gl.uniform1f(gl.getUniformLocation(program, "flickerRate"), Number((_ja = params.flickerRate) != null ? _ja : 0.4));
+      gl.uniform1f(gl.getUniformLocation(program, "scratchDensity"), Number((_ka = params.scratchDensity) != null ? _ka : 0.3));
+      gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number((_la = params.vignetteStrength) != null ? _la : 0.7));
+      gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_ma = params.opacity) != null ? _ma : 0.95));
     }
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
@@ -34402,32 +34980,41 @@ void main() {
         },
         this
       ),
-      webglEffects.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
-        "canvas",
-        {
-          ref: webglCanvasRef,
-          width,
-          height,
-          style: {
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none"
-          }
-        },
-        void 0,
-        false,
-        {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1816,
-          columnNumber: 17
-        },
-        this
-      ),
+      webglEffects.length > 0 && (() => {
+        var _a3, _b, _c;
+        const webglClipMode = (_c = (_b = (_a3 = webglEffects.find((e2) => {
+          var _a4;
+          return (_a4 = e2.params) == null ? void 0 : _a4.clipMode;
+        })) == null ? void 0 : _a3.params) == null ? void 0 : _b.clipMode) != null ? _c : "surface";
+        const webglClipPath = webglClipMode === "surface" && shapePath ? `path('${shapePath.replace(/'/g, "\\'")}')` : void 0;
+        return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+          "canvas",
+          {
+            ref: webglCanvasRef,
+            width,
+            height,
+            style: {
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none",
+              ...webglClipPath ? { clipPath: webglClipPath } : {}
+            }
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+            lineNumber: 1821,
+            columnNumber: 21
+          },
+          this
+        );
+      })(),
       Object.keys(overlayOnlyStyle).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", inset: 0, ...overlayOnlyStyle } }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1830,
+        lineNumber: 1837,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
@@ -34472,7 +35059,7 @@ void main() {
         "data-widget-id": widgetId,
         children: Renderer && Object.keys(state).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(Renderer, { state, config: { instanceId }, width: w2, height: h2 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1927,
+          lineNumber: 1934,
           columnNumber: 17
         }, this)
       },
@@ -34480,7 +35067,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1921,
+        lineNumber: 1928,
         columnNumber: 9
       },
       this
@@ -34509,7 +35096,7 @@ void main() {
         "data-widget-instance-id": instanceId,
         children: Object.keys(widgetState).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(Renderer, { state: widgetState, config: { instanceId }, width: w2, height: h2 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1961,
+          lineNumber: 1968,
           columnNumber: 17
         }, this)
       },
@@ -34517,7 +35104,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1957,
+        lineNumber: 1964,
         columnNumber: 9
       },
       this
@@ -34736,13 +35323,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2234,
+            lineNumber: 2241,
             columnNumber: 21
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2233,
+          lineNumber: 2240,
           columnNumber: 17
         }, this);
       }
@@ -34780,18 +35367,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2276,
+            lineNumber: 2283,
             columnNumber: 29
           },
           this
         );
       }) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2273,
+        lineNumber: 2280,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2272,
+        lineNumber: 2279,
         columnNumber: 13
       }, this);
     }
@@ -34852,21 +35439,21 @@ void main() {
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("mask", { id: svgMaskId, maskUnits: "userSpaceOnUse", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "0", y: "0", width: groupW, height: groupH, fill: invert ? "white" : "black" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2367,
+                lineNumber: 2374,
                 columnNumber: 33
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: localMaskD, fill: invert ? "black" : "white" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2368,
+                lineNumber: 2375,
                 columnNumber: 33
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2366,
+              lineNumber: 2373,
               columnNumber: 29
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2365,
+              lineNumber: 2372,
               columnNumber: 25
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -34916,7 +35503,7 @@ void main() {
                           false,
                           {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                            lineNumber: 2396,
+                            lineNumber: 2403,
                             columnNumber: 37
                           },
                           this
@@ -34926,7 +35513,7 @@ void main() {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                        lineNumber: 2387,
+                        lineNumber: 2394,
                         columnNumber: 33
                       },
                       this
@@ -34936,7 +35523,7 @@ void main() {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                    lineNumber: 2379,
+                    lineNumber: 2386,
                     columnNumber: 29
                   },
                   this
@@ -34946,7 +35533,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2372,
+                lineNumber: 2379,
                 columnNumber: 25
               },
               this
@@ -34957,17 +35544,17 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2358,
+          lineNumber: 2365,
           columnNumber: 21
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2357,
+        lineNumber: 2364,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2356,
+        lineNumber: 2363,
         columnNumber: 13
       }, this);
     }
@@ -35021,18 +35608,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2462,
+            lineNumber: 2469,
             columnNumber: 29
           },
           this
         );
       }) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2447,
+        lineNumber: 2454,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2446,
+        lineNumber: 2453,
         columnNumber: 13
       }, this);
     }
@@ -35055,7 +35642,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2503,
+            lineNumber: 2510,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35088,16 +35675,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2507,
+            lineNumber: 2514,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2502,
+          lineNumber: 2509,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2501,
+          lineNumber: 2508,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35115,18 +35702,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2537,
+            lineNumber: 2544,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2500,
+        lineNumber: 2507,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2499,
+        lineNumber: 2506,
         columnNumber: 13
       }, this);
     }
@@ -35146,7 +35733,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2568,
+            lineNumber: 2575,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35170,16 +35757,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2572,
+            lineNumber: 2579,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2567,
+          lineNumber: 2574,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2566,
+          lineNumber: 2573,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35196,18 +35783,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2592,
+            lineNumber: 2599,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2564,
+        lineNumber: 2571,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2563,
+        lineNumber: 2570,
         columnNumber: 13
       }, this);
     }
@@ -35230,11 +35817,11 @@ void main() {
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: baseStyle, children: !hideInnerContent && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "100%", height: "100%", overflow: "visible", style: { position: "absolute", inset: 0 }, children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { id: pathId, d: pathD }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2630,
+              lineNumber: 2637,
               columnNumber: 33
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2629,
+              lineNumber: 2636,
               columnNumber: 29
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35247,7 +35834,7 @@ void main() {
                 fill: (_Y = textEl.color) != null ? _Y : "#ffffff",
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("textPath", { href: `#${pathId}`, startOffset: `${offset}%`, children: content }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 2639,
+                  lineNumber: 2646,
                   columnNumber: 33
                 }, this)
               },
@@ -35255,18 +35842,18 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2632,
+                lineNumber: 2639,
                 columnNumber: 29
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2628,
+            lineNumber: 2635,
             columnNumber: 25
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2626,
+            lineNumber: 2633,
             columnNumber: 21
           }, this);
         }
@@ -35324,7 +35911,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2668,
+            lineNumber: 2675,
             columnNumber: 17
           },
           this
@@ -35343,14 +35930,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2698,
+            lineNumber: 2705,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2666,
+        lineNumber: 2673,
         columnNumber: 13
       }, this);
     }
@@ -35371,7 +35958,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2726,
+            lineNumber: 2733,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35395,16 +35982,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2730,
+            lineNumber: 2737,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2725,
+          lineNumber: 2732,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2724,
+          lineNumber: 2731,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35421,18 +36008,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2749,
+            lineNumber: 2756,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2723,
+        lineNumber: 2730,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2722,
+        lineNumber: 2729,
         columnNumber: 13
       }, this);
     }
@@ -35474,7 +36061,7 @@ void main() {
                 renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2810,
+                lineNumber: 2817,
                 columnNumber: 25
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35507,7 +36094,7 @@ void main() {
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2814,
+                lineNumber: 2821,
                 columnNumber: 25
               }, this)
             ]
@@ -35516,13 +36103,13 @@ void main() {
           true,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2803,
+            lineNumber: 2810,
             columnNumber: 48
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2802,
+          lineNumber: 2809,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35539,18 +36126,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2846,
+            lineNumber: 2853,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2800,
+        lineNumber: 2807,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2799,
+        lineNumber: 2806,
         columnNumber: 13
       }, this);
     }
@@ -35578,11 +36165,11 @@ void main() {
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: imageStyle, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? void 0 : "hidden", filter: mergedFilter || void 0 }, children: !hideInnerContent && src && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(KeyedMedia, { kind: "image", src, fit: img.fit, keying: img.keying }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2895,
+          lineNumber: 2902,
           columnNumber: 25
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2893,
+          lineNumber: 2900,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35598,14 +36185,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2898,
+            lineNumber: 2905,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2892,
+        lineNumber: 2899,
         columnNumber: 13
       }, this);
     }
@@ -35635,13 +36222,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2927,
+            lineNumber: 2934,
             columnNumber: 25
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2925,
+          lineNumber: 2932,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35657,14 +36244,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2940,
+            lineNumber: 2947,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2924,
+        lineNumber: 2931,
         columnNumber: 13
       }, this);
     }
@@ -35696,7 +36283,7 @@ void main() {
           },
           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: progressStyle }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2982,
+            lineNumber: 2989,
             columnNumber: 21
           }, this)
         },
@@ -35704,13 +36291,13 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2974,
+          lineNumber: 2981,
           columnNumber: 17
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2973,
+        lineNumber: 2980,
         columnNumber: 13
       }, this);
     }
@@ -35748,7 +36335,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3011,
+                lineNumber: 3018,
                 columnNumber: 25
               },
               this
@@ -35770,7 +36357,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3019,
+                lineNumber: 3026,
                 columnNumber: 25
               },
               this
@@ -35781,17 +36368,17 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3005,
+          lineNumber: 3012,
           columnNumber: 21
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3004,
+        lineNumber: 3011,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3003,
+        lineNumber: 3010,
         columnNumber: 13
       }, this);
     }
@@ -35873,38 +36460,38 @@ void main() {
         };
         const twitchIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3139,
+          lineNumber: 3146,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3138,
+          lineNumber: 3145,
           columnNumber: 17
         }, this);
         const twitterXIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M18.244 2.25h3.308l-7.227 7.56 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.085L1.254 2.25h6.7l4.757 6.286zm-1.161 17.52h1.833L7.084 4.126H5.117z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3145,
+          lineNumber: 3152,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3144,
+          lineNumber: 3151,
           columnNumber: 17
         }, this);
         const youtubeIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3151,
+          lineNumber: 3158,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3150,
+          lineNumber: 3157,
           columnNumber: 17
         }, this);
         const discordIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.03c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.03A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.111a13.994 13.994 0 0 1-1.875-.894.083.083 0 0 1-.008-.136c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.075 0 0 1 .078.009c.12.099.246.195.373.289a.083.083 0 0 1-.006.134 14.113 14.113 0 0 1-1.875.89.08.08 0 0 0-.025.11c.361.7.772 1.365 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3157,
+          lineNumber: 3164,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3156,
+          lineNumber: 3163,
           columnNumber: 17
         }, this);
         const twitchRegex = /^(?:twitch(?:\.tv)?(?:\s*:\s*|\s+)?|@twitch\s*)/i;
@@ -35945,18 +36532,18 @@ void main() {
             social.icon,
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: social.cleanText }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3204,
+              lineNumber: 3211,
               columnNumber: 25
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3202,
+            lineNumber: 3209,
             columnNumber: 21
           }, this);
         }
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { color: defaultColor, fontSize: defaultSize, fontWeight: weight }, children: text }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3209,
+          lineNumber: 3216,
           columnNumber: 17
         }, this);
       };
@@ -35966,7 +36553,7 @@ void main() {
       if (layoutMode === "single") {
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", width: "100%", height: "100%" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3222,
+          lineNumber: 3229,
           columnNumber: 17
         }, this);
       } else if (layoutMode === "split") {
@@ -35994,7 +36581,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3235,
+              lineNumber: 3242,
               columnNumber: 21
             },
             this
@@ -36014,14 +36601,14 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3248,
+              lineNumber: 3255,
               columnNumber: 21
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3234,
+          lineNumber: 3241,
           columnNumber: 17
         }, this);
       } else {
@@ -36029,12 +36616,12 @@ void main() {
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" }, children: [
           titleText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3266,
+            lineNumber: 3273,
             columnNumber: 25
           }, this),
           subText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", marginTop: 4 }, children: renderSocialText(subText, subtitleColor, subSize, "normal") }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3271,
+            lineNumber: 3278,
             columnNumber: 25
           }, this),
           extraLines.map((line, i2) => {
@@ -36056,7 +36643,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3280,
+                lineNumber: 3287,
                 columnNumber: 29
               },
               this
@@ -36064,7 +36651,7 @@ void main() {
           })
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3264,
+          lineNumber: 3271,
           columnNumber: 17
         }, this);
       }
@@ -36103,27 +36690,27 @@ void main() {
       const renderBrackets = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, left: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3334,
+          lineNumber: 3341,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, right: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3335,
+          lineNumber: 3342,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, left: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3336,
+          lineNumber: 3343,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, right: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3337,
+          lineNumber: 3344,
           columnNumber: 17
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3333,
+        lineNumber: 3340,
         columnNumber: 13
       }, this);
       const renderGrid = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36145,7 +36732,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3343,
+          lineNumber: 3350,
           columnNumber: 13
         },
         this
@@ -36155,7 +36742,7 @@ void main() {
         renderBrackets,
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", height: "100%" }, children: contentNode }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3365,
+          lineNumber: 3372,
           columnNumber: 29
         }, this),
         ((_nb = lt2.ticker) == null ? void 0 : _nb.enabled) && (() => {
@@ -36188,7 +36775,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3384,
+              lineNumber: 3391,
               columnNumber: 37
             },
             this
@@ -36196,19 +36783,19 @@ void main() {
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3362,
+        lineNumber: 3369,
         columnNumber: 25
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3361,
+        lineNumber: 3368,
         columnNumber: 21
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3360,
+        lineNumber: 3367,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3359,
+        lineNumber: 3366,
         columnNumber: 13
       }, this);
     }
@@ -36274,7 +36861,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3456,
+              lineNumber: 3463,
               columnNumber: 21
             },
             this
@@ -36292,13 +36879,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3468,
+            lineNumber: 3475,
             columnNumber: 21
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3467,
+          lineNumber: 3474,
           columnNumber: 17
         }, this);
       }
@@ -36320,7 +36907,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3484,
+            lineNumber: 3491,
             columnNumber: 17
           },
           this
@@ -36340,7 +36927,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3501,
+          lineNumber: 3508,
           columnNumber: 13
         },
         this

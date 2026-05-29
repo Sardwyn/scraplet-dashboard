@@ -535,7 +535,443 @@ void main() {
     
     fragColor = vec4(finalRGB, alpha);
 }
-`
+`,
+
+  silentHillFog: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float desaturation;
+uniform float fogDensity;
+uniform float fogSpeed;
+uniform float contrast;
+uniform float grainIntensity;
+uniform float opacity;
+
+float hash2_sh(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float noise_sh(in vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    float a = hash2_sh(i);
+    float b = hash2_sh(i + vec2(1.0, 0.0));
+    float c = hash2_sh(i + vec2(0.0, 1.0));
+    float d = hash2_sh(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
+float fbm_sh(in vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 3; i++) {
+        v += a * noise_sh(p);
+        p = rot * p * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
+void main() {
+    vec2 uv = vUv;
+    float t = uTime * fogSpeed;
+    
+    // Slow drifting dual-layer FBM fog
+    vec2 p1 = uv * 2.5 + vec2(t * 0.03, t * 0.015);
+    vec2 p2 = uv * 3.8 - vec2(t * 0.02, t * 0.025);
+    float f1 = fbm_sh(p1);
+    float f2 = fbm_sh(p2);
+    float rawFog = mix(f1, f2, 0.5);
+    
+    // Apply contrast curves
+    float wisp = smoothstep(0.2, 0.8, rawFog);
+    wisp = pow(wisp, 1.0 / max(0.1, contrast));
+    
+    // Background color: dull greyish silent hill tones
+    vec3 shadowColor = vec3(0.12, 0.12, 0.13);
+    vec3 midColor = vec3(0.24, 0.25, 0.26);
+    float centerDist = length(uv - 0.5);
+    vec3 bg = mix(midColor, shadowColor, centerDist * 1.2);
+    
+    // Desaturate background
+    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+    bg = mix(bg, vec3(lumaBg), desaturation);
+    
+    // Composite fog
+    vec3 ashFogColor = vec3(0.48, 0.49, 0.51);
+    vec3 finalRGB = bg + wisp * ashFogColor * fogDensity * 1.8;
+    
+    // Vignette
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.4), 0.0, 1.0);
+    finalRGB *= mix(0.45, 1.0, vignetteVal);
+    
+    // Film grain
+    float grain = (hash2_sh(uv + fract(uTime)) - 0.5) * grainIntensity;
+    finalRGB += vec3(grain);
+    
+    // Calculate alpha
+    float alpha = (wisp * fogDensity * 1.1 + 0.15) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+
+  bladeRunnerRain: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float rainDensity;
+uniform float rainSpeed;
+uniform vec3 neonColor1;
+uniform vec3 neonColor2;
+uniform float ambientReflection;
+uniform float opacity;
+
+float hash_br(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    // Ambient neon bloom reflection at the bottom
+    float bloomY = smoothstep(0.0, 0.5, 1.0 - uv.y);
+    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(uTime * 0.5 + uv.x * 2.0) * 0.5 + 0.5);
+    vec3 finalRGB = ambientGlow * bloomY * ambientReflection * 0.45;
+    
+    // Scale coordinates for rain grid
+    vec2 gridUv = uv * vec2(40.0 * aspect, 12.0);
+    vec2 cellId = floor(gridUv);
+    vec2 cellUv = fract(gridUv);
+    
+    float accumRain = 0.0;
+    vec3 rainRGB = vec3(0.0);
+    
+    for (int x = -1; x <= 1; x++) {
+        float col = cellId.x + float(x);
+        float h = hash_br(vec2(col, 137.45));
+        
+        if (h < rainDensity * 0.75) {
+            float speed = rainSpeed * (1.2 + h * 0.8);
+            float offset = h * 50.0;
+            
+            float yPos = fract(uv.y + uTime * speed + offset);
+            
+            float streakWidth = 0.04 + h * 0.03;
+            float streakDistX = abs(cellUv.x - 0.5 - float(x));
+            float verticalTrail = smoothstep(0.0, 1.0, yPos);
+            
+            float droplet = smoothstep(streakWidth, 0.0, streakDistX) * verticalTrail * (1.0 - yPos);
+            
+            if (droplet > 0.0) {
+                vec3 colColor = mix(neonColor1, neonColor2, h);
+                rainRGB += colColor * droplet * 2.2;
+                accumRain += droplet;
+            }
+            
+            float splashH = hash_br(vec2(col, 255.12));
+            float rippleCenterY = 0.05 + splashH * 0.05;
+            float distToRipple = length(vec2((cellUv.x - 0.5 - float(x)) * aspect, cellUv.y - rippleCenterY));
+            float splashTime = fract(uTime * 2.5 + splashH * 10.0);
+            float ripple = smoothstep(0.02, 0.0, abs(distToRipple - splashTime * 0.15)) * (1.0 - splashTime);
+            
+            if (ripple > 0.0) {
+                vec3 colColor = mix(neonColor1, neonColor2, splashH);
+                rainRGB += colColor * ripple * 1.2;
+                accumRain += ripple;
+            }
+        }
+    }
+    
+    finalRGB += rainRGB;
+    
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.5), 0.0, 1.0);
+    finalRGB *= mix(0.2, 1.0, vignetteVal);
+    
+    float alpha = (accumRain * 1.1 + bloomY * ambientReflection * 0.25) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+
+  matrixHaze: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float codeSpeed;
+uniform float trailLength;
+uniform float glowIntensity;
+uniform vec3 codeColor;
+uniform float ambientHaze;
+uniform float opacity;
+
+float hash_mx(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float getGlyph_mx(vec2 p, float seed) {
+    vec2 grid = floor(p * 4.0);
+    float val = hash_mx(grid + vec2(seed, seed * 2.3));
+    return step(0.48, val);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    vec3 hazeColor = codeColor * 0.18;
+    float centerDist = length(uv - vec2(0.5, 0.7));
+    vec3 finalRGB = hazeColor * (1.0 - centerDist * 0.8) * ambientHaze;
+    
+    float colWidth = 32.0 * aspect;
+    vec2 gridUv = uv * vec2(colWidth, 1.0);
+    float colId = floor(gridUv.x);
+    float colHash = hash_mx(vec2(colId, 314.15));
+    
+    float codeAccum = 0.0;
+    float leadingHead = 0.0;
+    
+    if (colHash < 0.82) {
+        float speed = codeSpeed * (0.8 + colHash * 0.7);
+        float fallOffset = colHash * 100.0;
+        
+        float progress = uTime * speed + fallOffset;
+        float yCoord = uv.y * 14.0;
+        float currentDrop = floor(progress);
+        float fractDrop = fract(progress);
+        
+        float localY = fract(yCoord - progress);
+        float blockRow = floor(yCoord - progress);
+        
+        float distToHead = yCoord - progress;
+        float tail = trailLength * 12.0;
+        
+        if (distToHead < 0.0 && distToHead > -tail) {
+            float brightness = 1.0 - (abs(distToHead) / tail);
+            brightness = pow(brightness, 1.5);
+            
+            vec2 glyphUv = vec2(fract(gridUv.x), fract(yCoord));
+            float glyph = getGlyph_mx(glyphUv, colId + blockRow);
+            
+            codeAccum = glyph * brightness;
+            
+            if (distToHead > -0.4) {
+                leadingHead = smoothstep(-0.4, 0.0, distToHead);
+            }
+        }
+    }
+    
+    vec3 codeComp = codeColor * codeAccum * glowIntensity;
+    codeComp += vec3(1.0) * leadingHead * glowIntensity * 1.5;
+    
+    finalRGB += codeComp;
+    
+    float alpha = (codeAccum * 1.2 + leadingHead * 1.5 + ambientHaze * 0.25) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+
+  falloutRadiation: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float shimmerIntensity;
+uniform float scanlineIntensity;
+uniform float geigerFlicker;
+uniform vec3 tintColor;
+uniform float glowRadius;
+uniform float opacity;
+
+float hash_fo(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    float waveX = sin(uv.y * 14.5 + uTime * 4.2) * 0.015 * shimmerIntensity +
+                  cos(uv.y * 31.2 + uTime * 7.8) * 0.007 * shimmerIntensity;
+    float waveY = cos(uv.x * 12.8 + uTime * 3.8) * 0.010 * shimmerIntensity;
+    vec2 distortedUv = uv + vec2(waveX, waveY);
+    
+    float centerDist = length(distortedUv - 0.5);
+    float radGlow = smoothstep(glowRadius * 1.2, 0.0, centerDist);
+    
+    float flicker = hash_fo(vec2(uTime, 42.17));
+    float geigerAmp = 1.0 + (flicker - 0.5) * 0.25 * geigerFlicker;
+    
+    float scanline = sin(distortedUv.y * uResolution.y * 0.95) * 0.5 + 0.5;
+    float scanLineEffect = mix(1.0, 0.4 + scanline * 0.6, scanlineIntensity);
+    
+    vec3 baseColor = tintColor * radGlow * 1.5 * geigerAmp;
+    vec3 finalRGB = baseColor * scanLineEffect;
+    
+    float dust = hash_fo(distortedUv + fract(uTime));
+    if (dust < 0.015 * geigerFlicker) {
+        finalRGB += tintColor * 0.85;
+    }
+    
+    float alpha = (radGlow * 1.1 + 0.15) * scanLineEffect * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
+
+  cyberpunkSmear: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float glitchFrequency;
+uniform float smearWidth;
+uniform float chromaSplit;
+uniform float laserScan;
+uniform float gridIntensity;
+uniform float opacity;
+
+float hash_cp(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float aspect = uResolution.x / uResolution.y;
+    
+    float timeBlock = floor(uTime * glitchFrequency * 8.0);
+    float rowBlock = floor(uv.y * 18.0);
+    float glitchVal = hash_cp(vec2(rowBlock, timeBlock));
+    
+    float shiftX = 0.0;
+    if (glitchVal < 0.18 * smearWidth) {
+        shiftX = (hash_cp(timeBlock + vec2(rowBlock + 12.3, 0.0)) - 0.5) * 0.12 * smearWidth;
+    }
+    
+    vec2 uvR = uv + vec2(shiftX + chromaSplit * 0.05, 0.0);
+    vec2 uvG = uv + vec2(shiftX, 0.0);
+    vec2 uvB = uv + vec2(shiftX - chromaSplit * 0.05, 0.0);
+    
+    vec3 finalRGB = vec3(0.0);
+    float alphaAccum = 0.0;
+    
+    vec2 gridSpace = vec2(16.0 * aspect, 16.0);
+    vec2 gridLineR = abs(fract(uvR * gridSpace - 0.5) - 0.5) / fwidth(uvR * gridSpace);
+    vec2 gridLineG = abs(fract(uvG * gridSpace - 0.5) - 0.5) / fwidth(uvG * gridSpace);
+    vec2 gridLineB = abs(fract(uvB * gridSpace - 0.5) - 0.5) / fwidth(uvB * gridSpace);
+    
+    float rGrid = smoothstep(1.0, 0.0, min(gridLineR.x, gridLineR.y));
+    float gGrid = smoothstep(1.0, 0.0, min(gridLineG.x, gridLineG.y));
+    float bGrid = smoothstep(1.0, 0.0, min(gridLineB.x, gridLineB.y));
+    
+    vec3 gridRGB = vec3(rGrid * 1.0, gGrid * 0.1, bGrid * 1.0) * gridIntensity * 1.5;
+    finalRGB += gridRGB;
+    alphaAccum += max(rGrid, max(gGrid, bGrid)) * gridIntensity * 0.7;
+    
+    float laserY = fract(uTime * 0.35);
+    float laserDist = abs(uv.y - laserY);
+    float laser = smoothstep(0.012, 0.0, laserDist) * laserScan;
+    float laserGlow = smoothstep(0.12, 0.0, laserDist) * 0.35 * laserScan;
+    
+    if (laser + laserGlow > 0.0) {
+        vec3 laserColor = vec3(0.0, 0.95, 1.0);
+        finalRGB += laserColor * (laser * 2.5 + laserGlow * 1.1);
+        alphaAccum += laser * 1.0 + laserGlow * 0.5;
+    }
+    
+    if (shiftX != 0.0) {
+        finalRGB += vec3(0.9, 0.0, 0.5) * 0.65;
+        alphaAccum += 0.45;
+    }
+    
+    float alpha = (alphaAccum + 0.15) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 0.98));
+}
+`,
+
+  horrorJitter: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float desaturation;
+uniform float shakeIntensity;
+uniform float flickerRate;
+uniform float scratchDensity;
+uniform float vignetteStrength;
+uniform float opacity;
+
+float hash_hj(vec2 co) {
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+    vec2 uv = vUv;
+    
+    float seedTime = floor(uTime * 24.0);
+    float jitterX = (hash_hj(vec2(seedTime, 1.0)) - 0.5) * 0.02 * shakeIntensity;
+    float jitterY = (hash_hj(vec2(seedTime, 2.0)) - 0.5) * 0.02 * shakeIntensity;
+    vec2 jitterUv = uv + vec2(jitterX, jitterY);
+    
+    float flicker = hash_hj(vec2(seedTime, 3.5));
+    float brightnessFlicker = 1.0 + (flicker - 0.5) * 0.28 * flickerRate;
+    
+    vec3 shadowColor = vec3(0.08, 0.08, 0.09);
+    vec3 midColor = vec3(0.20, 0.20, 0.18);
+    float centerDist = length(uv - 0.5);
+    vec3 bg = mix(midColor, shadowColor, centerDist * 1.3) * brightnessFlicker;
+    
+    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
+    bg = mix(bg, vec3(lumaBg), desaturation);
+    
+    vec3 finalRGB = bg;
+    float scratchAccum = 0.0;
+    
+    for (int i = 0; i < 3; i++) {
+        float scratchId = float(i) * 31.42;
+        float sX = hash_hj(vec2(scratchId, seedTime * 0.05));
+        
+        if (hash_hj(vec2(scratchId, sX)) < scratchDensity * 0.65) {
+            float distToScratch = abs(jitterUv.x - sX);
+            float line = smoothstep(0.0015, 0.0, distToScratch);
+            scratchAccum += line * 0.75;
+        }
+    }
+    
+    float blobVal = hash_hj(floor(jitterUv * 8.0) + vec2(seedTime, seedTime * 1.5));
+    if (blobVal < 0.003 * scratchDensity) {
+        scratchAccum += 0.85;
+        finalRGB *= 0.15;
+    }
+    
+    finalRGB += vec3(scratchAccum) * 0.8;
+    
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.45 + vignetteStrength * 0.6), 0.0, 1.0);
+    finalRGB *= mix(1.0 - vignetteStrength * 0.9, 1.0, vignetteVal);
+    
+    float alpha = (0.2 + scratchAccum * 0.5 + (1.0 - vignetteVal) * vignetteStrength * 0.8) * opacity;
+    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+}
+`,
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -695,6 +1131,52 @@ export function renderWebGLFrame(
     gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number(params.vignetteStrength ?? 0.65));
     gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number(params.grainIntensity ?? 0.04));
     gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.7));
+  } else if (preset === "silentHillFog") {
+    gl.uniform1f(gl.getUniformLocation(program, "desaturation"), Number(params.desaturation ?? 0.6));
+    gl.uniform1f(gl.getUniformLocation(program, "fogDensity"), Number(params.fogDensity ?? 0.5));
+    gl.uniform1f(gl.getUniformLocation(program, "fogSpeed"), Number(params.fogSpeed ?? 1.0));
+    gl.uniform1f(gl.getUniformLocation(program, "contrast"), Number(params.contrast ?? 1.2));
+    gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number(params.grainIntensity ?? 0.05));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.8));
+  } else if (preset === "bladeRunnerRain") {
+    gl.uniform1f(gl.getUniformLocation(program, "rainDensity"), Number(params.rainDensity ?? 0.6));
+    gl.uniform1f(gl.getUniformLocation(program, "rainSpeed"), Number(params.rainSpeed ?? 1.2));
+    const [r1, g1, b1] = hexToRgb(String(params.neonColor1 ?? "#ff007f"));
+    gl.uniform3f(gl.getUniformLocation(program, "neonColor1"), r1, g1, b1);
+    const [r2, g2, b2] = hexToRgb(String(params.neonColor2 ?? "#00f3ff"));
+    gl.uniform3f(gl.getUniformLocation(program, "neonColor2"), r2, g2, b2);
+    gl.uniform1f(gl.getUniformLocation(program, "ambientReflection"), Number(params.ambientReflection ?? 0.5));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.9));
+  } else if (preset === "matrixHaze") {
+    gl.uniform1f(gl.getUniformLocation(program, "codeSpeed"), Number(params.codeSpeed ?? 1.0));
+    gl.uniform1f(gl.getUniformLocation(program, "trailLength"), Number(params.trailLength ?? 0.7));
+    gl.uniform1f(gl.getUniformLocation(program, "glowIntensity"), Number(params.glowIntensity ?? 1.2));
+    const [r, g, b] = hexToRgb(String(params.codeColor ?? "#00ff41"));
+    gl.uniform3f(gl.getUniformLocation(program, "codeColor"), r, g, b);
+    gl.uniform1f(gl.getUniformLocation(program, "ambientHaze"), Number(params.ambientHaze ?? 0.3));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.85));
+  } else if (preset === "falloutRadiation") {
+    gl.uniform1f(gl.getUniformLocation(program, "shimmerIntensity"), Number(params.shimmerIntensity ?? 0.4));
+    gl.uniform1f(gl.getUniformLocation(program, "scanlineIntensity"), Number(params.scanlineIntensity ?? 0.3));
+    gl.uniform1f(gl.getUniformLocation(program, "geigerFlicker"), Number(params.geigerFlicker ?? 0.5));
+    const [r, g, b] = hexToRgb(String(params.tintColor ?? "#22c55e"));
+    gl.uniform3f(gl.getUniformLocation(program, "tintColor"), r, g, b);
+    gl.uniform1f(gl.getUniformLocation(program, "glowRadius"), Number(params.glowRadius ?? 0.8));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.8));
+  } else if (preset === "cyberpunkSmear") {
+    gl.uniform1f(gl.getUniformLocation(program, "glitchFrequency"), Number(params.glitchFrequency ?? 1.5));
+    gl.uniform1f(gl.getUniformLocation(program, "smearWidth"), Number(params.smearWidth ?? 0.45));
+    gl.uniform1f(gl.getUniformLocation(program, "chromaSplit"), Number(params.chromaSplit ?? 0.03));
+    gl.uniform1f(gl.getUniformLocation(program, "laserScan"), Number(params.laserScan ?? 0.6));
+    gl.uniform1f(gl.getUniformLocation(program, "gridIntensity"), Number(params.gridIntensity ?? 0.25));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.8));
+  } else if (preset === "horrorJitter") {
+    gl.uniform1f(gl.getUniformLocation(program, "desaturation"), Number(params.desaturation ?? 0.8));
+    gl.uniform1f(gl.getUniformLocation(program, "shakeIntensity"), Number(params.shakeIntensity ?? 0.3));
+    gl.uniform1f(gl.getUniformLocation(program, "flickerRate"), Number(params.flickerRate ?? 0.4));
+    gl.uniform1f(gl.getUniformLocation(program, "scratchDensity"), Number(params.scratchDensity ?? 0.3));
+    gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number(params.vignetteStrength ?? 0.7));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.95));
   }
 
 

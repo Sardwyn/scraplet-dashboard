@@ -7694,6 +7694,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   onUpdateSchema={setPropsSchema}
                   onEditMaster={enterIsolationMode}
                   onReleaseMask={handleReleaseMask}
+                  onMask={handleMaskElement}
                   onReleaseBoolean={ungroupSelected}
                   onFlattenBoolean={flattenBooleanSelected}
                   onConvertToPath={convertSelectedToPath}
@@ -7808,6 +7809,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             onUpdateSchema={setPropsSchema}
             onEditMaster={enterIsolationMode}
             onReleaseMask={handleReleaseMask}
+            onMask={handleMaskElement}
             onReleaseBoolean={ungroupSelected}
             onFlattenBoolean={flattenBooleanSelected}
             onConvertToPath={convertSelectedToPath}
@@ -8013,6 +8015,7 @@ interface InspectorProps {
   onUpdateSchema?: (schema: any) => void;
   onEditMaster?: (id: string) => void;
   onReleaseMask?: (id: string) => void;
+  onMask?: (id: string) => void;
   onReleaseBoolean?: () => void;
   onFlattenBoolean?: () => void;
   onConvertToPath?: () => void;
@@ -10707,7 +10710,7 @@ function InspectorPanel({
   ltPinned, onLtPinnedChange,
   overlayComponents,
   isComponentMaster, propsSchema, onUpdateSchema,
-  onEditMaster, onReleaseMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
+  onEditMaster, onReleaseMask, onMask, onReleaseBoolean, onFlattenBoolean, onConvertToPath, onDetachInstance, onCreateVariant, parentFrame,
   selectedPathAnchor, onAddPathNode, onRemovePathNode, onSplitPath, onContinuePath, onJoinPaths, onExpandStroke, canContinuePath, canJoinPaths,
   previewVisible,
   onPreviewVisibilityAction,
@@ -10800,6 +10803,15 @@ function InspectorPanel({
                 >
                   Release Boolean
                 </button>
+                {onMask && (
+                  <button
+                    onClick={() => onMask(element.id)}
+                    className="h-7 px-3 rounded bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all shadow-md shadow-indigo-600/20"
+                    title="Creates a mask clipping group using this boolean geometry and the layer directly beneath it"
+                  >
+                    Mask Layer Below
+                  </button>
+                )}
               </div>
             )}
             {element.type === "path" && (
@@ -10844,6 +10856,15 @@ function InspectorPanel({
                 >
                   Join Selected
                 </button>
+                {onMask && (
+                  <button
+                    onClick={() => onMask(element.id)}
+                    className="h-7 px-3 rounded bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all shadow-md shadow-indigo-600/20"
+                    title="Creates a mask clipping group using this path and the layer directly beneath it"
+                  >
+                    Mask Layer Below
+                  </button>
+                )}
                 <div className="flex items-center text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
                   {selectedPathAnchor == null ? "Select a path point to edit it." : `Selected point #${selectedPathAnchor + 1}`}
                 </div>
@@ -10864,6 +10885,15 @@ function InspectorPanel({
               >
                 Convert to Path
               </button>
+              {onMask && (
+                <button
+                  onClick={() => onMask(element.id)}
+                  className="h-7 px-3 rounded bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-all shadow-md shadow-indigo-600/20"
+                  title="Creates a mask clipping group using this shape and the layer directly beneath it"
+                >
+                  Mask Layer Below
+                </button>
+              )}
             </div>
           </div>
         )}

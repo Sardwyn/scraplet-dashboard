@@ -1,0 +1,4274 @@
+
+=========================================
+OVERLAY ID: 1 | PUBLIC_ID: c54a131ebfa29dec430ecc43 | NAME: "New Overlay"
+=========================================
+Total elements: 1
+  Element #1: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 80,
+      "y": 80,
+      "id": "title",
+      "text": "New Overlay",
+      "type": "text",
+      "width": 600,
+      "height": 80,
+      "fontSize": 36,
+      "textAlign": "left",
+      "fontWeight": "bold"
+    }
+
+=========================================
+OVERLAY ID: 2 | PUBLIC_ID: 3dbfdb529bc78415223e1833 | NAME: "New Overlay"
+=========================================
+Total elements: 20
+  Element #1: [Type: box] Name: "background_shape"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "f426840e-cd74-47af-9393-262fa13be095",
+      "name": "background_shape",
+      "type": "box",
+      "fills": [
+        {
+          "type": "radial",
+          "stops": [
+            {
+              "color": "#2A0A3A",
+              "position": 0
+            },
+            {
+              "color": "#1A0A2A",
+              "position": 1
+            }
+          ],
+          "pattern": "noise-grain",
+          "blendMode": "overlay",
+          "patternOpacity": 0.12
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "effects": [
+        {
+          "id": "175469e3-77d1-47ec-892b-dc0cfefaff2e",
+          "type": "parametric",
+          "params": {
+            "blur": 1,
+            "color": "#AAAAAA",
+            "speed": 0.5,
+            "density": 0.3,
+            "particleType": "smoke"
+          },
+          "preset": "particleEmitter",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#1f2933"
+    }
+  Element #2: [Type: box] Name: "undefined"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "c64f068b-2893-4a5a-8856-74cde47d289e",
+      "type": "box",
+      "fills": [
+        {
+          "type": "radial",
+          "stops": [
+            {
+              "color": "#00000000",
+              "position": 0.5
+            },
+            {
+              "color": "#000000CC",
+              "position": 1
+            }
+          ]
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#1f2933"
+    }
+  Element #3: [Type: box] Name: "main_card"
+    JSON: {
+      "x": 680,
+      "y": 300,
+      "id": "a61e4b26-69a1-4427-a4ef-936a0e040449",
+      "name": "main_card",
+      "type": "box",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#3A1A4A",
+          "opacity": 0.6,
+          "pattern": "scanline",
+          "blendMode": "overlay",
+          "patternOpacity": 0.08
+        }
+      ],
+      "width": 560,
+      "height": 480,
+      "locked": false,
+      "visible": true,
+      "cornerType": "round",
+      "strokeColor": "#a855f7",
+      "strokeOpacity": 0.8,
+      "strokeWidthPx": 2,
+      "borderRadiusPx": 24,
+      "cornerRadiusPx": 24,
+      "backgroundColor": "#1f2933"
+    }
+  Element #4: [Type: path] Name: "motif:raven"
+    JSON: {
+      "x": 736,
+      "y": 316,
+      "id": "1bf4dabf-a3bf-467f-bc03-20c56410c49d",
+      "name": "motif:raven",
+      "path": {
+        "commands": [
+          {
+            "x": 50,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 38,
+            "y": 34,
+            "x1": 46,
+            "x2": 43,
+            "y1": 16,
+            "y2": 24,
+            "type": "curve"
+          },
+          {
+            "x": 5,
+            "y": 62,
+            "x1": 24,
+            "x2": 7,
+            "y1": 38,
+            "y2": 48,
+            "type": "curve"
+          },
+          {
+            "x": 38,
+            "y": 43,
+            "x1": 15,
+            "x2": 28,
+            "y1": 62,
+            "y2": 52,
+            "type": "curve"
+          },
+          {
+            "x": 44,
+            "y": 88,
+            "x1": 40,
+            "x2": 44,
+            "y1": 53,
+            "y2": 72,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 78,
+            "x1": 44,
+            "x2": 50,
+            "y1": 88,
+            "y2": 78,
+            "type": "curve"
+          },
+          {
+            "x": 56,
+            "y": 88,
+            "x1": 50,
+            "x2": 56,
+            "y1": 78,
+            "y2": 88,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 43,
+            "x1": 56,
+            "x2": 60,
+            "y1": 72,
+            "y2": 53,
+            "type": "curve"
+          },
+          {
+            "x": 95,
+            "y": 62,
+            "x1": 72,
+            "x2": 85,
+            "y1": 52,
+            "y2": 62,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 34,
+            "x1": 93,
+            "x2": 76,
+            "y1": 48,
+            "y2": 38,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 57,
+            "x2": 54,
+            "y1": 24,
+            "y2": 16,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 50,
+            "x2": 50,
+            "y1": 15,
+            "y2": 15,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 45,
+            "y": 35,
+            "x1": 43,
+            "x2": 45,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 40,
+            "y": 34,
+            "x1": 45,
+            "x2": 40,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "x1": 40,
+            "x2": 43,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 55,
+            "y": 35,
+            "x1": 57,
+            "x2": 55,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 60,
+            "y": 34,
+            "x1": 55,
+            "x2": 60,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "x1": 60,
+            "x2": 57,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#BF00FF1A",
+          "opacity": 1
+        }
+      ],
+      "width": 448,
+      "height": 448,
+      "iconId": "motif:raven",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#BF00FF1A",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #5: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 728,
+      "y": 316,
+      "id": "293278e4-b4cc-427b-8c2e-cd7774102abd",
+      "text": "STARTING SOON",
+      "type": "text",
+      "color": "#070e1b",
+      "width": 464,
+      "height": 118,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 72
+    }
+  Element #6: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 542,
+      "y": 900,
+      "id": "00898836-0279-412b-bd51-a3c254ee37df",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "effects": [
+        {
+          "id": "b536be6e-6374-4667-8fa4-f1bfef8a0b64",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF"
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#1f2933",
+      "fillOpacity": 1
+    }
+  Element #7: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 560,
+      "y": 908,
+      "id": "fcae17cc-935a-43ee-8215-9a0eb93c95ad",
+      "text": "YOURDISCORD",
+      "type": "text",
+      "color": "#070e1b",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #8: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 842,
+      "y": 900,
+      "id": "6f539b19-eddb-4c7a-98de-dcd72ddc1c18",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "effects": [
+        {
+          "id": "105935d7-6cc8-4648-b762-554f365d36d3",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF"
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#1f2933",
+      "fillOpacity": 1
+    }
+  Element #9: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 847,
+      "y": 905,
+      "id": "50bcca09-9f0c-40e3-b339-8829e6ebeaa2",
+      "path": {
+        "commands": [
+          {
+            "x": 21,
+            "y": 2,
+            "type": "move"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "x1": 21,
+            "x2": 3,
+            "y1": 2,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 3,
+            "y": 18,
+            "x1": 3,
+            "x2": 3,
+            "y1": 2,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 18,
+            "x1": 3,
+            "x2": 8,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 22,
+            "x1": 8,
+            "x2": 8,
+            "y1": 18,
+            "y2": 22,
+            "type": "curve"
+          },
+          {
+            "x": 12,
+            "y": 18,
+            "x1": 8,
+            "x2": 12,
+            "y1": 22,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 17,
+            "y": 18,
+            "x1": 12,
+            "x2": 17,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 14,
+            "x1": 17,
+            "x2": 21,
+            "y1": 18,
+            "y2": 14,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 2,
+            "x1": 21,
+            "x2": 21,
+            "y1": 14,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 11,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "x1": 11,
+            "x2": 11,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          },
+          {
+            "x": 16,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 16,
+            "y": 7,
+            "x1": 16,
+            "x2": 16,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:twitch",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #10: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 892,
+      "y": 908,
+      "id": "7d723d74-4339-4010-bf09-c54bcfea20ad",
+      "text": "YOURTWITCH",
+      "type": "text",
+      "color": "#070e1b",
+      "width": 172,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #11: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 1142,
+      "y": 900,
+      "id": "9255d686-471c-44c3-864a-bd197e3394d0",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "effects": [
+        {
+          "id": "36b77d3e-0e2d-49b3-a308-b06e42036d45",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF"
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#1f2933",
+      "fillOpacity": 1
+    }
+  Element #12: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 1147,
+      "y": 905,
+      "id": "22903c3e-7c37-481a-a9ae-675b1267d31f",
+      "path": {
+        "commands": [
+          {
+            "x": 2.5,
+            "y": 17,
+            "type": "move"
+          },
+          {
+            "x": 2.5,
+            "y": 6.9999999999999964,
+            "x1": 1.8008306712440252,
+            "x2": 1.8008306712440252,
+            "y1": 13.703329497937148,
+            "y2": 10.296670502062847,
+            "type": "curve"
+          },
+          {
+            "x": 3.9,
+            "y": 5.6,
+            "x1": 2.6867421465870978,
+            "x2": 3.2188765477365195,
+            "y1": 6.318876547736517,
+            "y2": 5.786742146587096,
+            "type": "curve"
+          },
+          {
+            "x": 20.09999999999995,
+            "y": 5.600000000000001,
+            "x1": 9.263508615427376,
+            "x2": 14.73649138457257,
+            "y1": 4.712185882761339,
+            "y2": 4.712185882761339,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 7,
+            "x1": 20.78112345226345,
+            "x2": 21.313257853412896,
+            "y1": 5.786742146587083,
+            "y2": 6.318876547736507,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 17,
+            "x1": 22.199169328755975,
+            "x2": 22.199169328755975,
+            "y1": 10.296670502062852,
+            "y2": 13.703329497937148,
+            "type": "curve"
+          },
+          {
+            "x": 20.100000000000005,
+            "y": 18.4,
+            "x1": 21.313257853412903,
+            "x2": 20.781123452263483,
+            "y1": 17.68112345226348,
+            "y2": 18.2132578534129,
+            "type": "curve"
+          },
+          {
+            "x": 3.900000000000011,
+            "y": 18.4,
+            "x1": 14.73649138457261,
+            "x2": 9.263508615427403,
+            "y1": 19.287814117238668,
+            "y2": 19.287814117238668,
+            "type": "curve"
+          },
+          {
+            "x": 2.4999999999999996,
+            "y": 17,
+            "x1": 3.2188765477365253,
+            "x2": 2.6867421465870986,
+            "y1": 18.213257853412905,
+            "y2": 17.681123452263485,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 15,
+            "y": 12,
+            "x1": 10,
+            "x2": 15,
+            "y1": 15,
+            "y2": 12,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 9,
+            "x1": 15,
+            "x2": 10,
+            "y1": 12,
+            "y2": 9,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "x1": 10,
+            "x2": 10,
+            "y1": 9,
+            "y2": 15,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:youtube",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #13: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 1192,
+      "y": 908,
+      "id": "54bd550c-db0d-49e9-8e32-4cbe62fa6e27",
+      "text": "YOURYOUTUBE",
+      "type": "text",
+      "color": "#070e1b",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #14: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 547,
+      "y": 905,
+      "id": "66bdc6ad-1f68-4c4f-97b5-f6ed5ee474ad",
+      "path": {
+        "commands": [
+          {
+            "x": 19.27,
+            "y": 5.33,
+            "type": "move"
+          },
+          {
+            "x": 15,
+            "y": 4,
+            "x1": 17.94,
+            "x2": 16.5,
+            "y1": 4.71,
+            "y2": 4.26,
+            "type": "curve"
+          },
+          {
+            "x": 14.93,
+            "y": 4.030000000000001,
+            "x1": 14.973623073309907,
+            "x2": 14.94846304601036,
+            "y1": 4.000375704785648,
+            "y2": 4.011158573628311,
+            "type": "curve"
+          },
+          {
+            "x": 14.4,
+            "y": 5.12,
+            "x1": 14.75,
+            "x2": 14.54,
+            "y1": 4.36,
+            "y2": 4.79,
+            "type": "curve"
+          },
+          {
+            "x": 9.6,
+            "y": 5.120000000000001,
+            "x1": 12.808988697058506,
+            "x2": 11.191011302941492,
+            "y1": 4.880150753233515,
+            "y2": 4.880150753233515,
+            "type": "curve"
+          },
+          {
+            "x": 9.060000000000002,
+            "y": 4.03,
+            "x1": 9.46,
+            "x2": 9.250000000000002,
+            "y1": 4.78,
+            "y2": 4.36,
+            "type": "curve"
+          },
+          {
+            "x": 8.990000000000002,
+            "y": 4,
+            "x1": 9.050000000000002,
+            "x2": 9.020000000000003,
+            "y1": 4.010000000000001,
+            "y2": 4,
+            "type": "curve"
+          },
+          {
+            "x": 4.720000000000002,
+            "y": 5.33,
+            "x1": 7.490000000000002,
+            "x2": 6.060000000000002,
+            "y1": 4.26,
+            "y2": 4.71,
+            "type": "curve"
+          },
+          {
+            "x": 4.690000000000002,
+            "y": 5.35,
+            "x1": 4.710000000000003,
+            "x2": 4.700000000000003,
+            "y1": 5.33,
+            "y2": 5.34,
+            "type": "curve"
+          },
+          {
+            "x": 1.590000000000002,
+            "y": 17.299999999999997,
+            "x1": 1.970000000000002,
+            "x2": 1.220000000000002,
+            "y1": 9.42,
+            "y2": 13.379999999999999,
+            "type": "curve"
+          },
+          {
+            "x": 1.620000000000002,
+            "y": 17.349999999999998,
+            "x1": 1.590000000000002,
+            "x2": 1.600000000000002,
+            "y1": 17.319999999999997,
+            "y2": 17.339999999999996,
+            "type": "curve"
+          },
+          {
+            "x": 6.860000000000002,
+            "y": 19.999999999999996,
+            "x1": 3.420000000000002,
+            "x2": 5.150000000000002,
+            "y1": 18.669999999999998,
+            "y2": 19.47,
+            "type": "curve"
+          },
+          {
+            "x": 6.930000000000002,
+            "y": 19.979999999999997,
+            "x1": 6.890000000000002,
+            "x2": 6.920000000000002,
+            "y1": 20.009999999999998,
+            "y2": 19.999999999999996,
+            "type": "curve"
+          },
+          {
+            "x": 8.000000000000002,
+            "y": 18.24,
+            "x1": 7.330000000000003,
+            "x2": 7.690000000000002,
+            "y1": 19.429999999999996,
+            "y2": 18.849999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 7.960000000000002,
+            "y": 18.15,
+            "x1": 8.020000000000001,
+            "x2": 8.000000000000002,
+            "y1": 18.2,
+            "y2": 18.16,
+            "type": "curve"
+          },
+          {
+            "x": 6.320000000000002,
+            "y": 17.369999999999997,
+            "x1": 7.3900000000000015,
+            "x2": 6.850000000000001,
+            "y1": 17.93,
+            "y2": 17.669999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 6.310000000000002,
+            "y": 17.259999999999998,
+            "x1": 6.280000000000002,
+            "x2": 6.280000000000002,
+            "y1": 17.349999999999998,
+            "y2": 17.29,
+            "type": "curve"
+          },
+          {
+            "x": 6.640000000000002,
+            "y": 17.009999999999998,
+            "x1": 6.420000000000003,
+            "x2": 6.530000000000002,
+            "y1": 17.18,
+            "y2": 17.089999999999996,
+            "type": "curve"
+          },
+          {
+            "x": 6.710000000000003,
+            "y": 16.999999999999996,
+            "x1": 6.660000000000002,
+            "x2": 6.690000000000002,
+            "y1": 16.99,
+            "y2": 16.99,
+            "type": "curve"
+          },
+          {
+            "x": 17.260000000000005,
+            "y": 16.999999999999996,
+            "x1": 10.150000000000002,
+            "x2": 13.860000000000003,
+            "y1": 18.569999999999997,
+            "y2": 18.569999999999997,
+            "type": "curve"
+          },
+          {
+            "x": 17.330000000000005,
+            "y": 17.009999999999998,
+            "x1": 17.280000000000005,
+            "x2": 17.310000000000006,
+            "y1": 16.989999999999995,
+            "y2": 16.989999999999995,
+            "type": "curve"
+          },
+          {
+            "x": 17.660000000000004,
+            "y": 17.27,
+            "x1": 17.440000000000005,
+            "x2": 17.550000000000004,
+            "y1": 17.099999999999998,
+            "y2": 17.18,
+            "type": "curve"
+          },
+          {
+            "x": 17.650000000000002,
+            "y": 17.38,
+            "x1": 17.700000000000003,
+            "x2": 17.700000000000003,
+            "y1": 17.3,
+            "y2": 17.36,
+            "type": "curve"
+          },
+          {
+            "x": 16.01,
+            "y": 18.16,
+            "x1": 17.130000000000003,
+            "x2": 16.580000000000002,
+            "y1": 17.689999999999998,
+            "y2": 17.939999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 15.970000000000002,
+            "y": 18.25,
+            "x1": 15.970000000000002,
+            "x2": 15.96,
+            "y1": 18.17,
+            "y2": 18.22,
+            "type": "curve"
+          },
+          {
+            "x": 17.040000000000003,
+            "y": 19.99,
+            "x1": 16.290000000000003,
+            "x2": 16.650000000000002,
+            "y1": 18.86,
+            "y2": 19.44,
+            "type": "curve"
+          },
+          {
+            "x": 17.130000000000003,
+            "y": 20,
+            "x1": 17.070000000000004,
+            "x2": 17.1,
+            "y1": 20,
+            "y2": 20.009999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 22.380000000000003,
+            "y": 17.35,
+            "x1": 18.85,
+            "x2": 20.580000000000002,
+            "y1": 19.47,
+            "y2": 18.67,
+            "type": "curve"
+          },
+          {
+            "x": 22.410000000000004,
+            "y": 17.3,
+            "x1": 22.400000000000002,
+            "x2": 22.410000000000004,
+            "y1": 17.34,
+            "y2": 17.32,
+            "type": "curve"
+          },
+          {
+            "x": 19.310000000000002,
+            "y": 5.350000000000001,
+            "x1": 22.850000000000005,
+            "x2": 21.680000000000003,
+            "y1": 12.77,
+            "y2": 8.84,
+            "type": "curve"
+          },
+          {
+            "x": 19.270000000000003,
+            "y": 5.330000000000002,
+            "x1": 19.3,
+            "x2": 19.290000000000003,
+            "y1": 5.340000000000002,
+            "y2": 5.330000000000002,
+            "type": "curve"
+          },
+          {
+            "x": 8.52,
+            "y": 14.91,
+            "type": "move"
+          },
+          {
+            "x": 6.63,
+            "y": 12.79,
+            "x1": 7.489999999999999,
+            "x2": 6.63,
+            "y1": 14.91,
+            "y2": 13.96,
+            "type": "curve"
+          },
+          {
+            "x": 8.52,
+            "y": 10.669999999999998,
+            "x1": 6.63,
+            "x2": 7.47,
+            "y1": 11.619999999999997,
+            "y2": 10.669999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 10.41,
+            "y": 12.79,
+            "x1": 9.58,
+            "x2": 10.42,
+            "y1": 10.669999999999998,
+            "y2": 11.629999999999999,
+            "type": "curve"
+          },
+          {
+            "x": 8.52,
+            "y": 14.91,
+            "x1": 10.41,
+            "x2": 9.57,
+            "y1": 13.959999999999999,
+            "y2": 14.91,
+            "type": "curve"
+          },
+          {
+            "x": 15.489999999999998,
+            "y": 14.91,
+            "type": "move"
+          },
+          {
+            "x": 13.599999999999998,
+            "y": 12.79,
+            "x1": 14.459999999999999,
+            "x2": 13.599999999999998,
+            "y1": 14.91,
+            "y2": 13.96,
+            "type": "curve"
+          },
+          {
+            "x": 15.489999999999998,
+            "y": 10.669999999999998,
+            "x1": 13.599999999999998,
+            "x2": 14.439999999999998,
+            "y1": 11.619999999999997,
+            "y2": 10.669999999999998,
+            "type": "curve"
+          },
+          {
+            "x": 17.38,
+            "y": 12.79,
+            "x1": 16.549999999999997,
+            "x2": 17.389999999999997,
+            "y1": 10.669999999999998,
+            "y2": 11.629999999999999,
+            "type": "curve"
+          },
+          {
+            "x": 15.489999999999998,
+            "y": 14.91,
+            "x1": 17.38,
+            "x2": 16.55,
+            "y1": 13.959999999999999,
+            "y2": 14.91,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "ic:baseline-discord",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #15: [Type: shape] Name: "raven_eye_left"
+    JSON: {
+      "x": 933,
+      "y": 415,
+      "id": "a3eaa12c-2343-487b-8076-c566845d000b",
+      "name": "raven_eye_left",
+      "type": "shape",
+      "shape": "circle",
+      "width": 18,
+      "height": 18,
+      "locked": false,
+      "effects": [
+        {
+          "id": "932af29c-5119-4b47-8115-6a02b33a853a",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF"
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#1f2933",
+      "fillOpacity": 1
+    }
+  Element #16: [Type: shape] Name: "raven_eye_right"
+    JSON: {
+      "x": 987,
+      "y": 415,
+      "id": "42bb7fb9-a925-40bd-bc6c-65f4808ead2c",
+      "name": "raven_eye_right",
+      "type": "shape",
+      "shape": "circle",
+      "width": 18,
+      "height": 18,
+      "locked": false,
+      "effects": [
+        {
+          "id": "792dce8f-57dd-4a16-b843-eddcb0e42253",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF"
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#1f2933",
+      "fillOpacity": 1
+    }
+  Element #17: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 728,
+      "y": 316,
+      "id": "94aa1174-cb84-4493-a1f6-fba3ac4a8f92",
+      "text": "STARTING SOON",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 555,
+      "height": 118,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 72
+    }
+  Element #18: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 560,
+      "y": 908,
+      "id": "5dde3094-378d-48e2-9d57-21978b7875ef",
+      "text": "YOURDISCORD",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #19: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 892,
+      "y": 908,
+      "id": "2f6c0ef7-8efe-4099-880b-26d568c813ff",
+      "text": "YOURTWITCH",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 172,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #20: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 1192,
+      "y": 908,
+      "id": "40af9138-e293-4306-a4b2-d4f9a46eb55e",
+      "text": "YOURYOUTUBE",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+
+=========================================
+OVERLAY ID: 13 | PUBLIC_ID: fe0d3f0d-c31f-4394-b214-3e1830360052 | NAME: "Cozy Start"
+=========================================
+Total elements: 0
+
+=========================================
+OVERLAY ID: 14 | PUBLIC_ID: ea3c507f-d7eb-456a-85d5-5caa001f918b | NAME: "Cozy Start"
+=========================================
+Total elements: 5
+  Element #1: [Type: shape] Name: "Backdrop Wallpaper"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "b845efad-d2c2-4149-9f0c-b910c470f7c7",
+      "name": "Backdrop Wallpaper",
+      "type": "shape",
+      "fills": [
+        {
+          "type": "linear",
+          "stops": [
+            {
+              "color": "#faf5ff",
+              "position": 0
+            },
+            {
+              "color": "#f3e8ff",
+              "position": 1
+            }
+          ],
+          "angleDeg": 135
+        }
+      ],
+      "shape": "rect",
+      "style": {
+        "borderRadiusPx": 4
+      },
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "visible": true,
+      "paletteId": "kawaii_pastel",
+      "shapeType": "box",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "background_layer",
+      "structureId": "kawaii_soft",
+      "cornerRadiusPx": 4
+    }
+  Element #2: [Type: text] Name: "Main Hype Title"
+    JSON: {
+      "x": 480,
+      "y": 50,
+      "id": "08ae94b9-6580-4272-9a52-270377bb96d9",
+      "name": "Main Hype Title",
+      "text": "BROADCAST STARTING SOON",
+      "type": "text",
+      "color": "#1e1b4b",
+      "width": 960,
+      "height": 162,
+      "locked": false,
+      "visible": true,
+      "paletteId": "kawaii_pastel",
+      "anchorZone": "TOP_CENTER",
+      "fontFamily": "Outfit",
+      "fontSizePx": 64,
+      "componentId": "label_plate",
+      "structureId": "kawaii_soft"
+    }
+  Element #3: [Type: progressRing] Name: "Circular Countdown Timer"
+    JSON: {
+      "x": 749,
+      "y": 335,
+      "id": "2afa9771-829b-4a12-8e8b-74394ed69b91",
+      "name": "Circular Countdown Timer",
+      "type": "progressRing",
+      "style": {
+        "fillColor": "#ec4899",
+        "transition": "0.8s ease-in-out",
+        "backgroundColor": "#f3e8ff"
+      },
+      "width": 422,
+      "height": 410,
+      "locked": false,
+      "visible": true,
+      "paletteId": "kawaii_pastel",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "progress_ring",
+      "structureId": "kawaii_soft",
+      "startAngleDeg": -90,
+      "strokeWidthPx": 16,
+      "bindingFieldId": "remainingSec",
+      "bindingFallback": 0.8,
+      "bindingSourceId": "countdown"
+    }
+  Element #4: [Type: lower_third] Name: "Left Social Hook"
+    JSON: {
+      "x": 50,
+      "y": 900,
+      "id": "74194060-43d6-4ee3-a80f-10f9edc10f81",
+      "name": "Left Social Hook",
+      "type": "lower_third",
+      "style": {
+        "bgColor": "#f3e8ff",
+        "variant": "solid",
+        "bgOpacity": 0.9,
+        "paddingPx": 20,
+        "fontFamily": "Outfit",
+        "titleColor": "#1e1b4b",
+        "transition": "0.8s ease-in-out",
+        "accentColor": "#ec4899",
+        "titleSizePx": 36,
+        "titleWeight": "bold",
+        "subtitleColor": "#7e22ce",
+        "cornerRadiusPx": 24,
+        "subtitleSizePx": 22
+      },
+      "title": "TWITTER",
+      "width": 480,
+      "height": 130,
+      "layout": {
+        "mode": "split",
+        "splitRatio": 0.6
+      },
+      "locked": false,
+      "visible": true,
+      "alwaysOn": true,
+      "subtitle": "@Sardwyn",
+      "paletteId": "kawaii_pastel",
+      "anchorZone": "BOTTOM_LEFT",
+      "componentId": "lower_third_banner",
+      "structureId": "kawaii_soft"
+    }
+  Element #5: [Type: lower_third] Name: "Right Social Hook"
+    JSON: {
+      "x": 1390,
+      "y": 900,
+      "id": "9843b082-bb5b-4d15-9031-f1bdfe460f8a",
+      "name": "Right Social Hook",
+      "type": "lower_third",
+      "style": {
+        "bgColor": "#f3e8ff",
+        "variant": "solid",
+        "bgOpacity": 0.9,
+        "paddingPx": 20,
+        "fontFamily": "Outfit",
+        "titleColor": "#1e1b4b",
+        "transition": "0.8s ease-in-out",
+        "accentColor": "#ec4899",
+        "titleSizePx": 36,
+        "titleWeight": "bold",
+        "subtitleColor": "#7e22ce",
+        "cornerRadiusPx": 24,
+        "subtitleSizePx": 22
+      },
+      "title": "YOUTUBE",
+      "width": 480,
+      "height": 130,
+      "layout": {
+        "mode": "split",
+        "splitRatio": 0.6
+      },
+      "locked": false,
+      "visible": true,
+      "alwaysOn": true,
+      "subtitle": "/c/SardwynStream",
+      "paletteId": "kawaii_pastel",
+      "anchorZone": "BOTTOM_RIGHT",
+      "componentId": "lower_third_banner",
+      "structureId": "kawaii_soft"
+    }
+
+=========================================
+OVERLAY ID: 15 | PUBLIC_ID: 36fd1f60-eaad-4eb7-84cd-3dd7b0035af4 | NAME: "Raven Start"
+=========================================
+Total elements: 5
+  Element #1: [Type: shape] Name: "Backdrop Wallpaper"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "bd761cc7-3cf0-4e3a-bd1b-5e0cd8cd9777",
+      "name": "Backdrop Wallpaper",
+      "type": "shape",
+      "fills": [
+        {
+          "type": "linear",
+          "stops": [
+            {
+              "color": "#090514",
+              "position": 0
+            },
+            {
+              "color": "#2e1065",
+              "position": 1
+            }
+          ],
+          "angleDeg": 135
+        }
+      ],
+      "shape": "rect",
+      "style": {
+        "borderRadiusPx": 4
+      },
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "visible": true,
+      "paletteId": "midnight_royal",
+      "shapeType": "box",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "background_layer",
+      "structureId": "modern_techno",
+      "cornerRadiusPx": 4
+    }
+  Element #2: [Type: text] Name: "Main Hype Title"
+    JSON: {
+      "x": 480,
+      "y": 50,
+      "id": "243a830a-a639-492d-9363-5a5d53759276",
+      "name": "Main Hype Title",
+      "text": "BROADCAST STARTING SOON",
+      "type": "text",
+      "color": "#f5f3ff",
+      "width": 960,
+      "height": 162,
+      "locked": false,
+      "visible": true,
+      "paletteId": "midnight_royal",
+      "anchorZone": "TOP_CENTER",
+      "fontFamily": "Space Grotesk",
+      "fontSizePx": 64,
+      "componentId": "label_plate",
+      "structureId": "modern_techno"
+    }
+  Element #3: [Type: progressRing] Name: "Circular Countdown Timer"
+    JSON: {
+      "x": 749,
+      "y": 335,
+      "id": "15c3a421-6408-4f3f-9858-27edfba65368",
+      "name": "Circular Countdown Timer",
+      "type": "progressRing",
+      "style": {
+        "fillColor": "#8b5cf6",
+        "backgroundColor": "#2e1065"
+      },
+      "width": 422,
+      "height": 410,
+      "locked": false,
+      "visible": true,
+      "paletteId": "midnight_royal",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "progress_ring",
+      "structureId": "modern_techno",
+      "startAngleDeg": -90,
+      "strokeWidthPx": 16,
+      "bindingFieldId": "remainingSec",
+      "bindingFallback": 0.8,
+      "bindingSourceId": "countdown"
+    }
+  Element #4: [Type: lower_third] Name: "Left Social Hook"
+    JSON: {
+      "x": 50,
+      "y": 900,
+      "id": "b993b01f-d276-4c8b-b672-8914f0e66713",
+      "name": "Left Social Hook",
+      "type": "lower_third",
+      "style": {
+        "bgColor": "#2e1065",
+        "variant": "solid",
+        "bgOpacity": 0.92,
+        "paddingPx": 20,
+        "fontFamily": "Space Grotesk",
+        "titleColor": "#f5f3ff",
+        "accentColor": "#8b5cf6",
+        "titleSizePx": 36,
+        "titleWeight": "bold",
+        "subtitleColor": "#c084fc",
+        "cornerRadiusPx": 0,
+        "subtitleSizePx": 22
+      },
+      "title": "TWITTER",
+      "width": 480,
+      "height": 130,
+      "layout": {
+        "mode": "split",
+        "splitRatio": 0.6
+      },
+      "locked": false,
+      "visible": true,
+      "alwaysOn": true,
+      "subtitle": "@Sardwyn",
+      "paletteId": "midnight_royal",
+      "anchorZone": "BOTTOM_LEFT",
+      "componentId": "lower_third_banner",
+      "structureId": "modern_techno"
+    }
+  Element #5: [Type: lower_third] Name: "Right Social Hook"
+    JSON: {
+      "x": 1390,
+      "y": 900,
+      "id": "08de9a64-5183-4b44-972e-e76d5f70bb7f",
+      "name": "Right Social Hook",
+      "type": "lower_third",
+      "style": {
+        "bgColor": "#2e1065",
+        "variant": "solid",
+        "bgOpacity": 0.92,
+        "paddingPx": 20,
+        "fontFamily": "Space Grotesk",
+        "titleColor": "#f5f3ff",
+        "accentColor": "#8b5cf6",
+        "titleSizePx": 36,
+        "titleWeight": "bold",
+        "subtitleColor": "#c084fc",
+        "cornerRadiusPx": 0,
+        "subtitleSizePx": 22
+      },
+      "title": "YOUTUBE",
+      "width": 480,
+      "height": 130,
+      "layout": {
+        "mode": "split",
+        "splitRatio": 0.6
+      },
+      "locked": false,
+      "visible": true,
+      "alwaysOn": true,
+      "subtitle": "/c/SardwynStream",
+      "paletteId": "midnight_royal",
+      "anchorZone": "BOTTOM_RIGHT",
+      "componentId": "lower_third_banner",
+      "structureId": "modern_techno"
+    }
+
+=========================================
+OVERLAY ID: 17 | PUBLIC_ID: 8979f89c-de06-432c-aab7-a1bf4393c844 | NAME: "Samurai Sunset Just Chatting"
+=========================================
+Total elements: 0
+
+=========================================
+OVERLAY ID: 18 | PUBLIC_ID: ce7067ec-b3bf-4508-a416-ac05d42a896e | NAME: "Samurai Sunset Just Chatting"
+=========================================
+Total elements: 0
+
+=========================================
+OVERLAY ID: 19 | PUBLIC_ID: 4d2c6bbb-a347-4757-9c97-b71a56a4e61d | NAME: "Samurai Sunset Just Chatting Overlay"
+=========================================
+Total elements: 50
+  Element #1: [Type: shape] Name: "Camera Border Outline"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "58005f42-478a-4423-ab38-9dcec5b6f2ff",
+      "name": "Camera Border Outline",
+      "type": "shape",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#111827",
+          "opacity": 0.8
+        }
+      ],
+      "shape": "rect",
+      "style": {
+        "borderColor": "#fb7185",
+        "borderStyle": "double",
+        "borderWidthPx": 2,
+        "borderRadiusPx": 8
+      },
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "effects": [
+        {
+          "id": "electric-glow-effect",
+          "type": "parametric",
+          "params": {
+            "speed": 2,
+            "intensity": 0.9
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": false,
+      "paletteId": "sunset_vapor",
+      "shapeType": "box",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "webcam_frame_16_9",
+      "strokeAlign": "inside",
+      "strokeColor": "#fb7185",
+      "structureId": "tactical_grid",
+      "strokeWidthPx": 2,
+      "cornerRadiusPx": 8
+    }
+  Element #2: [Type: mask] Name: "Camera Screen Hole"
+    JSON: {
+      "x": 53,
+      "y": 47,
+      "id": "6370bb33-9f94-4473-8e3d-eff806bed2cf",
+      "name": "Camera Screen Hole",
+      "type": "mask",
+      "shape": "rect",
+      "style": {},
+      "width": 1813,
+      "height": 986,
+      "locked": false,
+      "effects": [
+        {
+          "id": "electric-glow-effect",
+          "type": "parametric",
+          "params": {
+            "speed": 2,
+            "intensity": 0.9
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": false,
+      "operation": "subtract",
+      "paletteId": "sunset_vapor",
+      "shapeType": "box",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "webcam_frame_16_9",
+      "structureId": "tactical_grid",
+      "cornerRadiusPx": 8
+    }
+  Element #3: [Type: boolean] Name: "Webcam Frame (16:9)"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "dd0ab3ce-aa35-42df-9a16-beb82b33cdf2",
+      "name": "Webcam Frame (16:9)",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#111827",
+          "opacity": 0.8
+        }
+      ],
+      "style": {},
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "effects": [
+        {
+          "id": "electric-glow-effect",
+          "type": "parametric",
+          "params": {
+            "speed": 2,
+            "intensity": 0.9
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "childIds": [
+        "58005f42-478a-4423-ab38-9dcec5b6f2ff",
+        "6370bb33-9f94-4473-8e3d-eff806bed2cf"
+      ],
+      "fillColor": "#f43f5e",
+      "operation": "subtract",
+      "paletteId": "sunset_vapor",
+      "anchorZone": "CENTER_HUD",
+      "componentId": "webcam_frame_16_9",
+      "fillOpacity": 0.8,
+      "strokeAlign": "center",
+      "strokeColor": "#fb7185",
+      "structureId": "tactical_grid",
+      "strokeWidthPx": 6,
+      "cornerRadiusPx": 8
+    }
+  Element #4: [Type: lower_third] Name: "Social Handle Event Banner"
+    JSON: {
+      "x": 50,
+      "y": 900,
+      "id": "f7000855-0191-46d5-9567-6f28d2481bb3",
+      "name": "Social Handle Event Banner",
+      "type": "lower_third",
+      "style": {
+        "bgColor": "#f43f5e",
+        "variant": "accent-bar",
+        "bgOpacity": 0.8,
+        "paddingPx": 10,
+        "fontFamily": "Share Tech Mono",
+        "titleColor": "#ffffff",
+        "transition": "0.8s ease-in-out",
+        "accentColor": "#fb7185",
+        "titleSizePx": 36,
+        "titleWeight": "bold",
+        "subtitleColor": "#fda4af",
+        "cornerRadiusPx": 0,
+        "subtitleSizePx": 22
+      },
+      "title": "Welcome to the Stream!",
+      "width": 576,
+      "height": 130,
+      "layout": {
+        "mode": "split",
+        "splitRatio": 0.6
+      },
+      "locked": false,
+      "visible": true,
+      "alwaysOn": true,
+      "subtitle": "Follow @Sardwyn repos",
+      "paletteId": "sunset_vapor",
+      "anchorZone": "BOTTOM_LEFT",
+      "componentId": "lower_third_banner",
+      "structureId": "tactical_grid"
+    }
+  Element #5: [Type: widget] Name: "Floating Stream Chat Monitor"
+    JSON: {
+      "x": 1486,
+      "y": 641,
+      "id": "ace1a733-3f2f-4372-97e4-a8c514f47580",
+      "name": "Floating Stream Chat Monitor",
+      "type": "widget",
+      "width": 384,
+      "height": 389,
+      "locked": false,
+      "visible": true,
+      "widgetId": "chat-overlay",
+      "paletteId": "sunset_vapor",
+      "anchorZone": "BOTTOM_RIGHT",
+      "componentId": "chat_box",
+      "structureId": "tactical_grid",
+      "propOverrides": {},
+      "liveDataSource": {
+        "sseEventType": null
+      }
+    }
+  Element #6: [Type: box] Name: "background_vignette"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "702856d0-921b-4dc9-be18-6dfbc0dc83fe",
+      "name": "background_vignette",
+      "type": "box",
+      "fills": [
+        {
+          "type": "radial",
+          "stops": [
+            {
+              "color": "#1E0C2A",
+              "position": 0
+            },
+            {
+              "color": "#1E0C2A",
+              "position": 0.6
+            },
+            {
+              "color": "rgba(0,0,0,0.8)",
+              "position": 1
+            }
+          ]
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "effects": [
+        {
+          "id": "796a11fc-daec-46ed-95dd-7572c5bc1d47",
+          "type": "parametric",
+          "params": {
+            "color": "rgba(50, 50, 50, 0.3)",
+            "speed": 0.5,
+            "spread": 180,
+            "density": 0.05,
+            "direction": "up"
+          },
+          "preset": "particleEmitter",
+          "enabled": true
+        },
+        {
+          "id": "e07d8960-b092-4716-8f0b-40797f8d2ac3",
+          "type": "parametric",
+          "params": {
+            "color": "rgba(191, 0, 255, 0.3)",
+            "speed": 0.5,
+            "spread": 120,
+            "density": 0.08,
+            "direction": "up"
+          },
+          "preset": "particleEmitter",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#ff0000"
+    }
+  Element #7: [Type: path] Name: "samurai_watermark"
+    JSON: {
+      "x": 710,
+      "y": 490,
+      "id": "99ee1ebc-f3e9-4af3-b36b-a7742d94f86b",
+      "name": "samurai_watermark",
+      "path": {
+        "commands": [
+          {
+            "x": 482.403,
+            "y": 42.826,
+            "type": "move"
+          },
+          {
+            "x": 439.139,
+            "y": 54.469,
+            "x1": 471.86600000000004,
+            "x2": 457.56300000000005,
+            "y1": 34.066,
+            "y2": 38.659,
+            "type": "curve"
+          },
+          {
+            "x": 156.707,
+            "y": 323.572,
+            "x1": 363.039,
+            "x2": 236.359,
+            "y1": 119.77600000000001,
+            "y2": 233.60899999999998,
+            "type": "curve"
+          },
+          {
+            "x": 177.777,
+            "y": 344.642,
+            "x1": 156.707,
+            "x2": 177.777,
+            "y1": 323.572,
+            "y2": 344.642,
+            "type": "curve"
+          },
+          {
+            "x": 482.402,
+            "y": 42.82499999999999,
+            "x1": 259.98699999999997,
+            "x2": 381.147,
+            "y1": 257.35699999999997,
+            "y2": 139.118,
+            "type": "curve"
+          },
+          {
+            "x": 482.403,
+            "y": 42.826,
+            "x1": 482.402,
+            "x2": 482.403,
+            "y1": 42.82499999999999,
+            "y2": 42.826,
+            "type": "curve"
+          },
+          {
+            "x": 143.92600000000004,
+            "y": 336.24600000000004,
+            "type": "move"
+          },
+          {
+            "x": 126.75600000000004,
+            "y": 353.27400000000006,
+            "x1": 143.92600000000004,
+            "x2": 126.75600000000004,
+            "y1": 336.24600000000004,
+            "y2": 353.27400000000006,
+            "type": "curve"
+          },
+          {
+            "x": 149.05800000000005,
+            "y": 375.57700000000006,
+            "x1": 126.75600000000004,
+            "x2": 149.05800000000005,
+            "y1": 353.27400000000006,
+            "y2": 375.57700000000006,
+            "type": "curve"
+          },
+          {
+            "x": 165.4679999999928,
+            "y": 357.7870000000082,
+            "x1": 154.49979421663966,
+            "x2": 159.9698559575586,
+            "y1": 369.62104412865096,
+            "y2": 363.690977195625,
+            "type": "curve"
+          },
+          {
+            "x": 143.92600000000004,
+            "y": 336.24600000000004,
+            "x1": 165.4679999999928,
+            "x2": 143.92600000000004,
+            "y1": 357.7870000000082,
+            "y2": 336.24600000000004,
+            "type": "curve"
+          },
+          {
+            "x": 87.13000000000005,
+            "y": 336.276,
+            "type": "move"
+          },
+          {
+            "x": 74.40200000000006,
+            "y": 349.004,
+            "x1": 87.13000000000005,
+            "x2": 74.40200000000006,
+            "y1": 336.276,
+            "y2": 349.004,
+            "type": "curve"
+          },
+          {
+            "x": 153.59800000000007,
+            "y": 428.20000000000005,
+            "x1": 74.40200000000006,
+            "x2": 153.59800000000007,
+            "y1": 349.004,
+            "y2": 428.20000000000005,
+            "type": "curve"
+          },
+          {
+            "x": 166.32600000000008,
+            "y": 415.47200000000004,
+            "x1": 153.59800000000007,
+            "x2": 166.32600000000008,
+            "y1": 428.20000000000005,
+            "y2": 415.47200000000004,
+            "type": "curve"
+          },
+          {
+            "x": 87.13000000000005,
+            "y": 336.276,
+            "x1": 166.32600000000008,
+            "x2": 87.13000000000005,
+            "y1": 415.47200000000004,
+            "y2": 336.276,
+            "type": "curve"
+          },
+          {
+            "x": 90.07200000000006,
+            "y": 390.461,
+            "type": "move"
+          },
+          {
+            "x": 29.597000000000058,
+            "y": 450.93600000000004,
+            "x1": 90.07200000000006,
+            "x2": 29.597000000000058,
+            "y1": 390.461,
+            "y2": 450.93600000000004,
+            "type": "curve"
+          },
+          {
+            "x": 52.22500000000006,
+            "y": 473.56300000000005,
+            "x1": 29.969000000000058,
+            "x2": 40.30500000000006,
+            "y1": 462.42600000000004,
+            "y2": 473.27200000000005,
+            "type": "curve"
+          },
+          {
+            "x": 112.69900000000005,
+            "y": 413.08900000000006,
+            "x1": 52.22500000000006,
+            "x2": 112.69900000000005,
+            "y1": 473.56300000000005,
+            "y2": 413.08900000000006,
+            "type": "curve"
+          },
+          {
+            "x": 104.56200000000005,
+            "y": 404.95300000000003,
+            "x1": 112.69900000000005,
+            "x2": 104.56200000000005,
+            "y1": 413.08900000000006,
+            "y2": 404.95300000000003,
+            "type": "curve"
+          },
+          {
+            "x": 105.01900000000005,
+            "y": 416.05,
+            "x1": 107.21900000000005,
+            "x2": 107.40200000000006,
+            "y1": 409.21700000000004,
+            "y2": 413.658,
+            "type": "curve"
+          },
+          {
+            "x": 90.65600000000005,
+            "y": 413,
+            "x1": 101.89500000000005,
+            "x2": 95.46500000000005,
+            "y1": 419.173,
+            "y2": 417.808,
+            "type": "curve"
+          },
+          {
+            "x": 93.70600000000005,
+            "y": 427.363,
+            "x1": 95.46400000000006,
+            "x2": 96.83000000000006,
+            "y1": 417.808,
+            "y2": 424.24,
+            "type": "curve"
+          },
+          {
+            "x": 79.34200000000004,
+            "y": 424.313,
+            "x1": 90.58100000000005,
+            "x2": 84.15100000000004,
+            "y1": 430.487,
+            "y2": 429.123,
+            "type": "curve"
+          },
+          {
+            "x": 82.39200000000004,
+            "y": 438.676,
+            "x1": 84.15200000000004,
+            "x2": 85.51600000000005,
+            "y1": 429.123,
+            "y2": 435.553,
+            "type": "curve"
+          },
+          {
+            "x": 68.02900000000004,
+            "y": 435.626,
+            "x1": 79.26800000000004,
+            "x2": 72.83700000000005,
+            "y1": 441.801,
+            "y2": 440.436,
+            "type": "curve"
+          },
+          {
+            "x": 71.07900000000004,
+            "y": 449.98999999999995,
+            "x1": 72.83700000000005,
+            "x2": 74.20200000000004,
+            "y1": 440.436,
+            "y2": 446.866,
+            "type": "curve"
+          },
+          {
+            "x": 56.71500000000003,
+            "y": 446.93999999999994,
+            "x1": 67.95400000000004,
+            "x2": 61.52300000000004,
+            "y1": 453.114,
+            "y2": 451.74999999999994,
+            "type": "curve"
+          },
+          {
+            "x": 59.76500000000003,
+            "y": 461.3039999999999,
+            "x1": 61.52300000000003,
+            "x2": 62.88900000000003,
+            "y1": 451.74999999999994,
+            "y2": 458.17999999999995,
+            "type": "curve"
+          },
+          {
+            "x": 45.401000000000025,
+            "y": 458.2539999999999,
+            "x1": 56.64100000000003,
+            "x2": 50.21000000000003,
+            "y1": 464.4279999999999,
+            "y2": 463.0639999999999,
+            "type": "curve"
+          },
+          {
+            "x": 42.35100000000003,
+            "y": 443.8909999999999,
+            "x1": 40.593000000000025,
+            "x2": 39.22800000000002,
+            "y1": 453.4459999999999,
+            "y2": 447.0139999999999,
+            "type": "curve"
+          },
+          {
+            "x": 56.71500000000003,
+            "y": 446.9409999999999,
+            "x1": 45.47600000000003,
+            "x2": 51.907000000000025,
+            "y1": 440.7679999999999,
+            "y2": 442.1329999999999,
+            "type": "curve"
+          },
+          {
+            "x": 53.665000000000035,
+            "y": 432.5789999999999,
+            "x1": 51.90700000000003,
+            "x2": 50.54200000000003,
+            "y1": 442.1329999999999,
+            "y2": 435.7029999999999,
+            "type": "curve"
+          },
+          {
+            "x": 68.02900000000004,
+            "y": 435.6289999999999,
+            "x1": 56.790000000000035,
+            "x2": 63.220000000000034,
+            "y1": 429.4539999999999,
+            "y2": 430.8189999999999,
+            "type": "curve"
+          },
+          {
+            "x": 64.97900000000004,
+            "y": 421.26499999999993,
+            "x1": 63.21900000000004,
+            "x2": 61.85500000000004,
+            "y1": 430.8189999999999,
+            "y2": 424.3889999999999,
+            "type": "curve"
+          },
+          {
+            "x": 79.34200000000004,
+            "y": 424.31499999999994,
+            "x1": 68.10300000000004,
+            "x2": 74.53400000000005,
+            "y1": 418.14099999999996,
+            "y2": 419.50499999999994,
+            "type": "curve"
+          },
+          {
+            "x": 76.29200000000004,
+            "y": 409.95099999999996,
+            "x1": 74.53400000000005,
+            "x2": 73.16900000000004,
+            "y1": 419.50499999999994,
+            "y2": 413.07499999999993,
+            "type": "curve"
+          },
+          {
+            "x": 90.65600000000005,
+            "y": 413.001,
+            "x1": 79.41700000000004,
+            "x2": 85.84800000000004,
+            "y1": 406.82699999999994,
+            "y2": 408.191,
+            "type": "curve"
+          },
+          {
+            "x": 87.60600000000005,
+            "y": 398.637,
+            "x1": 85.84800000000004,
+            "x2": 84.48300000000005,
+            "y1": 408.191,
+            "y2": 401.76099999999997,
+            "type": "curve"
+          },
+          {
+            "x": 98.69600000000005,
+            "y": 399.087,
+            "x1": 89.99600000000005,
+            "x2": 94.43400000000005,
+            "y1": 396.254,
+            "y2": 396.435,
+            "type": "curve"
+          },
+          {
+            "x": 90.07200000000006,
+            "y": 390.461,
+            "x1": 98.69600000000005,
+            "x2": 90.07200000000006,
+            "y1": 399.087,
+            "y2": 390.461,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "rgba(255, 160, 0, 0.1)",
+          "opacity": 1
+        }
+      ],
+      "width": 500,
+      "height": 500,
+      "iconId": "game-icons:katana",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "rgba(255, 160, 0, 0.1)",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #8: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "1d26d73c-61bf-420c-9d93-68631c3f3003",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": false
+    }
+  Element #9: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "74358e4a-3383-429f-9038-83b8d70a10c5",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #10: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 570,
+      "y": 200,
+      "id": "45de490a-540c-4002-970d-67d45dabed47",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #11: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 820,
+      "id": "1a028f9f-2e9d-4f6b-a1f2-eff688b4c56f",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #12: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 570,
+      "y": 820,
+      "id": "013aa985-843b-4378-b7f6-0fc457a4bd6a",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #13: [Type: boolean] Name: "camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "113f39a2-ba87-4b13-b3d5-cded42112a10",
+      "name": "camera_feed_frame",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#1E0C2A"
+        }
+      ],
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": true,
+      "childIds": [
+        "1d26d73c-61bf-420c-9d93-68631c3f3003",
+        "74358e4a-3383-429f-9038-83b8d70a10c5",
+        "45de490a-540c-4002-970d-67d45dabed47",
+        "1a028f9f-2e9d-4f6b-a1f2-eff688b4c56f",
+        "013aa985-843b-4378-b7f6-0fc457a4bd6a"
+      ],
+      "operation": "subtract"
+    }
+  Element #14: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "50b9afae-f0f9-4d16-850f-ec6cc81f7c69",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": false
+    }
+  Element #15: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "409424e0-f48e-4d2e-89e4-e23bc937cd8b",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #16: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1810,
+      "y": 200,
+      "id": "bdd6714b-8a37-4800-8943-e926abda293c",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #17: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 820,
+      "id": "a49f57cc-cbd3-49b6-9515-d15a31b0414b",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #18: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1810,
+      "y": 820,
+      "id": "3766d33c-ceea-4206-9087-8546db973ddb",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #19: [Type: boolean] Name: "chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "e6c7fab8-159d-4641-8617-66d187eeb604",
+      "name": "chat_overlay_frame",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#1E0C2A"
+        }
+      ],
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": true,
+      "childIds": [
+        "50b9afae-f0f9-4d16-850f-ec6cc81f7c69",
+        "409424e0-f48e-4d2e-89e4-e23bc937cd8b",
+        "bdd6714b-8a37-4800-8943-e926abda293c",
+        "a49f57cc-cbd3-49b6-9515-d15a31b0414b",
+        "3766d33c-ceea-4206-9087-8546db973ddb"
+      ],
+      "operation": "subtract"
+    }
+  Element #20: [Type: widget] Name: "Chat overlay"
+    JSON: {
+      "x": 1344,
+      "y": 224,
+      "id": "fc536102-947d-429f-bfaf-5d4187f2b953",
+      "name": "Chat overlay",
+      "type": "widget",
+      "width": 472,
+      "height": 602,
+      "locked": false,
+      "visible": true,
+      "widgetId": "chat-overlay",
+      "propOverrides": {
+        "bubbleBg": "rgba(39, 39, 42, 0.6)",
+        "glowBlur": 8,
+        "glowColor": "#3b82f6",
+        "nameColor": "#3b82f6",
+        "depthColor": "rgba(0,0,0,0.5)",
+        "fontFamily": "Inter",
+        "depthOffset": 2,
+        "glowEnabled": true,
+        "showAvatars": true,
+        "bubbleBorder": "#3b82f6",
+        "depthEnabled": true,
+        "messageColor": "#ffffff",
+        "bubbleEnabled": true,
+        "bubbleRadiusPx": 0,
+        "platformBadgeStyle": "symbol"
+      },
+      "liveDataSource": {
+        "sseEventType": null
+      }
+    }
+  Element #21: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "11c19286-8fad-47ed-9c4e-b74929ba923d",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": false
+    }
+  Element #22: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "aeaf1c68-ad26-425a-84d1-bd3dbb2a0c1e",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #23: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 570,
+      "y": 200,
+      "id": "401b88d0-63ef-4c61-8bea-4a20f72c53df",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #24: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 820,
+      "id": "fbb623e8-b6ae-44bf-bcd5-407706120ede",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #25: [Type: shape] Name: "Child of camera_feed_frame"
+    JSON: {
+      "x": 570,
+      "y": 820,
+      "id": "bc8cdcfc-38f6-4716-b67e-2e1e1080da5a",
+      "name": "Child of camera_feed_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #26: [Type: boolean] Name: "camera_feed_frame"
+    JSON: {
+      "x": 80,
+      "y": 200,
+      "id": "eb5ff73a-eb7c-4f20-a719-69f0d7ccac30",
+      "name": "camera_feed_frame",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#1E0C2A",
+          "opacity": 0.7
+        }
+      ],
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": true,
+      "childIds": [
+        "11c19286-8fad-47ed-9c4e-b74929ba923d",
+        "aeaf1c68-ad26-425a-84d1-bd3dbb2a0c1e",
+        "401b88d0-63ef-4c61-8bea-4a20f72c53df",
+        "fbb623e8-b6ae-44bf-bcd5-407706120ede",
+        "bc8cdcfc-38f6-4716-b67e-2e1e1080da5a"
+      ],
+      "operation": "subtract"
+    }
+  Element #27: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "f62d2d19-4f0d-4f6a-86c3-1bf8a6ee2384",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": false
+    }
+  Element #28: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "a6c380c9-6067-4e27-a6be-f19a3c53dcc0",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #29: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1810,
+      "y": 200,
+      "id": "7822d019-7b34-4152-8322-662d991c3fa6",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #30: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 820,
+      "id": "6d609787-b8e7-4351-803a-7b2901e48b95",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #31: [Type: shape] Name: "Child of chat_overlay_frame"
+    JSON: {
+      "x": 1810,
+      "y": 820,
+      "id": "42c043b4-b67d-4c0d-aee7-bd9b0121e499",
+      "name": "Child of chat_overlay_frame",
+      "type": "shape",
+      "shape": "rect",
+      "width": 30,
+      "height": 30,
+      "locked": false,
+      "visible": false
+    }
+  Element #32: [Type: boolean] Name: "chat_overlay_frame"
+    JSON: {
+      "x": 1320,
+      "y": 200,
+      "id": "49c854cc-b096-4ba9-a42c-00e98683c1c2",
+      "name": "chat_overlay_frame",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#1E0C2A",
+          "opacity": 0.7
+        }
+      ],
+      "width": 520,
+      "height": 650,
+      "locked": false,
+      "visible": true,
+      "childIds": [
+        "f62d2d19-4f0d-4f6a-86c3-1bf8a6ee2384",
+        "a6c380c9-6067-4e27-a6be-f19a3c53dcc0",
+        "7822d019-7b34-4152-8322-662d991c3fa6",
+        "6d609787-b8e7-4351-803a-7b2901e48b95",
+        "42c043b4-b67d-4c0d-aee7-bd9b0121e499"
+      ],
+      "operation": "subtract"
+    }
+  Element #33: [Type: widget] Name: "Chat overlay"
+    JSON: {
+      "x": 1344,
+      "y": 224,
+      "id": "08923be6-3d12-4d36-9bae-c1bedb210efa",
+      "name": "Chat overlay",
+      "type": "widget",
+      "width": 472,
+      "height": 602,
+      "locked": false,
+      "visible": true,
+      "widgetId": "chat-overlay",
+      "propOverrides": {
+        "bubbleBg": "rgba(39, 39, 42, 0.6)",
+        "glowBlur": 8,
+        "glowColor": "#FFA000",
+        "nameColor": "#FFA000",
+        "depthColor": "rgba(0,0,0,0.5)",
+        "fontFamily": "Inter",
+        "depthOffset": 2,
+        "showAvatars": true,
+        "bubbleBorder": "#FFA000",
+        "depthEnabled": true,
+        "messageColor": "#ffffff",
+        "bubbleEnabled": true,
+        "bubbleRadiusPx": 0,
+        "platformBadgeStyle": "symbol"
+      },
+      "liveDataSource": {
+        "sseEventType": null
+      }
+    }
+  Element #34: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 660,
+      "y": 935,
+      "id": "37d6da16-edc5-4e53-8db0-df0adaf26177",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#4A2E3C",
+      "fillOpacity": 1
+    }
+  Element #35: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 665,
+      "y": 940,
+      "id": "0092f7e3-1d92-4bea-8d97-c463c42b2632",
+      "path": {
+        "commands": [
+          {
+            "x": 21,
+            "y": 2,
+            "type": "move"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "x1": 21,
+            "x2": 3,
+            "y1": 2,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 3,
+            "y": 18,
+            "x1": 3,
+            "x2": 3,
+            "y1": 2,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 18,
+            "x1": 3,
+            "x2": 8,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 22,
+            "x1": 8,
+            "x2": 8,
+            "y1": 18,
+            "y2": 22,
+            "type": "curve"
+          },
+          {
+            "x": 12,
+            "y": 18,
+            "x1": 8,
+            "x2": 12,
+            "y1": 22,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 17,
+            "y": 18,
+            "x1": 12,
+            "x2": 17,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 14,
+            "x1": 17,
+            "x2": 21,
+            "y1": 18,
+            "y2": 14,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 2,
+            "x1": 21,
+            "x2": 21,
+            "y1": 14,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 11,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "x1": 11,
+            "x2": 11,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          },
+          {
+            "x": 16,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 16,
+            "y": 7,
+            "x1": 16,
+            "x2": 16,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:twitch",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #36: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 710,
+      "y": 943,
+      "id": "935cbc35-b7bd-45a3-9480-82cefdd2963c",
+      "text": "YOURTWITCH",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 172,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #37: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 960,
+      "y": 935,
+      "id": "e80b44d2-ca00-4957-81af-0f81fec2a044",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#4A2E3C",
+      "fillOpacity": 1
+    }
+  Element #38: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 965,
+      "y": 940,
+      "id": "229ea010-ec0d-47e3-a492-a1483e663b31",
+      "path": {
+        "commands": [
+          {
+            "x": 2.5,
+            "y": 17,
+            "type": "move"
+          },
+          {
+            "x": 2.5,
+            "y": 6.9999999999999964,
+            "x1": 1.8008306712440252,
+            "x2": 1.8008306712440252,
+            "y1": 13.703329497937148,
+            "y2": 10.296670502062847,
+            "type": "curve"
+          },
+          {
+            "x": 3.9,
+            "y": 5.6,
+            "x1": 2.6867421465870978,
+            "x2": 3.2188765477365195,
+            "y1": 6.318876547736517,
+            "y2": 5.786742146587096,
+            "type": "curve"
+          },
+          {
+            "x": 20.09999999999995,
+            "y": 5.600000000000001,
+            "x1": 9.263508615427376,
+            "x2": 14.73649138457257,
+            "y1": 4.712185882761339,
+            "y2": 4.712185882761339,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 7,
+            "x1": 20.78112345226345,
+            "x2": 21.313257853412896,
+            "y1": 5.786742146587083,
+            "y2": 6.318876547736507,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 17,
+            "x1": 22.199169328755975,
+            "x2": 22.199169328755975,
+            "y1": 10.296670502062852,
+            "y2": 13.703329497937148,
+            "type": "curve"
+          },
+          {
+            "x": 20.100000000000005,
+            "y": 18.4,
+            "x1": 21.313257853412903,
+            "x2": 20.781123452263483,
+            "y1": 17.68112345226348,
+            "y2": 18.2132578534129,
+            "type": "curve"
+          },
+          {
+            "x": 3.900000000000011,
+            "y": 18.4,
+            "x1": 14.73649138457261,
+            "x2": 9.263508615427403,
+            "y1": 19.287814117238668,
+            "y2": 19.287814117238668,
+            "type": "curve"
+          },
+          {
+            "x": 2.4999999999999996,
+            "y": 17,
+            "x1": 3.2188765477365253,
+            "x2": 2.6867421465870986,
+            "y1": 18.213257853412905,
+            "y2": 17.681123452263485,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 15,
+            "y": 12,
+            "x1": 10,
+            "x2": 15,
+            "y1": 15,
+            "y2": 12,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 9,
+            "x1": 15,
+            "x2": 10,
+            "y1": 12,
+            "y2": 9,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "x1": 10,
+            "x2": 10,
+            "y1": 9,
+            "y2": 15,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:youtube",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #39: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 1010,
+      "y": 943,
+      "id": "faa14a67-26c8-484d-8dfd-97f7dbe77284",
+      "text": "YOURYOUTUBE",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #40: [Type: box] Name: "background_vignette"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "ee203de9-05ff-4ab2-b9b0-a033d017381b",
+      "name": "background_vignette",
+      "type": "box",
+      "fills": [
+        {
+          "type": "radial",
+          "stops": [
+            {
+              "color": "#1A0A2E",
+              "position": 0
+            },
+            {
+              "color": "#1A0A2E",
+              "position": 0.6
+            },
+            {
+              "color": "rgba(0,0,0,0.8)",
+              "position": 1
+            }
+          ]
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#ff0000"
+    }
+  Element #41: [Type: path] Name: "raven_centerpiece_motif"
+    JSON: {
+      "x": 710,
+      "y": 240,
+      "id": "94310163-c08e-40fd-b13e-65170179f779",
+      "name": "raven_centerpiece_motif",
+      "path": {
+        "commands": [
+          {
+            "x": 50,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 38,
+            "y": 34,
+            "x1": 46,
+            "x2": 43,
+            "y1": 16,
+            "y2": 24,
+            "type": "curve"
+          },
+          {
+            "x": 5,
+            "y": 62,
+            "x1": 24,
+            "x2": 7,
+            "y1": 38,
+            "y2": 48,
+            "type": "curve"
+          },
+          {
+            "x": 38,
+            "y": 43,
+            "x1": 15,
+            "x2": 28,
+            "y1": 62,
+            "y2": 52,
+            "type": "curve"
+          },
+          {
+            "x": 44,
+            "y": 88,
+            "x1": 40,
+            "x2": 44,
+            "y1": 53,
+            "y2": 72,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 78,
+            "x1": 44,
+            "x2": 50,
+            "y1": 88,
+            "y2": 78,
+            "type": "curve"
+          },
+          {
+            "x": 56,
+            "y": 88,
+            "x1": 50,
+            "x2": 56,
+            "y1": 78,
+            "y2": 88,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 43,
+            "x1": 56,
+            "x2": 60,
+            "y1": 72,
+            "y2": 53,
+            "type": "curve"
+          },
+          {
+            "x": 95,
+            "y": 62,
+            "x1": 72,
+            "x2": 85,
+            "y1": 52,
+            "y2": 62,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 34,
+            "x1": 93,
+            "x2": 76,
+            "y1": 48,
+            "y2": 38,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 57,
+            "x2": 54,
+            "y1": 24,
+            "y2": 16,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 50,
+            "x2": 50,
+            "y1": 15,
+            "y2": 15,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 45,
+            "y": 35,
+            "x1": 43,
+            "x2": 45,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 40,
+            "y": 34,
+            "x1": 45,
+            "x2": 40,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "x1": 40,
+            "x2": 43,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 55,
+            "y": 35,
+            "x1": 57,
+            "x2": 55,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 60,
+            "y": 34,
+            "x1": 55,
+            "x2": 60,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "x1": 60,
+            "x2": 57,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#BF00FF",
+          "opacity": 1
+        }
+      ],
+      "width": 500,
+      "height": 500,
+      "iconId": "motif:raven",
+      "locked": false,
+      "source": "vectorLibrary",
+      "effects": [
+        {
+          "id": "e1491e82-e8e5-4b11-aa04-54e2d544385d",
+          "type": "parametric",
+          "params": {
+            "color": "#BF00FF",
+            "speed": 1.5,
+            "intensity": 0.8
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#BF00FF",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #42: [Type: shape] Name: "Discord_icon_bg"
+    JSON: {
+      "x": 510,
+      "y": 935,
+      "id": "a7259d68-919e-40af-a7d8-f92a9ebf7606",
+      "name": "Discord_icon_bg",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#2F1A4A",
+      "fillOpacity": 1
+    }
+  Element #43: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 560,
+      "y": 943,
+      "id": "678ba759-4583-44d7-ae4d-cf1de0596389",
+      "text": "YOURDISCORD",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #44: [Type: shape] Name: "Twitch_icon_bg"
+    JSON: {
+      "x": 810,
+      "y": 935,
+      "id": "715e97ac-dffd-42fb-a6ad-709dafa4ad15",
+      "name": "Twitch_icon_bg",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#2F1A4A",
+      "fillOpacity": 1
+    }
+  Element #45: [Type: path] Name: "Twitch_icon"
+    JSON: {
+      "x": 815,
+      "y": 940,
+      "id": "59308ff1-e95d-418e-abd7-a976ef21adc0",
+      "name": "Twitch_icon",
+      "path": {
+        "commands": [
+          {
+            "x": 21,
+            "y": 2,
+            "type": "move"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "x1": 21,
+            "x2": 3,
+            "y1": 2,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 3,
+            "y": 18,
+            "x1": 3,
+            "x2": 3,
+            "y1": 2,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 18,
+            "x1": 3,
+            "x2": 8,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 22,
+            "x1": 8,
+            "x2": 8,
+            "y1": 18,
+            "y2": 22,
+            "type": "curve"
+          },
+          {
+            "x": 12,
+            "y": 18,
+            "x1": 8,
+            "x2": 12,
+            "y1": 22,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 17,
+            "y": 18,
+            "x1": 12,
+            "x2": 17,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 14,
+            "x1": 17,
+            "x2": 21,
+            "y1": 18,
+            "y2": 14,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 2,
+            "x1": 21,
+            "x2": 21,
+            "y1": 14,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 11,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "x1": 11,
+            "x2": 11,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          },
+          {
+            "x": 16,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 16,
+            "y": 7,
+            "x1": 16,
+            "x2": 16,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:twitch",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #46: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 860,
+      "y": 943,
+      "id": "e6aed641-964d-4adb-bc03-bb686229c479",
+      "text": "YOURTWITCH",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 172,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #47: [Type: shape] Name: "YouTube_icon_bg"
+    JSON: {
+      "x": 1110,
+      "y": 935,
+      "id": "ad1694df-f23b-4ac9-9072-bbe6df349860",
+      "name": "YouTube_icon_bg",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#2F1A4A",
+      "fillOpacity": 1
+    }
+  Element #48: [Type: path] Name: "YouTube_icon"
+    JSON: {
+      "x": 1115,
+      "y": 940,
+      "id": "0035e1ba-b6b9-4469-b50e-e1c931bf56be",
+      "name": "YouTube_icon",
+      "path": {
+        "commands": [
+          {
+            "x": 2.5,
+            "y": 17,
+            "type": "move"
+          },
+          {
+            "x": 2.5,
+            "y": 6.9999999999999964,
+            "x1": 1.8008306712440252,
+            "x2": 1.8008306712440252,
+            "y1": 13.703329497937148,
+            "y2": 10.296670502062847,
+            "type": "curve"
+          },
+          {
+            "x": 3.9,
+            "y": 5.6,
+            "x1": 2.6867421465870978,
+            "x2": 3.2188765477365195,
+            "y1": 6.318876547736517,
+            "y2": 5.786742146587096,
+            "type": "curve"
+          },
+          {
+            "x": 20.09999999999995,
+            "y": 5.600000000000001,
+            "x1": 9.263508615427376,
+            "x2": 14.73649138457257,
+            "y1": 4.712185882761339,
+            "y2": 4.712185882761339,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 7,
+            "x1": 20.78112345226345,
+            "x2": 21.313257853412896,
+            "y1": 5.786742146587083,
+            "y2": 6.318876547736507,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 17,
+            "x1": 22.199169328755975,
+            "x2": 22.199169328755975,
+            "y1": 10.296670502062852,
+            "y2": 13.703329497937148,
+            "type": "curve"
+          },
+          {
+            "x": 20.100000000000005,
+            "y": 18.4,
+            "x1": 21.313257853412903,
+            "x2": 20.781123452263483,
+            "y1": 17.68112345226348,
+            "y2": 18.2132578534129,
+            "type": "curve"
+          },
+          {
+            "x": 3.900000000000011,
+            "y": 18.4,
+            "x1": 14.73649138457261,
+            "x2": 9.263508615427403,
+            "y1": 19.287814117238668,
+            "y2": 19.287814117238668,
+            "type": "curve"
+          },
+          {
+            "x": 2.4999999999999996,
+            "y": 17,
+            "x1": 3.2188765477365253,
+            "x2": 2.6867421465870986,
+            "y1": 18.213257853412905,
+            "y2": 17.681123452263485,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 15,
+            "y": 12,
+            "x1": 10,
+            "x2": 15,
+            "y1": 15,
+            "y2": 12,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 9,
+            "x1": 15,
+            "x2": 10,
+            "y1": 12,
+            "y2": 9,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "x1": 10,
+            "x2": 10,
+            "y1": 9,
+            "y2": 15,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:youtube",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #49: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 1160,
+      "y": 943,
+      "id": "561d5e6a-1088-4e7e-9e4b-beb2bcc795f6",
+      "text": "YOURYOUTUBE",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 186,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #50: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 790,
+      "y": 125,
+      "id": "bfde6e2d-2de9-47ee-9432-f9204a3779f8",
+      "text": "STARTING",
+      "type": "text",
+      "color": "#BF00FF",
+      "width": 392,
+      "height": 128,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 80
+    }
+
+=========================================
+OVERLAY ID: 20 | PUBLIC_ID: 93937056-357d-41de-8eae-8e905073b230 | NAME: "Raven Start"
+=========================================
+Total elements: 14
+  Element #1: [Type: box] Name: "background_plate"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "4102c970-ef2c-4cc7-9346-d5878eca6dd2",
+      "name": "background_plate",
+      "type": "box",
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "effects": [
+        {
+          "id": "53787396-038c-445f-a862-074bd82db25c",
+          "type": "parametric",
+          "params": {
+            "color": "rgba(128,0,128,0.3)",
+            "scale": 0.8,
+            "speed": 0.5,
+            "density": 0.5
+          },
+          "preset": "particleEmitter",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#1F0A2F"
+    }
+  Element #2: [Type: box] Name: "vignette_overlay"
+    JSON: {
+      "x": 0,
+      "y": 0,
+      "id": "0c64add5-ae52-4027-874f-1172f317ba4b",
+      "name": "vignette_overlay",
+      "type": "box",
+      "fills": [
+        {
+          "type": "radial",
+          "stops": [
+            {
+              "color": "rgba(0,0,0,0)",
+              "position": 0.5
+            },
+            {
+              "color": "rgba(0,0,0,1)",
+              "position": 1
+            }
+          ]
+        }
+      ],
+      "width": 1920,
+      "height": 1080,
+      "locked": false,
+      "visible": true,
+      "borderRadiusPx": 8,
+      "backgroundColor": "#ff0000"
+    }
+  Element #3: [Type: path] Name: "raven_icon"
+    JSON: {
+      "x": 885,
+      "y": 415,
+      "id": "f4e7138e-c063-44aa-9fe0-82734f52d8ff",
+      "name": "raven_icon",
+      "path": {
+        "commands": [
+          {
+            "x": 50,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 38,
+            "y": 34,
+            "x1": 46,
+            "x2": 43,
+            "y1": 16,
+            "y2": 24,
+            "type": "curve"
+          },
+          {
+            "x": 5,
+            "y": 62,
+            "x1": 24,
+            "x2": 7,
+            "y1": 38,
+            "y2": 48,
+            "type": "curve"
+          },
+          {
+            "x": 38,
+            "y": 43,
+            "x1": 15,
+            "x2": 28,
+            "y1": 62,
+            "y2": 52,
+            "type": "curve"
+          },
+          {
+            "x": 44,
+            "y": 88,
+            "x1": 40,
+            "x2": 44,
+            "y1": 53,
+            "y2": 72,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 78,
+            "x1": 44,
+            "x2": 50,
+            "y1": 88,
+            "y2": 78,
+            "type": "curve"
+          },
+          {
+            "x": 56,
+            "y": 88,
+            "x1": 50,
+            "x2": 56,
+            "y1": 78,
+            "y2": 88,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 43,
+            "x1": 56,
+            "x2": 60,
+            "y1": 72,
+            "y2": 53,
+            "type": "curve"
+          },
+          {
+            "x": 95,
+            "y": 62,
+            "x1": 72,
+            "x2": 85,
+            "y1": 52,
+            "y2": 62,
+            "type": "curve"
+          },
+          {
+            "x": 62,
+            "y": 34,
+            "x1": 93,
+            "x2": 76,
+            "y1": 48,
+            "y2": 38,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 57,
+            "x2": 54,
+            "y1": 24,
+            "y2": 16,
+            "type": "curve"
+          },
+          {
+            "x": 50,
+            "y": 15,
+            "x1": 50,
+            "x2": 50,
+            "y1": 15,
+            "y2": 15,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 45,
+            "y": 35,
+            "x1": 43,
+            "x2": 45,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 40,
+            "y": 34,
+            "x1": 45,
+            "x2": 40,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 43,
+            "y": 30,
+            "x1": 40,
+            "x2": 43,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "type": "move"
+          },
+          {
+            "x": 55,
+            "y": 35,
+            "x1": 57,
+            "x2": 55,
+            "y1": 30,
+            "y2": 35,
+            "type": "curve"
+          },
+          {
+            "x": 60,
+            "y": 34,
+            "x1": 55,
+            "x2": 60,
+            "y1": 35,
+            "y2": 34,
+            "type": "curve"
+          },
+          {
+            "x": 57,
+            "y": 30,
+            "x1": 60,
+            "x2": 57,
+            "y1": 34,
+            "y2": 30,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#DD00FF",
+          "opacity": 1
+        }
+      ],
+      "width": 150,
+      "height": 150,
+      "iconId": "motif:raven",
+      "locked": false,
+      "source": "vectorLibrary",
+      "effects": [
+        {
+          "id": "9b18e695-4059-4305-8919-617fec66ccea",
+          "type": "parametric",
+          "params": {
+            "blur": 5,
+            "color": "#DD00FF",
+            "speed": 0.8,
+            "thickness": 3
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "fillColor": "#DD00FF",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #4: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 800,
+      "y": 100,
+      "id": "0a63c7e7-286f-4a75-8c65-067785b147a7",
+      "text": "STARTING",
+      "type": "text",
+      "color": "#DD00FF",
+      "width": 392,
+      "height": 128,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 80
+    }
+  Element #5: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 295,
+      "y": 920,
+      "id": "ceb540e1-1864-474c-b910-700565ba96d7",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#DD00FF",
+      "fillOpacity": 1
+    }
+  Element #6: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 345,
+      "y": 913,
+      "id": "4ce20a70-24bb-42e1-ae60-ce0f508bedb0",
+      "text": "discord.gg/yourserver",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 318,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #7: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 763,
+      "y": 920,
+      "id": "7d539fb7-166c-4f0f-8cca-875807366e44",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#DD00FF",
+      "fillOpacity": 1
+    }
+  Element #8: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 768,
+      "y": 925,
+      "id": "5586f290-f1c1-44c2-8847-0a2c54322087",
+      "path": {
+        "commands": [
+          {
+            "x": 21,
+            "y": 2,
+            "type": "move"
+          },
+          {
+            "x": 3,
+            "y": 2,
+            "x1": 21,
+            "x2": 3,
+            "y1": 2,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 3,
+            "y": 18,
+            "x1": 3,
+            "x2": 3,
+            "y1": 2,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 18,
+            "x1": 3,
+            "x2": 8,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 8,
+            "y": 22,
+            "x1": 8,
+            "x2": 8,
+            "y1": 18,
+            "y2": 22,
+            "type": "curve"
+          },
+          {
+            "x": 12,
+            "y": 18,
+            "x1": 8,
+            "x2": 12,
+            "y1": 22,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 17,
+            "y": 18,
+            "x1": 12,
+            "x2": 17,
+            "y1": 18,
+            "y2": 18,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 14,
+            "x1": 17,
+            "x2": 21,
+            "y1": 18,
+            "y2": 14,
+            "type": "curve"
+          },
+          {
+            "x": 21,
+            "y": 2,
+            "x1": 21,
+            "x2": 21,
+            "y1": 14,
+            "y2": 2,
+            "type": "curve"
+          },
+          {
+            "x": 11,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 11,
+            "y": 7,
+            "x1": 11,
+            "x2": 11,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          },
+          {
+            "x": 16,
+            "y": 11,
+            "type": "move"
+          },
+          {
+            "x": 16,
+            "y": 7,
+            "x1": 16,
+            "x2": 16,
+            "y1": 11,
+            "y2": 7,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:twitch",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #9: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 813,
+      "y": 913,
+      "id": "a5e988ff-0d20-4df1-bcae-6aaa19ad2efe",
+      "text": "twitch.tv/yourchannel",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 318,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #10: [Type: shape] Name: "undefined"
+    JSON: {
+      "x": 1231,
+      "y": 920,
+      "id": "9527b802-7870-4c53-aec6-286bd7a64599",
+      "type": "shape",
+      "shape": "circle",
+      "width": 40,
+      "height": 40,
+      "locked": false,
+      "visible": true,
+      "fillColor": "#DD00FF",
+      "fillOpacity": 1
+    }
+  Element #11: [Type: path] Name: "undefined"
+    JSON: {
+      "x": 1236,
+      "y": 925,
+      "id": "5cfb763f-c8a5-4e2b-8692-201bc309f674",
+      "path": {
+        "commands": [
+          {
+            "x": 2.5,
+            "y": 17,
+            "type": "move"
+          },
+          {
+            "x": 2.5,
+            "y": 6.9999999999999964,
+            "x1": 1.8008306712440252,
+            "x2": 1.8008306712440252,
+            "y1": 13.703329497937148,
+            "y2": 10.296670502062847,
+            "type": "curve"
+          },
+          {
+            "x": 3.9,
+            "y": 5.6,
+            "x1": 2.6867421465870978,
+            "x2": 3.2188765477365195,
+            "y1": 6.318876547736517,
+            "y2": 5.786742146587096,
+            "type": "curve"
+          },
+          {
+            "x": 20.09999999999995,
+            "y": 5.600000000000001,
+            "x1": 9.263508615427376,
+            "x2": 14.73649138457257,
+            "y1": 4.712185882761339,
+            "y2": 4.712185882761339,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 7,
+            "x1": 20.78112345226345,
+            "x2": 21.313257853412896,
+            "y1": 5.786742146587083,
+            "y2": 6.318876547736507,
+            "type": "curve"
+          },
+          {
+            "x": 21.5,
+            "y": 17,
+            "x1": 22.199169328755975,
+            "x2": 22.199169328755975,
+            "y1": 10.296670502062852,
+            "y2": 13.703329497937148,
+            "type": "curve"
+          },
+          {
+            "x": 20.100000000000005,
+            "y": 18.4,
+            "x1": 21.313257853412903,
+            "x2": 20.781123452263483,
+            "y1": 17.68112345226348,
+            "y2": 18.2132578534129,
+            "type": "curve"
+          },
+          {
+            "x": 3.900000000000011,
+            "y": 18.4,
+            "x1": 14.73649138457261,
+            "x2": 9.263508615427403,
+            "y1": 19.287814117238668,
+            "y2": 19.287814117238668,
+            "type": "curve"
+          },
+          {
+            "x": 2.4999999999999996,
+            "y": 17,
+            "x1": 3.2188765477365253,
+            "x2": 2.6867421465870986,
+            "y1": 18.213257853412905,
+            "y2": 17.681123452263485,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "type": "move"
+          },
+          {
+            "x": 15,
+            "y": 12,
+            "x1": 10,
+            "x2": 15,
+            "y1": 15,
+            "y2": 12,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 9,
+            "x1": 15,
+            "x2": 10,
+            "y1": 12,
+            "y2": 9,
+            "type": "curve"
+          },
+          {
+            "x": 10,
+            "y": 15,
+            "x1": 10,
+            "x2": 10,
+            "y1": 9,
+            "y2": 15,
+            "type": "curve"
+          }
+        ]
+      },
+      "type": "path",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 1
+        }
+      ],
+      "width": 30,
+      "height": 30,
+      "iconId": "lucide:youtube",
+      "locked": false,
+      "source": "vectorLibrary",
+      "visible": true,
+      "fillColor": "#ffffff",
+      "componentId": "vector_library",
+      "fillOpacity": 1
+    }
+  Element #12: [Type: text] Name: "undefined"
+    JSON: {
+      "x": 1281,
+      "y": 913,
+      "id": "be5cdc5b-7317-42ca-8caf-915f034ce549",
+      "text": "youtube.com/yourchannel",
+      "type": "text",
+      "color": "#ffffff",
+      "width": 344,
+      "height": 53,
+      "locked": false,
+      "visible": true,
+      "fontFamily": "Bebas Neue",
+      "fontSizePx": 24
+    }
+  Element #13: [Type: box] Name: "boolean_base_rect"
+    JSON: {
+      "x": 660,
+      "y": 240,
+      "id": "71e2ee42-d52b-4c96-922c-143ce5d3ffa6",
+      "name": "boolean_base_rect",
+      "type": "box",
+      "shape": "rect",
+      "width": 100,
+      "height": 500,
+      "locked": false,
+      "visible": false,
+      "borderRadiusPx": 16,
+      "cornerRadiusPx": 16
+    }
+  Element #14: [Type: boolean] Name: "raven_eye_mask_boolean"
+    JSON: {
+      "x": 660,
+      "y": 240,
+      "id": "c2539689-4506-4df1-b60c-953d5badfdf9",
+      "name": "raven_eye_mask_boolean",
+      "type": "boolean",
+      "fills": [
+        {
+          "type": "solid",
+          "color": "#3E155E"
+        }
+      ],
+      "width": 600,
+      "height": 500,
+      "locked": false,
+      "effects": [
+        {
+          "id": "57e343c9-d73a-414d-93f9-850a18171942",
+          "type": "parametric",
+          "params": {
+            "blur": 5,
+            "color": "#DD00FF",
+            "speed": 0.8,
+            "thickness": 3
+          },
+          "preset": "electricBorder",
+          "enabled": true
+        }
+      ],
+      "visible": true,
+      "childIds": [
+        "f4e7138e-c063-44aa-9fe0-82734f52d8ff",
+        "71e2ee42-d52b-4c96-922c-143ce5d3ffa6"
+      ],
+      "operation": "subtract"
+    }

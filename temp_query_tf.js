@@ -1,0 +1,1 @@
+const {Client} = require('pg'); const client = new Client('postgres://scrapapp:Outrun1279!@127.0.0.1:5432/creator_platform'); client.connect().then(() => client.query(SELECT config_json->'elements' as elements FROM overlays WHERE public_id='04803bc8135f6b8ecd890d3d';)).then(res => { console.log(JSON.stringify(res.rows[0].elements, null, 2)); client.end(); });

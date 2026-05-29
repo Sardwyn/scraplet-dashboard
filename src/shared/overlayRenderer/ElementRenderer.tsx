@@ -1812,20 +1812,27 @@ function ParametricEffectOverlay({
                     })}
                 </svg>
             )}
-            {webglEffects.length > 0 && (
-                <canvas
-                    ref={webglCanvasRef}
-                    width={width}
-                    height={height}
-                    style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        pointerEvents: "none"
-                    }}
-                />
-            )}
+            {webglEffects.length > 0 && (() => {
+                const webglClipMode = webglEffects.find((e: any) => e.params?.clipMode)?.params?.clipMode ?? "surface";
+                const webglClipPath = (webglClipMode === "surface" && shapePath)
+                    ? `path('${shapePath.replace(/'/g, "\\'")}')`
+                    : undefined;
+                return (
+                    <canvas
+                        ref={webglCanvasRef}
+                        width={width}
+                        height={height}
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            pointerEvents: "none",
+                            ...(webglClipPath ? { clipPath: webglClipPath } : {}),
+                        }}
+                    />
+                );
+            })()}
             {Object.keys(overlayOnlyStyle).length > 0 && (
                 <div style={{ position: "absolute", inset: 0, ...overlayOnlyStyle }} />
             )}
