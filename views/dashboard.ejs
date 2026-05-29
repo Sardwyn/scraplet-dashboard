@@ -57,7 +57,7 @@
           Tier: <span class="font-mono text-gray-100 ml-1"><%= isPro ? 'PRO' : 'CREATOR' %></span>
         </span>
 
-        <% if (!user?.has_onboarded) { %>
+        <% if (typeof profileCompleteness !== 'undefined' && profileCompleteness?.pct < 100) { %>
           <span class="pc-chip">
             <span class="inline-block w-2 h-2 rounded-full bg-yellow-400"></span>
             <span class="font-mono text-yellow-200 ml-1">PROFILE SETUP NEEDED</span>
