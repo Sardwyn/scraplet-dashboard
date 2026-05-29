@@ -9618,6 +9618,7 @@ function EffectsStackControls({
 
       {(element as any).parametricEffects?.map((pe: any, index: number) => {
         const presetDef = EFFECT_PRESETS[pe.preset];
+        const peParams = pe.params || {};
         const animatableParams = (presetDef?.params ?? []).filter((p: any) => p.animatable && p.type === 'number');
         const staticParams = (presetDef?.params ?? []).filter((p: any) => !p.animatable || p.type !== 'number');
         const MINI_COLORS = ['#818cf8','#34d399','#fbbf24','#f87171','#c084fc','#22d3ee'];
@@ -9696,7 +9697,7 @@ function EffectsStackControls({
                   {animatableParams.map((param: any, idx: number) => {
                     const color = MINI_COLORS[idx % MINI_COLORS.length];
                     const nodes = getNodes(param.key);
-                    const fallback = Number(pe.params[param.key] ?? param.default);
+                    const fallback = Number(peParams[param.key] ?? param.default);
                     const d = buildMiniPath(nodes, fallback, mToX, (v) => mToY(v, param));
                     const areaD = d + ` L ${mToX(effDur)} ${mPT+mIH} L ${mPL} ${mPT+mIH} Z`;
                     return (
@@ -9734,29 +9735,29 @@ function EffectsStackControls({
               <div key={param.key} className="flex items-center gap-2">
                 <label className={`${uiClasses.fieldLabel} w-16 flex-none truncate`}>{param.label}</label>
                 {param.type === 'color' ? (
-                  <input type="color" value={String(pe.params[param.key] ?? param.default)}
+                  <input type="color" value={String(peParams[param.key] ?? param.default)}
                     onChange={e => {
                       const next = (element as any).parametricEffects.map((ef: any, i: number) =>
-                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.value}} : ef
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.value}} : ef
                       );
                       onChange({ parametricEffects: next } as any);
                     }}
                     className="w-8 h-6 rounded cursor-pointer border border-[rgba(255,255,255,0.08)] bg-transparent" />
                 ) : param.type === 'boolean' ? (
-                  <input type="checkbox" checked={Boolean(pe.params[param.key] ?? param.default)}
+                  <input type="checkbox" checked={Boolean(peParams[param.key] ?? param.default)}
                     onChange={e => {
                       const next = (element as any).parametricEffects.map((ef: any, i: number) =>
-                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.checked}} : ef
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.checked}} : ef
                       );
                       onChange({ parametricEffects: next } as any);
                     }}
                     className="accent-indigo-500" />
                 ) : param.type === 'select' ? (
                   <select className={`flex-1 ${uiClasses.field} text-[11px]`}
-                    value={String(pe.params[param.key] ?? param.default)}
+                    value={String(peParams[param.key] ?? param.default)}
                     onChange={e => {
                       const next = (element as any).parametricEffects.map((ef: any, i: number) =>
-                        i === index ? {...ef, params: {...ef.params, [param.key]: e.target.value}} : ef
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.value}} : ef
                       );
                       onChange({ parametricEffects: next } as any);
                     }}>
@@ -9766,16 +9767,16 @@ function EffectsStackControls({
                   <>
                     <input type="range"
                       min={param.min ?? 0} max={param.max ?? 10} step={param.step ?? 0.1}
-                      value={Number(pe.params[param.key] ?? param.default)}
+                      value={Number(peParams[param.key] ?? param.default)}
                       onChange={e => {
                         const next = (element as any).parametricEffects.map((ef: any, i: number) =>
-                          i === index ? {...ef, params: {...ef.params, [param.key]: Number(e.target.value)}} : ef
+                          i === index ? {...ef, params: {...(ef.params || {}), [param.key]: Number(e.target.value)}} : ef
                         );
                         onChange({ parametricEffects: next } as any);
                       }}
                       className="flex-1 accent-indigo-500" />
                     <span className={`${uiClasses.fieldLabel} w-8 text-right tabular-nums`}>
-                      {Number(pe.params[param.key] ?? param.default).toFixed(
+                      {Number(peParams[param.key] ?? param.default).toFixed(
                         param.step && param.step < 1 ? 1 : 0
                       )}
                     </span>

@@ -48,6 +48,7 @@ function buildPath(
 export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: Props) {
   const animatable = presetDef.params.filter(p => p.animatable && p.type === 'number');
   const statics = presetDef.params.filter(p => !p.animatable || p.type !== 'number');
+  const effectParams = effect.params || {};
 
   const [selParam, setSelParam] = useState(animatable[0]?.key ?? '');
   const [duration, setDuration] = useState(effect.duration ?? 0);
@@ -111,7 +112,7 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
             ...kf,
             t: targetT,
             params: {
-              ...kf.params,
+              ...(kf.params || {}),
               [dragging.key]: targetVal
             }
           };
@@ -210,7 +211,7 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
             const color = COLORS[idx % COLORS.length];
             const sel = selParam === param.key;
             const nodes = getNodes(effect, param.key);
-            const fallback = Number(effect.params[param.key] ?? param.default);
+            const fallback = Number(effectParams[param.key] ?? param.default);
             const d = buildPath(nodes, effDur, fallback, toX, v => toY(v, param));
             return (
               <g key={param.key}>
@@ -289,24 +290,24 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
             <div key={param.key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
               <label style={{ fontSize: 11, color: '#64748b', width: 72, flexShrink: 0 }}>{param.label}</label>
               {param.type === 'color' ? (
-                <input type="color" value={String(effect.params[param.key] ?? param.default)}
-                  onChange={e => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.value } })}
+                <input type="color" value={String(effectParams[param.key] ?? param.default)}
+                  onChange={e => onUpdate({ ...effect, params: { ...(effect.params || {}), [param.key]: e.target.value } })}
                   style={{ width: 32, height: 22, borderRadius: 4, border: '1px solid rgba(255,255,255,0.08)', background: 'transparent', cursor: 'pointer' }}
                 />
               ) : param.type === 'boolean' ? (
-                <input type="checkbox" checked={Boolean(effect.params[param.key] ?? param.default)}
-                  onChange={e => onUpdate({ ...effect, params: { ...effect.params, [param.key]: e.target.checked } })}
+                <input type="checkbox" checked={Boolean(effectParams[param.key] ?? param.default)}
+                  onChange={e => onUpdate({ ...effect, params: { ...(effect.params || {}), [param.key]: e.target.checked } })}
                   style={{ accentColor: '#6366f1' }}
                 />
               ) : (
                 <>
                   <input type="range" min={param.min ?? 0} max={param.max ?? 10} step={param.step ?? 0.1}
-                    value={Number(effect.params[param.key] ?? param.default)}
-                    onChange={e => onUpdate({ ...effect, params: { ...effect.params, [param.key]: Number(e.target.value) } })}
+                    value={Number(effectParams[param.key] ?? param.default)}
+                    onChange={e => onUpdate({ ...effect, params: { ...(effect.params || {}), [param.key]: Number(e.target.value) } })}
                     style={{ flex: 1, accentColor: '#6366f1', height: 3 }}
                   />
                   <span style={{ fontSize: 11, color: '#94a3b8', width: 36, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {Number(effect.params[param.key] ?? param.default).toFixed(param.step && param.step < 1 ? 1 : 0)}
+                    {Number(effectParams[param.key] ?? param.default).toFixed(param.step && param.step < 1 ? 1 : 0)}
                   </span>
                 </>
               )}
