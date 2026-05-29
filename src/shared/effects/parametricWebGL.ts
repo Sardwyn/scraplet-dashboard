@@ -362,6 +362,7 @@ uniform float sporeDensity;
 uniform float chromaSpread;
 uniform float vignetteStrength;
 uniform float grainIntensity;
+uniform float opacity;
 
 float hash2(vec2 co) {
     return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
@@ -400,7 +401,8 @@ float getFogChannel(vec2 uv, float offsetTime) {
 }
 
 float getSporesChannel(vec2 uv, float aspect) {
-    vec2 gridUv = uv * vec2(10.0 * aspect, 10.0);
+    // Elegant grid density for delicate particles
+    vec2 gridUv = uv * vec2(15.0 * aspect, 15.0);
     vec2 cellId = floor(gridUv);
     vec2 cellUv = fract(gridUv) - 0.5;
     
@@ -413,25 +415,24 @@ float getSporesChannel(vec2 uv, float aspect) {
             
             if (h < sporeDensity * 0.65) {
                 float seed = h * 827.41;
-                float speed = 0.12 + fract(seed * 0.1) * 0.22;
-                float size = 0.03 + fract(seed * 0.2) * 0.06;
+                // Much smaller and delicate spore sizes
+                float size = 0.008 + fract(seed * 0.2) * 0.018;
                 
-                // Continuous upward vertical progress
-                float verticalProgress = fract(uTime * speed + seed);
-                
-                // Continuous horizontal sway using noise for organic temporal coherence
-                float swayTime = uTime * 0.35 + seed;
-                float sway = (noise(vec2(swayTime, seed * 1.5)) - 0.5) * 0.6;
-                
-                vec2 sporePos = vec2(sway, verticalProgress - 0.5);
+                // Continuous 2D organic hovering/swaying in the wind (no linear upward progression or wrapping jitter)
+                float tX = uTime * 0.12 + seed;
+                float tY = uTime * 0.10 + seed * 2.3;
+                vec2 sporePos = vec2(
+                    noise(vec2(tX, seed)) - 0.5,
+                    noise(vec2(tY, seed + 17.4)) - 0.5
+                ) * 0.75;
                 
                 float distToSpore = length(cellUv - neighbor - sporePos);
                 
-                // Smoothly fade in/out near cell borders to eliminate wrap jitter
-                float boundaryFade = smoothstep(0.0, 0.2, verticalProgress) * smoothstep(1.0, 0.8, verticalProgress);
+                // Depth of field focus breathing (particles drift slowly in and out of the focus plane)
+                float depthFade = 0.4 + 0.6 * noise(vec2(uTime * 0.15 + seed, seed * 1.8));
                 
                 float glow = smoothstep(size, 0.0, distToSpore);
-                glow = pow(glow, 1.8) * boundaryFade;
+                glow = pow(glow, 1.8) * depthFade;
                 spores += glow;
             }
         }
@@ -490,9 +491,9 @@ void main() {
     float grain = (grainNoise - 0.5) * grainIntensity;
     finalRGB += vec3(grain);
     
-    // Atmospheric alpha calculation
+    // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
     float alpha = 0.25 * (1.0 - desaturation) + fogG * fogIntensity * 0.5 + sporesG * 0.8 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
-    alpha = clamp(alpha, 0.0, 0.95);
+    alpha = clamp(alpha, 0.0, 0.95) * opacity;
     
     fragColor = vec4(finalRGB, alpha);
 }
@@ -654,6 +655,7 @@ export function renderWebGLFrame(
     gl.uniform1f(gl.getUniformLocation(program, "chromaSpread"), Number(params.chromaSpread ?? 0.02));
     gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number(params.vignetteStrength ?? 0.65));
     gl.uniform1f(gl.getUniformLocation(program, "grainIntensity"), Number(params.grainIntensity ?? 0.04));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.7));
   }
 
 

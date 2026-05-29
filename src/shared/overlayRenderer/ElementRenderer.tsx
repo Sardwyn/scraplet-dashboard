@@ -266,8 +266,8 @@ function fitToObjectFit(fit?: OverlayMediaFit) {
 }
 
 function toCssBlendMode(blendMode?: OverlayBlendMode): React.CSSProperties["mixBlendMode"] {
-    if (blendMode === "screen" || blendMode === "multiply") return blendMode;
-    return "normal";
+    if (!blendMode || blendMode === "normal") return "normal";
+    return blendMode as any;
 }
 
 function parseColorWithAlpha(color: string | undefined, opacity = 1) {
@@ -2861,9 +2861,11 @@ export function ElementRenderer({
         const imageStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
         // Build CSS filter from adjustments
         const adj = (img as any).adjustments ?? {};
+        const exposureVal = adj.exposure !== undefined ? Number(adj.exposure) : 0;
         const adjFilter = [
           adj.brightness !== undefined && adj.brightness !== 1 ? `brightness(${adj.brightness})` : "",
           adj.contrast !== undefined && adj.contrast !== 1 ? `contrast(${adj.contrast})` : "",
+          exposureVal !== 0 ? `brightness(${1 + exposureVal * 0.5}) contrast(${1 + exposureVal * 0.3})` : "",
           adj.saturate !== undefined && adj.saturate !== 1 ? `saturate(${adj.saturate})` : "",
           adj.hueRotate !== undefined && adj.hueRotate !== 0 ? `hue-rotate(${adj.hueRotate}deg)` : "",
           adj.blur !== undefined && adj.blur !== 0 ? `blur(${adj.blur}px)` : "",

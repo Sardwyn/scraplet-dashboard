@@ -899,6 +899,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "chromaSpread", label: "Chroma Spread", type: "number", default: 0.02, min: 0, max: 0.1, step: 0.005, animatable: true },
       { key: "vignetteStrength", label: "Vignette Strength", type: "number", default: 0.65, min: 0, max: 1, step: 0.05, animatable: true },
       { key: "grainIntensity", label: "Grain Intensity", type: "number", default: 0.04, min: 0, max: 0.15, step: 0.01, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 0.7, min: 0, max: 1, step: 0.05, animatable: true },
     ],
   },
 };
