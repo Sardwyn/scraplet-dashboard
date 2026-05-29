@@ -1569,6 +1569,14 @@ function ParametricEffectOverlay({
     const webglEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("webgl"));
     const svgEffectsRef = useRef(svgEffects);
     svgEffectsRef.current = svgEffects;
+    const cssEffectsRef = useRef(cssEffects);
+    cssEffectsRef.current = cssEffects;
+    const canvasEffectsRef = useRef(canvasEffects);
+    canvasEffectsRef.current = canvasEffects;
+    const webglEffectsRef = useRef(webglEffects);
+    webglEffectsRef.current = webglEffects;
+    const shapePathRef = useRef(shapePath);
+    shapePathRef.current = shapePath;
     const dataRef = useRef(data);
     dataRef.current = data;
 
@@ -1580,7 +1588,7 @@ function ParametricEffectOverlay({
             const t = performance.now() - startTimeRef.current;
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
-            for (const e of cssEffects) {
+            for (const e of cssEffectsRef.current) {
                 const params = resolveEffectParams(e, t, dataRef.current);
                 const css = renderParametricEffectCSS(e.preset, params, t);
                 const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
@@ -1615,23 +1623,24 @@ function ParametricEffectOverlay({
             // Clear the full canvas BEFORE any clipping — clearRect ignores clip regions
             ctx.clearRect(0, 0, width, height);
 
-            for (const e of canvasEffects) {
+            for (const e of canvasEffectsRef.current) {
                 const params = resolveEffectParams(e, t, dataRef.current);
                 const clipMode = String(params.clipMode ?? "none");
                 ctx.save();
                 const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
                 ctx.globalAlpha = overallOpacity;
-                if (shapePath && clipMode !== "none") {
+                const currentShapePath = shapePathRef.current;
+                if (currentShapePath && clipMode !== "none") {
                     try {
                         if (clipMode === "surface") {
                             // Clip to the filled material of the shape, excluding boolean voids.
                             // evenodd correctly handles boolean subtract/intersect holes.
-                            const p2d = new Path2D(shapePath);
+                            const p2d = new Path2D(currentShapePath);
                             ctx.clip(p2d, "evenodd");
                         } else if (clipMode === "space") {
                             // Clip to interior voids only (holes cut by boolean operations).
                             // bbox + shape with evenodd makes the shape area the "hole".
-                            const p2d = new Path2D(`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${shapePath}`);
+                            const p2d = new Path2D(`M 0 0 L ${width} 0 L ${width} ${height} L 0 ${height} Z ${currentShapePath}`);
                             ctx.clip(p2d, "evenodd");
                         }
                     } catch (_) { /* ignore invalid path */ }
@@ -1676,7 +1685,7 @@ function ParametricEffectOverlay({
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
             
-            for (const e of webglEffects) {
+            for (const e of webglEffectsRef.current) {
                 const params = resolveEffectParams(e, t, dataRef.current);
                 renderWebGLFrame(renderer, e.preset, params, t, width, height);
             }
