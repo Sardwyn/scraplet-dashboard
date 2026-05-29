@@ -27529,7 +27529,7 @@ float getFogChannel(vec2 uv, float offsetTime) {
 }
 
 float getSporesChannel(vec2 uv, float aspect) {
-    // Elegant grid density for delicate particles
+    // Grid density for atmospheric particles
     vec2 gridUv = uv * vec2(15.0 * aspect, 15.0);
     vec2 cellId = floor(gridUv);
     vec2 cellUv = fract(gridUv) - 0.5;
@@ -27542,26 +27542,43 @@ float getSporesChannel(vec2 uv, float aspect) {
             float h = hash2(currentCell);
             
             if (h < sporeDensity * 0.65) {
-                float seed = h * 827.41;
-                // Beautifully visible cinematic spores
-                float size = 0.026 + fract(seed * 0.2) * 0.038;
+                float seed = h * 5.0; // Keep seed small to prevent sin precision loss over time
                 
-                // Continuous 2D organic hovering/swaying in the wind (no linear upward progression or wrapping jitter)
-                float tX = uTime * 0.12 + seed;
-                float tY = uTime * 0.10 + seed * 2.3;
+                // Beautifully visible cinematic base size (notched up as requested)
+                float baseSize = 0.04 + fract(seed * 0.3) * 0.06;
+                
+                // 3D Depth coordinate: 0.1 (extremely close) to 1.0 (far away)
+                float z = 0.1 + 0.9 * fract(seed * 7.13);
+                
+                // Defocus distance relative to focal plane at z = 0.5
+                float defocus = abs(z - 0.5);
+                
+                // Perspective projection: closer objects appear much larger
+                float size = baseSize * (0.35 / (z + 0.08));
+                
+                // Defocus blur radius (DoF camera lens simulation)
+                float blur = 0.015 + defocus * 0.22;
+                
+                // Buttery-smooth, organic 2D drift using prime frequencies (zero noise precision jitter)
+                float tX = uTime * (0.15 + (1.0 - z) * 0.15); // Closer particles drift slightly faster
+                float tY = uTime * (0.12 + (1.0 - z) * 0.12);
                 vec2 sporePos = vec2(
-                    noise(vec2(tX, seed)) - 0.5,
-                    noise(vec2(tY, seed + 17.4)) - 0.5
-                ) * 0.75;
+                    sin(tX + seed * 6.28) * 0.35 + cos(tX * 0.43 + seed * 3.14) * 0.15,
+                    cos(tY + seed * 6.28) * 0.35 + sin(tY * 0.37 + seed * 3.14) * 0.15
+                );
                 
                 float distToSpore = length(cellUv - neighbor - sporePos);
                 
-                // Depth of field focus breathing (particles drift slowly in and out of the focus plane)
-                float depthFade = 0.4 + 0.6 * noise(vec2(uTime * 0.15 + seed, seed * 1.8));
+                // DoF physical lens blurring using smoothstep
+                float glow = smoothstep(size + blur, max(0.0, size - blur), distToSpore);
                 
-                float glow = smoothstep(size, 0.0, distToSpore);
-                glow = pow(glow, 1.8) * depthFade;
-                spores += glow;
+                // Bokeh brightness attenuation (energy conservation)
+                float intensityMultiplier = 1.0 / (1.0 + defocus * 5.0);
+                
+                // Individual particle breathing
+                float breathing = 0.6 + 0.4 * sin(uTime * 0.5 + seed * 10.0);
+                
+                spores += glow * intensityMultiplier * breathing;
             }
         }
     }
