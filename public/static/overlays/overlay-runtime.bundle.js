@@ -24015,7 +24015,7 @@ float getFogChannel(vec2 uv, float offsetTime) {
 }
 
 float getSporesChannel(vec2 uv, float aspect) {
-    vec2 gridUv = uv * vec2(12.0 * aspect, 12.0);
+    vec2 gridUv = uv * vec2(10.0 * aspect, 10.0);
     vec2 cellId = floor(gridUv);
     vec2 cellUv = fract(gridUv) - 0.5;
     
@@ -24026,20 +24026,27 @@ float getSporesChannel(vec2 uv, float aspect) {
             vec2 currentCell = cellId + neighbor;
             float h = hash2(currentCell);
             
-            if (h < sporeDensity * 0.68) {
+            if (h < sporeDensity * 0.65) {
                 float seed = h * 827.41;
-                float speed = 0.4 + fract(seed * 0.1) * 0.6;
-                float size = 0.035 + fract(seed * 0.25) * 0.075;
+                float speed = 0.12 + fract(seed * 0.1) * 0.22;
+                float size = 0.03 + fract(seed * 0.2) * 0.06;
                 
-                float t = uTime * speed * 0.75;
-                vec2 sporePos = vec2(
-                    sin(t + seed) * 0.35,
-                    fract(t * 0.25 + seed) - 0.5
-                );
+                // Continuous upward vertical progress
+                float verticalProgress = fract(uTime * speed + seed);
+                
+                // Continuous horizontal sway using noise for organic temporal coherence
+                float swayTime = uTime * 0.35 + seed;
+                float sway = (noise(vec2(swayTime, seed * 1.5)) - 0.5) * 0.6;
+                
+                vec2 sporePos = vec2(sway, verticalProgress - 0.5);
                 
                 float distToSpore = length(cellUv - neighbor - sporePos);
+                
+                // Smoothly fade in/out near cell borders to eliminate wrap jitter
+                float boundaryFade = smoothstep(0.0, 0.2, verticalProgress) * smoothstep(1.0, 0.8, verticalProgress);
+                
                 float glow = smoothstep(size, 0.0, distToSpore);
-                glow = pow(glow, 2.2);
+                glow = pow(glow, 1.8) * boundaryFade;
                 spores += glow;
             }
         }
