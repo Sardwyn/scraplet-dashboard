@@ -27548,8 +27548,8 @@ vec3 getSporesChannel(vec2 uv, float aspect, vec2 caOffset) {
     vec2 cellId = floor(gridUv);
     vec2 cellUv = fract(gridUv) - 0.5;
     
-    // Scale caOffset to cell-grid space
-    vec2 cellOffset = caOffset * vec2(15.0 * aspect, 15.0);
+    // Scale caOffset to cell-grid space and apply a premium dampening factor (0.10) to keep it as a subtle subpixel lens fringe
+    vec2 cellOffset = caOffset * vec2(15.0 * aspect, 15.0) * 0.10;
     
     vec3 spores = vec3(0.0);
     for (int y = -1; y <= 1; y++) {
