@@ -1561,6 +1561,10 @@ function ParametricEffectOverlay({
     const rafRef = useRef<number | null>(null);
     const [tick, setTick] = useState(0);
     const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
+    const widthRef = useRef(width);
+    widthRef.current = width;
+    const heightRef = useRef(height);
+    heightRef.current = height;
 
     const parametric = effects.filter(e => e.type === "parametric" && e.enabled !== false) as any[];
     const canvasEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("canvas"));
@@ -1674,7 +1678,8 @@ function ParametricEffectOverlay({
         const canvas = webglCanvasRef.current;
         if (!canvas || !webglEffects.length) return;
         
-        const renderer = initWebGLRenderer(canvas);
+        const activePresets = webglEffects.map((e: any) => e.preset);
+        const renderer = initWebGLRenderer(canvas, activePresets);
         if (!renderer) return;
         webglManagerRef.current = renderer;
         
@@ -1687,7 +1692,7 @@ function ParametricEffectOverlay({
             
             for (const e of webglEffectsRef.current) {
                 const params = resolveEffectParams(e, t, dataRef.current);
-                renderWebGLFrame(renderer, e.preset, params, t, width, height);
+                renderWebGLFrame(renderer, e.preset, params, t, widthRef.current, heightRef.current);
             }
         };
         
@@ -1697,7 +1702,7 @@ function ParametricEffectOverlay({
             cleanupWebGLRenderer(renderer);
             webglManagerRef.current = null;
         };
-    }, [webglEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId, isPerformanceMode]);
+    }, [webglEffects.map((e: any) => e.id ?? e.preset).join(","), elementId, isPerformanceMode]);
 
 
     useEffect(() => {

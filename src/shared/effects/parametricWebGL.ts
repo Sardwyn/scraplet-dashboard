@@ -415,8 +415,8 @@ float getSporesChannel(vec2 uv, float aspect) {
             
             if (h < sporeDensity * 0.65) {
                 float seed = h * 827.41;
-                // Much smaller and delicate spore sizes
-                float size = 0.008 + fract(seed * 0.2) * 0.018;
+                // Beautifully visible cinematic spores
+                float size = 0.026 + fract(seed * 0.2) * 0.038;
                 
                 // Continuous 2D organic hovering/swaying in the wind (no linear upward progression or wrapping jitter)
                 float tX = uTime * 0.12 + seed;
@@ -535,7 +535,7 @@ function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fr
   return program;
 }
 
-export function initWebGLRenderer(canvas: HTMLCanvasElement): WebGLRenderer | null {
+export function initWebGLRenderer(canvas: HTMLCanvasElement, activePresets?: string[]): WebGLRenderer | null {
   const gl = canvas.getContext("webgl2", { alpha: true, preimageAlpha: false, antialias: true });
   if (!gl) {
     console.warn("WebGL 2 context is not available.");
@@ -551,6 +551,7 @@ export function initWebGLRenderer(canvas: HTMLCanvasElement): WebGLRenderer | nu
 
   const programs: Record<string, WebGLProgram> = {};
   for (const [preset, source] of Object.entries(FRAGMENT_SHADERS)) {
+    if (activePresets && !activePresets.includes(preset)) continue;
     const fs = createShader(gl, gl.FRAGMENT_SHADER, source);
     if (fs) {
       const prog = createProgram(gl, vs, fs);
