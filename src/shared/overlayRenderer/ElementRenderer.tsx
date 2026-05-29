@@ -3,6 +3,7 @@ import { getWidgetRenderer } from './widgetContract';
 import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS, resolveEffectParams } from "../effects/parametricEffects";
 import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderMotionTrail, cleanupTrailState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
 import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
+import { initWebGLRenderer, renderWebGLFrame, cleanupWebGLRenderer } from "../effects/parametricWebGL";
 import { globalEffectCoordinator } from "./globalEffectCoordinator";
 import { usePerformanceMode } from "./PerformanceModeContext";
 import {
@@ -1554,6 +1555,8 @@ function ParametricEffectOverlay({
 }) {
     const { isPerformanceMode } = usePerformanceMode();
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const webglCanvasRef = useRef<HTMLCanvasElement>(null);
+    const webglManagerRef = useRef<any>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const rafRef = useRef<number | null>(null);
     const [tick, setTick] = useState(0);
@@ -1563,6 +1566,7 @@ function ParametricEffectOverlay({
     const canvasEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("canvas"));
     const svgEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("svgOverlay"));
     const cssEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("css"));
+    const webglEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("webgl"));
     const svgEffectsRef = useRef(svgEffects);
     svgEffectsRef.current = svgEffects;
     const dataRef = useRef(data);
@@ -1658,6 +1662,37 @@ function ParametricEffectOverlay({
 
     useEffect(() => {
         if (isPerformanceMode) return;
+        const canvas = webglCanvasRef.current;
+        if (!canvas || !webglEffects.length) return;
+        
+        const renderer = initWebGLRenderer(canvas);
+        if (!renderer) return;
+        webglManagerRef.current = renderer;
+        
+        const startTimeRef = { current: performance.now() };
+        const renderFn = () => {
+            const t = performance.now() - startTimeRef.current;
+            const gl = renderer.gl;
+            gl.clearColor(0.0, 0.0, 0.0, 0.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            
+            for (const e of webglEffects) {
+                const params = resolveEffectParams(e, t, dataRef.current);
+                renderWebGLFrame(renderer, e.preset, params, t, width, height);
+            }
+        };
+        
+        const unregister = globalEffectCoordinator.register(renderFn);
+        return () => {
+            unregister();
+            cleanupWebGLRenderer(renderer);
+            webglManagerRef.current = null;
+        };
+    }, [webglEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId, isPerformanceMode]);
+
+
+    useEffect(() => {
+        if (isPerformanceMode) return;
         
         // Always run — svgEffects may be added after mount
         const renderFn = () => { if (svgEffectsRef.current.length) setTick(t => t + 1); };
@@ -1670,7 +1705,7 @@ function ParametricEffectOverlay({
         return null;
     }
 
-    if (!canvasEffects.length && !svgEffects.length && !cssEffects.length) return null;
+    if (!canvasEffects.length && !svgEffects.length && !cssEffects.length && !webglEffects.length) return null;
     const now = performance.now();
     // Build overlay-only style: backgroundImage for scanline, nothing for filter-based effects
     const overlayOnlyStyle: React.CSSProperties = {};
@@ -1757,6 +1792,20 @@ function ParametricEffectOverlay({
                         return null;
                     })}
                 </svg>
+            )}
+            {webglEffects.length > 0 && (
+                <canvas
+                    ref={webglCanvasRef}
+                    width={width}
+                    height={height}
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        width: "100%",
+                        height: "100%",
+                        pointerEvents: "none"
+                    }}
+                />
             )}
             {Object.keys(overlayOnlyStyle).length > 0 && (
                 <div style={{ position: "absolute", inset: 0, ...overlayOnlyStyle }} />

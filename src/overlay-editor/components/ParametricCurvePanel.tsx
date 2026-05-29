@@ -9,7 +9,7 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import type { ParametricEffectDef, PresetDefinition, ParamSchema } from '../../shared/effects/parametricEffects';
 
-interface Node { t: number; value: number; }
+interface Node { t: number; value: number; originalIndex: number; }
 
 interface Props {
   effect: ParametricEffectDef & { id?: string };
@@ -27,8 +27,8 @@ function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min
 
 function getNodes(effect: ParametricEffectDef, key: string): Node[] {
   return (effect.keyframes ?? [])
-    .filter(kf => kf.params && key in kf.params)
-    .map(kf => ({ t: kf.t, value: kf.params[key] as number }))
+    .map((kf, i) => ({ t: kf.t, value: kf.params ? (kf.params[key] as number) : undefined, originalIndex: i }))
+    .filter((n): n is { t: number; value: number; originalIndex: number } => n.value !== undefined)
     .sort((a, b) => a.t - b.t);
 }
 
@@ -36,12 +36,12 @@ function buildPath(
   nodes: Node[], duration: number, fallback: number,
   toX: (t: number) => number, toY: (v: number) => number
 ): string {
-  const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback }, { t: duration, value: fallback }];
+  const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback, originalIndex: -1 }, { t: duration, value: fallback, originalIndex: -1 }];
   const sorted = [...pts].sort((a, b) => a.t - b.t);
   const full: Node[] = [];
-  if (sorted[0].t > 0) full.push({ t: 0, value: sorted[0].value });
+  if (sorted[0].t > 0) full.push({ t: 0, value: sorted[0].value, originalIndex: -1 });
   full.push(...sorted);
-  if (sorted[sorted.length - 1].t < duration) full.push({ t: duration, value: sorted[sorted.length - 1].value });
+  if (sorted[sorted.length - 1].t < duration) full.push({ t: duration, value: sorted[sorted.length - 1].value, originalIndex: -1 });
   return full.map((n, i) => `${i === 0 ? 'M' : 'L'} ${toX(n.t).toFixed(1)} ${toY(n.value).toFixed(1)}`).join(' ');
 }
 
@@ -52,7 +52,7 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
   const [selParam, setSelParam] = useState(animatable[0]?.key ?? '');
   const [duration, setDuration] = useState(effect.duration ?? 0);
   const [durInput, setDurInput] = useState(effect.duration ? String(effect.duration) : '');
-  const [dragging, setDragging] = useState<{ key: string; idx: number } | null>(null);
+  const [dragging, setDragging] = useState<{ key: string; originalIndex: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Graph dimensions
@@ -82,21 +82,20 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
     const t = fromX(x), value = fromY(y, param);
     const others = (effect.keyframes ?? []).filter(kf => !(kf.params && selParam in kf.params));
     const existing = getNodes(effect, selParam);
-    const merged = [...existing, { t, value }].sort((a, b) => a.t - b.t);
+    const merged = [...existing, { t, value, originalIndex: -1 }].sort((a, b) => a.t - b.t);
     onUpdate({ ...effect, keyframes: [...others, ...merged.map(n => ({ t: n.t, params: { [selParam]: n.value } }))] });
-  }, [selParam, effect, animatable, effDur, IW, IH, PL, PT]);
+  }, [selParam, effect, animatable, effDur, IW, IH, PL, PT, onUpdate]);
 
-  const handleNodeDown = useCallback((e: React.MouseEvent, key: string, idx: number) => {
+  const handleNodeDown = useCallback((e: React.MouseEvent, key: string, originalIndex: number) => {
     e.preventDefault(); e.stopPropagation();
-    setDragging({ key, idx }); setSelParam(key);
+    setDragging({ key, originalIndex }); setSelParam(key);
   }, []);
 
-  const handleNodeDblClick = useCallback((e: React.MouseEvent, key: string, idx: number) => {
+  const handleNodeDblClick = useCallback((e: React.MouseEvent, key: string, originalIndex: number) => {
     e.preventDefault(); e.stopPropagation();
-    const nodes = getNodes(effect, key).filter((_, i) => i !== idx);
-    const others = (effect.keyframes ?? []).filter(kf => !(kf.params && key in kf.params));
-    onUpdate({ ...effect, keyframes: [...others, ...nodes.map(n => ({ t: n.t, params: { [key]: n.value } }))] });
-  }, [effect]);
+    const updatedKeyframes = (effect.keyframes ?? []).filter((_, i) => i !== originalIndex);
+    onUpdate({ ...effect, keyframes: updatedKeyframes });
+  }, [effect, onUpdate]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -104,17 +103,28 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
     if (!param) return;
     const onMove = (e: MouseEvent) => {
       const { x, y } = svgPos(e);
-      const nodes = getNodes(effect, dragging.key).map((n, i) =>
-        i === dragging.idx ? { t: fromX(x), value: fromY(y, param) } : n
-      );
-      const others = (effect.keyframes ?? []).filter(kf => !(kf.params && dragging.key in kf.params));
-      onUpdate({ ...effect, keyframes: [...others, ...nodes.map(n => ({ t: n.t, params: { [dragging.key]: n.value } }))] });
+      const targetT = fromX(x);
+      const targetVal = fromY(y, param);
+      const updatedKeyframes = (effect.keyframes ?? []).map((kf, i) => {
+        if (i === dragging.originalIndex) {
+          return {
+            ...kf,
+            t: targetT,
+            params: {
+              ...kf.params,
+              [dragging.key]: targetVal
+            }
+          };
+        }
+        return kf;
+      });
+      onUpdate({ ...effect, keyframes: updatedKeyframes });
     };
     const onUp = () => setDragging(null);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-  }, [dragging, effect, animatable, effDur, IW, IH, PL, PT]);
+  }, [dragging, effect, animatable, effDur, IW, IH, PL, PT, onUpdate]);
 
   const saveDuration = () => {
     const ms = parseInt(durInput);
@@ -213,13 +223,13 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
                 {/* Nodes */}
                 {nodes.map((node, ni) => {
                   const x = toX(node.t), y = toY(node.value, param);
-                  const active = dragging?.key === param.key && dragging?.idx === ni;
+                  const active = dragging?.key === param.key && dragging?.originalIndex === node.originalIndex;
                   return (
-                    <g key={ni}>
+                    <g key={node.originalIndex}>
                       {/* Large hit area */}
                       <circle cx={x} cy={y} r={12} fill="transparent"
-                        onMouseDown={e => handleNodeDown(e, param.key, ni)}
-                        onDoubleClick={e => handleNodeDblClick(e, param.key, ni)}
+                        onMouseDown={e => handleNodeDown(e, param.key, node.originalIndex)}
+                        onDoubleClick={e => handleNodeDblClick(e, param.key, node.originalIndex)}
                         style={{ cursor: 'grab' }}
                       />
                       {/* Outer ring */}

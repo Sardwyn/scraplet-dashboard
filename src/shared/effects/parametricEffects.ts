@@ -60,7 +60,7 @@ export interface PresetDefinition {
   params: ParamSchema[];
   defaultDuration: number; // ms for one loop cycle
   // What the effect produces
-  produces: ("css" | "svgFilter" | "canvas" | "svgOverlay")[];
+  produces: ("css" | "svgFilter" | "canvas" | "svgOverlay" | "webgl")[];
 }
 
 // ── Preset registry ───────────────────────────────────────────────────────────
@@ -811,6 +811,80 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
+  crtEmulator: {
+    id: "crtEmulator",
+    label: "CRT Emulator",
+    description: "Retro CRT scanlines, glass curvature, phosphor grid, and analog sync flicker",
+    category: "distortion",
+    defaultDuration: 3000,
+    produces: ["webgl"],
+    params: [
+      { key: "scanlineIntensity", label: "Scanlines", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "curvature", label: "Glass Curvature", type: "number", default: 0.15, min: 0, max: 0.5, step: 0.01, animatable: true },
+      { key: "phosphorIntensity", label: "Phosphor Grid", type: "number", default: 0.25, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "flickerSpeed", label: "Flicker Speed", type: "number", default: 1.0, min: 0.1, max: 5, step: 0.1, animatable: true },
+      { key: "vignette", label: "Vignette Darkening", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+    ],
+  },
+  liquidDistortion: {
+    id: "liquidDistortion",
+    label: "Liquid Distortion",
+    description: "Organic fluid ripples and water caustics refraction",
+    category: "distortion",
+    defaultDuration: 4000,
+    produces: ["webgl"],
+    params: [
+      { key: "amplitude", label: "Amplitude", type: "number", default: 0.05, min: 0, max: 0.2, step: 0.01, animatable: true },
+      { key: "frequency", label: "Frequency", type: "number", default: 10.0, min: 1, max: 30, step: 0.5, animatable: true },
+      { key: "speed", label: "Ripple Speed", type: "number", default: 1.5, min: 0.1, max: 5, step: 0.1 },
+      { key: "shimmerIntensity", label: "Shimmer", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "color", label: "Liquid Color", type: "color", default: "#3b82f6" },
+    ],
+  },
+  caLens: {
+    id: "caLens",
+    label: "CA — Lens Warp",
+    description: "Camera lens curvature split with radial chromatic aberration",
+    category: "distortion",
+    defaultDuration: 2000,
+    produces: ["webgl"],
+    params: [
+      { key: "chromaSpread", label: "Chroma Spread", type: "number", default: 0.04, min: 0, max: 0.2, step: 0.005, animatable: true },
+      { key: "lensDistortion", label: "Lens Warp", type: "number", default: 0.1, min: -0.3, max: 0.3, step: 0.01, animatable: true },
+      { key: "greenShift", label: "Green Offset", type: "number", default: 0.01, min: -0.05, max: 0.05, step: 0.001, animatable: true },
+      { key: "opacity", label: "Lens Opacity", type: "number", default: 1.0, min: 0, max: 1, step: 0.05, animatable: true },
+    ],
+  },
+  godRays: {
+    id: "godRays",
+    label: "Volumetric God Rays",
+    description: "Volumetric ray-marched light beams with shimmer noise",
+    category: "glow",
+    defaultDuration: 5000,
+    produces: ["webgl"],
+    params: [
+      { key: "beamCount", label: "Beam Count", type: "number", default: 12.0, min: 4, max: 40, step: 1.0 },
+      { key: "rayLength", label: "Ray Length", type: "number", default: 0.6, min: 0.1, max: 1.5, step: 0.05, animatable: true },
+      { key: "shimmerSpeed", label: "Shimmer Speed", type: "number", default: 1.0, min: 0.1, max: 5, step: 0.1 },
+      { key: "intensity", label: "Intensity", type: "number", default: 0.8, min: 0.1, max: 3, step: 0.05, animatable: true },
+      { key: "color", label: "Ray Color", type: "color", default: "#f59e0b" },
+    ],
+  },
+  digitalGlitch: {
+    id: "digitalGlitch",
+    label: "Digital Glitch",
+    description: "High-speed row slicing, color splits, and static noise blocks",
+    category: "distortion",
+    defaultDuration: 1000,
+    produces: ["webgl"],
+    params: [
+      { key: "glitchIntensity", label: "Glitch Level", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "frequency", label: "Frequency", type: "number", default: 2.0, min: 0.1, max: 10, step: 0.1 },
+      { key: "chromaticSplit", label: "Color Split", type: "number", default: 0.03, min: 0, max: 0.1, step: 0.005, animatable: true },
+      { key: "noiseDensity", label: "Block Density", type: "number", default: 0.2, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "speed", label: "Speed", type: "number", default: 1.0, min: 0.1, max: 5, step: 0.1 },
+    ],
+  },
 };
 
 // ── Param interpolation ───────────────────────────────────────────────────────
@@ -1484,6 +1558,52 @@ export function renderParametricEffectSVGFilter(
             <feMergeNode in="greenCh"/>
             <feMergeNode in="blueCh"/>
           </feMerge>
+        </filter>`;
+      return { filterDef, filterRef: `url(#${filterId})` };
+    }
+
+    case "caEdges": {
+      const amount = Number(p.amount ?? p.intensity ?? 4);
+      const angle = Number(p.angle ?? 0);
+      const speed = Number(p.speed ?? 1);
+      const ew = Number(p.edgeWidth ?? 2);
+      
+      const pulse = 0.5 + 0.5 * Math.sin((t / 1000) * Math.PI * 2 * speed);
+      const offset = amount * pulse;
+      
+      const rad = angle * Math.PI / 180;
+      const dx = Math.cos(rad) * offset;
+      const dy = Math.sin(rad) * offset;
+      
+      const filterDef = `
+        <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+          <!-- Build edge mask -->
+          <feMorphology in="SourceAlpha" operator="dilate" radius="${ew}" result="dilate"/>
+          <feMorphology in="SourceAlpha" operator="erode" radius="${Math.max(0, ew - 1)}" result="erode"/>
+          <feComposite in="dilate" in2="erode" operator="out" result="edge-mask"/>
+          
+          <!-- Isolate channels -->
+          <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="src-r"/>
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="src-b"/>
+          
+          <!-- Offset channels -->
+          <feOffset in="src-r" dx="${dx.toFixed(2)}" dy="${dy.toFixed(2)}" result="r"/>
+          <feOffset in="src-b" dx="${(-dx).toFixed(2)}" dy="${(-dy).toFixed(2)}" result="b"/>
+          
+          <!-- Recombine R+G+B (G from original) -->
+          <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="src-g"/>
+          <feBlend in="r" in2="src-g" mode="screen" result="rg"/>
+          <feBlend in="rg" in2="b" mode="screen" result="ca"/>
+          
+          <!-- Apply CA only at edges -->
+          <feComposite in="ca" in2="edge-mask" operator="in" result="edge-ca"/>
+          
+          <!-- Keep interior unchanged -->
+          <feComposite in="SourceGraphic" in2="edge-mask" operator="out" result="interior"/>
+          
+          <!-- Merge -->
+          <feBlend in="interior" in2="edge-ca" mode="normal" result="merged"/>
+          <feComposite in="merged" in2="SourceAlpha" operator="in"/>
         </filter>`;
       return { filterDef, filterRef: `url(#${filterId})` };
     }
