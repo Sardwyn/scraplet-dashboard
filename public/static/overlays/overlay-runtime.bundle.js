@@ -23641,27 +23641,45 @@ void main() {
     float dist = dot(cc, cc);
     uv = uv + cc * dist * curvature;
     
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) {
+    // Crisp anti-aliased edge masks for the curved CRT monitor frame
+    vec2 border = smoothstep(vec2(0.0), vec2(0.006), uv) * (1.0 - smoothstep(vec2(0.994), vec2(1.0), uv));
+    float screenMask = border.x * border.y;
+    
+    if (screenMask <= 0.0) {
         fragColor = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }
     
-    float scanline = sin(uv.y * uResolution.y * 1.5 + uTime * 5.0) * 0.5 + 0.5;
-    float scan = 1.0 - scanlineIntensity * scanline * 0.4;
+    // Double frequency scanlines + shutter roll simulator
+    float roll = sin(uv.y * 6.0 - uTime * 2.5) * 0.06 + 0.94;
+    float scanline1 = sin(uv.y * uResolution.y * 1.25) * 0.5 + 0.5;
+    float scanline2 = sin(uv.y * uResolution.y * 2.50) * 0.2 + 0.8;
+    float scan = 1.0 - scanlineIntensity * scanline1 * scanline2 * 0.45 * roll;
     
-    float phosphor = sin(uv.x * uResolution.x * 2.5) * 0.5 + 0.5;
-    float phos = 1.0 - phosphorIntensity * phosphor * 0.2;
+    // Premium subpixel RGB aperture grille shadow mask
+    float phosX = uv.x * uResolution.x * 2.2;
+    vec3 phosRGB = vec3(
+        sin(phosX) * 0.5 + 0.5,
+        sin(phosX + 2.0944) * 0.5 + 0.5,
+        sin(phosX + 4.1888) * 0.5 + 0.5
+    );
+    vec3 phos = mix(vec3(1.0), phosRGB, phosphorIntensity);
     
-    float flicker = 1.0 - (sin(uTime * flickerSpeed * 8.0) * 0.03 + cos(uTime * 31.0) * 0.02);
+    // High-frequency monitor flicker
+    float flicker = 1.0 - (sin(uTime * flickerSpeed * 10.0) * 0.02 + cos(uTime * 37.0) * 0.015);
     
+    // Vignette light falloff
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    vig = clamp(pow(16.0 * vig, vignette), 0.0, 1.0);
+    float vignetteVal = clamp(pow(16.0 * vig, vignette), 0.0, 1.0);
     
-    vec3 phosphorColor = vec3(0.0, 1.0, 0.2) * 0.05 * phosphorIntensity;
-    vec3 baseCol = vec3(0.1, 0.12, 0.15);
+    vec3 baseCol = vec3(0.06, 0.08, 0.12);
+    vec3 phosphorColor = vec3(0.0, 0.95, 0.25) * 0.07 * phosphorIntensity;
     
-    vec3 finalColor = (baseCol + phosphorColor) * scan * phos * flicker * vig;
-    fragColor = vec4(finalColor, 0.3 * (1.0 - scan * phos * vig) + 0.1);
+    // Linear blending conversion
+    vec3 finalColor = pow(baseCol + phosphorColor, vec3(2.2)) * scan * phos * flicker * vignetteVal;
+    finalColor = pow(finalColor, vec3(1.0 / 2.2)) * screenMask;
+    
+    fragColor = vec4(finalColor, (0.35 * (1.0 - scan * vignetteVal) + 0.08) * screenMask);
 }
 `,
     liquidDistortion: `#version 300 es
@@ -23677,31 +23695,42 @@ uniform float speed;
 uniform float shimmerIntensity;
 uniform vec3 color;
 
-void main() {
-    vec2 uv = vUv;
-    float t = uTime * speed * 0.1;
-    
-    vec2 p = uv * frequency - vec2(100.0);
+float getCausticIntensity(vec2 uv, float freq, float t) {
+    vec2 p = uv * freq - vec2(100.0);
     vec2 i = vec2(p);
     float c = 1.0;
-    float inten = 0.005;
+    float inten = 0.0055;
 
     for (int n = 0; n < 5; n++) {
         float t_sub = t * (1.0 - (3.5 / float(n + 1)));
         i = p + vec2(cos(t_sub - i.x) + sin(t_sub + i.y), sin(t_sub - i.y) + cos(t_sub + i.x));
         c += 1.0 / length(vec2(p.x / (sin(i.x + t_sub) / inten), p.y / (cos(i.y + t_sub) / inten)));
     }
-    
     c /= 5.0;
-    c = 1.17 - pow(c, 1.4);
+    c = 1.17 - pow(c, 1.45);
+    return clamp(pow(abs(c), 7.5) * 11.0, 0.0, 1.0);
+}
+
+void main() {
+    vec2 uv = vUv;
+    float t = uTime * speed * 0.11;
     
-    float val = clamp(pow(abs(c), 8.0) * amplitude * 12.0, 0.0, 1.0);
-    vec3 causticCol = color * val * (1.0 + shimmerIntensity * sin(uTime * 3.0 + uv.x * 10.0));
+    // Real Chromatic Dispersion Split on organic water ripples
+    float valR = getCausticIntensity(uv, frequency * 1.018, t);
+    float valG = getCausticIntensity(uv, frequency * 1.000, t);
+    float valB = getCausticIntensity(uv, frequency * 0.982, t);
     
-    float backgroundNoise = sin(uv.x * 3.0 + t) * cos(uv.y * 3.0 - t) * 0.1 + 0.1;
-    vec3 finalColor = causticCol + color * backgroundNoise * shimmerIntensity * 0.2;
+    vec3 causticCol = vec3(valR, valG, valB) * color * amplitude * 1.35;
     
-    fragColor = vec4(finalColor, val * 0.8 + backgroundNoise * 0.3);
+    // Dynamic shimmer light modulator
+    causticCol *= (1.0 + shimmerIntensity * sin(uTime * 3.2 + uv.x * 12.0) * cos(uTime * 1.8 + uv.y * 8.0));
+    
+    // Background fog motion
+    float backgroundNoise = sin(uv.x * 3.5 + t) * cos(uv.y * 3.0 - t * 0.8) * 0.08 + 0.08;
+    vec3 finalColor = causticCol + color * backgroundNoise * shimmerIntensity * 0.25;
+    
+    float maxVal = max(valR, max(valG, valB));
+    fragColor = vec4(finalColor, maxVal * 0.88 + backgroundNoise * 0.28);
 }
 `,
     caLens: `#version 300 es
@@ -23718,9 +23747,12 @@ uniform float opacity;
 
 void main() {
     vec2 uv = vUv - 0.5;
-    float dist = length(uv);
-    float angle = atan(uv.y, uv.x);
+    float aspect = uResolution.x / uResolution.y;
+    vec2 uvAspect = vec2(uv.x * aspect, uv.y);
+    float dist = length(uvAspect);
+    float angle = atan(uvAspect.y, uvAspect.x);
     
+    // Radial lens warp displacement
     float warp = 1.0 + lensDistortion * dist * dist;
     vec2 warpedUv = uv * warp + 0.5;
     
@@ -23729,21 +23761,38 @@ void main() {
         return;
     }
     
-    float r = length(uv - vec2(chromaSpread * 0.2, 0.0) * warp);
-    float g = length(uv - vec2(0.0, greenShift) * warp);
-    float b = length(uv + vec2(chromaSpread * 0.2, 0.0) * warp);
+    // Prismatic Chromatic Aberration Halo
+    float rSpread = 1.0 + chromaSpread * 0.45;
+    float gSpread = 1.0 + greenShift * 0.45;
+    float bSpread = 1.0 - chromaSpread * 0.45;
     
-    float ringR = smoothstep(0.4, 0.41, r) * (1.0 - smoothstep(0.41, 0.43, r));
-    float ringG = smoothstep(0.4, 0.41, g) * (1.0 - smoothstep(0.41, 0.43, g));
-    float ringb = smoothstep(0.4, 0.41, b) * (1.0 - smoothstep(0.41, 0.43, b));
+    float ringR = smoothstep(0.38, 0.395, dist * rSpread) * (1.0 - smoothstep(0.395, 0.415, dist * rSpread));
+    float ringG = smoothstep(0.38, 0.395, dist * gSpread) * (1.0 - smoothstep(0.395, 0.415, dist * gSpread));
+    float ringB = smoothstep(0.38, 0.395, dist * bSpread) * (1.0 - smoothstep(0.395, 0.415, dist * bSpread));
     
-    float centerGlow = (1.0 - smoothstep(0.0, 0.35, dist)) * 0.15;
+    // Premium horizontal anamorphic streak lens flare (Red Giant style)
+    float anamorphic = exp(-pow(uv.y * 36.0, 2.0)) * exp(-pow(uv.x * 1.8, 2.0));
+    vec3 anamCol = vec3(0.08, 0.35, 1.0) * anamorphic * (1.0 + 0.15 * sin(uTime * 12.0)) * chromaSpread * 14.0;
     
-    vec3 col = vec3(ringR, ringG, ringb) * 0.8 + vec3(centerGlow);
-    float flare = sin(angle * 3.0 + uTime) * cos(angle * 5.0 - uTime) * 0.5 + 0.5;
-    col += vec3(0.1, 0.2, 0.5) * flare * (1.0 - smoothstep(0.1, 0.5, dist)) * chromaSpread * 5.0;
+    // Radial shimmering starburst rays
+    float rays = sin(angle * 8.0 + uTime * 0.45) * cos(angle * 3.0 - uTime * 0.25) * 0.5 + 0.5;
+    rays += sin(angle * 24.0 - uTime * 1.1) * 0.25;
+    float rayFade = smoothstep(0.5, 0.0, dist);
+    vec3 rayCol = vec3(0.95, 0.88, 0.78) * rays * rayFade * chromaSpread * 3.5;
     
-    fragColor = vec4(col, (ringR + ringG + ringb + centerGlow * 0.5) * opacity);
+    // Volumetric center spot lens glow
+    float centerGlow = exp(-dist * 8.5) * 0.45;
+    vec3 centerCol = vec3(1.0, 0.82, 0.65) * centerGlow;
+    
+    // Vignette light falloff
+    float vig = warpedUv.x * warpedUv.y * (1.0 - warpedUv.x) * (1.0 - warpedUv.y);
+    float vignetteVal = clamp(pow(16.0 * vig, 0.35), 0.0, 1.0);
+    
+    vec3 rgbHalo = vec3(ringR, ringG, ringB) * vec3(1.0, 0.92, 0.82) * 0.8;
+    vec3 finalColor = (rgbHalo + anamCol + rayCol + centerCol) * vignetteVal;
+    
+    float alpha = (ringR + ringG + ringB + anamorphic * 0.45 + rays * 0.32 + centerGlow) * opacity;
+    fragColor = vec4(finalColor, clamp(alpha, 0.0, 1.0));
 }
 `,
     godRays: `#version 300 es
@@ -23770,25 +23819,52 @@ float noise(in vec2 p) {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
+// 4-octave Fractal Brownian Motion for rich volumetric smoke density
+float fbm(in vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for (int i = 0; i < 4; i++) {
+        v += a * noise(p);
+        p = rot * p * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
 void main() {
     vec2 uv = vUv - vec2(0.5, 0.5);
-    float dist = length(uv);
-    float angle = atan(uv.y, uv.x);
+    float aspect = uResolution.x / uResolution.y;
+    vec2 uvAspect = vec2(uv.x * aspect, uv.y);
+    float dist = length(uvAspect);
+    float angle = atan(uvAspect.y, uvAspect.x);
     
-    float t = uTime * shimmerSpeed * 0.5;
-    float rays = sin(angle * beamCount + t) * 0.5 + 0.5;
-    rays += cos(angle * (beamCount * 0.5) - t * 0.8) * 0.25;
+    float t = uTime * shimmerSpeed * 0.42;
     
-    float rayNoise = noise(vec2(angle * 5.0, dist * 3.0 - t));
-    rays = rays * (0.4 + 0.6 * rayNoise);
+    // Volumetric multi-frequency light ray shafts
+    float rays1 = sin(angle * beamCount + t) * 0.5 + 0.5;
+    float rays2 = cos(angle * (beamCount * 0.43) - t * 0.65) * 0.32;
+    float rays3 = sin(angle * (beamCount * 1.88) + t * 1.35) * 0.16;
+    float rays = rays1 + rays2 + rays3;
     
-    float fade = smoothstep(rayLength + 0.1, 0.0, dist);
-    float centerGlow = (1.0 - smoothstep(0.0, 0.15, dist)) * 0.3;
+    // Rich foggy dust distribution
+    vec2 fbmUv = vec2(angle * 4.0, dist * 2.4 - t);
+    float dust = fbm(fbmUv);
+    rays = rays * (0.28 + 0.72 * dust);
     
-    vec3 col = color * (rays * intensity * fade * (1.0 - dist) + centerGlow);
-    float alpha = clamp((rays * intensity * fade + centerGlow) * 0.8, 0.0, 1.0);
+    // Core light flare
+    float glow = exp(-dist * 12.5) * 1.45;
     
-    fragColor = vec4(col, alpha);
+    // Soft outer falloff bound
+    float fade = smoothstep(rayLength + 0.12, 0.0, dist);
+    
+    // Gamma-corrected highlight S-curve mapper
+    vec3 linearColor = color * (rays * intensity * fade * (1.18 - dist) + glow * intensity);
+    vec3 finalColor = pow(linearColor, vec3(1.0 / 1.55));
+    
+    float alpha = clamp((rays * intensity * fade + glow * 0.48) * 0.88, 0.0, 1.0);
+    fragColor = vec4(finalColor, alpha);
 }
 `,
     digitalGlitch: `#version 300 es
@@ -23810,44 +23886,63 @@ float rand(vec2 co) {
 
 void main() {
     vec2 uv = vUv;
-    float t = floor(uTime * speed * 12.0);
+    float t = floor(uTime * speed * 14.5);
     
-    float sliceY = floor(uv.y * (10.0 + 40.0 * (1.0 - glitchIntensity)));
+    // Horizontal line shears
+    float sliceY = floor(uv.y * (14.0 + 35.0 * (1.0 - glitchIntensity)));
     float sliceValue = rand(vec2(sliceY, t));
     
     float xOffset = 0.0;
-    if (sliceValue < glitchIntensity * frequency * 0.1) {
-        xOffset = (rand(vec2(sliceY + 1.0, t)) - 0.5) * glitchIntensity * 0.15;
+    if (sliceValue < glitchIntensity * frequency * 0.16) {
+        xOffset = (rand(vec2(sliceY + 2.76, t)) - 0.5) * glitchIntensity * 0.17;
     }
     
     vec2 warpedUv = uv + vec2(xOffset, 0.0);
-    float staticNoise = rand(warpedUv + vec2(t * 0.01, 0.0));
     
-    float blockGrid = 16.0;
+    // Chromatic split parameters
+    float splitFreq = sin(warpedUv.y * 115.0 + uTime * 12.0) * 0.5 + 0.5;
+    
+    // Pixelated block corruption overlays
+    float blockGrid = 18.0;
     vec2 blockUv = floor(warpedUv * blockGrid) / blockGrid;
-    float blockValue = rand(blockUv + vec2(t, 0.0));
+    float blockValue = rand(blockUv + vec2(t * 0.28, 0.0));
     
     vec4 finalColor = vec4(0.0);
-    if (blockValue < glitchIntensity * noiseDensity * 0.25) {
-        vec3 blockCol = vec3(rand(blockUv), rand(blockUv + 1.0), rand(blockUv + 2.0));
-        finalColor = vec4(blockCol, 0.6 * glitchIntensity);
+    
+    if (blockValue < glitchIntensity * noiseDensity * 0.28) {
+        // Digital package corruption packets
+        float bR = rand(blockUv + vec2(1.0, t));
+        float bG = rand(blockUv + vec2(2.0, t));
+        float bB = rand(blockUv + vec2(3.0, t));
+        finalColor = vec4(vec3(bR, bG, bB), 0.72 * glitchIntensity);
     } else {
-        if (staticNoise < glitchIntensity * 0.15) {
-            finalColor = vec4(1.0, 1.0, 1.0, 0.3 * glitchIntensity);
-        } else {
-            float lineGlow = smoothstep(0.01, 0.0, abs(warpedUv.x - 0.5) - 0.48) +
-                             smoothstep(0.01, 0.0, abs(warpedUv.y - 0.5) - 0.48);
-            if (lineGlow > 0.0) {
-                finalColor = vec4(0.0, 1.0, 0.8, lineGlow * glitchIntensity * 0.5);
-            }
+        // Laser scanning boundary outlines
+        float borderLines = smoothstep(0.016, 0.0, abs(warpedUv.x - 0.5) - 0.482) +
+                            smoothstep(0.016, 0.0, abs(warpedUv.y - 0.5) - 0.482);
+        if (borderLines > 0.0) {
+            finalColor = vec4(0.0, 0.92, 1.0, borderLines * glitchIntensity * 0.55);
+        }
+        
+        // Static scan noise
+        float analogNoise = rand(warpedUv + vec2(0.0, t * 11.5));
+        if (analogNoise < glitchIntensity * noiseDensity * 0.16) {
+            finalColor += vec4(1.0, 1.0, 1.0, 0.28 * glitchIntensity);
         }
     }
     
-    float splitLine = sin(warpedUv.y * 100.0) * 0.5 + 0.5;
+    // Spliced channel chromatic offset
     if (abs(xOffset) > 0.0) {
-        finalColor.r += 0.8 * glitchIntensity * splitLine;
-        finalColor.b += 0.5 * glitchIntensity * (1.0 - splitLine);
-        finalColor.a = max(finalColor.a, 0.4 * glitchIntensity);
+        finalColor.r += 0.82 * glitchIntensity * splitFreq;
+        finalColor.g += 0.42 * glitchIntensity * (1.0 - splitFreq);
+        finalColor.b += 0.88 * glitchIntensity * splitFreq * 0.45;
+        finalColor.a = max(finalColor.a, 0.48 * glitchIntensity);
+    }
+    
+    // VHS horizontal scan inverter
+    float horizontalScanLine = sin(warpedUv.y * uResolution.y * 0.75) * 0.5 + 0.5;
+    if (horizontalScanLine < glitchIntensity * 0.18) {
+        finalColor.r = 1.0 - finalColor.r;
+        finalColor.a = max(finalColor.a, 0.32);
     }
     
     fragColor = finalColor;
