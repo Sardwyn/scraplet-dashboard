@@ -27636,7 +27636,7 @@ void main() {
     finalRGB += vec3(grain);
     
     // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
-    float alpha = 0.25 * (1.0 - desaturation) + fogG * fogIntensity * 0.5 + sporesG * 0.8 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
+    float alpha = 0.25 * (1.0 - desaturation) + fogG * fogIntensity * 0.5 + spores * 0.8 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
     alpha = clamp(alpha, 0.0, 0.95) * opacity;
     
     fragColor = vec4(finalRGB, alpha);
