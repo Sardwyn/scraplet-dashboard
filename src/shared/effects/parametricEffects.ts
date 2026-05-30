@@ -929,6 +929,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     params: [
       { key: "rainDensity", label: "Rain Density", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
       { key: "rainSpeed", label: "Rain Speed", type: "number", default: 1.2, min: 0.1, max: 3.0, step: 0.1, animatable: true },
+      { key: "tailLength", label: "Tail Length", type: "number", default: 0.5, min: 0.1, max: 2.0, step: 0.05, animatable: true },
       { key: "neonColor1", label: "Neon Pink Color", type: "color", default: "#ff007f" },
       { key: "neonColor2", label: "Neon Cyan Color", type: "color", default: "#00f3ff" },
       { key: "ambientReflection", label: "Ambient Reflection", type: "number", default: 0.5, min: 0, max: 1, step: 0.05, animatable: true },

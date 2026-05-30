@@ -372,13 +372,13 @@ float hash2(vec2 co) {
 }
 
 float noise(in vec2 p) {
-    vec2 i = mod(floor(p), 289.0);
+    vec2 i = floor(p);
     vec2 f = fract(p);
     f = f*f*(3.0-2.0*f);
-    float a = hash2(i);
-    float b = hash2(i + vec2(1.0, 0.0));
-    float c = hash2(i + vec2(0.0, 1.0));
-    float d = hash2(i + vec2(1.0, 1.0));
+    float a = hash2(mod(i, 289.0));
+    float b = hash2(mod(i + vec2(1.0, 0.0), 289.0));
+    float c = hash2(mod(i + vec2(0.0, 1.0), 289.0));
+    float d = hash2(mod(i + vec2(1.0, 1.0), 289.0));
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
@@ -561,13 +561,13 @@ float hash2_sh(vec2 co) {
 }
 
 float noise_sh(in vec2 p) {
-    vec2 i = mod(floor(p), 289.0);
+    vec2 i = floor(p);
     vec2 f = fract(p);
     f = f*f*(3.0-2.0*f);
-    float a = hash2_sh(i);
-    float b = hash2_sh(i + vec2(1.0, 0.0));
-    float c = hash2_sh(i + vec2(0.0, 1.0));
-    float d = hash2_sh(i + vec2(1.0, 1.0));
+    float a = hash2_sh(mod(i, 289.0));
+    float b = hash2_sh(mod(i + vec2(1.0, 0.0), 289.0));
+    float c = hash2_sh(mod(i + vec2(0.0, 1.0), 289.0));
+    float d = hash2_sh(mod(i + vec2(1.0, 1.0), 289.0));
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 
@@ -603,7 +603,7 @@ void main() {
     vec3 shadowColor = vec3(0.12, 0.12, 0.13);
     vec3 midColor = vec3(0.24, 0.25, 0.26);
     float centerDist = length(uv - 0.5);
-    vec3 bg = mix(midColor, shadowColor, centerDist * 1.2);
+    vec3 bg = mix(midColor, shadowColor, clamp(centerDist * 1.2, 0.0, 1.0));
     
     // Desaturate background
     float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
@@ -637,6 +637,7 @@ uniform float uTime;
 uniform vec2 uResolution;
 uniform float rainDensity;
 uniform float rainSpeed;
+uniform float tailLength;
 uniform vec3 neonColor1;
 uniform vec3 neonColor2;
 uniform float ambientReflection;
@@ -652,49 +653,55 @@ void main() {
     float t_wrap = mod(uTime, 1000.0);
     
     // Ambient neon bloom reflection at the bottom
-    float bloomY = smoothstep(0.0, 0.5, 1.0 - uv.y);
-    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(t_wrap * 0.5 + uv.x * 2.0) * 0.5 + 0.5);
-    vec3 finalRGB = ambientGlow * bloomY * ambientReflection * 0.45;
+    float bloomY = smoothstep(0.4, 0.0, uv.y);
+    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(t_wrap * 0.5 + uv.x * 3.0) * 0.5 + 0.5);
+    vec3 finalRGB = ambientGlow * bloomY * ambientReflection * 0.6;
     
-    // Scale coordinates for rain grid
-    vec2 gridUv = uv * vec2(40.0 * aspect, 12.0);
-    vec2 cellId = floor(gridUv);
-    vec2 cellUv = fract(gridUv);
+    float numCols = 85.0 * aspect;
+    vec2 gridUv = uv * vec2(numCols, 1.0);
+    float colId = floor(gridUv.x);
+    float fractX = fract(gridUv.x) - 0.5;
     
     float accumRain = 0.0;
     vec3 rainRGB = vec3(0.0);
     
     for (int x = -1; x <= 1; x++) {
-        float col = cellId.x + float(x);
+        float col = colId + float(x);
         float h = hash_br(vec2(col, 137.45));
         
-        if (h < rainDensity * 0.75) {
-            float speed = rainSpeed * (1.2 + h * 0.8);
-            float offset = h * 50.0;
+        if (h < rainDensity * 0.85) {
+            float speed = rainSpeed * (1.1 + h * 0.9);
+            float offset = h * 73.29;
             
-            float yPos = fract(uv.y + t_wrap * speed + offset);
+            float yCoord = uv.y * 3.2; 
+            float progress = t_wrap * speed + offset;
+            float fractY = fract(yCoord - progress);
             
-            float streakWidth = 0.04 + h * 0.03;
-            float streakDistX = abs(cellUv.x - 0.5 - float(x));
-            float verticalTrail = smoothstep(0.0, 1.0, yPos);
+            float streakWidth = 0.04 + h * 0.035;
+            float streakDistX = abs(fractX - float(x));
             
-            float droplet = smoothstep(streakWidth, 0.0, streakDistX) * verticalTrail * (1.0 - yPos);
+            float headGlow = exp(-fractY * 20.0);
+            float tailFade = pow(max(1.0 - fractY / tailLength, 0.0), 2.5);
+            float droplet = (headGlow * 1.8 + tailFade) * smoothstep(streakWidth, 0.0, streakDistX);
             
             if (droplet > 0.0) {
                 vec3 colColor = mix(neonColor1, neonColor2, h);
-                rainRGB += colColor * droplet * 2.2;
+                rainRGB += colColor * droplet * 1.8;
                 accumRain += droplet;
             }
             
             float splashH = hash_br(vec2(col, 255.12));
-            float rippleCenterY = 0.05 + splashH * 0.05;
-            float distToRipple = length(vec2((cellUv.x - 0.5 - float(x)) * aspect, cellUv.y - rippleCenterY));
-            float splashTime = fract(t_wrap * 2.5 + splashH * 10.0);
-            float ripple = smoothstep(0.02, 0.0, abs(distToRipple - splashTime * 0.15)) * (1.0 - splashTime);
+            float rippleCenterY = 0.02 + splashH * 0.06;
+            vec2 ripplePos = vec2(fractX - float(x), uv.y - rippleCenterY);
+            ripplePos.x *= aspect * (1.0 / numCols) * 5.0;
+            float distToRipple = length(ripplePos);
+            float splashTime = fract(t_wrap * 2.2 + splashH * 15.0);
+            
+            float ripple = smoothstep(0.015, 0.0, abs(distToRipple - splashTime * 0.06)) * (1.0 - splashTime);
             
             if (ripple > 0.0) {
                 vec3 colColor = mix(neonColor1, neonColor2, splashH);
-                rainRGB += colColor * ripple * 1.2;
+                rainRGB += colColor * ripple * 1.5;
                 accumRain += ripple;
             }
         }
@@ -703,10 +710,10 @@ void main() {
     finalRGB += rainRGB;
     
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.5), 0.0, 1.0);
-    finalRGB *= mix(0.2, 1.0, vignetteVal);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.48), 0.0, 1.0);
+    finalRGB *= mix(0.25, 1.0, vignetteVal);
     
-    float alpha = (accumRain * 1.1 + bloomY * ambientReflection * 0.25) * opacity;
+    float alpha = (accumRain * 1.2 + bloomY * ambientReflection * 0.35) * opacity;
     fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
 }
 `,
@@ -730,9 +737,41 @@ float hash_mx(vec2 co) {
 }
 
 float getGlyph_mx(vec2 p, float seed) {
-    vec2 grid = floor(p * 4.0);
-    float val = hash_mx(grid + vec2(seed, seed * 2.3));
-    return step(0.48, val);
+    if (p.x < 0.15 || p.x > 0.85 || p.y < 0.15 || p.y > 0.85) return 0.0;
+    
+    float h = hash_mx(vec2(seed, 412.18));
+    float stroke = 0.0;
+    float lineThickness = 0.05;
+    
+    float v_line = smoothstep(lineThickness, 0.0, abs(p.x - 0.5));
+    float h_line = smoothstep(lineThickness, 0.0, abs(p.y - 0.5));
+    float d_line1 = smoothstep(lineThickness, 0.0, abs(p.x - p.y));
+    float d_line2 = smoothstep(lineThickness, 0.0, abs(p.x + p.y - 1.0));
+    float circle = smoothstep(lineThickness, 0.0, abs(length(p - 0.5) - 0.25));
+    float arc = circle * step(0.5, p.x);
+    float top_bar = smoothstep(lineThickness, 0.0, abs(p.y - 0.75)) * step(0.25, p.x) * step(p.x, 0.75);
+    float bot_bar = smoothstep(lineThickness, 0.0, abs(p.y - 0.25)) * step(0.25, p.x) * step(p.x, 0.75);
+    
+    int charId = int(h * 8.0);
+    if (charId == 0) {
+        stroke = max(v_line, top_bar);
+    } else if (charId == 1) {
+        stroke = max(d_line1, d_line2);
+    } else if (charId == 2) {
+        stroke = max(circle, h_line);
+    } else if (charId == 3) {
+        stroke = max(arc, d_line1);
+    } else if (charId == 4) {
+        stroke = max(v_line, bot_bar);
+    } else if (charId == 5) {
+        stroke = max(d_line2, top_bar);
+    } else if (charId == 6) {
+        stroke = max(v_line, d_line1 * step(0.5, p.y));
+    } else {
+        stroke = max(circle, top_bar);
+    }
+    
+    return stroke;
 }
 
 void main() {
@@ -741,51 +780,56 @@ void main() {
     float t_wrap = mod(uTime, 1000.0);
     
     vec3 hazeColor = codeColor * 0.18;
-    float centerDist = length(uv - vec2(0.5, 0.7));
+    float centerDist = length(uv - vec2(0.5, 0.5));
     vec3 finalRGB = hazeColor * (1.0 - centerDist * 0.8) * ambientHaze;
     
-    float colWidth = 32.0 * aspect;
-    vec2 gridUv = uv * vec2(colWidth, 1.0);
-    float colId = floor(gridUv.x);
-    float colHash = hash_mx(vec2(colId, 314.15));
+    float numCols = 60.0 * aspect;
+    float numRows = 60.0;
+    
+    vec2 gridUv = uv * vec2(numCols, numRows);
+    vec2 cellId = floor(gridUv);
+    vec2 cellUv = fract(gridUv);
     
     float codeAccum = 0.0;
     float leadingHead = 0.0;
     
+    float colId = cellId.x;
+    float colHash = hash_mx(vec2(colId, 314.15));
+    
     if (colHash < 0.82) {
-        float speed = codeSpeed * (0.8 + colHash * 0.7);
-        float fallOffset = colHash * 100.0;
+        float speed = codeSpeed * (0.7 + colHash * 0.8) * 6.0;
+        float fallOffset = colHash * 142.84;
         
-        float tail = trailLength * 12.0;
-        float totalHeight = 14.0 + tail;
+        float tail = trailLength * 28.0;
+        float totalHeight = numRows + tail;
         float progress = mod(t_wrap * speed + fallOffset, totalHeight);
-        float headY = 14.0 - progress;
+        float headY = numRows - progress;
         
-        float yCoord = uv.y * 14.0;
-        float distToHead = yCoord - headY;
+        float distToHead = gridUv.y - headY;
         
         if (distToHead >= 0.0 && distToHead < tail) {
             float brightness = 1.0 - (distToHead / tail);
-            brightness = pow(max(brightness, 0.0001), 1.5);
+            brightness = pow(max(brightness, 0.0001), 1.6);
             
-            vec2 glyphUv = vec2(fract(gridUv.x), fract(yCoord));
-            float blockRow = floor(yCoord - headY);
-            float glyph = getGlyph_mx(glyphUv, colId + blockRow);
+            float cellSeed = colId + cellId.y * 17.13;
+            float charMorph = floor(t_wrap * 10.0 + colHash * 50.0);
+            float finalSeed = cellSeed + charMorph * 0.19;
             
+            float glyph = getGlyph_mx(cellUv, finalSeed);
             codeAccum = glyph * brightness;
             
-            if (distToHead < 0.4) {
-                leadingHead = smoothstep(0.4, 0.0, distToHead);
+            if (distToHead < 1.0) {
+                leadingHead = smoothstep(1.0, 0.0, distToHead) * glyph;
             }
         }
     }
     
     vec3 codeComp = codeColor * codeAccum * glowIntensity;
-    codeComp += vec3(1.0) * leadingHead * glowIntensity * 1.5;
+    codeComp += vec3(0.9, 1.0, 0.9) * leadingHead * glowIntensity * 1.8;
     
     finalRGB += codeComp;
     
-    float alpha = (codeAccum * 1.2 + leadingHead * 1.5 + ambientHaze * 0.25) * opacity;
+    float alpha = (codeAccum * 1.3 + leadingHead * 1.8 + ambientHaze * 0.2) * opacity;
     fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
 }
 `,
@@ -934,18 +978,29 @@ void main() {
     vec2 uv = vUv;
     float t_wrap = mod(uTime, 1000.0);
     
-    float seedTime = floor(t_wrap * 24.0);
-    float jitterX = (hash_hj(vec2(seedTime, 1.0)) - 0.5) * 0.02 * shakeIntensity;
-    float jitterY = (hash_hj(vec2(seedTime, 2.0)) - 0.5) * 0.02 * shakeIntensity;
-    vec2 jitterUv = uv + vec2(jitterX, jitterY);
+    // Continuous high-frequency gate weave
+    float weaveX = sin(uTime * 45.0) * 0.0018 * shakeIntensity + cos(uTime * 93.0) * 0.0007 * shakeIntensity;
+    float weaveY = cos(uTime * 49.0) * 0.0018 * shakeIntensity + sin(uTime * 113.0) * 0.0007 * shakeIntensity;
     
-    float flicker = hash_hj(vec2(seedTime, 3.5));
-    float brightnessFlicker = 1.0 + (flicker - 0.5) * 0.28 * flickerRate;
+    // Film sprocket jumps (sudden vertical slips)
+    float sprocketTimer = uTime * 4.0;
+    float sprocketSlip = hash_hj(vec2(floor(sprocketTimer), 127.42));
+    float jumpY = 0.0;
+    if (sprocketSlip < 0.14 * shakeIntensity) {
+        jumpY = (fract(sprocketTimer) - 0.5) * 0.035;
+    }
     
-    vec3 shadowColor = vec3(0.08, 0.08, 0.09);
-    vec3 midColor = vec3(0.20, 0.20, 0.18);
+    vec2 jitterUv = uv + vec2(weaveX, weaveY + jumpY);
+    
+    // Natural continuous flickering light roll
+    float flicker = hash_hj(vec2(floor(uTime * 18.0), 3.5));
+    float brightnessFlicker = 1.0 + (flicker - 0.5) * 0.32 * flickerRate;
+    
+    // Background color: deep dark cinematic grindhouse colors
+    vec3 shadowColor = vec3(0.06, 0.05, 0.05);
+    vec3 midColor = vec3(0.18, 0.17, 0.15);
     float centerDist = length(uv - 0.5);
-    vec3 bg = mix(midColor, shadowColor, centerDist * 1.3) * brightnessFlicker;
+    vec3 bg = mix(midColor, shadowColor, clamp(centerDist * 1.3, 0.0, 1.0)) * brightnessFlicker;
     
     float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
     bg = mix(bg, vec3(lumaBg), desaturation);
@@ -953,30 +1008,45 @@ void main() {
     vec3 finalRGB = bg;
     float scratchAccum = 0.0;
     
-    for (int i = 0; i < 3; i++) {
-        float scratchId = float(i) * 31.42;
-        float sX = hash_hj(vec2(scratchId, seedTime * 0.05));
+    // High-fidelity thin organic scratches
+    float scratchTime = floor(uTime * 15.0);
+    for (int i = 0; i < 4; i++) {
+        float scratchId = float(i) * 53.84;
+        float sX = hash_hj(vec2(scratchId, scratchTime * 0.07));
         
-        if (hash_hj(vec2(scratchId, sX)) < scratchDensity * 0.65) {
+        if (hash_hj(vec2(scratchId, sX * 1.5)) < scratchDensity * 0.55) {
             float distToScratch = abs(jitterUv.x - sX);
-            float line = smoothstep(0.0015, 0.0, distToScratch);
-            scratchAccum += line * 0.75;
+            float scratchLength = hash_hj(vec2(scratchId, 23.41));
+            float verticalFade = smoothstep(0.0, 0.2, jitterUv.y) * smoothstep(1.0, 0.8, jitterUv.y);
+            float line = smoothstep(0.0012, 0.0, distToScratch) * verticalFade;
+            scratchAccum += line * 0.65;
         }
     }
     
-    float blobVal = hash_hj(floor(jitterUv * 8.0) + vec2(seedTime, seedTime * 1.5));
-    if (blobVal < 0.003 * scratchDensity) {
-        scratchAccum += 0.85;
-        finalRGB *= 0.15;
+    // Beautiful warm orange-red glowing "film burn" flare with organic wobbly edges
+    float burnFlicker = sin(uTime * 3.8) * 0.5 + 0.5;
+    float burnNoise = sin(jitterUv.x * 14.0 + uTime * 2.0) * cos(jitterUv.y * 11.0 - uTime * 1.5) * 0.15;
+    
+    // The flare sweeps in from the left or right edge based on time
+    float edgeSweep = sin(uTime * 0.8) * 0.5 + 0.5;
+    vec2 burnOrigin = mix(vec2(-0.15, 0.5), vec2(1.15, 0.5), edgeSweep);
+    float distToBurn = length(jitterUv - burnOrigin) + burnNoise;
+    
+    float burnFactor = smoothstep(0.45 + scratchDensity * 0.25, 0.02, distToBurn) * (0.35 + burnFlicker * 0.65) * scratchDensity * 1.85;
+    
+    if (burnFactor > 0.0) {
+        vec3 burnColor = vec3(1.0, 0.24, 0.03); // hot glowing organic embers
+        finalRGB = mix(finalRGB, burnColor * 1.6, clamp(burnFactor, 0.0, 1.0));
     }
     
-    finalRGB += vec3(scratchAccum) * 0.8;
+    finalRGB += vec3(scratchAccum) * 0.75;
     
+    // Vignette
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.45 + vignetteStrength * 0.6), 0.0, 1.0);
-    finalRGB *= mix(1.0 - vignetteStrength * 0.9, 1.0, vignetteVal);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.45 + vignetteStrength * 0.5), 0.0, 1.0);
+    finalRGB *= mix(1.0 - vignetteStrength * 0.85, 1.0, vignetteVal);
     
-    float alpha = (0.2 + scratchAccum * 0.5 + (1.0 - vignetteVal) * vignetteStrength * 0.8) * opacity;
+    float alpha = (0.18 + scratchAccum * 0.4 + burnFactor * 0.75 + (1.0 - vignetteVal) * vignetteStrength * 0.75) * opacity;
     fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
 }
 `,
@@ -1149,6 +1219,7 @@ export function renderWebGLFrame(
   } else if (preset === "bladeRunnerRain") {
     gl.uniform1f(gl.getUniformLocation(program, "rainDensity"), Number(params.rainDensity ?? 0.6));
     gl.uniform1f(gl.getUniformLocation(program, "rainSpeed"), Number(params.rainSpeed ?? 1.2));
+    gl.uniform1f(gl.getUniformLocation(program, "tailLength"), Number(params.tailLength ?? 0.5));
     const [r1, g1, b1] = hexToRgb(String(params.neonColor1 ?? "#ff007f"));
     gl.uniform3f(gl.getUniformLocation(program, "neonColor1"), r1, g1, b1);
     const [r2, g2, b2] = hexToRgb(String(params.neonColor2 ?? "#00f3ff"));

@@ -1713,8 +1713,17 @@ function ParametricEffectOverlay({
     useEffect(() => {
         if (isPerformanceMode) return;
         
-        // Always run — svgEffects may be added after mount
-        const renderFn = () => { if (svgEffectsRef.current.length) setTick(t => t + 1); };
+        // Always run — trigger tick if any active rendering effect is present for real-time parameter updates
+        const renderFn = () => { 
+            if (
+                svgEffectsRef.current.length || 
+                webglEffectsRef.current.length || 
+                canvasEffectsRef.current.length || 
+                cssEffectsRef.current.length
+            ) {
+                setTick(t => t + 1); 
+            }
+        };
         const unregister = globalEffectCoordinator.register(renderFn);
         return () => unregister();
     }, [isPerformanceMode]);
