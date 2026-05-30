@@ -27752,7 +27752,7 @@ void main() {
     
     // Desaturate background
     float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
-    bg = mix(bgWash, vec3(lumaBg), desaturation);
+    vec3 bg = mix(bgWash, vec3(lumaBg), desaturation);
     
     // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
     vec3 fogColor = vec3(0.12, 0.34, 0.40);
@@ -27916,7 +27916,7 @@ void main() {
             
             float yCoord = uv.y * 3.2; 
             float progress = t_wrap * speed + offset;
-            float fractY = fract(yCoord - progress);
+            float fractY = fract(yCoord + progress);
             
             float streakWidth = 0.04 + h * 0.035;
             float streakDistX = abs(fractX - float(x));
@@ -28260,20 +28260,15 @@ void main() {
         }
     }
     
-    // Beautiful warm orange-red glowing "film burn" flare with organic wobbly edges
-    float burnFlicker = sin(uTime * 3.8) * 0.5 + 0.5;
-    float burnNoise = sin(jitterUv.x * 14.0 + uTime * 2.0) * cos(jitterUv.y * 11.0 - uTime * 1.5) * 0.15;
-    
-    // The flare sweeps in from the left or right edge based on time
-    float edgeSweep = sin(uTime * 0.8) * 0.5 + 0.5;
-    vec2 burnOrigin = mix(vec2(-0.15, 0.5), vec2(1.15, 0.5), edgeSweep);
-    float distToBurn = length(jitterUv - burnOrigin) + burnNoise;
-    
-    float burnFactor = smoothstep(0.45 + scratchDensity * 0.25, 0.02, distToBurn) * (0.35 + burnFlicker * 0.65) * scratchDensity * 1.85;
+    // Authentic wobbly orange-red film edge light leak (replaces the circular point flare)
+    float burnFlicker = sin(uTime * 5.4) * 0.4 + 0.6;
+    float edgeNoise = sin(jitterUv.y * 18.0 + uTime * 3.5) * 0.035 + cos(jitterUv.y * 37.0 - uTime * 6.2) * 0.015;
+    float distToEdge = min(jitterUv.x, 1.0 - jitterUv.x);
+    float burnFactor = smoothstep(0.06 + scratchDensity * 0.10, 0.02, distToEdge + edgeNoise) * burnFlicker * scratchDensity * 1.6;
     
     if (burnFactor > 0.0) {
-        vec3 burnColor = vec3(1.0, 0.24, 0.03); // hot glowing organic embers
-        finalRGB = mix(finalRGB, burnColor * 1.6, clamp(burnFactor, 0.0, 1.0));
+        vec3 burnColor = vec3(1.0, 0.22, 0.02); // warm cinematic light bleed glow
+        finalRGB = mix(finalRGB, burnColor * 1.5, clamp(burnFactor, 0.0, 1.0));
     }
     
     finalRGB += vec3(scratchAccum) * 0.75;
