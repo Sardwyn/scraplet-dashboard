@@ -1547,11 +1547,11 @@ function useTextShapePath(
 }
 
 function ParametricEffectOverlay({
-    effects, width, height, elementId, borderRadius = 0, shapePath = "", data,
+    effects, width, height, elementId, borderRadius = 0, shapePath = "", data, isRectangular = false,
 }: {
     effects: OverlayEffect[]; width: number; height: number;
     elementId: string; borderRadius?: number; shapePath?: string;
-    data?: Record<string, any>;
+    data?: Record<string, any>; isRectangular?: boolean;
 }) {
     const { isPerformanceMode } = usePerformanceMode();
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1751,13 +1751,15 @@ function ParametricEffectOverlay({
             {canvasEffects.length > 0 && (() => {
                 // Determine clip mode from first canvas effect that has clipMode set
                 const canvasClipMode = canvasEffects.find((e: any) => e.params?.clipMode)?.params?.clipMode ?? "space";
-                const canvasClipPath = (canvasClipMode === "surface" && shapePath)
+                const canvasClipPath = (!isRectangular && canvasClipMode === "surface" && shapePath)
                     ? `path('${shapePath.replace(/'/g, "\'")}')`
                     : undefined;
                 return (
                     <canvas ref={canvasRef} width={width} height={height}
                         style={{
                             position: "absolute", inset: 0, width: "100%", height: "100%",
+                            borderRadius: borderRadius ? `${borderRadius}px` : undefined,
+                            overflow: borderRadius ? "hidden" : undefined,
                             ...(canvasClipPath ? { clipPath: canvasClipPath } : {}),
                         }} />
                 );
@@ -1823,7 +1825,7 @@ function ParametricEffectOverlay({
             )}
             {webglEffects.length > 0 && (() => {
                 const webglClipMode = webglEffects.find((e: any) => e.params?.clipMode)?.params?.clipMode ?? "surface";
-                const webglClipPath = (webglClipMode === "surface" && shapePath)
+                const webglClipPath = (!isRectangular && webglClipMode === "surface" && shapePath)
                     ? `path('${shapePath.replace(/'/g, "\\'")}')`
                     : undefined;
                 return (
@@ -1837,6 +1839,8 @@ function ParametricEffectOverlay({
                             width: "100%",
                             height: "100%",
                             pointerEvents: "none",
+                            borderRadius: borderRadius ? `${borderRadius}px` : undefined,
+                            overflow: borderRadius ? "hidden" : undefined,
                             ...(webglClipPath ? { clipPath: webglClipPath } : {}),
                         }}
                     />
@@ -2558,6 +2562,7 @@ export function ElementRenderer({
                         borderRadius={box.borderRadiusPx ?? (box as any).borderRadius ?? 0}
                         shapePath={pathD}
                         data={data}
+                        isRectangular={true}
                     />
                 </div>
             </div>
@@ -2866,6 +2871,8 @@ export function ElementRenderer({
                         elementId={s.id}
                         shapePath={pathD}
                         data={data}
+                        borderRadius={s.shape === "rect" ? (s.cornerRadiusPx ?? (s as any).cornerRadius ?? 0) : 0}
+                        isRectangular={s.shape === "rect"}
                     />
                 </div>
             </div>
@@ -2917,6 +2924,8 @@ export function ElementRenderer({
                     height={img.height ?? 100}
                     elementId={img.id}
                     data={data}
+                    borderRadius={effectiveBr}
+                    isRectangular={true}
                 />
             </div>
         );
@@ -2959,6 +2968,8 @@ export function ElementRenderer({
                     height={vid.height ?? 100}
                     elementId={vid.id}
                     data={data}
+                    borderRadius={effectiveBr}
+                    isRectangular={true}
                 />
             </div>
         );
