@@ -32,6 +32,7 @@ uniform float flickerSpeed;
 uniform float vignette;
 
 void main() {
+    float t = mod(uTime, 1000.0);
     vec2 uv = vUv;
     vec2 cc = uv - 0.5;
     float dist = dot(cc, cc);
@@ -47,7 +48,7 @@ void main() {
     }
     
     // Double frequency scanlines + shutter roll simulator
-    float roll = sin(uv.y * 6.0 - uTime * 2.5) * 0.06 + 0.94;
+    float roll = sin(uv.y * 6.0 - t * 2.5) * 0.06 + 0.94;
     float scanline1 = sin(uv.y * uResolution.y * 1.25) * 0.5 + 0.5;
     float scanline2 = sin(uv.y * uResolution.y * 2.50) * 0.2 + 0.8;
     float scan = 1.0 - scanlineIntensity * scanline1 * scanline2 * 0.45 * roll;
@@ -62,11 +63,11 @@ void main() {
     vec3 phos = mix(vec3(1.0), phosRGB, phosphorIntensity);
     
     // High-frequency monitor flicker
-    float flicker = 1.0 - (sin(uTime * flickerSpeed * 10.0) * 0.02 + cos(uTime * 37.0) * 0.015);
+    float flicker = 1.0 - (sin(t * flickerSpeed * 10.0) * 0.02 + cos(t * 37.0) * 0.015);
     
     // Vignette light falloff
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, vignette), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), vignette), 0.0, 1.0);
     
     vec3 baseCol = vec3(0.06, 0.08, 0.12);
     vec3 phosphorColor = vec3(0.0, 0.95, 0.25) * 0.07 * phosphorIntensity;
@@ -110,7 +111,7 @@ float getCausticIntensity(vec2 uv, float freq, float t) {
 
 void main() {
     vec2 uv = vUv;
-    float t = uTime * speed * 0.11;
+    float t = mod(uTime, 1000.0) * speed * 0.11;
     
     // Real Chromatic Dispersion Split on organic water ripples
     float valR = getCausticIntensity(uv, frequency * 1.018, t);
@@ -120,7 +121,7 @@ void main() {
     vec3 causticCol = vec3(valR, valG, valB) * color * amplitude * 1.35;
     
     // Dynamic shimmer light modulator
-    causticCol *= (1.0 + shimmerIntensity * sin(uTime * 3.2 + uv.x * 12.0) * cos(uTime * 1.8 + uv.y * 8.0));
+    causticCol *= (1.0 + shimmerIntensity * sin(mod(uTime, 1000.0) * 3.2 + uv.x * 12.0) * cos(mod(uTime, 1000.0) * 1.8 + uv.y * 8.0));
     
     // Background fog motion
     float backgroundNoise = sin(uv.x * 3.5 + t) * cos(uv.y * 3.0 - t * 0.8) * 0.08 + 0.08;
@@ -144,6 +145,7 @@ uniform float greenShift;
 uniform float opacity;
 
 void main() {
+    float t = mod(uTime, 1000.0);
     vec2 uv = vUv - 0.5;
     float aspect = uResolution.x / uResolution.y;
     vec2 uvAspect = vec2(uv.x * aspect, uv.y);
@@ -170,11 +172,11 @@ void main() {
     
     // Premium horizontal anamorphic streak lens flare (Red Giant style)
     float anamorphic = exp(-pow(uv.y * 36.0, 2.0)) * exp(-pow(uv.x * 1.8, 2.0));
-    vec3 anamCol = vec3(0.08, 0.35, 1.0) * anamorphic * (1.0 + 0.15 * sin(uTime * 12.0)) * chromaSpread * 14.0;
+    vec3 anamCol = vec3(0.08, 0.35, 1.0) * anamorphic * (1.0 + 0.15 * sin(t * 12.0)) * chromaSpread * 14.0;
     
     // Radial shimmering starburst rays
-    float rays = sin(angle * 8.0 + uTime * 0.45) * cos(angle * 3.0 - uTime * 0.25) * 0.5 + 0.5;
-    rays += sin(angle * 24.0 - uTime * 1.1) * 0.25;
+    float rays = sin(angle * 8.0 + t * 0.45) * cos(angle * 3.0 - t * 0.25) * 0.5 + 0.5;
+    rays += sin(angle * 24.0 - t * 1.1) * 0.25;
     float rayFade = smoothstep(0.5, 0.0, dist);
     vec3 rayCol = vec3(0.95, 0.88, 0.78) * rays * rayFade * chromaSpread * 3.5;
     
@@ -184,7 +186,7 @@ void main() {
     
     // Vignette light falloff
     float vig = warpedUv.x * warpedUv.y * (1.0 - warpedUv.x) * (1.0 - warpedUv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, 0.35), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.35), 0.0, 1.0);
     
     vec3 rgbHalo = vec3(ringR, ringG, ringB) * vec3(1.0, 0.92, 0.82) * 0.8;
     vec3 finalColor = (rgbHalo + anamCol + rayCol + centerCol) * vignetteVal;
@@ -208,7 +210,7 @@ uniform float intensity;
 uniform vec3 color;
 
 float noise(in vec2 p) {
-    vec2 i = floor(p);
+    vec2 i = mod(floor(p), 289.0);
     vec2 f = fract(p);
     f = f*f*(3.0-2.0*f);
     float a = fract(sin(dot(i, vec2(127.1, 311.7))) * 43758.5453);
@@ -239,7 +241,7 @@ void main() {
     float dist = length(uvAspect);
     float angle = atan(uvAspect.y, uvAspect.x);
     
-    float t = uTime * shimmerSpeed * 0.42;
+    float t = mod(uTime, 1000.0) * shimmerSpeed * 0.42;
     
     // Volumetric multi-frequency light ray shafts
     float rays1 = sin(angle * beamCount + t) * 0.5 + 0.5;
@@ -286,7 +288,8 @@ float rand(vec2 co) {
 
 void main() {
     vec2 uv = vUv;
-    float t = floor(uTime * speed * 14.5);
+    float t_wrap = mod(uTime, 1000.0);
+    float t = floor(t_wrap * speed * 14.5);
     
     // Horizontal line shears
     float sliceY = floor(uv.y * (14.0 + 35.0 * (1.0 - glitchIntensity)));
@@ -300,7 +303,7 @@ void main() {
     vec2 warpedUv = uv + vec2(xOffset, 0.0);
     
     // Chromatic split parameters
-    float splitFreq = sin(warpedUv.y * 115.0 + uTime * 12.0) * 0.5 + 0.5;
+    float splitFreq = sin(warpedUv.y * 115.0 + t_wrap * 12.0) * 0.5 + 0.5;
     
     // Pixelated block corruption overlays
     float blockGrid = 18.0;
@@ -369,7 +372,7 @@ float hash2(vec2 co) {
 }
 
 float noise(in vec2 p) {
-    vec2 i = floor(p);
+    vec2 i = mod(floor(p), 289.0);
     vec2 f = fract(p);
     f = f*f*(3.0-2.0*f);
     float a = hash2(i);
@@ -393,8 +396,9 @@ float fbm(in vec2 p) {
 }
 
 float getFogChannel(vec2 uv, float offsetTime) {
-    vec2 p1 = uv * 2.8 + vec2(uTime * 0.045 + offsetTime, uTime * 0.025);
-    vec2 p2 = uv * 4.5 - vec2(uTime * 0.035, uTime * 0.04 + offsetTime);
+    float t = mod(uTime, 1000.0);
+    vec2 p1 = uv * 2.8 + vec2(t * 0.045 + offsetTime, t * 0.025);
+    vec2 p2 = uv * 4.5 - vec2(t * 0.035, t * 0.04 + offsetTime);
     float f1 = fbm(p1);
     float f2 = fbm(p2);
     return mix(f1, f2, 0.5);
@@ -403,6 +407,7 @@ float getFogChannel(vec2 uv, float offsetTime) {
 float hash2(vec2 co);
 
 vec3 getSporesChannel(vec2 uv, float aspect, vec2 caOffset) {
+    float t_wrap = mod(uTime, 1000.0);
     // Grid density for atmospheric particles
     vec2 gridUv = uv * vec2(15.0 * aspect, 15.0);
     vec2 cellId = floor(gridUv);
@@ -437,8 +442,8 @@ vec3 getSporesChannel(vec2 uv, float aspect, vec2 caOffset) {
                 float blur = 0.015 + defocus * 0.22;
                 
                 // Buttery-smooth, organic 2D drift using prime frequencies (zero noise precision jitter)
-                float tX = uTime * (0.15 + (1.0 - z) * 0.15); // Closer particles drift slightly faster
-                float tY = uTime * (0.12 + (1.0 - z) * 0.12);
+                float tX = t_wrap * (0.15 + (1.0 - z) * 0.15); // Closer particles drift slightly faster
+                float tY = t_wrap * (0.12 + (1.0 - z) * 0.12);
                 vec2 sporePos = vec2(
                     sin(tX + seed * 6.28) * 0.35 + cos(tX * 0.43 + seed * 3.14) * 0.15,
                     cos(tY + seed * 6.28) * 0.35 + sin(tY * 0.37 + seed * 3.14) * 0.15
@@ -458,7 +463,7 @@ vec3 getSporesChannel(vec2 uv, float aspect, vec2 caOffset) {
                 float intensityMultiplier = 1.0 / (1.0 + defocus * 5.0);
                 
                 // Individual particle breathing
-                float breathing = 0.6 + 0.4 * sin(uTime * 0.5 + seed * 10.0);
+                float breathing = 0.6 + 0.4 * sin(t_wrap * 0.5 + seed * 10.0);
                 
                 float factor = intensityMultiplier * breathing;
                 spores.r += glowR * factor;
@@ -504,12 +509,12 @@ void main() {
     
     // Desaturate background
     float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
-    bgWash = mix(bgWash, vec3(lumaBg), desaturation);
+    bg = mix(bgWash, vec3(lumaBg), desaturation);
     
     // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
     vec3 fogColor = vec3(0.12, 0.34, 0.40);
     vec3 fogComp = vec3(smokeR, smokeG, smokeB) * fogColor * fogIntensity * 2.5;
-    vec3 bgAndFog = bgWash + (1.0 - bgWash) * fogComp;
+    vec3 bgAndFog = bg + (1.0 - bg) * fogComp;
     
     // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
     vec3 sporeColor = vec3(0.88, 0.94, 1.0);
@@ -519,11 +524,11 @@ void main() {
     
     // Vignette outer edge darkening
     float vig = vUv.x * vUv.y * (1.0 - vUv.x) * (1.0 - vUv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, 0.3 + vignetteStrength * 0.7), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.3 + vignetteStrength * 0.7), 0.0, 1.0);
     finalRGB *= mix(1.0, vignetteVal, vignetteStrength);
     
     // Inject dynamic film grain
-    float grainNoise = hash2(vUv + fract(uTime));
+    float grainNoise = hash2(vUv + fract(mod(uTime, 1000.0)));
     float grain = (grainNoise - 0.5) * grainIntensity;
     finalRGB += vec3(grain);
     
@@ -556,7 +561,7 @@ float hash2_sh(vec2 co) {
 }
 
 float noise_sh(in vec2 p) {
-    vec2 i = floor(p);
+    vec2 i = mod(floor(p), 289.0);
     vec2 f = fract(p);
     f = f*f*(3.0-2.0*f);
     float a = hash2_sh(i);
@@ -581,7 +586,7 @@ float fbm_sh(in vec2 p) {
 
 void main() {
     vec2 uv = vUv;
-    float t = uTime * fogSpeed;
+    float t = mod(uTime, 1000.0) * fogSpeed;
     
     // Slow drifting dual-layer FBM fog
     vec2 p1 = uv * 2.5 + vec2(t * 0.03, t * 0.015);
@@ -592,7 +597,7 @@ void main() {
     
     // Apply contrast curves
     float wisp = smoothstep(0.2, 0.8, rawFog);
-    wisp = pow(wisp, 1.0 / max(0.1, contrast));
+    wisp = pow(max(wisp, 0.0001), 1.0 / max(0.1, contrast));
     
     // Background color: dull greyish silent hill tones
     vec3 shadowColor = vec3(0.12, 0.12, 0.13);
@@ -610,11 +615,11 @@ void main() {
     
     // Vignette
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, 0.4), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.4), 0.0, 1.0);
     finalRGB *= mix(0.45, 1.0, vignetteVal);
     
     // Film grain
-    float grain = (hash2_sh(uv + fract(uTime)) - 0.5) * grainIntensity;
+    float grain = (hash2_sh(uv + fract(mod(uTime, 1000.0))) - 0.5) * grainIntensity;
     finalRGB += vec3(grain);
     
     // Calculate alpha
@@ -644,10 +649,11 @@ float hash_br(vec2 co) {
 void main() {
     vec2 uv = vUv;
     float aspect = uResolution.x / uResolution.y;
+    float t_wrap = mod(uTime, 1000.0);
     
     // Ambient neon bloom reflection at the bottom
     float bloomY = smoothstep(0.0, 0.5, 1.0 - uv.y);
-    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(uTime * 0.5 + uv.x * 2.0) * 0.5 + 0.5);
+    vec3 ambientGlow = mix(neonColor1, neonColor2, sin(t_wrap * 0.5 + uv.x * 2.0) * 0.5 + 0.5);
     vec3 finalRGB = ambientGlow * bloomY * ambientReflection * 0.45;
     
     // Scale coordinates for rain grid
@@ -666,7 +672,7 @@ void main() {
             float speed = rainSpeed * (1.2 + h * 0.8);
             float offset = h * 50.0;
             
-            float yPos = fract(uv.y + uTime * speed + offset);
+            float yPos = fract(uv.y + t_wrap * speed + offset);
             
             float streakWidth = 0.04 + h * 0.03;
             float streakDistX = abs(cellUv.x - 0.5 - float(x));
@@ -683,7 +689,7 @@ void main() {
             float splashH = hash_br(vec2(col, 255.12));
             float rippleCenterY = 0.05 + splashH * 0.05;
             float distToRipple = length(vec2((cellUv.x - 0.5 - float(x)) * aspect, cellUv.y - rippleCenterY));
-            float splashTime = fract(uTime * 2.5 + splashH * 10.0);
+            float splashTime = fract(t_wrap * 2.5 + splashH * 10.0);
             float ripple = smoothstep(0.02, 0.0, abs(distToRipple - splashTime * 0.15)) * (1.0 - splashTime);
             
             if (ripple > 0.0) {
@@ -697,7 +703,7 @@ void main() {
     finalRGB += rainRGB;
     
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, 0.5), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.5), 0.0, 1.0);
     finalRGB *= mix(0.2, 1.0, vignetteVal);
     
     float alpha = (accumRain * 1.1 + bloomY * ambientReflection * 0.25) * opacity;
@@ -732,6 +738,7 @@ float getGlyph_mx(vec2 p, float seed) {
 void main() {
     vec2 uv = vUv;
     float aspect = uResolution.x / uResolution.y;
+    float t_wrap = mod(uTime, 1000.0);
     
     vec3 hazeColor = codeColor * 0.18;
     float centerDist = length(uv - vec2(0.5, 0.7));
@@ -749,28 +756,26 @@ void main() {
         float speed = codeSpeed * (0.8 + colHash * 0.7);
         float fallOffset = colHash * 100.0;
         
-        float progress = uTime * speed + fallOffset;
-        float yCoord = uv.y * 14.0;
-        float currentDrop = floor(progress);
-        float fractDrop = fract(progress);
-        
-        float localY = fract(yCoord - progress);
-        float blockRow = floor(yCoord - progress);
-        
-        float distToHead = yCoord - progress;
         float tail = trailLength * 12.0;
+        float totalHeight = 14.0 + tail;
+        float progress = mod(t_wrap * speed + fallOffset, totalHeight);
+        float headY = 14.0 - progress;
         
-        if (distToHead < 0.0 && distToHead > -tail) {
-            float brightness = 1.0 - (abs(distToHead) / tail);
-            brightness = pow(brightness, 1.5);
+        float yCoord = uv.y * 14.0;
+        float distToHead = yCoord - headY;
+        
+        if (distToHead >= 0.0 && distToHead < tail) {
+            float brightness = 1.0 - (distToHead / tail);
+            brightness = pow(max(brightness, 0.0001), 1.5);
             
             vec2 glyphUv = vec2(fract(gridUv.x), fract(yCoord));
+            float blockRow = floor(yCoord - headY);
             float glyph = getGlyph_mx(glyphUv, colId + blockRow);
             
             codeAccum = glyph * brightness;
             
-            if (distToHead > -0.4) {
-                leadingHead = smoothstep(-0.4, 0.0, distToHead);
+            if (distToHead < 0.4) {
+                leadingHead = smoothstep(0.4, 0.0, distToHead);
             }
         }
     }
@@ -805,16 +810,17 @@ float hash_fo(vec2 co) {
 
 void main() {
     vec2 uv = vUv;
+    float t = mod(uTime, 1000.0);
     
-    float waveX = sin(uv.y * 14.5 + uTime * 4.2) * 0.015 * shimmerIntensity +
-                  cos(uv.y * 31.2 + uTime * 7.8) * 0.007 * shimmerIntensity;
-    float waveY = cos(uv.x * 12.8 + uTime * 3.8) * 0.010 * shimmerIntensity;
+    float waveX = sin(uv.y * 14.5 + t * 4.2) * 0.015 * shimmerIntensity +
+                  cos(uv.y * 31.2 + t * 7.8) * 0.007 * shimmerIntensity;
+    float waveY = cos(uv.x * 12.8 + t * 3.8) * 0.010 * shimmerIntensity;
     vec2 distortedUv = uv + vec2(waveX, waveY);
     
     float centerDist = length(distortedUv - 0.5);
     float radGlow = smoothstep(glowRadius * 1.2, 0.0, centerDist);
     
-    float flicker = hash_fo(vec2(uTime, 42.17));
+    float flicker = hash_fo(vec2(t, 42.17));
     float geigerAmp = 1.0 + (flicker - 0.5) * 0.25 * geigerFlicker;
     
     float scanline = sin(distortedUv.y * uResolution.y * 0.95) * 0.5 + 0.5;
@@ -823,7 +829,7 @@ void main() {
     vec3 baseColor = tintColor * radGlow * 1.5 * geigerAmp;
     vec3 finalRGB = baseColor * scanLineEffect;
     
-    float dust = hash_fo(distortedUv + fract(uTime));
+    float dust = hash_fo(distortedUv + fract(t));
     if (dust < 0.015 * geigerFlicker) {
         finalRGB += tintColor * 0.85;
     }
@@ -854,8 +860,9 @@ float hash_cp(vec2 co) {
 void main() {
     vec2 uv = vUv;
     float aspect = uResolution.x / uResolution.y;
+    float t_wrap = mod(uTime, 1000.0);
     
-    float timeBlock = floor(uTime * glitchFrequency * 8.0);
+    float timeBlock = floor(t_wrap * glitchFrequency * 8.0);
     float rowBlock = floor(uv.y * 18.0);
     float glitchVal = hash_cp(vec2(rowBlock, timeBlock));
     
@@ -872,9 +879,9 @@ void main() {
     float alphaAccum = 0.0;
     
     vec2 gridSpace = vec2(16.0 * aspect, 16.0);
-    vec2 gridLineR = abs(fract(uvR * gridSpace - 0.5) - 0.5) / fwidth(uvR * gridSpace);
-    vec2 gridLineG = abs(fract(uvG * gridSpace - 0.5) - 0.5) / fwidth(uvG * gridSpace);
-    vec2 gridLineB = abs(fract(uvB * gridSpace - 0.5) - 0.5) / fwidth(uvB * gridSpace);
+    vec2 gridLineR = abs(fract(uvR * gridSpace - 0.5) - 0.5) / max(fwidth(uvR * gridSpace), 0.0001);
+    vec2 gridLineG = abs(fract(uvG * gridSpace - 0.5) - 0.5) / max(fwidth(uvG * gridSpace), 0.0001);
+    vec2 gridLineB = abs(fract(uvB * gridSpace - 0.5) - 0.5) / max(fwidth(uvB * gridSpace), 0.0001);
     
     float rGrid = smoothstep(1.0, 0.0, min(gridLineR.x, gridLineR.y));
     float gGrid = smoothstep(1.0, 0.0, min(gridLineG.x, gridLineG.y));
@@ -884,7 +891,7 @@ void main() {
     finalRGB += gridRGB;
     alphaAccum += max(rGrid, max(gGrid, bGrid)) * gridIntensity * 0.7;
     
-    float laserY = fract(uTime * 0.35);
+    float laserY = fract(t_wrap * 0.35);
     float laserDist = abs(uv.y - laserY);
     float laser = smoothstep(0.012, 0.0, laserDist) * laserScan;
     float laserGlow = smoothstep(0.12, 0.0, laserDist) * 0.35 * laserScan;
@@ -925,8 +932,9 @@ float hash_hj(vec2 co) {
 
 void main() {
     vec2 uv = vUv;
+    float t_wrap = mod(uTime, 1000.0);
     
-    float seedTime = floor(uTime * 24.0);
+    float seedTime = floor(t_wrap * 24.0);
     float jitterX = (hash_hj(vec2(seedTime, 1.0)) - 0.5) * 0.02 * shakeIntensity;
     float jitterY = (hash_hj(vec2(seedTime, 2.0)) - 0.5) * 0.02 * shakeIntensity;
     vec2 jitterUv = uv + vec2(jitterX, jitterY);
@@ -965,7 +973,7 @@ void main() {
     finalRGB += vec3(scratchAccum) * 0.8;
     
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(16.0 * vig, 0.45 + vignetteStrength * 0.6), 0.0, 1.0);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.45 + vignetteStrength * 0.6), 0.0, 1.0);
     finalRGB *= mix(1.0 - vignetteStrength * 0.9, 1.0, vignetteVal);
     
     float alpha = (0.2 + scratchAccum * 0.5 + (1.0 - vignetteVal) * vignetteStrength * 0.8) * opacity;
