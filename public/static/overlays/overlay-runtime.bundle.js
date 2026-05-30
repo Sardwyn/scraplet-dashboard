@@ -24804,13 +24804,13 @@ void main() {
     return program;
   }
   function initWebGLRenderer(canvas, activePresets) {
-    const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false, antialias: true });
+    const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true });
     if (!gl) {
       console.warn("WebGL 2 context is not available.");
       return null;
     }
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     const vs2 = createShader$1(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE);
     if (!vs2) return null;
     const programs = {};
