@@ -24233,42 +24233,40 @@ void main() {
     // Now with premium 3D subpixel chromatic aberration mapped on the spore geometry
     vec3 spores = getSporesChannel(vUv, aspect, caOffset);
     
-    // Color grade: deep eerie cyan-teal shadows & midtones
-    vec3 baseTealShadow = vec3(0.01, 0.08, 0.11);
-    vec3 baseTealMid = vec3(0.03, 0.16, 0.20);
-    vec3 bgWash = mix(baseTealShadow, baseTealMid, 1.0 - distFromCenter * 1.1);
-    
-    // Desaturate background
-    float lumaBg = dot(bgWash, vec3(0.2126, 0.7152, 0.0722));
-    vec3 bg = mix(bgWash, vec3(lumaBg), desaturation);
+    // Base is transparent for clean streaming overlays
+    vec3 finalRGB = vec3(0.0);
+    float alphaAccum = 0.0;
     
     // Combine fog (cool volumetric blue-teal, screen-blended to prevent muddy/washed-out composites)
     vec3 fogColor = vec3(0.12, 0.34, 0.40);
+    float fogAlpha = smokeG * fogIntensity * 1.2;
     vec3 fogComp = vec3(smokeR, smokeG, smokeB) * fogColor * fogIntensity * 2.5;
-    vec3 bgAndFog = bg + (1.0 - bg) * fogComp;
+    finalRGB = mix(finalRGB, fogComp, clamp(fogAlpha, 0.0, 1.0));
+    alphaAccum += fogAlpha;
     
     // Combine spores (gorgeous cold glowing white/blue ashes, perfectly aligned across RGB)
     vec3 sporeColor = vec3(0.88, 0.94, 1.0);
     vec3 sporeComp = spores * sporeColor * 1.85;
+    float maxSpore = max(spores.r, max(spores.g, spores.b));
+    float sporeAlpha = maxSpore * 0.85;
+    finalRGB += sporeComp;
+    alphaAccum += sporeAlpha;
     
-    vec3 finalRGB = bgAndFog + sporeComp;
-    
-    // Vignette outer edge darkening
+    // Vignette outer edge darkening (rendered as a dark eerie deep teal vignette frame)
     float vig = vUv.x * vUv.y * (1.0 - vUv.x) * (1.0 - vUv.y);
     float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.3 + vignetteStrength * 0.7), 0.0, 1.0);
-    finalRGB *= mix(1.0, vignetteVal, vignetteStrength);
+    float vigAlpha = (1.0 - vignetteVal) * vignetteStrength * 0.75;
+    vec3 vigColor = vec3(0.01, 0.05, 0.07);
+    finalRGB = mix(finalRGB, vigColor, vigAlpha);
+    alphaAccum += vigAlpha;
     
     // Inject dynamic film grain
     float grainNoise = hash2(vUv + fract(mod(uTime, 1000.0)));
     float grain = (grainNoise - 0.5) * grainIntensity;
     finalRGB += vec3(grain);
+    alphaAccum += abs(grain) * 0.5;
     
-    // Atmospheric alpha calculation (scaled cleanly by the user-controlled opacity)
-    // We boost the smokeG's alpha contribution significantly (scale by 1.2) so fog is beautiful and obvious when maxed
-    float maxSpore = max(spores.r, max(spores.g, spores.b));
-    float alpha = 0.20 * (1.0 - desaturation) + smokeG * fogIntensity * 1.2 + maxSpore * 0.85 + (1.0 - vignetteVal) * vignetteStrength * 0.65;
-    alpha = clamp(alpha, 0.0, 0.98) * opacity;
-    
+    float alpha = clamp(alphaAccum, 0.0, 0.98) * opacity;
     fragColor = vec4(finalRGB, alpha);
 }
 `,
@@ -24329,32 +24327,31 @@ void main() {
     float wisp = smoothstep(0.2, 0.8, rawFog);
     wisp = pow(max(wisp, 0.0001), 1.0 / max(0.1, contrast));
     
-    // Background color: dull greyish silent hill tones
-    vec3 shadowColor = vec3(0.12, 0.12, 0.13);
-    vec3 midColor = vec3(0.24, 0.25, 0.26);
-    float centerDist = length(uv - 0.5);
-    vec3 bg = mix(midColor, shadowColor, clamp(centerDist * 1.2, 0.0, 1.0));
+    // Base is transparent for clean streaming overlays
+    vec3 finalRGB = vec3(0.0);
+    float alphaAccum = 0.0;
     
-    // Desaturate background
-    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
-    bg = mix(bg, vec3(lumaBg), desaturation);
-    
-    // Composite fog
+    // Fog contribution (cool greyish/ash fog)
     vec3 ashFogColor = vec3(0.48, 0.49, 0.51);
-    vec3 finalRGB = bg + wisp * ashFogColor * fogDensity * 1.8;
+    float fogAlpha = wisp * fogDensity * 1.5;
+    finalRGB = mix(finalRGB, ashFogColor, clamp(fogAlpha, 0.0, 1.0));
+    alphaAccum += fogAlpha;
     
-    // Vignette
+    // Vignette (rendered as a dark border framing)
     float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
     float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.4), 0.0, 1.0);
-    finalRGB *= mix(0.45, 1.0, vignetteVal);
+    float vigAlpha = (1.0 - vignetteVal) * 0.75;
+    vec3 vigColor = vec3(0.08, 0.08, 0.09);
+    finalRGB = mix(finalRGB, vigColor, vigAlpha);
+    alphaAccum += vigAlpha;
     
     // Film grain
     float grain = (hash2_sh(uv + fract(mod(uTime, 1000.0))) - 0.5) * grainIntensity;
     finalRGB += vec3(grain);
+    alphaAccum += abs(grain) * 0.5;
     
-    // Calculate alpha
-    float alpha = (wisp * fogDensity * 1.1 + 0.15) * opacity;
-    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+    float alpha = clamp(alphaAccum, 0.0, 1.0) * opacity;
+    fragColor = vec4(finalRGB, alpha);
 }
 `,
     bladeRunnerRain: `#version 300 es
@@ -24597,16 +24594,18 @@ void main() {
     float scanline = sin(distortedUv.y * uResolution.y * 0.95) * 0.5 + 0.5;
     float scanLineEffect = mix(1.0, 0.4 + scanline * 0.6, scanlineIntensity);
     
-    vec3 baseColor = tintColor * radGlow * 1.5 * geigerAmp;
-    vec3 finalRGB = baseColor * scanLineEffect;
+    // Transparent background, glowing radioactive center
+    vec3 finalRGB = tintColor * radGlow * 1.5 * geigerAmp * scanLineEffect;
+    float alphaAccum = radGlow * 1.2 * scanLineEffect;
     
     float dust = hash_fo(distortedUv + fract(t));
     if (dust < 0.015 * geigerFlicker) {
         finalRGB += tintColor * 0.85;
+        alphaAccum = max(alphaAccum, 0.75 * scanLineEffect);
     }
     
-    float alpha = (radGlow * 1.1 + 0.15) * scanLineEffect * opacity;
-    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+    float alpha = clamp(alphaAccum, 0.0, 1.0) * opacity;
+    fragColor = vec4(finalRGB, alpha);
 }
 `,
     cyberpunkSmear: `#version 300 es
@@ -24677,8 +24676,8 @@ void main() {
         alphaAccum += 0.45;
     }
     
-    float alpha = (alphaAccum + 0.15) * opacity;
-    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 0.98));
+    float alpha = clamp(alphaAccum, 0.0, 0.98) * opacity;
+    fragColor = vec4(finalRGB, alpha);
 }
 `,
     horrorJitter: `#version 300 es
@@ -24721,19 +24720,20 @@ void main() {
     float flicker = hash_hj(vec2(floor(uTime * 18.0), 3.5));
     float brightnessFlicker = 1.0 + (flicker - 0.5) * 0.32 * flickerRate;
     
-    // Background color: deep dark cinematic grindhouse colors
-    vec3 shadowColor = vec3(0.06, 0.05, 0.05);
-    vec3 midColor = vec3(0.18, 0.17, 0.15);
-    float centerDist = length(uv - 0.5);
-    vec3 bg = mix(midColor, shadowColor, clamp(centerDist * 1.3, 0.0, 1.0)) * brightnessFlicker;
+    // Base is transparent for clean streaming overlays
+    vec3 finalRGB = vec3(0.0);
+    float alphaAccum = 0.0;
     
-    float lumaBg = dot(bg, vec3(0.2126, 0.7152, 0.0722));
-    bg = mix(bg, vec3(lumaBg), desaturation);
-    
-    vec3 finalRGB = bg;
-    float scratchAccum = 0.0;
+    // Vignette outer edge darkening (as an active warm cinematic vignette frame)
+    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
+    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.45 + vignetteStrength * 0.5), 0.0, 1.0);
+    float vigAlpha = (1.0 - vignetteVal) * vignetteStrength * 0.75;
+    vec3 vigColor = vec3(0.05, 0.04, 0.04) * brightnessFlicker;
+    finalRGB = mix(finalRGB, vigColor, vigAlpha);
+    alphaAccum += vigAlpha;
     
     // High-fidelity thin organic scratches
+    float scratchAccum = 0.0;
     float scratchTime = floor(uTime * 15.0);
     for (int i = 0; i < 4; i++) {
         float scratchId = float(i) * 53.84;
@@ -24748,6 +24748,12 @@ void main() {
         }
     }
     
+    if (scratchAccum > 0.0) {
+        vec3 scratchColor = vec3(0.75) * brightnessFlicker;
+        finalRGB = mix(finalRGB, scratchColor, scratchAccum * 0.6);
+        alphaAccum = max(alphaAccum, scratchAccum * 0.4);
+    }
+    
     // Authentic wobbly orange-red film edge light leak (replaces the circular point flare)
     float burnFlicker = sin(uTime * 5.4) * 0.4 + 0.6;
     float edgeNoise = sin(jitterUv.y * 18.0 + uTime * 3.5) * 0.035 + cos(jitterUv.y * 37.0 - uTime * 6.2) * 0.015;
@@ -24755,19 +24761,13 @@ void main() {
     float burnFactor = smoothstep(0.06 + scratchDensity * 0.10, 0.02, distToEdge + edgeNoise) * burnFlicker * scratchDensity * 1.6;
     
     if (burnFactor > 0.0) {
-        vec3 burnColor = vec3(1.0, 0.22, 0.02); // warm cinematic light bleed glow
-        finalRGB = mix(finalRGB, burnColor * 1.5, clamp(burnFactor, 0.0, 1.0));
+        vec3 burnColor = vec3(1.0, 0.22, 0.02) * 1.5; // warm cinematic light bleed glow
+        finalRGB = mix(finalRGB, burnColor, burnFactor);
+        alphaAccum = max(alphaAccum, burnFactor * 0.75);
     }
     
-    finalRGB += vec3(scratchAccum) * 0.75;
-    
-    // Vignette
-    float vig = uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y);
-    float vignetteVal = clamp(pow(max(16.0 * vig, 0.0001), 0.45 + vignetteStrength * 0.5), 0.0, 1.0);
-    finalRGB *= mix(1.0 - vignetteStrength * 0.85, 1.0, vignetteVal);
-    
-    float alpha = (0.18 + scratchAccum * 0.4 + burnFactor * 0.75 + (1.0 - vignetteVal) * vignetteStrength * 0.75) * opacity;
-    fragColor = vec4(finalRGB, clamp(alpha, 0.0, 1.0));
+    float alpha = clamp(alphaAccum, 0.0, 1.0) * opacity;
+    fragColor = vec4(finalRGB, alpha);
 }
 `
   };
