@@ -2036,7 +2036,25 @@ export function ElementRenderer({
     const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
     const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
     const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
-    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type) && !hasRevealEffect;
+
+    const isMediaRender = el.type === 'image' || el.type === 'video';
+    const hasKeyingRender = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;
+    const hasBlendModeRender = el.blendMode && el.blendMode !== 'normal';
+    const adj = el.adjustments ?? {};
+    const hasAdjustmentsRender = (
+        (adj.brightness !== undefined && adj.brightness !== 1) ||
+        (adj.contrast !== undefined && adj.contrast !== 1) ||
+        (adj.exposure !== undefined && Number(adj.exposure) !== 0) ||
+        (adj.saturate !== undefined && adj.saturate !== 1) ||
+        (adj.hueRotate !== undefined && adj.hueRotate !== 0) ||
+        (adj.blur !== undefined && adj.blur !== 0) ||
+        (adj.opacity !== undefined && adj.opacity !== 1)
+    );
+    const hasEffectsRender = (Array.isArray(el.effects) && el.effects.length > 0) ||
+                       (Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0);
+    const forceDomRender = isMediaRender && (hasKeyingRender || hasBlendModeRender || hasAdjustmentsRender || hasEffectsRender);
+
+    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type) && !hasRevealEffect && !forceDomRender;
 
     const effectiveAnimationPhase =
         animationPhase ?? (el.visible === false ? "hidden" : "visible");

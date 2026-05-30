@@ -1083,15 +1083,15 @@ function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fr
 }
 
 export function initWebGLRenderer(canvas: HTMLCanvasElement, activePresets?: string[]): WebGLRenderer | null {
-  const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true });
+  const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false, antialias: true });
   if (!gl) {
     console.warn("WebGL 2 context is not available.");
     return null;
   }
 
-  // Enable standard alpha blending for premultiplied alpha context
+  // Enable standard alpha blending for straight alpha context
   gl.enable(gl.BLEND);
-  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   const vs = createShader(gl, gl.VERTEX_SHADER, VERTEX_SHADER_SOURCE);
   if (!vs) return null;

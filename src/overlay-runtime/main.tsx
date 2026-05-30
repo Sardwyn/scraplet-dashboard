@@ -1108,6 +1108,23 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
       const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
       const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
 
+      const isMedia = el.type === 'image' || el.type === 'video';
+      const hasKeying = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;
+      const hasBlendMode = el.blendMode && el.blendMode !== 'normal';
+      const adj = el.adjustments ?? {};
+      const hasAdjustments = (
+          (adj.brightness !== undefined && adj.brightness !== 1) ||
+          (adj.contrast !== undefined && adj.contrast !== 1) ||
+          (adj.exposure !== undefined && Number(adj.exposure) !== 0) ||
+          (adj.saturate !== undefined && adj.saturate !== 1) ||
+          (adj.hueRotate !== undefined && adj.hueRotate !== 0) ||
+          (adj.blur !== undefined && adj.blur !== 0) ||
+          (adj.opacity !== undefined && adj.opacity !== 1)
+      );
+      const hasEffects = (Array.isArray(el.effects) && el.effects.length > 0) ||
+                         (Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0);
+      const forceDomRender = isMedia && (hasKeying || hasBlendMode || hasAdjustments || hasEffects);
+
       // 1. Container elements (group, frame)
       if (type === 'group' || type === 'frame') {
         activeLeaferIds.add(el.id);
@@ -1136,7 +1153,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         }
       }
       // 2. Standard graphics (rect, ellipse, circle, path, text, shape, image)
-      else if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || type === 'image') && !hasRevealEffect) {
+      else if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -1177,7 +1194,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         leaferCoreRef.current?.drawElement(el.id, drawType, properties, parentId);
       }
       // 3. PixiJS Media (video feeds) - keeps absolute coords on flat WebGL canvas
-      else if (type === 'video') {
+      else if (type === 'video' && !forceDomRender) {
         activePixiIds.add(el.id);
 
         let videoEl = videoElementsRef.current.get(el.id);
