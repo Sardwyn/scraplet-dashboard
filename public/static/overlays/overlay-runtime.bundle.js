@@ -35208,7 +35208,7 @@ void main() {
     canvasInitialized,
     isCanvasDrawn
   }) {
-    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia, _Ja, _Ka, _La, _Ma, _Na, _Oa, _Pa, _Qa, _Ra, _Sa, _Ta, _Ua, _Va, _Wa, _Xa, _Ya, _Za, __a, _$a, _ab, _bb, _cb, _db, _eb, _fb, _gb, _hb, _ib, _jb, _kb, _lb, _mb, _nb, _ob, _pb, _qb;
+    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia, _Ja, _Ka, _La, _Ma, _Na, _Oa, _Pa, _Qa, _Ra, _Sa, _Ta, _Ua, _Va, _Wa, _Xa, _Ya, _Za, __a, _$a, _ab, _bb, _cb, _db, _eb, _fb, _gb, _hb, _ib, _jb, _kb, _lb, _mb, _nb, _ob, _pb, _qb, _rb, _sb, _tb;
     const patternScopeId = sanitizeSvgId(reactExports.useId());
     let el = element;
     if (el.bindings && data) {
@@ -35712,18 +35712,63 @@ void main() {
         columnNumber: 13
       }, this);
     }
+    if (el.type === "adjustment") {
+      const cssEffectStyle = buildCssEffectStyle(effects);
+      const mixBlendMode = toCssBlendMode(el.blendMode);
+      const adjustmentStyle = { ...baseStyle, mixBlendMode };
+      const adj2 = (_G = el.adjustments) != null ? _G : {};
+      const exposureVal = adj2.exposure !== void 0 ? Number(adj2.exposure) : 0;
+      const adjFilter = [
+        adj2.brightness !== void 0 && adj2.brightness !== 1 ? `brightness(${adj2.brightness})` : "",
+        adj2.contrast !== void 0 && adj2.contrast !== 1 ? `contrast(${adj2.contrast})` : "",
+        exposureVal !== 0 ? `brightness(${1 + exposureVal * 0.5}) contrast(${1 + exposureVal * 0.3})` : "",
+        adj2.saturate !== void 0 && adj2.saturate !== 1 ? `saturate(${adj2.saturate})` : "",
+        adj2.hueRotate !== void 0 && adj2.hueRotate !== 0 ? `hue-rotate(${adj2.hueRotate}deg)` : "",
+        adj2.blur !== void 0 && adj2.blur !== 0 ? `blur(${adj2.blur}px)` : "",
+        adj2.opacity !== void 0 && adj2.opacity !== 1 ? `opacity(${adj2.opacity})` : ""
+      ].filter(Boolean).join(" ");
+      const mergedFilter = [cssEffectStyle.filter, adjFilter].filter(Boolean).join(" ");
+      const backdropFilterValue = mergedFilter || void 0;
+      const br2 = (_I = (_H = el.borderRadiusPx) != null ? _H : el.borderRadius) != null ? _I : 0;
+      const effectiveBr = el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number" ? el.clip.radius : br2;
+      return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: adjustmentStyle, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+        "div",
+        {
+          style: {
+            ...innerStyle,
+            ...cssEffectStyle,
+            borderRadius: effectiveBr,
+            overflow: "hidden",
+            backdropFilter: backdropFilterValue,
+            WebkitBackdropFilter: backdropFilterValue
+          }
+        },
+        void 0,
+        false,
+        {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+          lineNumber: 2552,
+          columnNumber: 17
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+        lineNumber: 2551,
+        columnNumber: 13
+      }, this);
+    }
     if (el.type === "box") {
       const box = el;
-      const w2 = Math.max(1, (_G = box.width) != null ? _G : 1);
-      const h2 = Math.max(1, (_H = box.height) != null ? _H : 1);
+      const w2 = Math.max(1, (_J = box.width) != null ? _J : 1);
+      const h2 = Math.max(1, (_K = box.height) != null ? _K : 1);
       const boxPath = elementToOverlayPath(box);
       const pathD = svgPathFromCommands(boxPath != null ? boxPath : { commands: [] });
       const fills = legacyFillStack(box);
       const fillScopeId = `box-fill-${patternScopeId}-${box.id}`;
       const effectFilterId = sanitizeSvgId(`box-effect-${patternScopeId}-${box.id}`);
-      const strokeWidth = (_I = box.strokeWidthPx) != null ? _I : 0;
+      const strokeWidth = (_L = box.strokeWidthPx) != null ? _L : 0;
       const strokeOpacity = typeof box.strokeOpacity === "number" ? box.strokeOpacity : 1;
-      const strokeAlign = (_J = box.strokeAlign) != null ? _J : "center";
+      const strokeAlign = (_M = box.strokeAlign) != null ? _M : "center";
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: baseStyle, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { ...innerStyle, opacity: void 0, position: "relative", overflow: "visible" }, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1, overflow: "visible" }, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "100%", height: "100%", viewBox: `0 0 ${w2} ${h2}`, preserveAspectRatio: "none", style: { overflow: "visible" }, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: [
@@ -35731,7 +35776,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2541,
+            lineNumber: 2585,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35743,7 +35788,7 @@ void main() {
               w2,
               h2,
               strokeWidth,
-              (_K = box.strokeColor) != null ? _K : "rgba(255,255,255,0.9)",
+              (_N = box.strokeColor) != null ? _N : "rgba(255,255,255,0.9)",
               strokeOpacity,
               box.strokeDash,
               strokeAlign,
@@ -35752,7 +35797,7 @@ void main() {
               pathD,
               `box-${patternScopeId}-${box.id}`,
               {
-                stroke: (_L = box.strokeColor) != null ? _L : "rgba(255,255,255,0.9)",
+                stroke: (_O = box.strokeColor) != null ? _O : "rgba(255,255,255,0.9)",
                 strokeWidth,
                 strokeOpacity,
                 dash: box.strokeDash,
@@ -35764,16 +35809,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2545,
+            lineNumber: 2589,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2540,
+          lineNumber: 2584,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2539,
+          lineNumber: 2583,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35783,7 +35828,7 @@ void main() {
             width: w2,
             height: h2,
             elementId: box.id,
-            borderRadius: (_N = (_M = box.borderRadiusPx) != null ? _M : box.borderRadius) != null ? _N : 0,
+            borderRadius: (_Q = (_P = box.borderRadiusPx) != null ? _P : box.borderRadius) != null ? _Q : 0,
             shapePath: pathD,
             data,
             isRectangular: true
@@ -35792,25 +35837,25 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2575,
+            lineNumber: 2619,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2538,
+        lineNumber: 2582,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2537,
+        lineNumber: 2581,
         columnNumber: 13
       }, this);
     }
     if (el.type === "path") {
       const pathEl = el;
-      const w2 = Math.max(1, (_O = pathEl.width) != null ? _O : 1);
-      const h2 = Math.max(1, (_P = pathEl.height) != null ? _P : 1);
+      const w2 = Math.max(1, (_R = pathEl.width) != null ? _R : 1);
+      const h2 = Math.max(1, (_S = pathEl.height) != null ? _S : 1);
       const scaledPath = elementToOverlayPath(pathEl);
       const pathD = svgPathFromCommands(scaledPath != null ? scaledPath : pathEl.path);
       const fills = legacyFillStack(pathEl);
@@ -35823,7 +35868,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2607,
+            lineNumber: 2651,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -35835,8 +35880,8 @@ void main() {
               pathD,
               `path-${patternScopeId}-${pathEl.id}`,
               {
-                stroke: (_Q = pathEl.strokeColor) != null ? _Q : "rgba(56,189,248,0.95)",
-                strokeWidth: (_R = pathEl.strokeWidthPx) != null ? _R : 2,
+                stroke: (_T = pathEl.strokeColor) != null ? _T : "rgba(56,189,248,0.95)",
+                strokeWidth: (_U = pathEl.strokeWidthPx) != null ? _U : 2,
                 strokeOpacity: typeof pathEl.strokeOpacity === "number" ? pathEl.strokeOpacity : 1,
                 dash: pathEl.strokeDash,
                 strokeLineCap: pathEl.strokeLineCap,
@@ -35847,16 +35892,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2611,
+            lineNumber: 2655,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2606,
+          lineNumber: 2650,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2605,
+          lineNumber: 2649,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35873,18 +35918,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2631,
+            lineNumber: 2675,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2603,
+        lineNumber: 2647,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2602,
+        lineNumber: 2646,
         columnNumber: 13
       }, this);
     }
@@ -35894,24 +35939,24 @@ void main() {
       let justify = "flex-start";
       if (textEl.textAlign === "center") justify = "center";
       if (textEl.textAlign === "right") justify = "flex-end";
-      const fontSize = (_T = (_S = textEl.fontSizePx) != null ? _S : textEl.fontSize) != null ? _T : 24;
-      const strokeWidth = (_V = (_U = textEl.strokeWidthPx) != null ? _U : textEl.strokeWidth) != null ? _V : 0;
+      const fontSize = (_W = (_V = textEl.fontSizePx) != null ? _V : textEl.fontSize) != null ? _W : 24;
+      const strokeWidth = (_Y = (_X = textEl.strokeWidthPx) != null ? _X : textEl.strokeWidth) != null ? _Y : 0;
       const strokeColor = textEl.strokeColor;
       const content = resolveText(textEl.text, data);
       if (textEl.textOnPathId) {
         const pathEl = elementsById == null ? void 0 : elementsById[textEl.textOnPathId];
         if (pathEl) {
-          const pathD = svgPathFromCommands((_W = elementToOverlayPath(pathEl)) != null ? _W : { commands: [] });
+          const pathD = svgPathFromCommands((_Z = elementToOverlayPath(pathEl)) != null ? _Z : { commands: [] });
           const pathId = `top-${el.id}`;
-          const offset = (_X = textEl.textOnPathOffset) != null ? _X : 0;
+          const offset = (__ = textEl.textOnPathOffset) != null ? __ : 0;
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: baseStyle, children: !hideInnerContent && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "100%", height: "100%", overflow: "visible", style: { position: "absolute", inset: 0 }, children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { id: pathId, d: pathD }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2669,
+              lineNumber: 2713,
               columnNumber: 33
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2668,
+              lineNumber: 2712,
               columnNumber: 29
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35920,11 +35965,11 @@ void main() {
                 fontSize,
                 fontFamily: getFontStack(textEl.fontFamily),
                 fontWeight: _fontWeight,
-                fontStyle: (_Y = textEl.fontStyle) != null ? _Y : "normal",
-                fill: (_Z = textEl.color) != null ? _Z : "#ffffff",
+                fontStyle: (_$ = textEl.fontStyle) != null ? _$ : "normal",
+                fill: (_aa = textEl.color) != null ? _aa : "#ffffff",
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("textPath", { href: `#${pathId}`, startOffset: `${offset}%`, children: content }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 2678,
+                  lineNumber: 2722,
                   columnNumber: 33
                 }, this)
               },
@@ -35932,27 +35977,27 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2671,
+                lineNumber: 2715,
                 columnNumber: 29
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2667,
+            lineNumber: 2711,
             columnNumber: 25
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2665,
+            lineNumber: 2709,
             columnNumber: 21
           }, this);
         }
       }
-      const _textW = (__ = textEl.width) != null ? __ : 100;
-      const _textH = (_$ = textEl.height) != null ? _$ : 40;
+      const _textW = (_ba = textEl.width) != null ? _ba : 100;
+      const _textH = (_ca = textEl.height) != null ? _ca : 40;
       const _fontWeight = textEl.fontWeight === "bold" ? 700 : textEl.fontWeight ? Number(textEl.fontWeight) || 400 : 400;
       const _fontStack = getFontStack(textEl.fontFamily);
-      const _textAlign = (_aa = textEl.textAlign) != null ? _aa : "left";
+      const _textAlign = (_da = textEl.textAlign) != null ? _da : "left";
       const _needsPath = effects.some(
         (e2) => {
           var _a4, _b2;
@@ -35980,10 +36025,10 @@ void main() {
               alignItems: "center",
               justifyContent: justify,
               padding: "0 8px",
-              color: (_ba = textEl.color) != null ? _ba : "#e5e7eb",
+              color: (_ea = textEl.color) != null ? _ea : "#e5e7eb",
               fontSize,
               fontWeight: _fontWeight,
-              fontStyle: (_ca = textEl.fontStyle) != null ? _ca : "normal",
+              fontStyle: (_fa = textEl.fontStyle) != null ? _fa : "normal",
               fontFamily: _fontStack,
               lineHeight: 1.1,
               boxSizing: "border-box",
@@ -36001,7 +36046,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2707,
+            lineNumber: 2751,
             columnNumber: 17
           },
           this
@@ -36020,14 +36065,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2737,
+            lineNumber: 2781,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2705,
+        lineNumber: 2749,
         columnNumber: 13
       }, this);
     }
@@ -36035,8 +36080,8 @@ void main() {
       const booleanEl = el;
       const resolved = resolveElementGeometry(booleanEl, elementsById);
       if (!resolved) return null;
-      const w2 = Math.max(1, (_ea = (_da = booleanEl.width) != null ? _da : resolved.bounds.width) != null ? _ea : 1);
-      const h2 = Math.max(1, (_ga = (_fa = booleanEl.height) != null ? _fa : resolved.bounds.height) != null ? _ga : 1);
+      const w2 = Math.max(1, (_ha = (_ga = booleanEl.width) != null ? _ga : resolved.bounds.width) != null ? _ha : 1);
+      const h2 = Math.max(1, (_ja = (_ia = booleanEl.height) != null ? _ia : resolved.bounds.height) != null ? _ja : 1);
       const pathD = svgPathFromCommands(resolved.path);
       const fills = legacyFillStack(booleanEl);
       const fillScopeId = `boolean-fill-${patternScopeId}-${booleanEl.id}`;
@@ -36048,7 +36093,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2765,
+            lineNumber: 2809,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36060,8 +36105,8 @@ void main() {
               pathD,
               `boolean-${patternScopeId}-${booleanEl.id}`,
               {
-                stroke: (_ha = booleanEl.strokeColor) != null ? _ha : "rgba(56,189,248,0.95)",
-                strokeWidth: (_ia = booleanEl.strokeWidthPx) != null ? _ia : 2,
+                stroke: (_ka = booleanEl.strokeColor) != null ? _ka : "rgba(56,189,248,0.95)",
+                strokeWidth: (_la = booleanEl.strokeWidthPx) != null ? _la : 2,
                 strokeOpacity: typeof booleanEl.strokeOpacity === "number" ? booleanEl.strokeOpacity : 1,
                 dash: booleanEl.strokeDash,
                 strokeLineCap: booleanEl.strokeLineCap,
@@ -36072,16 +36117,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2769,
+            lineNumber: 2813,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2764,
+          lineNumber: 2808,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2763,
+          lineNumber: 2807,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36098,31 +36143,31 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2788,
+            lineNumber: 2832,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2762,
+        lineNumber: 2806,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2761,
+        lineNumber: 2805,
         columnNumber: 13
       }, this);
     }
     if (el.type === "shape") {
       const s2 = el;
-      const w2 = Math.max(1, (_ja = s2.width) != null ? _ja : 1);
-      const h2 = Math.max(1, (_ka = s2.height) != null ? _ka : 1);
+      const w2 = Math.max(1, (_ma = s2.width) != null ? _ma : 1);
+      const h2 = Math.max(1, (_na = s2.height) != null ? _na : 1);
       const shapePath = elementToOverlayPath(s2);
       const pathD = shapePath ? svgPathFromCommands(shapePath) : "";
-      (_la = s2.fillColor) != null ? _la : "rgba(56,189,248,0.18)";
+      (_oa = s2.fillColor) != null ? _oa : "rgba(56,189,248,0.18)";
       typeof s2.fillOpacity === "number" ? s2.fillOpacity : 1;
-      const stroke = (_ma = s2.strokeColor) != null ? _ma : "rgba(56,189,248,0.95)";
-      const strokeWidth = (_oa = (_na = s2.strokeWidthPx) != null ? _na : s2.strokeWidth) != null ? _oa : 2;
+      const stroke = (_pa = s2.strokeColor) != null ? _pa : "rgba(56,189,248,0.95)";
+      const strokeWidth = (_ra = (_qa = s2.strokeWidthPx) != null ? _qa : s2.strokeWidth) != null ? _ra : 2;
       const strokeOpacity = typeof s2.strokeOpacity === "number" ? s2.strokeOpacity : 1;
       const dash = Array.isArray(s2.strokeDash) && s2.strokeDash.length ? s2.strokeDash : void 0;
       const fills = s2.shape === "line" ? legacyFillStack({ ...s2, fills: [] }) : legacyFillStack(s2);
@@ -36151,7 +36196,7 @@ void main() {
                 renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2849,
+                lineNumber: 2893,
                 columnNumber: 25
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36166,7 +36211,7 @@ void main() {
                   stroke,
                   strokeOpacity,
                   dash,
-                  (_pa = s2.strokeAlign) != null ? _pa : "center",
+                  (_sa = s2.strokeAlign) != null ? _sa : "center",
                   s2.strokeSides
                 ) : renderAlignedPathStroke(
                   pathD,
@@ -36184,7 +36229,7 @@ void main() {
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2853,
+                lineNumber: 2897,
                 columnNumber: 25
               }, this)
             ]
@@ -36193,13 +36238,13 @@ void main() {
           true,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2842,
+            lineNumber: 2886,
             columnNumber: 48
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2841,
+          lineNumber: 2885,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36211,37 +36256,37 @@ void main() {
             elementId: s2.id,
             shapePath: pathD,
             data,
-            borderRadius: s2.shape === "rect" ? (_ra = (_qa = s2.cornerRadiusPx) != null ? _qa : s2.cornerRadius) != null ? _ra : 0 : 0,
+            borderRadius: s2.shape === "rect" ? (_ua = (_ta = s2.cornerRadiusPx) != null ? _ta : s2.cornerRadius) != null ? _ua : 0 : 0,
             isRectangular: s2.shape === "rect"
           },
           void 0,
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2885,
+            lineNumber: 2929,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2839,
+        lineNumber: 2883,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2838,
+        lineNumber: 2882,
         columnNumber: 13
       }, this);
     }
     if (el.type === "image") {
       const img = el;
       const cssEffectStyle = buildCssEffectStyle(effects);
-      const br2 = (_ta = (_sa = img.borderRadiusPx) != null ? _sa : img.borderRadius) != null ? _ta : 0;
+      const br2 = (_wa = (_va = img.borderRadiusPx) != null ? _va : img.borderRadius) != null ? _wa : 0;
       const effectiveBr = el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number" ? el.clip.radius : br2;
       const src = img.src || "";
       const mixBlendMode = toCssBlendMode(img.blendMode);
       const imageStyle = { ...baseStyle, mixBlendMode };
-      const adj2 = (_ua = img.adjustments) != null ? _ua : {};
+      const adj2 = (_xa = img.adjustments) != null ? _xa : {};
       const exposureVal = adj2.exposure !== void 0 ? Number(adj2.exposure) : 0;
       const adjFilter = [
         adj2.brightness !== void 0 && adj2.brightness !== 1 ? `brightness(${adj2.brightness})` : "",
@@ -36257,19 +36302,19 @@ void main() {
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: imageStyle, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? void 0 : "hidden", filter: mergedFilter || void 0 }, children: !hideInnerContent && src && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(KeyedMedia, { kind: "image", src, fit: img.fit, keying: img.keying }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2936,
+          lineNumber: 2980,
           columnNumber: 25
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2934,
+          lineNumber: 2978,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           ParametricEffectOverlay,
           {
             effects,
-            width: (_va = img.width) != null ? _va : 100,
-            height: (_wa = img.height) != null ? _wa : 100,
+            width: (_ya = img.width) != null ? _ya : 100,
+            height: (_za = img.height) != null ? _za : 100,
             elementId: img.id,
             data,
             borderRadius: effectiveBr,
@@ -36279,21 +36324,21 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2939,
+            lineNumber: 2983,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2933,
+        lineNumber: 2977,
         columnNumber: 13
       }, this);
     }
     if (el.type === "video") {
       const vid = el;
       const cssEffectStyle = buildCssEffectStyle(effects);
-      const br2 = (_ya = (_xa = vid.borderRadiusPx) != null ? _xa : vid.borderRadius) != null ? _ya : 0;
+      const br2 = (_Ba = (_Aa = vid.borderRadiusPx) != null ? _Aa : vid.borderRadius) != null ? _Ba : 0;
       const effectiveBr = el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number" ? el.clip.radius : br2;
       const src = vid.src || "";
       const mixBlendMode = toCssBlendMode(vid.blendMode);
@@ -36316,21 +36361,21 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2970,
+            lineNumber: 3014,
             columnNumber: 25
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2968,
+          lineNumber: 3012,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
           ParametricEffectOverlay,
           {
             effects,
-            width: (_za = vid.width) != null ? _za : 100,
-            height: (_Aa = vid.height) != null ? _Aa : 100,
+            width: (_Ca = vid.width) != null ? _Ca : 100,
+            height: (_Da = vid.height) != null ? _Da : 100,
             elementId: vid.id,
             data,
             borderRadius: effectiveBr,
@@ -36340,24 +36385,24 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2983,
+            lineNumber: 3027,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2967,
+        lineNumber: 3011,
         columnNumber: 13
       }, this);
     }
     if (el.type === "progressBar") {
       const bar = el;
-      const val = Math.max(0, Math.min(1, (_Ba = bar.value) != null ? _Ba : 0));
-      const br2 = (_Ca = bar.borderRadiusPx) != null ? _Ca : 0;
+      const val = Math.max(0, Math.min(1, (_Ea = bar.value) != null ? _Ea : 0));
+      const br2 = (_Fa = bar.borderRadiusPx) != null ? _Fa : 0;
       let progressStyle = {
         position: "absolute",
-        backgroundColor: (_Da = bar.fillColor) != null ? _Da : "#3b82f6"
+        backgroundColor: (_Ga = bar.fillColor) != null ? _Ga : "#3b82f6"
       };
       if (bar.direction === "ltr") {
         progressStyle = { ...progressStyle, left: 0, top: 0, bottom: 0, width: `${val * 100}%` };
@@ -36373,13 +36418,13 @@ void main() {
         {
           style: {
             ...innerStyle,
-            backgroundColor: (_Ea = bar.backgroundColor) != null ? _Ea : "rgba(255,255,255,0.1)",
+            backgroundColor: (_Ha = bar.backgroundColor) != null ? _Ha : "rgba(255,255,255,0.1)",
             borderRadius: br2,
             overflow: "hidden"
           },
           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: progressStyle }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3027,
+            lineNumber: 3071,
             columnNumber: 21
           }, this)
         },
@@ -36387,20 +36432,20 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3019,
+          lineNumber: 3063,
           columnNumber: 17
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3018,
+        lineNumber: 3062,
         columnNumber: 13
       }, this);
     }
     if (el.type === "progressRing") {
       const ring = el;
-      const val = Math.max(0, Math.min(1, (_Fa = ring.value) != null ? _Fa : 0));
-      const sw = (_Ga = ring.strokeWidthPx) != null ? _Ga : 4;
+      const val = Math.max(0, Math.min(1, (_Ia = ring.value) != null ? _Ia : 0));
+      const sw = (_Ja = ring.strokeWidthPx) != null ? _Ja : 4;
       const w2 = el.width || 1;
       const h2 = el.height || 1;
       const r2 = Math.max(0.1, Math.min(w2, h2) / 2 - sw / 2);
@@ -36408,7 +36453,7 @@ void main() {
       const cy = h2 / 2;
       const circumference = 2 * Math.PI * r2;
       const offset = circumference * (1 - val);
-      const startAngle = (_Ha = ring.startAngleDeg) != null ? _Ha : -90;
+      const startAngle = (_Ka = ring.startAngleDeg) != null ? _Ka : -90;
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: baseStyle, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: innerStyle, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
         "svg",
         {
@@ -36424,14 +36469,14 @@ void main() {
                 cy,
                 r: r2,
                 fill: "none",
-                stroke: (_Ia = ring.backgroundColor) != null ? _Ia : "rgba(255,255,255,0.1)",
+                stroke: (_La = ring.backgroundColor) != null ? _La : "rgba(255,255,255,0.1)",
                 strokeWidth: sw
               },
               void 0,
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3056,
+                lineNumber: 3100,
                 columnNumber: 25
               },
               this
@@ -36443,7 +36488,7 @@ void main() {
                 cy,
                 r: r2,
                 fill: "none",
-                stroke: (_Ja = ring.fillColor) != null ? _Ja : "#3b82f6",
+                stroke: (_Ma = ring.fillColor) != null ? _Ma : "#3b82f6",
                 strokeWidth: sw,
                 strokeDasharray: circumference,
                 strokeDashoffset: offset,
@@ -36453,7 +36498,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3064,
+                lineNumber: 3108,
                 columnNumber: 25
               },
               this
@@ -36464,27 +36509,27 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3050,
+          lineNumber: 3094,
           columnNumber: 21
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3049,
+        lineNumber: 3093,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3048,
+        lineNumber: 3092,
         columnNumber: 13
       }, this);
     }
     if (el.type === "lower_third") {
       const lt2 = el;
       const keys = {
-        active: ((_Ka = lt2.bind) == null ? void 0 : _Ka.activeKey) || "lower_third.active",
-        text: ((_La = lt2.bind) == null ? void 0 : _La.textKey) || "lower_third",
-        title: ((_Ma = lt2.bind) == null ? void 0 : _Ma.titleKey) || "lower_third.title",
-        subtitle: ((_Na = lt2.bind) == null ? void 0 : _Na.subtitleKey) || "lower_third.subtitle"
+        active: ((_Na = lt2.bind) == null ? void 0 : _Na.activeKey) || "lower_third.active",
+        text: ((_Oa = lt2.bind) == null ? void 0 : _Oa.textKey) || "lower_third",
+        title: ((_Pa = lt2.bind) == null ? void 0 : _Pa.titleKey) || "lower_third.title",
+        subtitle: ((_Qa = lt2.bind) == null ? void 0 : _Qa.subtitleKey) || "lower_third.subtitle"
       };
       const activeVal = data == null ? void 0 : data[keys.active];
       const rawText = (data == null ? void 0 : data[keys.text]) || "";
@@ -36508,24 +36553,24 @@ void main() {
           }, dur);
           return () => clearTimeout(tm);
         }
-      }, [isActive, (_Oa = lt2.animation) == null ? void 0 : _Oa.durationMs]);
+      }, [isActive, (_Ra = lt2.animation) == null ? void 0 : _Ra.durationMs]);
       if (!renderState.show && !isActive) return null;
-      const variant = ((_Pa = lt2.style) == null ? void 0 : _Pa.variant) || "accent-bar";
-      const layoutMode = ((_Qa = lt2.layout) == null ? void 0 : _Qa.mode) || "stacked";
-      const bgColor = ((_Ra = lt2.style) == null ? void 0 : _Ra.bgColor) || "#111";
-      const bgOpacity = (_Ta = (_Sa = lt2.style) == null ? void 0 : _Sa.bgOpacity) != null ? _Ta : 0.75;
-      const accent = ((_Ua = lt2.style) == null ? void 0 : _Ua.accentColor) || "#4f46e5";
-      const titleColor = ((_Va = lt2.style) == null ? void 0 : _Va.titleColor) || "#fff";
-      const subtitleColor = ((_Wa = lt2.style) == null ? void 0 : _Wa.subtitleColor) || "rgba(255,255,255,0.85)";
-      const padding = (_Ya = (_Xa = lt2.style) == null ? void 0 : _Xa.paddingPx) != null ? _Ya : 20;
-      const radius = (__a = (_Za = lt2.style) == null ? void 0 : _Za.cornerRadiusPx) != null ? __a : 18;
-      const titleSize = (_ab = (_$a = lt2.style) == null ? void 0 : _$a.titleSizePx) != null ? _ab : 40;
-      const subSize = (_cb = (_bb = lt2.style) == null ? void 0 : _bb.subtitleSizePx) != null ? _cb : 26;
-      const titleWeight = ((_db = lt2.style) == null ? void 0 : _db.titleWeight) === "normal" ? 400 : 700;
-      const font = getFontStack((_eb = lt2.style) == null ? void 0 : _eb.fontFamily);
-      const animOut = ((_fb = lt2.animation) == null ? void 0 : _fb.out) || "slideDown";
-      const animDur = (_hb = (_gb = lt2.animation) == null ? void 0 : _gb.durationMs) != null ? _hb : 450;
-      const ease = ((_ib = lt2.animation) == null ? void 0 : _ib.easing) || "cubic-bezier(0.2, 0.9, 0.2, 1)";
+      const variant = ((_Sa = lt2.style) == null ? void 0 : _Sa.variant) || "accent-bar";
+      const layoutMode = ((_Ta = lt2.layout) == null ? void 0 : _Ta.mode) || "stacked";
+      const bgColor = ((_Ua = lt2.style) == null ? void 0 : _Ua.bgColor) || "#111";
+      const bgOpacity = (_Wa = (_Va = lt2.style) == null ? void 0 : _Va.bgOpacity) != null ? _Wa : 0.75;
+      const accent = ((_Xa = lt2.style) == null ? void 0 : _Xa.accentColor) || "#4f46e5";
+      const titleColor = ((_Ya = lt2.style) == null ? void 0 : _Ya.titleColor) || "#fff";
+      const subtitleColor = ((_Za = lt2.style) == null ? void 0 : _Za.subtitleColor) || "rgba(255,255,255,0.85)";
+      const padding = (_$a = (__a = lt2.style) == null ? void 0 : __a.paddingPx) != null ? _$a : 20;
+      const radius = (_bb = (_ab = lt2.style) == null ? void 0 : _ab.cornerRadiusPx) != null ? _bb : 18;
+      const titleSize = (_db = (_cb = lt2.style) == null ? void 0 : _cb.titleSizePx) != null ? _db : 40;
+      const subSize = (_fb = (_eb = lt2.style) == null ? void 0 : _eb.subtitleSizePx) != null ? _fb : 26;
+      const titleWeight = ((_gb = lt2.style) == null ? void 0 : _gb.titleWeight) === "normal" ? 400 : 700;
+      const font = getFontStack((_hb = lt2.style) == null ? void 0 : _hb.fontFamily);
+      const animOut = ((_ib = lt2.animation) == null ? void 0 : _ib.out) || "slideDown";
+      const animDur = (_kb = (_jb = lt2.animation) == null ? void 0 : _jb.durationMs) != null ? _kb : 450;
+      const ease = ((_lb = lt2.animation) == null ? void 0 : _lb.easing) || "cubic-bezier(0.2, 0.9, 0.2, 1)";
       const isExiting = !isActive && renderState.show;
       const getAnimStyle = (type) => {
         if (type === "none") return {};
@@ -36556,38 +36601,38 @@ void main() {
         };
         const twitchIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3184,
+          lineNumber: 3228,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3183,
+          lineNumber: 3227,
           columnNumber: 17
         }, this);
         const twitterXIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M18.244 2.25h3.308l-7.227 7.56 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.085L1.254 2.25h6.7l4.757 6.286zm-1.161 17.52h1.833L7.084 4.126H5.117z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3190,
+          lineNumber: 3234,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3189,
+          lineNumber: 3233,
           columnNumber: 17
         }, this);
         const youtubeIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3196,
+          lineNumber: 3240,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3195,
+          lineNumber: 3239,
           columnNumber: 17
         }, this);
         const discordIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.03c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.03A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.111a13.994 13.994 0 0 1-1.875-.894.083.083 0 0 1-.008-.136c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.075 0 0 1 .078.009c.12.099.246.195.373.289a.083.083 0 0 1-.006.134 14.113 14.113 0 0 1-1.875.89.08.08 0 0 0-.025.11c.361.7.772 1.365 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3202,
+          lineNumber: 3246,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3201,
+          lineNumber: 3245,
           columnNumber: 17
         }, this);
         const twitchRegex = /^(?:twitch(?:\.tv)?(?:\s*:\s*|\s+)?|@twitch\s*)/i;
@@ -36628,18 +36673,18 @@ void main() {
             social.icon,
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: social.cleanText }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3249,
+              lineNumber: 3293,
               columnNumber: 25
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3247,
+            lineNumber: 3291,
             columnNumber: 21
           }, this);
         }
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { color: defaultColor, fontSize: defaultSize, fontWeight: weight }, children: text }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3254,
+          lineNumber: 3298,
           columnNumber: 17
         }, this);
       };
@@ -36649,15 +36694,15 @@ void main() {
       if (layoutMode === "single") {
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", width: "100%", height: "100%" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3267,
+          lineNumber: 3311,
           columnNumber: 17
         }, this);
       } else if (layoutMode === "split") {
-        const ratio = (_kb = (_jb = lt2.layout) == null ? void 0 : _jb.splitRatio) != null ? _kb : 0.6;
+        const ratio = (_nb = (_mb = lt2.layout) == null ? void 0 : _mb.splitRatio) != null ? _nb : 0.6;
         const leftW = `${ratio * 100}%`;
         const rightW = `${(1 - ratio) * 100}%`;
-        const leftSize = (_mb = (_lb = lt2.layout) == null ? void 0 : _lb.leftSizePx) != null ? _mb : titleSize;
-        const rightSize = (_ob = (_nb = lt2.layout) == null ? void 0 : _nb.rightSizePx) != null ? _ob : subSize;
+        const leftSize = (_pb = (_ob = lt2.layout) == null ? void 0 : _ob.leftSizePx) != null ? _pb : titleSize;
+        const rightSize = (_rb = (_qb = lt2.layout) == null ? void 0 : _qb.rightSizePx) != null ? _rb : subSize;
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", width: "100%", height: "100%", alignItems: "center" }, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
             "div",
@@ -36677,7 +36722,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3280,
+              lineNumber: 3324,
               columnNumber: 21
             },
             this
@@ -36697,27 +36742,27 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3293,
+              lineNumber: 3337,
               columnNumber: 21
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3279,
+          lineNumber: 3323,
           columnNumber: 17
         }, this);
       } else {
-        const extraLines = (_pb = lt2.contentLines) != null ? _pb : [];
+        const extraLines = (_sb = lt2.contentLines) != null ? _sb : [];
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" }, children: [
           titleText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3311,
+            lineNumber: 3355,
             columnNumber: 25
           }, this),
           subText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", marginTop: 4 }, children: renderSocialText(subText, subtitleColor, subSize, "normal") }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3316,
+            lineNumber: 3360,
             columnNumber: 25
           }, this),
           extraLines.map((line, i2) => {
@@ -36739,7 +36784,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3325,
+                lineNumber: 3369,
                 columnNumber: 29
               },
               this
@@ -36747,7 +36792,7 @@ void main() {
           })
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3309,
+          lineNumber: 3353,
           columnNumber: 17
         }, this);
       }
@@ -36786,27 +36831,27 @@ void main() {
       const renderBrackets = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, left: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3379,
+          lineNumber: 3423,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, right: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3380,
+          lineNumber: 3424,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, left: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3381,
+          lineNumber: 3425,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, right: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3382,
+          lineNumber: 3426,
           columnNumber: 17
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3378,
+        lineNumber: 3422,
         columnNumber: 13
       }, this);
       const renderGrid = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36828,7 +36873,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3388,
+          lineNumber: 3432,
           columnNumber: 13
         },
         this
@@ -36838,10 +36883,10 @@ void main() {
         renderBrackets,
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", height: "100%" }, children: contentNode }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3410,
+          lineNumber: 3454,
           columnNumber: 29
         }, this),
-        ((_qb = lt2.ticker) == null ? void 0 : _qb.enabled) && (() => {
+        ((_tb = lt2.ticker) == null ? void 0 : _tb.enabled) && (() => {
           var _a4, _b2, _c2, _d2, _e3, _f2, _g2, _h3;
           const tickerText = resolveText((_a4 = data == null ? void 0 : data[lt2.ticker.key]) != null ? _a4 : "", data);
           const displayText = tickerText || (overlayPublicId ? "Ticker text — set via lower_third.ticker data key" : "");
@@ -36871,7 +36916,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3429,
+              lineNumber: 3473,
               columnNumber: 37
             },
             this
@@ -36879,19 +36924,19 @@ void main() {
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3407,
+        lineNumber: 3451,
         columnNumber: 25
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3406,
+        lineNumber: 3450,
         columnNumber: 21
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3405,
+        lineNumber: 3449,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3404,
+        lineNumber: 3448,
         columnNumber: 13
       }, this);
     }
@@ -36957,7 +37002,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3501,
+              lineNumber: 3545,
               columnNumber: 21
             },
             this
@@ -36975,13 +37020,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3513,
+            lineNumber: 3557,
             columnNumber: 21
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3512,
+          lineNumber: 3556,
           columnNumber: 17
         }, this);
       }
@@ -37003,7 +37048,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3529,
+            lineNumber: 3573,
             columnNumber: 17
           },
           this
@@ -37023,7 +37068,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3546,
+          lineNumber: 3590,
           columnNumber: 13
         },
         this

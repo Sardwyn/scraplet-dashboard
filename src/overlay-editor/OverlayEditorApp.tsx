@@ -3550,6 +3550,154 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     setSelectedIds([id]);
   }
 
+  function createGroup() {
+    if (selectedIds.length > 0) {
+      // Group selected elements (even if 1 element)
+      const id = genId("group");
+      setConfig((prev) => {
+        const els = prev.elements;
+        const selectedElsInOrder = els.filter(e => selectedIds.includes(e.id));
+        if (selectedElsInOrder.length === 0) return prev;
+
+        let highestIdx = -1;
+        selectedElsInOrder.forEach(el => {
+          const idx = els.findIndex(e => e.id === el.id);
+          if (idx > highestIdx) highestIdx = idx;
+        });
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        selectedElsInOrder.forEach(el => {
+          minX = Math.min(minX, el.x);
+          minY = Math.min(minY, el.y);
+          maxX = Math.max(maxX, el.x + el.width);
+          maxY = Math.max(maxY, el.y + el.height);
+        });
+
+        if (!isFinite(minX)) return prev;
+
+        const grp: AnyEl = {
+          id, type: "group", name: "Group",
+          x: minX, y: minY, width: maxX - minX, height: maxY - minY,
+          visible: true, locked: false, opacity: 1,
+          childIds: selectedElsInOrder.map(e => e.id),
+        } as any;
+
+        const withoutSelected = els.filter(e => !selectedIds.includes(e.id));
+
+        let shift = 0;
+        for (let i = 0; i < highestIdx; i++) {
+          if (selectedIds.includes(els[i].id)) shift++;
+        }
+        const targetIdx = highestIdx - shift + 1;
+
+        const before = withoutSelected.slice(0, targetIdx);
+        const after = withoutSelected.slice(targetIdx);
+
+        const newElements = [
+          ...before,
+          ...selectedElsInOrder,
+          grp,
+          ...after
+        ];
+
+        return { ...prev, elements: newElements };
+      });
+      setSelectedIds([id]);
+    } else {
+      // Create empty group centered
+      const id = genId("group");
+      const { width: bw, height: bh } = baseResolution;
+      const w = 400;
+      const h = 300;
+      const x = Math.round(bw / 2 - w / 2);
+      const y = Math.round(bh / 2 - h / 2);
+
+      const grp: AnyEl = {
+        id, type: "group", name: "Empty Group",
+        x, y, width: w, height: h,
+        visible: true, locked: false, opacity: 1,
+        childIds: [],
+      } as any;
+
+      setConfig((prev) => ({
+        ...prev,
+        elements: [...prev.elements, grp as any]
+      }));
+      setSelectedIds([id]);
+    }
+  }
+
+  function addAdjustmentLayer() {
+    const id = genId("adjustment");
+    const { width: bw, height: bh } = baseResolution;
+
+    const el: AnyEl = {
+      id,
+      type: "adjustment" as any,
+      name: "Adjustment Layer",
+      x: 0,
+      y: 0,
+      width: bw,
+      height: bh,
+      visible: true,
+      locked: false,
+      opacity: 1,
+      blendMode: "normal",
+      adjustments: {
+        brightness: 1,
+        contrast: 1,
+        exposure: 0,
+        saturate: 1,
+        hueRotate: 0,
+        blur: 5,
+        opacity: 1,
+      }
+    } as any;
+
+    setConfig((prev) => ({ ...prev, elements: [...prev.elements, el as any] }));
+    setSelectedIds([id]);
+  }
+
+  function deleteSelectedElements() {
+    if (selectedIds.length === 0) return;
+
+    setConfig((prev) => {
+      const elementsMap = new Map<string, any>();
+      prev.elements.forEach(el => elementsMap.set(el.id, el));
+
+      const idsToDelete = new Set<string>();
+
+      function collectDescendants(id: string) {
+        idsToDelete.add(id);
+        const el = elementsMap.get(id);
+        if (el && el.childIds && el.childIds.length > 0) {
+          el.childIds.forEach((cid: string) => collectDescendants(cid));
+        }
+      }
+
+      selectedIds.forEach(id => collectDescendants(id));
+
+      const remainingElements = prev.elements
+        .filter(el => !idsToDelete.has(el.id))
+        .map(el => {
+          if (el.childIds && el.childIds.length > 0) {
+            return {
+              ...el,
+              childIds: el.childIds.filter((cid: string) => !idsToDelete.has(cid))
+            } as any;
+          }
+          return el;
+        });
+
+      return {
+        ...prev,
+        elements: remainingElements
+      };
+    });
+
+    setSelectedIds([]);
+  }
+
   function handleMaskElement(shapeId: string) {
     const maskId = `mask-${Math.random().toString(36).substr(2, 9)}`;
     let createdContentLabel = "content";
@@ -5992,57 +6140,140 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     if (id === targetId) return;
 
     setConfig((prev) => {
-      const picked = prev.elements.find((el) => el.id === id);
-      const target = prev.elements.find((el) => el.id === targetId);
+      // Create clone copies of all elements
+      const elementsMap = new Map<string, any>();
+      prev.elements.forEach(el => elementsMap.set(el.id, { ...el }));
+
+      const picked = elementsMap.get(id);
+      const target = elementsMap.get(targetId);
       if (!picked || !target) return prev;
 
-      const maskFor = (elementId: string) =>
-        prev.elements.find(
-          (el) => el.type === "mask" && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
-        ) as any | undefined;
-      if (maskFor(id) || maskFor(targetId)) return prev;
-
-      const groupFor = (elementId: string) =>
-        prev.elements.find(
-          (el) => (el.type === "group" || el.type === "frame") && Array.isArray((el as any).childIds) && (el as any).childIds.includes(elementId)
-        ) as any | undefined;
-
-      const parentGroup = groupFor(id);
-      const targetParentGroup = groupFor(targetId);
-      const pickedParentId = parentGroup?.id ?? null;
-      const targetParentId = targetParentGroup?.id ?? null;
-      if (pickedParentId !== targetParentId) return prev;
-
-      if (parentGroup) {
-        const childIds = [...(parentGroup.childIds || [])];
-        const fromIndex = childIds.indexOf(id);
-        const targetIndex = childIds.indexOf(targetId);
-        if (fromIndex === -1 || targetIndex === -1) return prev;
-
-        childIds.splice(fromIndex, 1);
-        const insertIndex = placement === "before"
-          ? (fromIndex < targetIndex ? targetIndex - 1 : targetIndex)
-          : (fromIndex < targetIndex ? targetIndex : targetIndex + 1);
-        childIds.splice(Math.max(0, Math.min(childIds.length, insertIndex)), 0, id);
-
-        return {
-          ...prev,
-          elements: prev.elements.map((item) =>
-            item.id === parentGroup.id ? { ...(item as any), childIds } : item
-          ),
-        };
+      // Circular Reference Protection: Check if targetId is a descendant of id
+      function isDescendant(childId: string, parentId: string): boolean {
+        const parent = elementsMap.get(parentId);
+        if (!parent || !Array.isArray(parent.childIds)) return false;
+        if (parent.childIds.includes(childId)) return true;
+        for (const cid of parent.childIds) {
+          if (isDescendant(childId, cid)) return true;
+        }
+        return false;
       }
 
-      const next = prev.elements.slice();
-      const fromIndex = next.findIndex((el) => el.id === id);
-      const targetIndex = next.findIndex((el) => el.id === targetId);
-      if (fromIndex === -1 || targetIndex === -1) return prev;
+      if (isDescendant(targetId, id)) {
+        return prev;
+      }
 
-      const [moved] = next.splice(fromIndex, 1);
-      const adjustedTargetIndex = next.findIndex((el) => el.id === targetId);
-      const insertIndex = placement === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
-      next.splice(Math.max(0, Math.min(next.length, insertIndex)), 0, moved);
-      return { ...prev, elements: next };
+      // Helper to find the current parent group of an element
+      function findParentGroup(elementId: string) {
+        for (const el of elementsMap.values()) {
+          if (Array.isArray(el.childIds) && el.childIds.includes(elementId)) {
+            return el;
+          }
+        }
+        return null;
+      }
+
+      const currentParent = findParentGroup(id);
+
+      // Step 1: Remove picked id from current parent's childIds
+      if (currentParent && Array.isArray(currentParent.childIds)) {
+        currentParent.childIds = currentParent.childIds.filter((cid: string) => cid !== id);
+      }
+
+      const isTargetContainer = ["group", "frame", "mask", "boolean"].includes(target.type);
+
+      // Step 2: Insert into target parent or as a child if target is container and placement is after
+      if (isTargetContainer && placement === "after") {
+        if (!Array.isArray(target.childIds)) {
+          target.childIds = [];
+        }
+        target.childIds = target.childIds.filter((cid: string) => cid !== id);
+        target.childIds.push(id);
+      } else {
+        const targetParent = findParentGroup(targetId);
+        if (targetParent) {
+          if (!Array.isArray(targetParent.childIds)) {
+            targetParent.childIds = [];
+          }
+          targetParent.childIds = targetParent.childIds.filter((cid: string) => cid !== id);
+          const idx = targetParent.childIds.indexOf(targetId);
+          if (idx !== -1) {
+            // "before" in visual tree (visually above) means we want higher z-index (placed after in childIds list)
+            // "after" in visual tree (visually below) means we want lower z-index (placed before in childIds list)
+            const insertIdx = placement === "before" ? idx + 1 : idx;
+            targetParent.childIds.splice(insertIdx, 0, id);
+          } else {
+            targetParent.childIds.push(id);
+          }
+        }
+      }
+
+      // Step 3: Rebuild the flat elements list. We must preserve top-to-bottom or z-index hierarchy.
+      // Gather all children to identify roots
+      const allChildIds = new Set<string>();
+      for (const el of elementsMap.values()) {
+        if (Array.isArray(el.childIds)) {
+          el.childIds.forEach((cid: string) => allChildIds.add(cid));
+        }
+      }
+
+      // Build roots order list relative to target placement
+      const finalRoots: string[] = [];
+      prev.elements.forEach(el => {
+        const isRoot = !allChildIds.has(el.id);
+        if (isRoot && el.id !== id) {
+          finalRoots.push(el.id);
+        }
+      });
+
+      const targetParent = findParentGroup(targetId);
+      const isMovedToRoot = !targetParent && !(isTargetContainer && placement === "after");
+
+      if (isMovedToRoot) {
+        const tIdx = finalRoots.indexOf(targetId);
+        if (tIdx !== -1) {
+          // "before" in tree (visually above) means higher z-index (comes after targetId in root z-index list)
+          // "after" in tree (visually below) means lower z-index (comes before targetId in root z-index list)
+          const insertIdx = placement === "before" ? tIdx + 1 : tIdx;
+          finalRoots.splice(insertIdx, 0, id);
+        } else {
+          finalRoots.push(id);
+        }
+      }
+
+      // Recursively flatten tree (children first, then parents, matching bottom-to-top z-index)
+      const flatOrderedElements: any[] = [];
+      const visitedFlatten = new Set<string>();
+
+      function flatten(elementId: string) {
+        if (visitedFlatten.has(elementId)) return;
+        visitedFlatten.add(elementId);
+
+        const el = elementsMap.get(elementId);
+        if (!el) return;
+
+        if (Array.isArray(el.childIds) && el.childIds.length > 0) {
+          el.childIds.forEach((cid: string) => {
+            flatten(cid);
+          });
+        }
+
+        flatOrderedElements.push(el);
+      }
+
+      finalRoots.forEach(rid => flatten(rid));
+
+      // Append any missing elements as a safety fallback
+      prev.elements.forEach(el => {
+        if (!visitedFlatten.has(el.id)) {
+          flatOrderedElements.push({ ...el });
+        }
+      });
+
+      return {
+        ...prev,
+        elements: flatOrderedElements,
+      };
     });
   }
   function zoomOut() {
@@ -6403,6 +6634,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 onRenameDraftChange={setRenameDraft}
                 onCommitRename={commitRename}
                 onCancelRename={cancelRename}
+                onCreateGroup={createGroup}
+                onAddText={addText}
+                onAddShape={() => addShape("rect")}
+                onAddAdjustment={addAdjustmentLayer}
+                onDeleteSelected={deleteSelectedElements}
               />
             </div>
           )}
@@ -14027,6 +14263,126 @@ function CreationToolbar({
   );
 }
 
+// Custom inline SVG icons for premium look to avoid global conflicts
+function LayerChevronRightIcon({ className = "w-3 h-3" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+function LayerChevronDownIcon({ className = "w-3 h-3" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function LayerFolderIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" />
+    </svg>
+  );
+}
+
+function LayerTextIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 6.1H3" />
+      <path d="M21 12.1H3" />
+      <path d="M15.1 18H3" />
+    </svg>
+  );
+}
+
+function LayerShapeIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="14" height="14" x="5" y="5" rx="2" />
+    </svg>
+  );
+}
+
+function LayerMaskIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="4" fill="currentColor" fillOpacity="0.3" />
+    </svg>
+  );
+}
+
+function LayerAdjustmentIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a10 10 0 0 1 0 20V2Z" fill="currentColor" fillOpacity="0.4" />
+    </svg>
+  );
+}
+
+function LayerGenericIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L2 7l10 5 10-5-10-5z" />
+      <path d="M2 17l10 5 10-5" />
+      <path d="M2 12l10 5 10-5" />
+    </svg>
+  );
+}
+
+function LayerCreateGroupIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2z" />
+      <line x1="12" y1="11" x2="12" y2="17" />
+      <line x1="9" y1="14" x2="15" y2="14" />
+    </svg>
+  );
+}
+
+function LayerAddTextIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7V4h16v3" />
+      <line x1="9" y1="20" x2="15" y2="20" />
+      <line x1="12" y1="4" x2="12" y2="20" />
+    </svg>
+  );
+}
+
+function LayerAddShapeIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="10" height="10" x="3" y="3" rx="1" />
+      <line x1="12" y1="14" x2="12" y2="22" />
+      <line x1="8" y1="18" x2="16" y2="18" />
+    </svg>
+  );
+}
+
+function LayerAddAdjustmentIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a10 10 0 0 1 0 20V2Z" fill="currentColor" fillOpacity="0.4" />
+    </svg>
+  );
+}
+
+function LayerTrashIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  );
+}
+
 function LayersPanel({
   elements,
   layersTopToBottom,
@@ -14047,7 +14403,12 @@ function LayersPanel({
   onBeginRename,
   onRenameDraftChange,
   onCommitRename,
-  onCancelRename
+  onCancelRename,
+  onCreateGroup,
+  onAddText,
+  onAddShape,
+  onAddAdjustment,
+  onDeleteSelected
 }: {
   elements: OverlayElement[];
   layersTopToBottom: OverlayElement[];
@@ -14069,10 +14430,16 @@ function LayersPanel({
   onRenameDraftChange: (value: string) => void;
   onCommitRename: () => void;
   onCancelRename: () => void;
+  onCreateGroup?: () => void;
+  onAddText?: () => void;
+  onAddShape?: () => void;
+  onAddAdjustment?: () => void;
+  onDeleteSelected?: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const draggedIdRef = useRef<string | null>(null);
   const [dragState, setDragState] = useState<{ draggedId: string; overId: string; placement: "before" | "after" } | null>(null);
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   // Scroll to selection
   useEffect(() => {
@@ -14083,6 +14450,20 @@ function LayersPanel({
       el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
   }, [selectedIds]);
+
+  // Toggle group/folder collapse state
+  const toggleCollapse = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCollapsedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   // Build hierarchy map for rendering
   const allChildIds = new Set<string>();
@@ -14116,13 +14497,20 @@ function LayersPanel({
       children = layersTopToBottom.filter(c => (el as any).childIds?.includes(c.id));
     }
 
+    const hasChildren = isContainer && children.length > 0;
+    const isCollapsed = collapsedIds.has(el.id);
+
     return (
       <React.Fragment key={el.id}>
         <div
           data-layer-id={el.id}
           draggable={el.locked !== true}
-          className={`${uiClasses.layerRow} select-none cursor-pointer ${isSelected ? "bg-indigo-500/15 text-indigo-50" : "text-slate-400 hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-200"}`}
-          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          className={`${uiClasses.layerRow} relative select-none cursor-pointer flex items-center h-9 px-3 group/row transition-all duration-150 ${
+            isSelected
+              ? "bg-indigo-500/10 text-indigo-50 border-y border-indigo-500/5"
+              : "text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
+          }`}
+          style={{ paddingLeft: `${depth * 16 + 12}px` }}
           onClick={(e) => onSelect(el.id, e.shiftKey || e.ctrlKey || e.metaKey)}
           onDoubleClick={(e) => {
             e.stopPropagation();
@@ -14173,36 +14561,82 @@ function LayersPanel({
             setDragState(null);
           }}
         >
+          {/* Active selection stripe on left edge */}
+          {isSelected && (
+            <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-indigo-500 rounded-r" />
+          )}
+
+          {/* Drag placement line indicator */}
           {dragState?.overId === el.id && dragState.draggedId !== el.id && (
             <div
-              className="absolute left-1 right-1 h-px bg-indigo-300 pointer-events-none"
-              style={{ top: dragState.placement === "before" ? 0 : undefined, bottom: dragState.placement === "after" ? 0 : undefined }}
+              className="absolute left-1 right-1 h-[2px] bg-indigo-500 shadow-[0_0_4px_rgba(99,102,241,0.6)] pointer-events-none z-20"
+              style={{
+                top: dragState.placement === "before" ? 0 : undefined,
+                bottom: dragState.placement === "after" ? 0 : undefined,
+              }}
             />
           )}
-          {/* Tree Guides */}
+
+          {/* Premium Tree Guides (Translucent Indigo lines) */}
           {depth > 0 && (
             <div className="absolute left-0 top-0 bottom-0 w-full pointer-events-none overflow-hidden">
               {parentTree.map((hasNextSibling, idx) => (
                 hasNextSibling && (
                   <div
                     key={idx}
-                    className="absolute top-0 bottom-0 w-px bg-[rgba(255,255,255,0.08)]"
-                    style={{ left: `${idx * 16 + 11}px` }}
+                    className="absolute top-0 bottom-0 w-px bg-indigo-500/10"
+                    style={{ left: `${idx * 16 + 15}px` }}
                   />
                 )
               ))}
               <div
-                className="absolute top-0 h-3 w-px bg-[rgba(255,255,255,0.12)]"
-                style={{ left: `${depth * 16 - 5}px` }}
+                className="absolute top-0 h-4.5 w-px bg-indigo-500/20"
+                style={{ left: `${depth * 16 - 1}px` }}
               />
               <div
-                className="absolute top-3 h-px w-3 bg-[rgba(255,255,255,0.12)]"
-                style={{ left: `${depth * 16 - 5}px` }}
+                className="absolute top-4.5 h-px w-2.5 bg-indigo-500/20"
+                style={{ left: `${depth * 16 - 1}px` }}
               />
             </div>
           )}
 
-          {/* Label */}
+          {/* Chevron Collapse/Expand trigger */}
+          <div className="w-4 h-4 mr-1 flex items-center justify-center flex-shrink-0 z-10">
+            {isContainer ? (
+              <button
+                onClick={(e) => toggleCollapse(el.id, e)}
+                className="p-0.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+                title={isCollapsed ? "Expand Group" : "Collapse Group"}
+              >
+                {isCollapsed ? (
+                  <LayerChevronRightIcon className="w-3 h-3" />
+                ) : (
+                  <LayerChevronDownIcon className="w-3 h-3" />
+                )}
+              </button>
+            ) : (
+              <div className="w-3 h-3" />
+            )}
+          </div>
+
+          {/* Type-Specific Premium Icon */}
+          <div className="flex-shrink-0 flex items-center justify-center mr-2">
+            {el.type === "group" || el.type === "frame" || el.type === "boolean" ? (
+              <LayerFolderIcon className="w-4 h-4 text-amber-500/90" />
+            ) : el.type === "text" ? (
+              <LayerTextIcon className="w-4 h-4 text-sky-400" />
+            ) : el.type === "shape" || el.type === "path" || el.type === "box" ? (
+              <LayerShapeIcon className="w-4 h-4 text-violet-400" />
+            ) : el.type === "mask" ? (
+              <LayerMaskIcon className="w-4 h-4 text-fuchsia-400" />
+            ) : el.type === "adjustment" ? (
+              <LayerAdjustmentIcon className="w-4 h-4 text-rose-500" />
+            ) : (
+              <LayerGenericIcon className="w-4 h-4 text-slate-400" />
+            )}
+          </div>
+
+          {/* Label / Rename textfield */}
           {isRenaming ? (
             <input
               autoFocus
@@ -14216,42 +14650,43 @@ function LayersPanel({
                 if (e.key === "Enter") onCommitRename();
                 if (e.key === "Escape") onCancelRename();
               }}
-              className={`min-w-0 flex-1 ${uiClasses.field} h-6`}
+              className="min-w-0 flex-1 h-6 text-[12px] bg-slate-900 text-slate-100 border border-indigo-500/40 rounded px-1.5 focus:outline-none focus:border-indigo-500 font-medium"
             />
           ) : (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium">
+            <div className="min-w-0 flex-1 ml-0.5">
+              <div className={`truncate text-[13px] leading-[1.4] tracking-[-0.01em] font-medium transition-colors duration-150 ${isSelected ? "text-indigo-50" : "text-slate-300 group-hover/row:text-slate-100"}`}>
                 {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
               </div>
               {roleLabel && (
-                <div className="truncate text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500">
+                <div className="truncate text-[10px] leading-[1.2] tracking-[-0.02em] text-slate-500">
                   {roleLabel}
                 </div>
               )}
             </div>
           )}
 
-          {/* Controls (Hover/Selected) */}
+          {/* Action buttons (Visible on Row Hover or Selection) */}
           <div
-            className={`flex flex-shrink-0 items-center gap-1 ${isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              }`}
+            className={`flex flex-shrink-0 items-center gap-0.5 ml-2 transition-opacity duration-150 ${
+              isSelected || isLocked || !isVisible ? "opacity-100" : "opacity-0 group-hover/row:opacity-100"
+            }`}
           >
             <button
               onClick={(e) => { e.stopPropagation(); onToggleLock(el.id); }}
-              className={`${uiClasses.iconButton} ${isLocked ? "text-amber-500 opacity-100" : "text-slate-500"}`}
-              title={isLocked ? "Unlock" : "Lock"}
+              className={`${uiClasses.iconButton} p-1 text-slate-500 hover:text-slate-200 hover:bg-slate-800/40 rounded transition-colors ${isLocked ? "text-amber-500 opacity-100" : ""}`}
+              title={isLocked ? "Unlock Layer" : "Lock Layer"}
             >
-              <span className="relative -top-px flex items-center justify-center">
+              <span className="flex items-center justify-center">
                 {isLocked ? <LockIcon /> : <UnlockIcon />}
               </span>
             </button>
 
             <button
               onClick={(e) => { e.stopPropagation(); onToggleVisible(el.id); }}
-              className={`${uiClasses.iconButton} ${!isVisible ? "text-slate-400 opacity-100" : "text-slate-500"}`}
-              title={isVisible ? "Hide" : "Show"}
+              className={`${uiClasses.iconButton} p-1 text-slate-500 hover:text-slate-200 hover:bg-slate-800/40 rounded transition-colors ${!isVisible ? "text-slate-400 opacity-100" : ""}`}
+              title={isVisible ? "Hide Layer" : "Show Layer"}
             >
-              <span className="relative -top-px flex items-center justify-center">
+              <span className="flex items-center justify-center">
                 {isVisible ? <EyeIcon /> : <EyeOffIcon />}
               </span>
             </button>
@@ -14259,10 +14694,10 @@ function LayersPanel({
             {(el.type === "shape" || el.type === "path" || el.type === "boolean" || el.type === "box") && onMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMask(el.id); }}
-                className={`${uiClasses.iconButton} hover:text-indigo-400`}
+                className={`${uiClasses.iconButton} p-1 text-slate-500 hover:text-indigo-400 hover:bg-slate-800/40 rounded transition-colors`}
                 title="Use as Mask"
               >
-                <span className="relative -top-px flex items-center justify-center">
+                <span className="flex items-center justify-center">
                   <MaskIcon />
                 </span>
               </button>
@@ -14271,10 +14706,10 @@ function LayersPanel({
             {el.type === "mask" && onReleaseMask && (
               <button
                 onClick={(e) => { e.stopPropagation(); onReleaseMask(el.id); }}
-                className={`${uiClasses.iconButton} hover:text-red-400`}
+                className={`${uiClasses.iconButton} p-1 text-slate-500 hover:text-rose-400 hover:bg-slate-800/40 rounded transition-colors`}
                 title="Release Mask"
               >
-                <span className="relative -top-px flex items-center justify-center">
+                <span className="flex items-center justify-center">
                   <UnlockIcon />
                 </span>
               </button>
@@ -14282,8 +14717,8 @@ function LayersPanel({
           </div>
         </div>
 
-        {/* Render children if group */}
-        {children.length > 0 && (
+        {/* Recursive Children render - only shown if expanded */}
+        {children.length > 0 && !isCollapsed && (
           <div className="relative">
             {children.map((c, idx) =>
               renderItem(
@@ -14301,9 +14736,60 @@ function LayersPanel({
   };
 
   return (
-    <div ref={containerRef} className="flex h-full flex-col overflow-y-auto bg-[#111113] pb-10 custom-scrollbar">
-      {roots.length === 0 && <div className="p-4 text-center text-[12px] leading-[1.4] italic text-slate-600">No layers</div>}
-      {roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))}
+    <div className="flex flex-col h-full bg-[#111113] text-slate-300 select-none relative">
+      {/* Scrollable list of layers */}
+      <div ref={containerRef} className="flex-1 overflow-y-auto pb-12 custom-scrollbar relative">
+        {roots.length === 0 && (
+          <div className="p-8 text-center text-[12px] leading-[1.4] italic text-slate-500">
+            No layers
+          </div>
+        )}
+        {roots.map((el, idx) => renderItem(el, 0, idx === roots.length - 1, []))}
+      </div>
+
+      {/* Sticky Bottom Actions Footer */}
+      <div className="flex items-center justify-between px-3 py-2 bg-[#17171a] border-t border-slate-800/60 sticky bottom-0 z-10">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); onCreateGroup?.(); }}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            title="Create Group"
+          >
+            <LayerCreateGroupIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddText?.(); }}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            title="Add Text Layer"
+          >
+            <LayerAddTextIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddShape?.(); }}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            title="Add Shape Layer"
+          >
+            <LayerAddShapeIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onAddAdjustment?.(); }}
+            className="p-1.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+            title="Add Adjustment Layer"
+          >
+            <LayerAddAdjustmentIcon className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <button
+          onClick={(e) => { e.stopPropagation(); onDeleteSelected?.(); }}
+          className="p-1.5 rounded text-rose-400/80 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+          title="Delete Selected Layers"
+          disabled={selectedIds.length === 0}
+          style={{ opacity: selectedIds.length === 0 ? 0.4 : 1 }}
+        >
+          <LayerTrashIcon className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }

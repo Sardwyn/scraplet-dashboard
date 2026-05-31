@@ -2519,6 +2519,50 @@ export function ElementRenderer({
         );
     }
 
+
+    // ADJUSTMENT
+    if (el.type === "adjustment") {
+        const cssEffectStyle = buildCssEffectStyle(effects);
+        const mixBlendMode = toCssBlendMode(el.blendMode);
+        const adjustmentStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
+
+        // Build backdrop-filter CSS from adjustments
+        const adj = el.adjustments ?? {};
+        const exposureVal = adj.exposure !== undefined ? Number(adj.exposure) : 0;
+        const adjFilter = [
+            adj.brightness !== undefined && adj.brightness !== 1 ? `brightness(${adj.brightness})` : "",
+            adj.contrast !== undefined && adj.contrast !== 1 ? `contrast(${adj.contrast})` : "",
+            exposureVal !== 0 ? `brightness(${1 + exposureVal * 0.5}) contrast(${1 + exposureVal * 0.3})` : "",
+            adj.saturate !== undefined && adj.saturate !== 1 ? `saturate(${adj.saturate})` : "",
+            adj.hueRotate !== undefined && adj.hueRotate !== 0 ? `hue-rotate(${adj.hueRotate}deg)` : "",
+            adj.blur !== undefined && adj.blur !== 0 ? `blur(${adj.blur}px)` : "",
+            adj.opacity !== undefined && adj.opacity !== 1 ? `opacity(${adj.opacity})` : "",
+        ].filter(Boolean).join(" ");
+
+        const mergedFilter = [cssEffectStyle.filter, adjFilter].filter(Boolean).join(" ");
+        const backdropFilterValue = mergedFilter || undefined;
+
+        const br = el.borderRadiusPx ?? el.borderRadius ?? 0;
+        const effectiveBr = el.clip && el.clip.type !== "none" && typeof el.clip.radius === "number"
+            ? el.clip.radius
+            : br;
+
+        return (
+            <div data-element-id={el.id} style={adjustmentStyle}>
+                <div
+                    style={{
+                        ...innerStyle,
+                        ...cssEffectStyle,
+                        borderRadius: effectiveBr,
+                        overflow: "hidden",
+                        backdropFilter: backdropFilterValue,
+                        WebkitBackdropFilter: backdropFilterValue,
+                    }}
+                />
+            </div>
+        );
+    }
+
     // BOX
     if (el.type === "box") {
         const box = el as OverlayBoxElement;
