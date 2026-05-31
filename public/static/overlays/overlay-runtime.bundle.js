@@ -37959,12 +37959,49 @@ void main() {
   class SSEConnection {
     eventSource = null;
     reconnectTimer = null;
+    watchdogTimer = null;
     attemptCount = 0;
     lastEventId = null;
     options;
     destroyed = false;
     constructor(options) {
       this.options = options;
+    }
+    startWatchdog() {
+      this.clearWatchdog();
+      if (this.destroyed) return;
+      this.watchdogTimer = window.setTimeout(() => {
+        this.watchdogTimer = null;
+        this.triggerReconnect("Watchdog timeout (no heartbeat or message received for 45 seconds)");
+      }, 45e3);
+    }
+    clearWatchdog() {
+      if (this.watchdogTimer !== null) {
+        clearTimeout(this.watchdogTimer);
+        this.watchdogTimer = null;
+      }
+    }
+    triggerReconnect(reason) {
+      if (this.destroyed) return;
+      console.warn(`[SSEConnection] Reconnecting due to: ${reason}`);
+      this.clearWatchdog();
+      if (this.reconnectTimer !== null) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+      if (this.eventSource !== null) {
+        this.eventSource.close();
+        this.eventSource = null;
+      }
+      const base = Math.min(Math.pow(2, this.attemptCount) * 500, 1e4);
+      const jitter = Math.random() * 500;
+      const delay = base + jitter;
+      this.attemptCount++;
+      console.log(`[SSEConnection] Reconnecting in ${Math.round(delay)}ms (attempt ${this.attemptCount}, lastEventId: ${this.lastEventId})`);
+      this.reconnectTimer = window.setTimeout(() => {
+        this.reconnectTimer = null;
+        this.connect();
+      }, delay);
     }
     connect() {
       if (this.destroyed) return;
@@ -37983,8 +38020,10 @@ void main() {
         var _a3, _b;
         this.attemptCount = 0;
         (_b = (_a3 = this.options).onConnect) == null ? void 0 : _b.call(_a3);
+        this.startWatchdog();
       };
       const handleMessage = (event) => {
+        this.startWatchdog();
         try {
           const packet = JSON.parse(event.data);
           if (event.lastEventId) {
@@ -37996,26 +38035,17 @@ void main() {
         }
       };
       es2.addEventListener("message", handleMessage);
+      es2.addEventListener("heartbeat", () => {
+        this.startWatchdog();
+      });
       es2.onerror = () => {
-        if (this.destroyed) return;
-        if (this.eventSource !== null) {
-          this.eventSource.close();
-          this.eventSource = null;
-        }
-        const base = Math.min(Math.pow(2, this.attemptCount) * 500, 1e4);
-        const jitter = Math.random() * 500;
-        const delay = base + jitter;
-        this.attemptCount++;
-        console.log(`[SSEConnection] Reconnecting in ${Math.round(delay)}ms (attempt ${this.attemptCount}, lastEventId: ${this.lastEventId})`);
-        this.reconnectTimer = window.setTimeout(() => {
-          this.reconnectTimer = null;
-          this.connect();
-        }, delay);
+        this.triggerReconnect("onerror event");
       };
     }
     disconnect() {
       var _a3, _b;
       this.destroyed = true;
+      this.clearWatchdog();
       if (this.reconnectTimer !== null) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;

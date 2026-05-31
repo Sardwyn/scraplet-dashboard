@@ -23,6 +23,7 @@ export interface SSEConnectionOptions {
 export class SSEConnection {
   private eventSource: EventSource | null = null;
   private reconnectTimer: number | null = null;
+  private watchdogTimer: number | null = null;
   private attemptCount: number = 0;
   private lastEventId: string | null = null;
   private options: SSEConnectionOptions;
@@ -30,6 +31,53 @@ export class SSEConnection {
 
   constructor(options: SSEConnectionOptions) {
     this.options = options;
+  }
+
+  private startWatchdog(): void {
+    this.clearWatchdog();
+    if (this.destroyed) return;
+
+    this.watchdogTimer = window.setTimeout(() => {
+      this.watchdogTimer = null;
+      this.triggerReconnect('Watchdog timeout (no heartbeat or message received for 45 seconds)');
+    }, 45000); // 45 seconds watchdog (heartbeats are every 20 seconds)
+  }
+
+  private clearWatchdog(): void {
+    if (this.watchdogTimer !== null) {
+      clearTimeout(this.watchdogTimer);
+      this.watchdogTimer = null;
+    }
+  }
+
+  private triggerReconnect(reason: string): void {
+    if (this.destroyed) return;
+    console.warn(`[SSEConnection] Reconnecting due to: ${reason}`);
+
+    this.clearWatchdog();
+
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
+    if (this.eventSource !== null) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+
+    // Exponential backoff with jitter: min(2^attempt * 500, 10_000) + random 0-500ms
+    const base = Math.min(Math.pow(2, this.attemptCount) * 500, 10_000);
+    const jitter = Math.random() * 500;
+    const delay = base + jitter;
+    this.attemptCount++;
+
+    console.log(`[SSEConnection] Reconnecting in ${Math.round(delay)}ms (attempt ${this.attemptCount}, lastEventId: ${this.lastEventId})`);
+
+    this.reconnectTimer = window.setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
   }
 
   connect(): void {
@@ -59,10 +107,12 @@ export class SSEConnection {
     es.onopen = () => {
       this.attemptCount = 0;
       this.options.onConnect?.();
+      this.startWatchdog();
     };
 
     // Handle both named 'message' events and default unnamed events
     const handleMessage = (event: MessageEvent) => {
+      this.startWatchdog();
       try {
         const packet = JSON.parse(event.data) as OverlayRuntimePacketV1;
         // Track last event ID for replay
@@ -76,31 +126,19 @@ export class SSEConnection {
     };
 
     es.addEventListener('message', handleMessage);
+    es.addEventListener('heartbeat', () => {
+      this.startWatchdog();
+    });
 
     es.onerror = () => {
-      if (this.destroyed) return;
-      if (this.eventSource !== null) {
-        this.eventSource.close();
-        this.eventSource = null;
-      }
-
-      // Exponential backoff with jitter: min(2^attempt * 500, 10_000) + random 0-500ms
-      const base = Math.min(Math.pow(2, this.attemptCount) * 500, 10_000);
-      const jitter = Math.random() * 500;
-      const delay = base + jitter;
-      this.attemptCount++;
-
-      console.log(`[SSEConnection] Reconnecting in ${Math.round(delay)}ms (attempt ${this.attemptCount}, lastEventId: ${this.lastEventId})`);
-
-      this.reconnectTimer = window.setTimeout(() => {
-        this.reconnectTimer = null;
-        this.connect();
-      }, delay);
+      this.triggerReconnect('onerror event');
     };
   }
 
   disconnect(): void {
     this.destroyed = true;
+
+    this.clearWatchdog();
 
     if (this.reconnectTimer !== null) {
       clearTimeout(this.reconnectTimer);

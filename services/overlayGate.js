@@ -46,7 +46,8 @@ export const overlayGate = {
     res.write(": welcome\n\n");
 
     const hb = setInterval(() => {
-      res.write(": ping\n\n");
+      res.write("event: heartbeat\n");
+      res.write(`data: ${Date.now()}\n\n`);
       if (res.flush) res.flush();
     }, HEARTBEAT_INTERVAL_MS);
 
