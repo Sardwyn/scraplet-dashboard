@@ -7503,6 +7503,76 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             </div>
           </div>
         </div>
+
+        <TimelinePanel
+          timeline={timeline}
+          baseTimeline={config.timeline}
+          elements={config.elements}
+          selectedIds={selectedIds}
+          playheadMs={timelinePlayheadMs}
+          isPlaying={isTimelinePlaying}
+          selectedTrackId={selectedTimelineTrackId}
+          selectedKeyframeId={selectedTimelineKeyframeId}
+          selectedKeyframeEasing={selectedTimelineKeyframe?.easing ?? "linear"}
+          onSelectKeyframe={(trackId, keyframeId) => {
+            setSelectedTimelineTrackId(trackId);
+            setSelectedTimelineKeyframeId(keyframeId);
+          }}
+          onPlay={() => {
+            if (timeline.playback?.reverse) {
+              if (timelinePlayheadMs <= 0) {
+                setTimelinePlayheadMs(timeline.durationMs);
+              }
+            } else if (timelinePlayheadMs >= timeline.durationMs) {
+              setTimelinePlayheadMs(0);
+            }
+            setIsTimelinePlaying(true);
+          }}
+          onPause={() => setIsTimelinePlaying(false)}
+          onStop={() => {
+            setIsTimelinePlaying(false);
+            setTimelinePlayheadMs(timeline.playback?.reverse ? timeline.durationMs : 0);
+          }}
+          onSetPlayhead={(timeMs) => {
+            setIsTimelinePlaying(false);
+            setTimelinePlayheadMs(clamp(timeMs, 0, timeline.durationMs));
+          }}
+          onSetDuration={(durationMs) => {
+            const nextDuration = Math.max(100, durationMs);
+            setTimeline((currentTimeline) => ({ ...currentTimeline, durationMs: nextDuration }));
+            setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
+          }}
+          onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
+          onSetPlayback={(patch) => {
+            setTimeline((currentTimeline) => ({
+              ...currentTimeline,
+              playback: {
+                ...(currentTimeline.playback ?? {}),
+                ...patch,
+              },
+            }));
+          }}
+          onSetSelectedKeyframeEasing={updateSelectedTimelineKeyframeEasing}
+          onAddTrack={addTimelineTrack}
+          onRemoveElementTracks={removeElementTracks}
+          onMoveKeyframe={moveTimelineKeyframe}
+          onDuplicateKeyframe={duplicateTimelineKeyframe}
+          onAddKeyframeAtTime={addTimelineKeyframeAtTime}
+          activeEventTimeline={activeEventTimeline}
+          eventTimelines={(config as any).eventTimelines}
+          isTriggerMode={editorMode === "triggers"}
+          onSetActiveEventTimeline={(name) => {
+            setActiveEventTimeline(name);
+            setTimelinePlayheadMs(0);
+            setIsTimelinePlaying(false);
+          }}
+          onUpdateMarkers={(updatedMarkers) => {
+            setTimeline((currentTimeline) => ({
+              ...currentTimeline,
+              markers: updatedMarkers,
+            }));
+          }}
+        />
       </div> {/* Close Center Column */}
 
       {/* Right Column / Inspector */}
@@ -7900,75 +7970,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         );
       })()}
 
-      <TimelinePanel
-        timeline={timeline}
-        baseTimeline={config.timeline}
-        elements={config.elements}
-        selectedIds={selectedIds}
-        playheadMs={timelinePlayheadMs}
-        isPlaying={isTimelinePlaying}
-        selectedTrackId={selectedTimelineTrackId}
-        selectedKeyframeId={selectedTimelineKeyframeId}
-        selectedKeyframeEasing={selectedTimelineKeyframe?.easing ?? "linear"}
-        onSelectKeyframe={(trackId, keyframeId) => {
-          setSelectedTimelineTrackId(trackId);
-          setSelectedTimelineKeyframeId(keyframeId);
-        }}
-        onPlay={() => {
-          if (timeline.playback?.reverse) {
-            if (timelinePlayheadMs <= 0) {
-              setTimelinePlayheadMs(timeline.durationMs);
-            }
-          } else if (timelinePlayheadMs >= timeline.durationMs) {
-            setTimelinePlayheadMs(0);
-          }
-          setIsTimelinePlaying(true);
-        }}
-        onPause={() => setIsTimelinePlaying(false)}
-        onStop={() => {
-          setIsTimelinePlaying(false);
-          setTimelinePlayheadMs(timeline.playback?.reverse ? timeline.durationMs : 0);
-        }}
-        onSetPlayhead={(timeMs) => {
-          setIsTimelinePlaying(false);
-          setTimelinePlayheadMs(clamp(timeMs, 0, timeline.durationMs));
-        }}
-        onSetDuration={(durationMs) => {
-          const nextDuration = Math.max(100, durationMs);
-          setTimeline((currentTimeline) => ({ ...currentTimeline, durationMs: nextDuration }));
-          setTimelinePlayheadMs((prev) => clamp(prev, 0, nextDuration));
-        }}
-        onDeleteSelectedKeyframe={deleteSelectedTimelineKeyframe}
-        onSetPlayback={(patch) => {
-          setTimeline((currentTimeline) => ({
-            ...currentTimeline,
-            playback: {
-              ...(currentTimeline.playback ?? {}),
-              ...patch,
-            },
-          }));
-        }}
-        onSetSelectedKeyframeEasing={updateSelectedTimelineKeyframeEasing}
-        onAddTrack={addTimelineTrack}
-        onRemoveElementTracks={removeElementTracks}
-        onMoveKeyframe={moveTimelineKeyframe}
-        onDuplicateKeyframe={duplicateTimelineKeyframe}
-        onAddKeyframeAtTime={addTimelineKeyframeAtTime}
-        activeEventTimeline={activeEventTimeline}
-        eventTimelines={(config as any).eventTimelines}
-        isTriggerMode={editorMode === "triggers"}
-        onSetActiveEventTimeline={(name) => {
-          setActiveEventTimeline(name);
-          setTimelinePlayheadMs(0);
-          setIsTimelinePlaying(false);
-        }}
-        onUpdateMarkers={(updatedMarkers) => {
-          setTimeline((currentTimeline) => ({
-            ...currentTimeline,
-            markers: updatedMarkers,
-          }));
-        }}
-      />
       <ShortcutCheatsheetModal open={showShortcutModal} onClose={() => setShowShortcutModal(false)} />
       </div>
     </div>
