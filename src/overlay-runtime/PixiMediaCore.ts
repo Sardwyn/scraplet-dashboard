@@ -34,6 +34,7 @@ export class PixiMediaCore {
         autoDensity: true,
         backgroundAlpha: 0, // Keep transparent to stack over OBS background
         antialias: true,
+        premultipliedAlpha: false,
       });
 
       this.rootContainer = new Container({

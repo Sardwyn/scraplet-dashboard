@@ -77200,7 +77200,8 @@ class PixiMediaCore {
         autoDensity: true,
         backgroundAlpha: 0,
         // Keep transparent to stack over OBS background
-        antialias: true
+        antialias: true,
+        premultipliedAlpha: false
       });
       this.rootContainer = new Container({
         isRenderGroup: true
