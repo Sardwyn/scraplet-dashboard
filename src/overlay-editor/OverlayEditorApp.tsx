@@ -43,7 +43,7 @@ import {
   OverlayComponentDef,
   OverlayMotionPreset
 } from "../shared/overlayTypes";
-import { ElementRenderer } from "../shared/overlayRenderer";
+import { ElementRenderer, isNativelyDom } from "../shared/overlayRenderer";
 import { resolveElementTransform } from "../shared/overlayRenderer/renderResolver";
 import { PixiMediaCore } from "../overlay-runtime/PixiMediaCore";
 import { LeaferGraphicCore } from "../overlay-runtime/LeaferGraphicCore";
@@ -1615,6 +1615,17 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
     }
     return map;
   }, [draftElementPatches, previewElements, draftRadiusValues, draftRects, draftRotationDegs]);
+
+  const domRenderMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    let hasSeenDomElement = false;
+    previewElements.forEach((el) => {
+      const nativelyDom = isNativelyDom(el, previewElementsById, overlayComponents || []);
+      if (nativelyDom) hasSeenDomElement = true;
+      map[el.id] = nativelyDom || hasSeenDomElement;
+    });
+    return map;
+  }, [previewElements, previewElementsById, overlayComponents]);
 
   const isActivelyDragging = !!(primaryDragSession || resizeDragSession || radiusDragSession || pathAnchorDragSession || pathHandleDragSession);
 
@@ -7402,6 +7413,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                       setInlineDraft((el as any).text ?? "");
                       setTimeout(() => inlineEditRef.current?.focus(), 30);
                     }}
+                    forceDomRender={domRenderMap[el.id]}
                   />
                 );
               })}
@@ -10369,6 +10381,7 @@ interface CanvasElementProps {
   createDragDuplicate: (el: AnyEl) => string;
   setSelectedIds: (ids: string[]) => void;
   onInlineEdit?: (id: string) => void;
+  forceDomRender?: boolean;
 }
 
 const CanvasElement = React.memo(function CanvasElement({
@@ -10411,6 +10424,7 @@ const CanvasElement = React.memo(function CanvasElement({
   createDragDuplicate,
   setSelectedIds,
   onInlineEdit,
+  forceDomRender,
 }: CanvasElementProps) {
   const x = draftRect?.x ?? el.x;
   const y = draftRect?.y ?? el.y;
@@ -10496,6 +10510,7 @@ const CanvasElement = React.memo(function CanvasElement({
         overlayPublicId={overlayPublicId}
         canvasInitialized={canvasInitialized}
         isCanvasDrawn={canvasInitialized}
+        forceDomRender={forceDomRender}
       />
 
       {isPrimary && (

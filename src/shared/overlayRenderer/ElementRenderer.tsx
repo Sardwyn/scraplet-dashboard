@@ -1760,6 +1760,8 @@ function ParametricEffectOverlay({
                             position: "absolute", inset: 0, width: "100%", height: "100%",
                             borderRadius: borderRadius ? `${borderRadius}px` : undefined,
                             overflow: borderRadius ? "hidden" : undefined,
+                            transform: "translateZ(0)",
+                            willChange: "transform",
                             ...(canvasClipPath ? { clipPath: canvasClipPath } : {}),
                         }} />
                 );
@@ -1841,6 +1843,8 @@ function ParametricEffectOverlay({
                             pointerEvents: "none",
                             borderRadius: borderRadius ? `${borderRadius}px` : undefined,
                             overflow: borderRadius ? "hidden" : undefined,
+                            transform: "translateZ(0)",
+                            willChange: "transform",
                             ...(webglClipPath ? { clipPath: webglClipPath } : {}),
                         }}
                     />
@@ -1984,7 +1988,7 @@ function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initia
     );
 }
 
-const isNativelyDom = (el: any, elementsById: Record<string, any>, overlayComponents: any[]): boolean => {
+export const isNativelyDom = (el: any, elementsById: Record<string, any>, overlayComponents: any[]): boolean => {
   if (!el) return false;
   if (el.type === 'group' || el.type === 'frame') {
     if (el.backgroundColor && el.backgroundColor !== 'transparent') return true;
