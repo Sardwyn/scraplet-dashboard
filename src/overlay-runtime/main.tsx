@@ -706,6 +706,51 @@ function registerWidgets(elements: any[], channelSlug: string) {
   }
 }
 
+const isNativelyDom = (el: any, elementsById: Record<string, any>, overlayComponents: any[]): boolean => {
+  if (!el) return false;
+  if (el.type === 'group' || el.type === 'frame') {
+    if (el.backgroundColor && el.backgroundColor !== 'transparent') return true;
+    if (el.borderWidth && el.borderWidth > 0) return true;
+    if (el.blendMode && el.blendMode !== 'normal') return true;
+    if (Array.isArray(el.childIds)) {
+      return el.childIds.some((cid: string) => {
+        const child = elementsById[cid];
+        return child && isNativelyDom(child, elementsById, overlayComponents);
+      });
+    }
+    return false;
+  }
+  if (el.type === 'componentInstance') {
+    const def = overlayComponents?.find((c) => c.id === el.componentId);
+    if (def && Array.isArray(def.elements)) {
+      const defElementsById = Object.fromEntries(def.elements.map((e: any) => [e.id, e]));
+      return def.elements.some((child: any) => isNativelyDom(child, defElementsById, overlayComponents));
+    }
+    return false;
+  }
+  const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
+  if (!canvasTypes.includes(el.type)) return true;
+  const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
+  if (parametric.some((pe: any) => pe && pe.enabled !== false)) return true;
+  if (el.blendMode && el.blendMode !== 'normal') return true;
+  if (el.type === 'image' || el.type === 'video') {
+    const hasKeying = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;
+    const adj = el.adjustments ?? {};
+    const hasAdjustments = (
+      (adj.brightness !== undefined && adj.brightness !== 1) ||
+      (adj.contrast !== undefined && adj.contrast !== 1) ||
+      (adj.exposure !== undefined && Number(adj.exposure) !== 0) ||
+      (adj.saturate !== undefined && adj.saturate !== 1) ||
+      (adj.hueRotate !== undefined && adj.hueRotate !== 0) ||
+      (adj.blur !== undefined && adj.blur !== 0) ||
+      (adj.opacity !== undefined && adj.opacity !== 1)
+    );
+    const hasEffects = Array.isArray(el.effects) && el.effects.length > 0;
+    if (hasKeying || hasAdjustments || hasEffects) return true;
+  }
+  return false;
+};
+
 function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   const [overlay, setOverlay] = useState<OverlayConfigV0 | null>(null);
   const [configVariables, setConfigVariables] = useState<OverlayVariable[]>([]);
@@ -1160,7 +1205,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         }
       }
       // 2. Standard graphics (rect, ellipse, circle, path, text, shape, image)
-      else if (!isOBS && (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect) {
+      else if (!isOBS && (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect && !domRenderMap[el.id]) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -1201,7 +1246,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         leaferCoreRef.current?.drawElement(el.id, drawType, properties, parentId);
       }
       // 3. PixiJS Media (video feeds) - keeps absolute coords on flat WebGL canvas
-      else if (type === 'video' && !forceDomRender) {
+      else if (type === 'video' && !forceDomRender && !domRenderMap[el.id]) {
         activePixiIds.add(el.id);
 
         let videoEl = videoElementsRef.current.get(el.id);
@@ -1577,6 +1622,17 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     return map;
   }, [finalElements]);
 
+  const domRenderMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    let hasSeenDomElement = false;
+    finalElements.forEach((el) => {
+      const nativelyDom = isNativelyDom(el, elementsById, (overlay as any)?.components || []);
+      if (nativelyDom) hasSeenDomElement = true;
+      map[el.id] = nativelyDom || hasSeenDomElement;
+    });
+    return map;
+  }, [finalElements, elementsById, overlay]);
+
   // Calculate used fonts
   const usedFonts = React.useMemo(() => {
     const set = new Set<string>();
@@ -1765,6 +1821,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   elementIndex={finalElements.indexOf(el) + 1}
                   canvasInitialized={canvasInitialized}
                   isCanvasDrawn={isCanvasDrawn}
+                  forceDomRender={domRenderMap[el.id]}
                 />
               ))}
             </div>
@@ -1791,6 +1848,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   widgetStates={unifiedState.widgetStates}
                   canvasInitialized={canvasInitialized}
                   isCanvasDrawn={isCanvasDrawn}
+                  forceDomRender={domRenderMap[el.id]}
                 />
               ))}
             </div>

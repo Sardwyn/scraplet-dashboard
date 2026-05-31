@@ -1984,6 +1984,51 @@ function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initia
     );
 }
 
+const isNativelyDom = (el: any, elementsById: Record<string, any>, overlayComponents: any[]): boolean => {
+  if (!el) return false;
+  if (el.type === 'group' || el.type === 'frame') {
+    if (el.backgroundColor && el.backgroundColor !== 'transparent') return true;
+    if (el.borderWidth && el.borderWidth > 0) return true;
+    if (el.blendMode && el.blendMode !== 'normal') return true;
+    if (Array.isArray(el.childIds)) {
+      return el.childIds.some((cid: string) => {
+        const child = elementsById[cid];
+        return child && isNativelyDom(child, elementsById, overlayComponents);
+      });
+    }
+    return false;
+  }
+  if (el.type === 'componentInstance') {
+    const def = overlayComponents?.find((c) => c.id === el.componentId);
+    if (def && Array.isArray(def.elements)) {
+      const defElementsById = Object.fromEntries(def.elements.map((e: any) => [e.id, e]));
+      return def.elements.some((child: any) => isNativelyDom(child, defElementsById, overlayComponents));
+    }
+    return false;
+  }
+  const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
+  if (!canvasTypes.includes(el.type)) return true;
+  const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
+  if (parametric.some((pe: any) => pe && pe.enabled !== false)) return true;
+  if (el.blendMode && el.blendMode !== 'normal') return true;
+  if (el.type === 'image' || el.type === 'video') {
+    const hasKeying = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;
+    const adj = el.adjustments ?? {};
+    const hasAdjustments = (
+      (adj.brightness !== undefined && adj.brightness !== 1) ||
+      (adj.contrast !== undefined && adj.contrast !== 1) ||
+      (adj.exposure !== undefined && Number(adj.exposure) !== 0) ||
+      (adj.saturate !== undefined && adj.saturate !== 1) ||
+      (adj.hueRotate !== undefined && adj.hueRotate !== 0) ||
+      (adj.blur !== undefined && adj.blur !== 0) ||
+      (adj.opacity !== undefined && adj.opacity !== 1)
+    );
+    const hasEffects = Array.isArray(el.effects) && el.effects.length > 0;
+    if (hasKeying || hasAdjustments || hasEffects) return true;
+  }
+  return false;
+};
+
 export function ElementRenderer({
     element,
     elementsById,
@@ -1999,6 +2044,7 @@ export function ElementRenderer({
     widgetStates,
     canvasInitialized,
     isCanvasDrawn,
+    forceDomRender,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -2014,6 +2060,7 @@ export function ElementRenderer({
     widgetStates?: Record<string, any>;
     canvasInitialized?: boolean;
     isCanvasDrawn?: boolean;
+    forceDomRender?: boolean;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     let el = element as any;
@@ -2052,9 +2099,12 @@ export function ElementRenderer({
     );
     const hasEffectsRender = (Array.isArray(el.effects) && el.effects.length > 0) ||
                        (Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0);
-    const forceDomRender = isMediaRender && (hasKeyingRender || hasBlendModeRender || hasAdjustmentsRender || hasEffectsRender);
+    const forceDomRenderLocal = isMediaRender && (hasKeyingRender || hasBlendModeRender || hasAdjustmentsRender || hasEffectsRender);
 
-    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type) && !hasRevealEffect && !forceDomRender;
+    const isNativelyForced = isNativelyDom(el, elementsById || {}, overlayComponents || []);
+    const isForcedDom = forceDomRender || forceDomRenderLocal || isNativelyForced;
+
+    const hideInnerContent = isCanvasDrawn && canvasTypes.includes(el.type) && !hasRevealEffect && !isForcedDom;
 
     const effectiveAnimationPhase =
         animationPhase ?? (el.visible === false ? "hidden" : "visible");
@@ -2324,6 +2374,7 @@ export function ElementRenderer({
                                 isCanvasDrawn={isCanvasDrawn}
                                 widgetStates={widgetStates}
                                 overlayPublicId={overlayPublicId}
+                                forceDomRender={isForcedDom}
                             />
                         );
                     })}
@@ -2444,6 +2495,7 @@ export function ElementRenderer({
                                         isCanvasDrawn={isCanvasDrawn}
                                         widgetStates={widgetStates}
                                         overlayPublicId={overlayPublicId}
+                                        forceDomRender={isForcedDom}
                                     />
                                 </div>
                             </div>
@@ -2511,6 +2563,7 @@ export function ElementRenderer({
                                 isCanvasDrawn={isCanvasDrawn}
                                 widgetStates={widgetStates}
                                 overlayPublicId={overlayPublicId}
+                                forceDomRender={isForcedDom}
                             />
                         );
                     })}
