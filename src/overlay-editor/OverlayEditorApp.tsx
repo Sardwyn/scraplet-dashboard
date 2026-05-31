@@ -6207,7 +6207,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
 
       {/* LEFT SIDEBAR: Creation & Layers */}
-      <div className="z-10 flex w-80 flex-none flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#111113]">
+      <div className="z-10 flex w-[350px] flex-none flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {/* Header */}
         <div className="space-y-2 border-b border-[rgba(255,255,255,0.08)] p-3">
           <input
@@ -7506,7 +7506,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       </div> {/* Close Center Column */}
 
       {/* Right Column / Inspector */}
-      <div className="flex w-80 flex-col min-h-0 h-full overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
+      <div className="flex w-[350px] flex-none flex-col min-h-0 h-full overflow-y-auto border-l border-[rgba(255,255,255,0.08)] bg-[#111113]">
         {/* Version History Panel */}
         {showVersionHistory && (
           <div className="flex flex-col border-b border-[rgba(255,255,255,0.08)] bg-[#0d0d0f]">
