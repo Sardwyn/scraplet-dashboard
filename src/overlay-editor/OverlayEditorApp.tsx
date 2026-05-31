@@ -7118,6 +7118,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 height: baseResolution.height,
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
+                transformStyle: "preserve-3d",
                 transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
                 backgroundImage: obsPreviewUrl ? `url(${obsPreviewUrl})` : undefined,
                 backgroundSize: "cover",
@@ -7368,6 +7369,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   <CanvasElement
                     key={el.id}
                     el={el}
+                    elementIndex={previewElements.indexOf(raw) + 1}
                     canvasInitialized={canvasInitialized}
                     draftRect={draftRects[el.id]}
                     draftRotationDeg={draftRotationDegs[el.id]}
@@ -10382,6 +10384,7 @@ interface CanvasElementProps {
   setSelectedIds: (ids: string[]) => void;
   onInlineEdit?: (id: string) => void;
   forceDomRender?: boolean;
+  elementIndex?: number;
 }
 
 const CanvasElement = React.memo(function CanvasElement({
@@ -10425,6 +10428,7 @@ const CanvasElement = React.memo(function CanvasElement({
   setSelectedIds,
   onInlineEdit,
   forceDomRender,
+  elementIndex,
 }: CanvasElementProps) {
   const x = draftRect?.x ?? el.x;
   const y = draftRect?.y ?? el.y;
@@ -10491,6 +10495,7 @@ const CanvasElement = React.memo(function CanvasElement({
       style={{
         transform: fullTransform !== 'none' ? fullTransform : undefined,
         transformOrigin: "center center",
+        transformStyle: "preserve-3d",
         pointerEvents: suppressPointerEvents ? "none" : "auto",
         background: "rgba(0,0,0,0)",
         opacity: isPhantom ? 0.35 : undefined,
@@ -10511,6 +10516,7 @@ const CanvasElement = React.memo(function CanvasElement({
         canvasInitialized={canvasInitialized}
         isCanvasDrawn={canvasInitialized}
         forceDomRender={forceDomRender}
+        elementIndex={elementIndex}
       />
 
       {isPrimary && (
@@ -10669,7 +10675,8 @@ const CanvasElement = React.memo(function CanvasElement({
           width: w,
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : "auto",
-          zIndex: 30,
+          zIndex: 30 + (elementIndex ?? 0),
+          transformStyle: "preserve-3d",
           background: "rgba(0,0,0,0)",
         }}
         onDoubleClick={(e) => {
@@ -10761,7 +10768,8 @@ const CanvasElement = React.memo(function CanvasElement({
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
         pointerEvents: suppressPointerEvents ? "none" : "auto",
-        zIndex: 30,
+        zIndex: 30 + (elementIndex ?? 0),
+        transformStyle: "preserve-3d",
       }}
     >
       {contentNode}
