@@ -6417,7 +6417,42 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
+    <div id="overlay-editor-root" className="flex h-full w-full overflow-hidden bg-[#0b0b0c] text-slate-200">
+      <style>{`
+        #overlay-editor-root select {
+          appearance: none !important;
+          -webkit-appearance: none !important;
+          -moz-appearance: none !important;
+          background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E") !important;
+          background-repeat: no-repeat !important;
+          background-position: right 8px center !important;
+          background-size: 14px !important;
+          padding-right: 2rem !important;
+          cursor: pointer !important;
+          box-sizing: border-box !important;
+        }
+        #overlay-editor-root select,
+        #overlay-editor-root input,
+        #overlay-editor-root textarea {
+          min-width: 0 !important;
+          max-width: 100% !important;
+          box-sizing: border-box !important;
+        }
+        #overlay-editor-root button,
+        #overlay-editor-root .iconButton,
+        #overlay-editor-root [role="button"] {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+        #overlay-editor-root button svg,
+        #overlay-editor-root .iconButton svg,
+        #overlay-editor-root [role="button"] svg {
+          display: block !important;
+          flex-shrink: 0 !important;
+          margin: auto !important;
+        }
+      `}</style>
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (

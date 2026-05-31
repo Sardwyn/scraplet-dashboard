@@ -48,13 +48,15 @@ export const uiClasses = {
     "text-[11px] leading-[1.4] text-slate-500 uppercase tracking-[0.08em] font-semibold",
   fieldLabel: "text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-500",
   field:
-    "h-7 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200 transition-colors hover:bg-[#1d1d20] focus:border-indigo-500/70 focus:outline-none",
+    "h-7 min-w-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-2 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200 transition-colors hover:bg-[#1d1d20] focus:border-indigo-500/70 focus:outline-none",
+  select:
+    "h-7 min-w-0 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] pl-2 pr-8 text-[12px] leading-[1.4] tracking-[-0.02em] text-slate-200 transition-colors hover:bg-[#1d1d20] focus:border-indigo-500/70 focus:outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:14px] bg-[right_8px_center] bg-no-repeat cursor-pointer",
   button:
-    "h-8 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-200 transition-colors hover:bg-[#1d1d20]",
+    "inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#161618] px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-200 transition-colors hover:bg-[#1d1d20]",
   buttonGhost:
-    "h-8 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-300 transition-colors hover:bg-[rgba(255,255,255,0.03)]",
+    "inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent px-3 text-[12px] leading-[1.4] tracking-[-0.02em] font-medium text-slate-300 transition-colors hover:bg-[rgba(255,255,255,0.03)]",
   iconButton:
-    "h-6 w-6 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent text-slate-400 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-100",
+    "inline-flex items-center justify-center h-6 w-6 rounded-md border border-[rgba(255,255,255,0.06)] bg-transparent text-slate-400 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-slate-100",
   layerRow:
     "group relative flex h-6 items-center gap-2 border-b border-[rgba(255,255,255,0.06)] pr-2 text-[13px] leading-[1.4] tracking-[-0.01em]",
   panelInset: "rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618]",
