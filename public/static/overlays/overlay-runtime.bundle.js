@@ -85884,11 +85884,13 @@ ${parts.join("\n")}
           width: baseW,
           height: baseH
         });
-        leaferCore.initialize({
-          canvas: leaferCanvas,
-          width: baseW,
-          height: baseH
-        });
+        if (!isOBS) {
+          leaferCore.initialize({
+            canvas: leaferCanvas,
+            width: baseW,
+            height: baseH
+          });
+        }
         setCanvasInitialized(true);
       };
       initCores().catch((err) => {
@@ -85901,9 +85903,12 @@ ${parts.join("\n")}
       };
     }, [baseW, baseH]);
     reactExports.useLayoutEffect(() => {
-      var _a4;
-      if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
-      leaferCoreRef.current.clearAll();
+      var _a4, _b2;
+      if (!canvasInitialized || !pixiCoreRef.current) return;
+      if (!isOBS && !leaferCoreRef.current) return;
+      if (!isOBS) {
+        (_a4 = leaferCoreRef.current) == null ? void 0 : _a4.clearAll();
+      }
       const activeLeaferIds = /* @__PURE__ */ new Set();
       const activePixiIds = /* @__PURE__ */ new Set();
       const elementsById2 = {};
@@ -85911,7 +85916,7 @@ ${parts.join("\n")}
         elementsById2[el.id] = el;
       });
       const drawTree = (el, parentId) => {
-        var _a5, _b2, _c2, _d2, _e3, _f2, _g2, _h3, _i3, _j2, _k2, _l2, _m2, _n3, _o3;
+        var _a5, _b3, _c2, _d2, _e3, _f2, _g2, _h3, _i3, _j2, _k2, _l2, _m2, _n3, _o3;
         if (el.visible === false) return;
         const type = el.type;
         const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
@@ -85924,19 +85929,21 @@ ${parts.join("\n")}
         const hasEffects = Array.isArray(el.effects) && el.effects.length > 0 || Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0;
         const forceDomRender = isMedia && (hasKeying || hasBlendMode || hasAdjustments || hasEffects);
         if (type === "group" || type === "frame") {
-          activeLeaferIds.add(el.id);
-          const properties = { ...el };
-          (_b2 = leaferCoreRef.current) == null ? void 0 : _b2.drawElement(el.id, type, properties, parentId);
+          if (!isOBS) {
+            activeLeaferIds.add(el.id);
+            const properties = { ...el };
+            (_b3 = leaferCoreRef.current) == null ? void 0 : _b3.drawElement(el.id, type, properties, parentId);
+          }
           if (Array.isArray(el.childIds)) {
             el.childIds.forEach((cid) => {
-              var _a6, _b3;
+              var _a6, _b4;
               const child = elementsById2[cid];
               if (child) {
                 const origParent = elementsById2[el.id];
                 const parentX = origParent ? origParent.x : el.x;
                 const parentY = origParent ? origParent.y : el.y;
                 const relX = ((_a6 = child.x) != null ? _a6 : 0) - (parentX != null ? parentX : 0);
-                const relY = ((_b3 = child.y) != null ? _b3 : 0) - (parentY != null ? parentY : 0);
+                const relY = ((_b4 = child.y) != null ? _b4 : 0) - (parentY != null ? parentY : 0);
                 const relChild = {
                   ...child,
                   x: relX,
@@ -85946,7 +85953,7 @@ ${parts.join("\n")}
               }
             });
           }
-        } else if ((type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image" && !forceDomRender) && !hasRevealEffect) {
+        } else if (!isOBS && (type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image" && !forceDomRender) && !hasRevealEffect) {
           activeLeaferIds.add(el.id);
           const properties = { ...el };
           let drawType = "rect";
@@ -86036,7 +86043,9 @@ ${parts.join("\n")}
       rootElements.forEach((el) => {
         drawTree(el);
       });
-      (_a4 = leaferCoreRef.current) == null ? void 0 : _a4.cleanupOrphanedElements(activeLeaferIds);
+      if (!isOBS) {
+        (_b2 = leaferCoreRef.current) == null ? void 0 : _b2.cleanupOrphanedElements(activeLeaferIds);
+      }
       videoElementsRef.current.forEach((videoEl, id) => {
         var _a5;
         if (!activePixiIds.has(id)) {
@@ -86332,10 +86341,11 @@ ${parts.join("\n")}
         widgetWrapper.style.transform = `scale(${scale})`;
       }
     }, [scale]);
+    const isCanvasDrawn = canvasInitialized && !isOBS;
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1670,
+        lineNumber: 1681,
         columnNumber: 7
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -86383,7 +86393,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1698,
+                    lineNumber: 1709,
                     columnNumber: 11
                   },
                   this
@@ -86407,7 +86417,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1713,
+                    lineNumber: 1724,
                     columnNumber: 11
                   },
                   this
@@ -86443,13 +86453,13 @@ ${parts.join("\n")}
                           visited: /* @__PURE__ */ new Set(),
                           elementIndex: finalElements.indexOf(el) + 1,
                           canvasInitialized,
-                          isCanvasDrawn: canvasInitialized
+                          isCanvasDrawn
                         },
                         el.id,
                         false,
                         {
                           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                          lineNumber: 1741,
+                          lineNumber: 1752,
                           columnNumber: 17
                         },
                         this
@@ -86460,7 +86470,7 @@ ${parts.join("\n")}
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                    lineNumber: 1728,
+                    lineNumber: 1739,
                     columnNumber: 13
                   },
                   this
@@ -86482,20 +86492,20 @@ ${parts.join("\n")}
                       elementIndex: finalElements.indexOf(el) + 1,
                       widgetStates: unifiedState.widgetStates,
                       canvasInitialized,
-                      isCanvasDrawn: canvasInitialized
+                      isCanvasDrawn
                     },
                     el.id,
                     false,
                     {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                      lineNumber: 1768,
+                      lineNumber: 1779,
                       columnNumber: 17
                     },
                     this
                   );
                 }) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-                  lineNumber: 1766,
+                  lineNumber: 1777,
                   columnNumber: 13
                 }, this)
               ]
@@ -86504,7 +86514,7 @@ ${parts.join("\n")}
             true,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1686,
+              lineNumber: 1697,
               columnNumber: 9
             },
             this
@@ -86514,7 +86524,7 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1673,
+          lineNumber: 1684,
           columnNumber: 7
         },
         this
@@ -86543,7 +86553,7 @@ ${parts.join("\n")}
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-              lineNumber: 1805,
+              lineNumber: 1816,
               columnNumber: 9
             },
             this
@@ -86553,19 +86563,19 @@ ${parts.join("\n")}
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-          lineNumber: 1794,
+          lineNumber: 1805,
           columnNumber: 7
         },
         this
       ),
       !isOBS && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(DebugHud, { state, data: eventData }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-        lineNumber: 1813,
+        lineNumber: 1824,
         columnNumber: 18
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1669,
+      lineNumber: 1680,
       columnNumber: 5
     }, this);
   }
@@ -86573,7 +86583,7 @@ ${parts.join("\n")}
   if (rootEl && window.__OVERLAY_PUBLIC_ID__) {
     clientExports.createRoot(rootEl).render(/* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(OverlayRuntimeRoot, { publicId: window.__OVERLAY_PUBLIC_ID__ }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-runtime/main.tsx",
-      lineNumber: 1824,
+      lineNumber: 1835,
       columnNumber: 29
     }, void 0));
   }

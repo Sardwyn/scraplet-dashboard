@@ -1066,11 +1066,13 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         width: baseW,
         height: baseH,
       });
-      leaferCore.initialize({
-        canvas: leaferCanvas,
-        width: baseW,
-        height: baseH,
-      });
+      if (!isOBS) {
+        leaferCore.initialize({
+          canvas: leaferCanvas,
+          width: baseW,
+          height: baseH,
+        });
+      }
       setCanvasInitialized(true);
     };
 
@@ -1087,10 +1089,13 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   // Sync elements to Canvas Core engines (Leafer for vector/text, Pixi for media/video)
   useLayoutEffect(() => {
-    if (!canvasInitialized || !leaferCoreRef.current || !pixiCoreRef.current) return;
+    if (!canvasInitialized || !pixiCoreRef.current) return;
+    if (!isOBS && !leaferCoreRef.current) return;
 
     // Completely clear Leafer elements before redraw to prevent stale font metrics/layout caching
-    leaferCoreRef.current.clearAll();
+    if (!isOBS) {
+      leaferCoreRef.current?.clearAll();
+    }
 
     const activeLeaferIds = new Set<string>();
     const activePixiIds = new Set<string>();
@@ -1127,10 +1132,12 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
       // 1. Container elements (group, frame)
       if (type === 'group' || type === 'frame') {
-        activeLeaferIds.add(el.id);
-        const properties: Record<string, any> = { ...el };
-        
-        leaferCoreRef.current?.drawElement(el.id, type, properties, parentId);
+        if (!isOBS) {
+          activeLeaferIds.add(el.id);
+          const properties: Record<string, any> = { ...el };
+          
+          leaferCoreRef.current?.drawElement(el.id, type, properties, parentId);
+        }
 
         // Recursively draw children
         if (Array.isArray(el.childIds)) {
@@ -1153,7 +1160,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
         }
       }
       // 2. Standard graphics (rect, ellipse, circle, path, text, shape, image)
-      else if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect) {
+      else if (!isOBS && (type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -1265,7 +1272,9 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
     });
 
     // Cleanup orphaned Leafer elements
-    leaferCoreRef.current?.cleanupOrphanedElements(activeLeaferIds);
+    if (!isOBS) {
+      leaferCoreRef.current?.cleanupOrphanedElements(activeLeaferIds);
+    }
 
     // Cleanup orphaned Pixi video elements
     videoElementsRef.current.forEach((videoEl, id) => {
@@ -1665,6 +1674,8 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   // Transforms are applied by ElementRenderer directly in baseStyle - no DOM manipulation needed
 
+  const isCanvasDrawn = canvasInitialized && !isOBS;
+
   return (
     <>
       <FontLoader fonts={usedFonts} />
@@ -1753,7 +1764,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   visited={new Set()}
                   elementIndex={finalElements.indexOf(el) + 1}
                   canvasInitialized={canvasInitialized}
-                  isCanvasDrawn={canvasInitialized}
+                  isCanvasDrawn={isCanvasDrawn}
                 />
               ))}
             </div>
@@ -1779,7 +1790,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                   elementIndex={finalElements.indexOf(el) + 1}
                   widgetStates={unifiedState.widgetStates}
                   canvasInitialized={canvasInitialized}
-                  isCanvasDrawn={canvasInitialized}
+                  isCanvasDrawn={isCanvasDrawn}
                 />
               ))}
             </div>
