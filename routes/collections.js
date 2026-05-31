@@ -1,6 +1,5 @@
 // routes/collections.js
 import express from 'express';
-import crypto from 'crypto';
 import requireAuth from '../utils/requireAuth.js';
 import db from '../db.js';
 import { CollectionDal } from '../dal/CollectionDal.js';
@@ -112,6 +111,30 @@ router.delete('/dashboard/api/collections/:id', requireAuth, async (req, res) =>
   }
 });
 
+// GET /dashboard/api/collections/:id - Get collection details with overlays and components
+router.get('/dashboard/api/collections/:id', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+
+    const dal = new CollectionDal(userId);
+    const collection = await dal.getCollectionWithOverlays(collectionId, userId);
+
+    if (!collection) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    res.json(collection);
+  } catch (err) {
+    console.error('[Collections] Get details error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// LEGACY BACKWARDS-COMPATIBLE OVERLAYS WRAPPERS
+// ==========================================
+
 // POST /dashboard/api/collections/:id/overlays - Add overlay to collection
 router.post('/dashboard/api/collections/:id/overlays', requireAuth, async (req, res) => {
   try {
@@ -124,7 +147,6 @@ router.post('/dashboard/api/collections/:id/overlays', requireAuth, async (req, 
       'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
       [collectionId, userId]
     );
-    
     if (collectionRows.length === 0) {
       return res.status(404).json({ error: 'Collection not found' });
     }
@@ -134,27 +156,13 @@ router.post('/dashboard/api/collections/:id/overlays', requireAuth, async (req, 
       'SELECT id FROM overlays WHERE id = $1 AND user_id = $2',
       [overlayId, userId]
     );
-    
     if (overlayRows.length === 0) {
       return res.status(404).json({ error: 'Overlay not found' });
     }
 
-    // Add to collection
-    const { rows } = await db.query(`
-      INSERT INTO overlay_collection_items (collection_id, overlay_id, sort_order)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (collection_id, overlay_id) 
-      DO UPDATE SET sort_order = $3, added_at = NOW()
-      RETURNING *
-    `, [collectionId, overlayId, sortOrder || 0]);
-
-    // Update overlay's collection_id for quick reference
-    await db.query(
-      'UPDATE overlays SET collection_id = $1 WHERE id = $2 AND user_id = $3',
-      [collectionId, overlayId, userId]
-    );
-
-    res.json(rows[0]);
+    const dal = new CollectionDal(userId);
+    const item = await dal.addItemToCollection(collectionId, 'overlay', overlayId, sortOrder || 0);
+    res.json(item);
   } catch (err) {
     console.error('[Collections] Add overlay error:', err);
     res.status(500).json({ error: err.message });
@@ -173,27 +181,15 @@ router.delete('/dashboard/api/collections/:id/overlays/:overlayId', requireAuth,
       'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
       [collectionId, userId]
     );
-    
     if (collectionRows.length === 0) {
       return res.status(404).json({ error: 'Collection not found' });
     }
 
-    // Remove from collection
-    const { rows } = await db.query(`
-      DELETE FROM overlay_collection_items 
-      WHERE collection_id = $1 AND overlay_id = $2
-      RETURNING *
-    `, [collectionId, overlayId]);
-
-    if (rows.length === 0) {
+    const dal = new CollectionDal(userId);
+    const success = await dal.removeItemFromCollection(collectionId, 'overlay', overlayId);
+    if (!success) {
       return res.status(404).json({ error: 'Overlay not in collection' });
     }
-
-    // Clear overlay's collection_id
-    await db.query(
-      'UPDATE overlays SET collection_id = NULL WHERE id = $1 AND user_id = $2',
-      [overlayId, userId]
-    );
 
     res.json({ success: true });
   } catch (err) {
@@ -207,7 +203,7 @@ router.put('/dashboard/api/collections/:id/overlays/reorder', requireAuth, async
   try {
     const userId = req.session.user.id;
     const collectionId = Number(req.params.id);
-    const { overlayIds } = req.body; // Array of overlay IDs in new order
+    const { overlayIds } = req.body;
 
     if (!Array.isArray(overlayIds)) {
       return res.status(400).json({ error: 'overlayIds must be an array' });
@@ -218,32 +214,12 @@ router.put('/dashboard/api/collections/:id/overlays/reorder', requireAuth, async
       'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
       [collectionId, userId]
     );
-    
     if (collectionRows.length === 0) {
       return res.status(404).json({ error: 'Collection not found' });
     }
 
-    // Update sort orders
-    const client = await db.connect();
-    try {
-      await client.query('BEGIN');
-      
-      for (let i = 0; i < overlayIds.length; i++) {
-        await client.query(`
-          UPDATE overlay_collection_items 
-          SET sort_order = $1 
-          WHERE collection_id = $2 AND overlay_id = $3
-        `, [i, collectionId, overlayIds[i]]);
-      }
-      
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
-
+    const dal = new CollectionDal(userId);
+    await dal.reorderItems(collectionId, 'overlay', overlayIds);
     res.json({ success: true });
   } catch (err) {
     console.error('[Collections] Reorder error:', err);
@@ -251,42 +227,219 @@ router.put('/dashboard/api/collections/:id/overlays/reorder', requireAuth, async
   }
 });
 
-// GET /dashboard/api/collections/:id - Get collection details with overlays
-router.get('/dashboard/api/collections/:id', requireAuth, async (req, res) => {
+// ==========================================
+// COMPONENT-SPECIFIC WRAPPERS (DESIGN ATOMS)
+// ==========================================
+
+// POST /dashboard/api/collections/:id/components - Add component/atom to collection
+router.post('/dashboard/api/collections/:id/components', requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
     const collectionId = Number(req.params.id);
+    const { componentId, sortOrder } = req.body;
 
-    const { rows } = await db.query(`
-      SELECT 
-        c.*,
-        json_agg(
-          json_build_object(
-            'id', o.id,
-            'name', o.name,
-            'slug', o.slug,
-            'public_id', o.public_id,
-            'thumbnail_url', o.thumbnail_url,
-            'created_at', o.created_at,
-            'updated_at', o.updated_at,
-            'sort_order', oci.sort_order,
-            'added_at', oci.added_at
-          ) ORDER BY oci.sort_order ASC, oci.added_at ASC
-        ) FILTER (WHERE o.id IS NOT NULL) as overlays
-      FROM overlay_collections c
-      LEFT JOIN overlay_collection_items oci ON oci.collection_id = c.id
-      LEFT JOIN overlays o ON o.id = oci.overlay_id
-      WHERE c.id = $1 AND c.user_id = $2
-      GROUP BY c.id
-    `, [collectionId, userId]);
-
-    if (rows.length === 0) {
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
       return res.status(404).json({ error: 'Collection not found' });
     }
 
-    res.json(rows[0]);
+    // Verify component ownership
+    const { rows: componentRows } = await db.query(
+      'SELECT id FROM overlay_components WHERE id = $1 AND user_id = $2',
+      [componentId, userId]
+    );
+    if (componentRows.length === 0) {
+      return res.status(404).json({ error: 'Component not found' });
+    }
+
+    const dal = new CollectionDal(userId);
+    const item = await dal.addItemToCollection(collectionId, 'component', componentId, sortOrder || 0);
+    res.json(item);
   } catch (err) {
-    console.error('[Collections] Get details error:', err);
+    console.error('[Collections] Add component error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /dashboard/api/collections/:id/components/:componentId - Remove component from collection
+router.delete('/dashboard/api/collections/:id/components/:componentId', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+    const componentId = Number(req.params.componentId);
+
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    const dal = new CollectionDal(userId);
+    const success = await dal.removeItemFromCollection(collectionId, 'component', componentId);
+    if (!success) {
+      return res.status(404).json({ error: 'Component not in collection' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Collections] Remove component error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /dashboard/api/collections/:id/components/reorder - Reorder components in collection
+router.put('/dashboard/api/collections/:id/components/reorder', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+    const { componentIds } = req.body;
+
+    if (!Array.isArray(componentIds)) {
+      return res.status(400).json({ error: 'componentIds must be an array' });
+    }
+
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    const dal = new CollectionDal(userId);
+    await dal.reorderItems(collectionId, 'component', componentIds);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Collections] Reorder components error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// UNIFIED POLYMORPHIC ITEMS ENDPOINTS (OPTION 1)
+// ==========================================
+
+// POST /dashboard/api/collections/:id/items - Add polymorphic item (overlay or component)
+router.post('/dashboard/api/collections/:id/items', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+    const { itemType, itemId, sortOrder } = req.body;
+
+    if (!['overlay', 'component'].includes(itemType)) {
+      return res.status(400).json({ error: 'itemType must be "overlay" or "component"' });
+    }
+    if (!itemId) {
+      return res.status(400).json({ error: 'itemId is required' });
+    }
+
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    // Verify item ownership
+    if (itemType === 'overlay') {
+      const { rows: overlayRows } = await db.query(
+        'SELECT id FROM overlays WHERE id = $1 AND user_id = $2',
+        [itemId, userId]
+      );
+      if (overlayRows.length === 0) {
+        return res.status(404).json({ error: 'Overlay not found' });
+      }
+    } else {
+      const { rows: componentRows } = await db.query(
+        'SELECT id FROM overlay_components WHERE id = $1 AND user_id = $2',
+        [itemId, userId]
+      );
+      if (componentRows.length === 0) {
+        return res.status(404).json({ error: 'Component not found' });
+      }
+    }
+
+    const dal = new CollectionDal(userId);
+    const item = await dal.addItemToCollection(collectionId, itemType, itemId, sortOrder || 0);
+    res.json(item);
+  } catch (err) {
+    console.error('[Collections] Add polymorphic item error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /dashboard/api/collections/:id/items/:itemId - Remove polymorphic item from collection
+router.delete('/dashboard/api/collections/:id/items/:itemId', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+    const itemId = Number(req.params.itemId);
+    const { itemType } = req.query;
+
+    if (!['overlay', 'component'].includes(itemType)) {
+      return res.status(400).json({ error: 'itemType query param must be "overlay" or "component"' });
+    }
+
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    const dal = new CollectionDal(userId);
+    const success = await dal.removeItemFromCollection(collectionId, itemType, itemId);
+    if (!success) {
+      return res.status(404).json({ error: `${itemType} not in collection` });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Collections] Remove polymorphic item error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /dashboard/api/collections/:id/items/reorder - Reorder polymorphic items
+router.put('/dashboard/api/collections/:id/items/reorder', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const collectionId = Number(req.params.id);
+    const { itemType, itemIds } = req.body;
+
+    if (!['overlay', 'component'].includes(itemType)) {
+      return res.status(400).json({ error: 'itemType must be "overlay" or "component"' });
+    }
+    if (!Array.isArray(itemIds)) {
+      return res.status(400).json({ error: 'itemIds must be an array' });
+    }
+
+    // Verify collection ownership
+    const { rows: collectionRows } = await db.query(
+      'SELECT id FROM overlay_collections WHERE id = $1 AND user_id = $2',
+      [collectionId, userId]
+    );
+    if (collectionRows.length === 0) {
+      return res.status(404).json({ error: 'Collection not found' });
+    }
+
+    const dal = new CollectionDal(userId);
+    await dal.reorderItems(collectionId, itemType, itemIds);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Collections] Reorder polymorphic items error:', err);
     res.status(500).json({ error: err.message });
   }
 });

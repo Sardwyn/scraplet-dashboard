@@ -208,4 +208,5 @@ router.delete('/overlay-components/:id', requireAuth, async (req, res) => {
     }
 });
 
+export { BUILTIN_PRESETS };
 export default router;

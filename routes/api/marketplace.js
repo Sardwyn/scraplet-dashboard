@@ -1,5 +1,5 @@
 // routes/api/marketplace.js
-// Overlay marketplace — publish, browse, purchase
+// Overlay and Design Atom marketplace — publish, browse, purchase
 
 import express from 'express';
 import requireAuth from '../../utils/requireAuth.js';
@@ -10,15 +10,20 @@ const router = express.Router();
 
 // ── GET /dashboard/api/marketplace/my-listings ───────────────────────────────
 router.get('/dashboard/api/marketplace/my-listings', requireAuth, async (req, res) => {
-  const userId = req.session.user.id;
-  const { rows } = await db.query(`
-    SELECT m.*, o.name as overlay_name, o.public_id as overlay_public_id
-    FROM marketplace_overlays m
-    JOIN overlays o ON o.id = m.overlay_id
-    WHERE m.user_id = $1
-    ORDER BY m.created_at DESC
-  `, [userId]).catch(() => ({ rows: [] }));
-  res.json({ ok: true, listings: rows });
+  try {
+    const userId = req.session.user.id;
+    const { rows } = await db.query(`
+      SELECT m.*, o.name as overlay_name, o.public_id as overlay_public_id
+      FROM marketplace_overlays m
+      JOIN overlays o ON o.id = m.overlay_id
+      WHERE m.user_id = $1
+      ORDER BY m.created_at DESC
+    `);
+    res.json({ ok: true, listings: rows });
+  } catch (err) {
+    console.error('[marketplace] get my-listings error:', err.message);
+    res.status(500).json({ ok: true, listings: [] });
+  }
 });
 
 // ── POST /dashboard/api/marketplace/publish ──────────────────────────────────
@@ -102,8 +107,115 @@ router.post('/dashboard/api/marketplace/publish/confirm', requireAuth, express.j
   }
 });
 
+// =============================================================================
+// DESIGN ATOMS (COMPONENTS) PUBLISHING
+// =============================================================================
+
+// ── GET /dashboard/api/marketplace/component-listings ───────────────────────
+router.get('/dashboard/api/marketplace/component-listings', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { rows } = await db.query(`
+      SELECT m.*, c.name as component_name, c.public_id as component_public_id
+      FROM marketplace_components m
+      JOIN overlay_components c ON c.id = m.component_id
+      WHERE m.user_id = $1
+      ORDER BY m.created_at DESC
+    `);
+    res.json({ ok: true, listings: rows });
+  } catch (err) {
+    console.error('[marketplace] get component-listings error:', err.message);
+    res.status(500).json({ ok: true, listings: [] });
+  }
+});
+
+// ── POST /dashboard/api/marketplace/publish-component ───────────────────────
+// Step 1: Scan component elements for user-uploaded assets
+router.post('/dashboard/api/marketplace/publish-component', requireAuth, express.json(), async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { componentId, title, description, priceCents = 0 } = req.body || {};
+
+    if (!componentId || !title) return res.status(400).json({ ok: false, error: 'componentId and title required' });
+
+    // Fetch component
+    const { rows: [comp] } = await db.query(
+      `SELECT id, component_json, name FROM overlay_components WHERE id = $1 AND user_id = $2`,
+      [componentId, userId]
+    );
+    if (!comp) return res.status(404).json({ ok: false, error: 'Component not found' });
+
+    // Scan for user assets
+    const { findUserAssetPaths } = await import('../../src/marketplace/assetPortability.js');
+    const assetPaths = Array.from(findUserAssetPaths(comp.component_json));
+
+    // Return asset list for confirmation
+    res.json({
+      ok: true,
+      componentId,
+      title,
+      description,
+      priceCents,
+      assetPaths,
+      requiresConfirmation: assetPaths.length > 0,
+    });
+  } catch (err) {
+    console.error('[marketplace] publish-component scan error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── POST /dashboard/api/marketplace/publish-component/confirm ───────────────
+// Step 2: Confirm rights, port assets, and create listing
+router.post('/dashboard/api/marketplace/publish-component/confirm', requireAuth, express.json(), async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const { componentId, title, description, priceCents = 0 } = req.body || {};
+
+    if (!componentId || !title) return res.status(400).json({ ok: false, error: 'componentId and title required' });
+
+    const { rows: [comp] } = await db.query(
+      `SELECT id, component_json FROM overlay_components WHERE id = $1 AND user_id = $2`,
+      [componentId, userId]
+    );
+    if (!comp) return res.status(404).json({ ok: false, error: 'Component not found' });
+
+    // Port assets inside the component JSON
+    const { portedConfig, missing } = await portOverlayAssets(comp.component_json, userId);
+
+    if (missing.length > 0) {
+      console.warn('[marketplace] missing assets during publish-component confirm:', missing);
+    }
+
+    // Create or update listing
+    const { rows: [listing] } = await db.query(`
+      INSERT INTO marketplace_components (user_id, component_id, title, description, price_cents, snapshot_config, asset_confirmed, status, published_at)
+      VALUES ($1, $2, $3, $4, $5, $6, true, 'published', NOW())
+      ON CONFLICT (component_id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        price_cents = EXCLUDED.price_cents,
+        snapshot_config = EXCLUDED.snapshot_config,
+        asset_confirmed = true,
+        status = 'published',
+        published_at = NOW(),
+        updated_at = NOW()
+      RETURNING id
+    `, [userId, componentId, title, description || null, priceCents, JSON.stringify(portedConfig)]);
+
+    res.json({ ok: true, listingId: listing.id });
+  } catch (err) {
+    console.error('[marketplace] publish-component confirm error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// =============================================================================
+// PUBLIC BROWSE
+// =============================================================================
+
 // ── GET /api/marketplace ─────────────────────────────────────────────────────
-// Public browse
+// Public browse overlays
 router.get('/api/marketplace', async (req, res) => {
   try {
     const { rows } = await db.query(`
@@ -113,6 +225,27 @@ router.get('/api/marketplace', async (req, res) => {
       FROM marketplace_overlays m
       JOIN users u ON u.id = m.user_id
       JOIN overlays o ON o.id = m.overlay_id
+      WHERE m.status = 'published'
+      ORDER BY m.published_at DESC
+      LIMIT 50
+    `);
+    res.json({ ok: true, listings: rows });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── GET /api/marketplace/components ──────────────────────────────────────────
+// Public browse components/atoms
+router.get('/api/marketplace/components', async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT m.id, m.title, m.description, m.price_cents, m.published_at,
+             u.username as creator_username,
+             c.public_id as component_public_id
+      FROM marketplace_components m
+      JOIN users u ON u.id = m.user_id
+      JOIN overlay_components c ON c.id = m.component_id
       WHERE m.status = 'published'
       ORDER BY m.published_at DESC
       LIMIT 50

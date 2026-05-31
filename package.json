@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@scraplet/contracts": "file:../scraplet-contracts",
     "@google/genai": "^2.5.0",
     "@google/generative-ai": "^0.24.1",
     "@the-convocation/twitter-scraper": "github:the-convocation/twitter-scraper",

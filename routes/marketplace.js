@@ -9,7 +9,7 @@ const router = express.Router();
 // GET /marketplace — public browse page
 router.get('/dashboard/marketplace', async (req, res, next) => {
   try {
-    // Get both individual overlays and collections
+    // Get both individual overlays, collections, and individual components
     const { rows: overlayListings } = await db.query(`
       SELECT m.id, m.title, m.description, m.price_cents, m.published_at,
              u.username as creator_username,
@@ -43,7 +43,7 @@ router.get('/dashboard/marketplace', async (req, res, next) => {
           SELECT o.public_id 
           FROM overlay_collection_items oci
           JOIN overlays o ON o.id = oci.overlay_id
-          WHERE oci.collection_id = c.id
+          WHERE oci.collection_id = c.id AND oci.item_type = 'overlay'
           ORDER BY oci.sort_order ASC, oci.added_at ASC
           LIMIT 1
         ) as first_overlay_public_id,
@@ -61,7 +61,24 @@ router.get('/dashboard/marketplace', async (req, res, next) => {
       return { rows: [] };
     });
 
-    const listings = [...overlayListings, ...collectionListings]
+    const { rows: componentListings } = await db.query(`
+      SELECT m.id, m.title, m.description, m.price_cents, m.published_at,
+             u.username as creator_username,
+             c.public_id as component_public_id,
+             null as thumbnail_url,
+             'component' as listing_type,
+             false as featured,
+             null as category,
+             null::text[] as platform_tags,
+             m.install_count,
+             m.avg_rating
+      FROM marketplace_components m
+      JOIN users u ON u.id = m.user_id
+      JOIN overlay_components c ON c.id = m.component_id
+      WHERE m.status = 'published'
+    `).catch(() => ({ rows: [] }));
+
+    const listings = [...overlayListings, ...collectionListings, ...componentListings]
       .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
       .slice(0, 100);
 
@@ -103,11 +120,20 @@ router.post('/dashboard/api/marketplace/publish-collection/:collectionId', requi
       SELECT o.id, o.name, o.slug, o.public_id, o.config_json
       FROM overlay_collection_items oci
       JOIN overlays o ON o.id = oci.overlay_id
-      WHERE oci.collection_id = $1
+      WHERE oci.collection_id = $1 AND oci.item_type = 'overlay'
       ORDER BY oci.sort_order ASC, oci.added_at ASC
     `, [collectionId]);
 
-    if (overlays.length === 0) {
+    // Get collection components for snapshot
+    const { rows: components } = await db.query(`
+      SELECT c.id, c.name, c.public_id, c.component_json, c.schema_version
+      FROM overlay_collection_items oci
+      JOIN overlay_components c ON c.id = oci.component_id
+      WHERE oci.collection_id = $1 AND oci.item_type = 'component'
+      ORDER BY oci.sort_order ASC, oci.added_at ASC
+    `, [collectionId]);
+
+    if (overlays.length === 0 && components.length === 0) {
       return res.status(400).json({ error: 'Cannot publish empty collection' });
     }
 
@@ -115,15 +141,23 @@ router.post('/dashboard/api/marketplace/publish-collection/:collectionId', requi
     const { rows } = await db.query(`
       INSERT INTO marketplace_collections (
         user_id, collection_id, title, description, price_cents, 
-        snapshot_overlays, status, published_at
+        snapshot_overlays, snapshot_components, status, published_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, 'published', NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'published', NOW())
       ON CONFLICT (collection_id) 
       DO UPDATE SET 
         title = $3, description = $4, price_cents = $5,
-        snapshot_overlays = $6, status = 'published', published_at = NOW()
+        snapshot_overlays = $6, snapshot_components = $7, status = 'published', published_at = NOW()
       RETURNING *
-    `, [userId, collectionId, title.trim(), description?.trim() || null, price_cents, JSON.stringify(overlays)]);
+    `, [
+      userId, 
+      collectionId, 
+      title.trim(), 
+      description?.trim() || null, 
+      price_cents, 
+      JSON.stringify(overlays), 
+      JSON.stringify(components)
+    ]);
 
     res.json(rows[0]);
   } catch (err) {
@@ -150,7 +184,8 @@ router.post('/dashboard/api/marketplace/acquire-collection/:listingId', requireA
     if (listing.price_cents > 0) return res.status(402).json({ ok: false, error: 'Paid collections require checkout' });
 
     const overlays = listing.snapshot_overlays || [];
-    if (overlays.length === 0) {
+    const components = listing.snapshot_components || [];
+    if (overlays.length === 0 && components.length === 0) {
       return res.status(400).json({ ok: false, error: 'Collection is empty' });
     }
 
@@ -170,6 +205,7 @@ router.post('/dashboard/api/marketplace/acquire-collection/:listingId', requireA
 
       const newCollectionId = newCollection.id;
       const clonedOverlays = [];
+      const clonedComponents = [];
 
       // Clone each overlay in the collection
       for (let i = 0; i < overlays.length; i++) {
@@ -186,11 +222,32 @@ router.post('/dashboard/api/marketplace/acquire-collection/:listingId', requireA
 
         // Add to collection
         await client.query(`
-          INSERT INTO overlay_collection_items (collection_id, overlay_id, sort_order)
-          VALUES ($1, $2, $3)
+          INSERT INTO overlay_collection_items (collection_id, overlay_id, item_type, sort_order)
+          VALUES ($1, $2, 'overlay', $3)
         `, [newCollectionId, newOverlay.id, i]);
 
         clonedOverlays.push(newOverlay);
+      }
+
+      // Clone each component in the collection
+      for (let i = 0; i < components.length; i++) {
+        const component = components[i];
+        const publicId = 'comp_' + crypto.randomBytes(6).toString('hex');
+        const name = component.name + ' (from marketplace)';
+
+        const { rows: [newComp] } = await client.query(`
+          INSERT INTO overlay_components (user_id, public_id, name, schema_version, component_json)
+          VALUES ($1, $2, $3, $4, $5)
+          RETURNING id, public_id
+        `, [userId, publicId, name, component.schema_version || 1, JSON.stringify(component.component_json)]);
+
+        // Add to collection
+        await client.query(`
+          INSERT INTO overlay_collection_items (collection_id, component_id, item_type, sort_order)
+          VALUES ($1, $2, 'component', $3)
+        `, [newCollectionId, newComp.id, i]);
+
+        clonedComponents.push(newComp);
       }
 
       await client.query('COMMIT');
@@ -199,6 +256,7 @@ router.post('/dashboard/api/marketplace/acquire-collection/:listingId', requireA
         ok: true, 
         collectionId: newCollectionId,
         overlays: clonedOverlays,
+        components: clonedComponents,
         editUrl: '/dashboard/overlays'
       });
     } catch (err) {
@@ -256,7 +314,54 @@ router.post('/dashboard/api/marketplace/acquire/:listingId', requireAuth, async 
   }
 });
 
-// POST /marketplace/:id/install — install overlay and increment install_count
+// POST /dashboard/api/marketplace/acquire-component/:listingId
+// Clone a free component/atom into the buyer's overlay_components library
+router.post('/dashboard/api/marketplace/acquire-component/:listingId', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const listingId = Number(req.params.listingId);
+
+    const { rows: [listing] } = await db.query(`
+      SELECT m.*, c.name as component_name
+      FROM marketplace_components m
+      JOIN overlay_components c ON c.id = m.component_id
+      WHERE m.id = $1 AND m.status = 'published'
+    `, [listingId]);
+
+    if (!listing) return res.status(404).json({ ok: false, error: 'Component listing not found' });
+    if (listing.price_cents > 0) return res.status(402).json({ ok: false, error: 'Paid components require checkout' });
+
+    // Clone component into buyer's account
+    const publicId = 'comp_' + crypto.randomBytes(6).toString('hex');
+    const name = listing.title + ' (from marketplace)';
+    const config = listing.snapshot_config || {};
+
+    const { rows: [newComp] } = await db.query(`
+      INSERT INTO overlay_components (user_id, public_id, name, schema_version, component_json)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, public_id
+    `, [userId, publicId, name, 1, JSON.stringify(config)]);
+
+    // Increment install_count
+    await db.query(`
+      UPDATE marketplace_components
+      SET install_count = COALESCE(install_count, 0) + 1
+      WHERE id = $1
+    `, [listingId]);
+
+    res.json({ 
+      ok: true, 
+      componentId: newComp.id, 
+      publicId: newComp.public_id, 
+      editUrl: '/dashboard/overlay-components' 
+    });
+  } catch (err) {
+    console.error('[marketplace] acquire component error:', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// POST /marketplace/:id/install — install overlay and increment install_count (legacy)
 router.post('/marketplace/:id/install', requireAuth, async (req, res, next) => {
   try {
     const userId = req.session.user.id;
@@ -320,6 +425,29 @@ router.get('/marketplace/:listingId', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /marketplace/component/:listingId — public listing landing page for components
+router.get('/marketplace/component/:listingId', async (req, res, next) => {
+  try {
+    const { rows: [listing] } = await db.query(`
+      SELECT m.*, u.username as creator_username, c.public_id as component_public_id
+      FROM marketplace_components m
+      JOIN users u ON u.id = m.user_id
+      JOIN overlay_components c ON c.id = m.component_id
+      WHERE m.id = $1 AND m.status = 'published'
+    `, [Number(req.params.listingId)]);
+
+    if (!listing) return res.status(404).render('404', { user: req.session?.user || null });
+
+    listing.widget_list = ['component'];
+
+    res.render('marketplace-listing', {
+      listing,
+      user: req.session?.user || null,
+      req,
+    });
+  } catch (err) { next(err); }
+});
+
 export default router;
 
 // ===== Marketplace Reviews =====
@@ -356,6 +484,7 @@ router.get('/marketplace/:id/reviews', async (req, res, next) => {
     res.json(rows);
   } catch (err) { next(err); }
 });
+
 router.get('/marketplace/api/listings', async (req, res, next) => {
   try {
     const { q = '', category = '', platform = '', page = '0', sort = 'featured' } = req.query;
