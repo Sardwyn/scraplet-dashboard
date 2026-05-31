@@ -129,6 +129,12 @@ export function useUnifiedOverlayState(
         // Fire side-effect first (e.g. dispatch scraplet:overlay:event for BotLayerRoot)
         onPacketSideEffect?.(packet);
 
+        if (packet.header?.type === "overlay.config.update") {
+          console.log("[useUnifiedOverlayState] Received config update event via SSE. Triggering client-side page reload to bypass OBS caches...");
+          window.location.reload();
+          return;
+        }
+
         if (!engineRef.current) return;
         setState((currentState) => {
           const updates = engineRef.current!.processPacket(packet, currentState);

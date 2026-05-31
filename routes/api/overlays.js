@@ -233,11 +233,33 @@ router.put("/overlays/:id", requireAuth, express.json(), async (req, res, next) 
 
     if (!rowCount) return res.sendStatus(404);
 
-    // Respond immediately — thumbnail generation is fire-and-forget
+    // Respond immediately — thumbnail generation and real-time reload signals are fire-and-forget
     res.json(rows[0]);
 
     // Queue thumbnail screenshot in background (non-blocking)
     generateOverlayThumbnail(id, rows[0].public_id);
+
+    // Publish a real-time event so running client overlays can auto-reload (non-blocking)
+    const publicId = rows[0].public_id;
+    const packet = {
+      header: {
+        id: crypto.randomUUID(),
+        type: "overlay.config.update",
+        ts: Date.now(),
+        producer: "dashboard",
+        platform: "internal",
+        scope: {
+          tenantId: String(userId),
+          overlayPublicId: publicId
+        }
+      },
+      payload: {
+        config_json: config_json || {}
+      }
+    };
+    overlayGate.publish(String(userId), publicId, packet).catch(err => {
+      console.error("[PUT /overlays/:id] Error publishing overlay config update:", err);
+    });
   } catch (err) {
     next(err);
   }
@@ -291,7 +313,7 @@ router.post("/overlays/:id/versions/:versionId/restore", requireAuth, async (req
     const userId = req.session.user.id;
     const id = Number(req.params.id);
     const versionId = Number(req.params.versionId);
-    const { rows: owned } = await db.query('SELECT config_json FROM overlays WHERE id = $1 AND user_id = $2', [id, userId]);
+    const { rows: owned } = await db.query('SELECT config_json, public_id FROM overlays WHERE id = $1 AND user_id = $2', [id, userId]);
     if (!owned.length) return res.sendStatus(404);
     const { rows: ver } = await db.query('SELECT config_json FROM overlay_versions WHERE id = $1 AND overlay_id = $2', [versionId, id]);
     if (!ver.length) return res.sendStatus(404);
@@ -310,6 +332,29 @@ router.post("/overlays/:id/versions/:versionId/restore", requireAuth, async (req
       )`,
       [id]
     );
+
+    // Publish a real-time event so running client overlays can auto-reload (non-blocking)
+    const publicId = owned[0].public_id;
+    const packet = {
+      header: {
+        id: crypto.randomUUID(),
+        type: "overlay.config.update",
+        ts: Date.now(),
+        producer: "dashboard",
+        platform: "internal",
+        scope: {
+          tenantId: String(userId),
+          overlayPublicId: publicId
+        }
+      },
+      payload: {
+        config_json: ver[0].config_json || {}
+      }
+    };
+    overlayGate.publish(String(userId), publicId, packet).catch(err => {
+      console.error("[restore] Error publishing overlay config update:", err);
+    });
+
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

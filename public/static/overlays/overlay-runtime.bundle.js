@@ -38070,7 +38070,13 @@ void main() {
       const connection = new SSEConnection({
         publicId,
         onPacket: (packet) => {
+          var _a3;
           onPacketSideEffect == null ? void 0 : onPacketSideEffect(packet);
+          if (((_a3 = packet.header) == null ? void 0 : _a3.type) === "overlay.config.update") {
+            console.log("[useUnifiedOverlayState] Received config update event via SSE. Triggering client-side page reload to bypass OBS caches...");
+            window.location.reload();
+            return;
+          }
           if (!engineRef.current) return;
           setState((currentState) => {
             const updates = engineRef.current.processPacket(packet, currentState);
