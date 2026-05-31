@@ -7872,17 +7872,6 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
           </div>
         )}
 
-        <TestDataPanel
-          data={testData}
-          onChange={(k, v) => {
-            if (v === "" && confirm("Delete?")) {
-              const n = { ...testData }; delete n[k]; setTestData(n);
-            } else {
-              setTestData({ ...testData, [k]: v });
-            }
-          }}
-        />
-
       </div>
       </div>
 
@@ -13344,7 +13333,7 @@ function InspectorPanel({
               {element.type === "text" && (
                 <div className="rounded-md border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-2 text-[12px] leading-[1.4] text-slate-400">
                   <div className="mb-1 text-[12px] leading-[1.4] font-semibold text-slate-300">Variable Injection</div>
-                  Use <code>{`{{variable}}`}</code> in the text content to bind data from the Test Data panel.
+                  Use <code>{`{{variable}}`}</code> in the text content to bind custom variables or dynamic fields.
                 </div>
               )}
             </div>
@@ -13710,54 +13699,7 @@ function AssetPickerModal({
   );
 }
 
-function TestDataPanel({ data, onChange }: { data: Record<string, string>; onChange: (k: string, v: string) => void }) {
-  const [newKey, setNewKey] = useState("");
 
-  return (
-    <div className="mt-2 rounded-md border border-[rgba(255,255,255,0.08)] bg-[#111113] p-4">
-      <div className="mb-2 text-[11px] leading-[1.4] uppercase tracking-[0.08em] text-slate-400">Test Data (Variables)</div>
-      <div className="space-y-2">
-        {Object.entries(data).map(([k, v]) => (
-          <div key={k} className="flex items-center gap-2">
-            <div className="w-1/3 truncate font-mono text-[12px] leading-[1.4] text-slate-500" title={k}>{k}</div>
-            <input
-              type="text"
-              className={`flex-1 font-mono ${uiClasses.field}`}
-              value={v}
-              onChange={e => onChange(k, e.target.value)}
-            />
-            <button onClick={() => onChange(k, "")} className="flex h-6 w-6 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-[rgba(255,255,255,0.03)] hover:text-red-400" aria-label={`Clear ${k}`}>
-              <svg {...TOOL_ICON_PROPS}><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
-            </button>
-          </div>
-        ))}
-        <div className="flex items-center gap-2 border-t border-[rgba(255,255,255,0.08)] pt-2">
-          <input
-            type="text"
-            className={`w-1/3 ${uiClasses.field}`}
-            placeholder="New key..."
-            value={newKey}
-            onChange={e => setNewKey(e.target.value)}
-          />
-          <button
-            onClick={() => {
-              if (newKey) {
-                onChange(newKey, "value");
-                setNewKey("");
-              }
-            }}
-            className={uiClasses.button}
-          >
-            Add
-          </button>
-        </div>
-        <div className="text-[11px] leading-[1.4] text-slate-500">
-          Use in text as <code>{`{{key}}`}</code>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ===== UX Refactor Components =====
 
