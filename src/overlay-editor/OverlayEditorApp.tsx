@@ -6461,9 +6461,13 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         #overlay-editor-root [role="button"] svg {
           display: block !important;
           flex-shrink: 0 !important;
+        }
+        #overlay-editor-root button > svg:only-child,
+        #overlay-editor-root .iconButton > svg:only-child,
+        #overlay-editor-root [role="button"] > svg:only-child {
           margin: auto !important;
         }
-      `}</style>
+      `}</style>,StartLine:6459,TargetContent:
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (
