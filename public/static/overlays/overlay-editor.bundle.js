@@ -91373,7 +91373,7 @@ function OverlayEditorApp({ initialOverlay }) {
       const hasAdjustments = adj.brightness !== void 0 && adj.brightness !== 1 || adj.contrast !== void 0 && adj.contrast !== 1 || adj.exposure !== void 0 && Number(adj.exposure) !== 0 || adj.saturate !== void 0 && adj.saturate !== 1 || adj.hueRotate !== void 0 && adj.hueRotate !== 0 || adj.blur !== void 0 && adj.blur !== 0 || adj.opacity !== void 0 && adj.opacity !== 1;
       const hasEffects = Array.isArray(el.effects) && el.effects.length > 0 || Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0;
       const forceDomRender = isMedia && (hasKeying || hasBlendMode || hasAdjustments || hasEffects);
-      if ((type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image" && !forceDomRender) && !hasRevealEffect) {
+      if ((type === "shape" || type === "rect" || type === "ellipse" || type === "circle" || type === "path" || type === "text" || type === "image" && !forceDomRender) && !hasRevealEffect && !domRenderMap[el.id]) {
         activeLeaferIds.add(el.id);
         const properties = { ...el };
         let drawType = "rect";
@@ -91472,7 +91472,7 @@ function OverlayEditorApp({ initialOverlay }) {
         (_a5 = pixiCoreRef.current) == null ? void 0 : _a5.removeVideoElement(id);
       }
     });
-  }, [previewElementsById, canvasInitialized]);
+  }, [previewElementsById, canvasInitialized, domRenderMap]);
   const captureUnifiedSnapshot = reactExports.useCallback(async () => {
     const pixiCanvas = pixiCanvasRef.current;
     const leaferCanvas = leaferCanvasRef.current;
@@ -95394,7 +95394,6 @@ function OverlayEditorApp({ initialOverlay }) {
       lineNumber: 6432,
       columnNumber: 7
     }, this),
-    ",StartLine:6459,TargetContent:",
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(FontLoader, { fonts: usedFonts }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
       lineNumber: 6472,

@@ -1670,7 +1670,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       const forceDomRender = isMedia && (hasKeying || hasBlendMode || hasAdjustments || hasEffects);
 
       // 1. Leafer.js Graphics (rect, ellipse, circle, path, text, shape, image)
-      if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect) {
+      if ((type === 'shape' || type === 'rect' || type === 'ellipse' || type === 'circle' || type === 'path' || type === 'text' || (type === 'image' && !forceDomRender)) && !hasRevealEffect && !domRenderMap[el.id]) {
         activeLeaferIds.add(el.id);
 
         const properties: Record<string, any> = { ...el };
@@ -1791,7 +1791,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         pixiCoreRef.current?.removeVideoElement(id);
       }
     });
-  }, [previewElementsById, canvasInitialized]);
+  }, [previewElementsById, canvasInitialized, domRenderMap]);
 
   // Client-Side Unified Snapshot Composite
   const captureUnifiedSnapshot = useCallback(async (): Promise<string | null> => {
@@ -6467,7 +6467,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
         #overlay-editor-root [role="button"] > svg:only-child {
           margin: auto !important;
         }
-      `}</style>,StartLine:6459,TargetContent:
+      `}</style>
       {/* Asset Picker Modal */}
       <FontLoader fonts={usedFonts} />
       {assetPicker.open && (
