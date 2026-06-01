@@ -14225,28 +14225,26 @@ function CreationToolbar({
         <button
           onClick={onSave}
           disabled={saving}
-          className={`flex h-8 flex-1 items-center justify-center rounded-md border text-[12px] leading-[1.4] tracking-[-0.02em] font-semibold transition-all ${saveOk ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" :
+          className={`flex h-8 flex-1 items-center justify-center gap-1.5 px-3 rounded-md border text-[12px] leading-[1.4] tracking-[-0.02em] font-semibold transition-all ${saveOk ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-100" :
             saveError ? "border-red-500/40 bg-red-500/15 text-red-100" :
               "border-indigo-400/30 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/20"
             }`}
         >
-          <div className="flex items-center justify-center gap-1.5 w-full h-full px-3">
-            {saving ? (
-              <>
-                <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                <span>Saving...</span>
-              </>
-            ) : saveOk ? (
-              <>
-                <svg {...TOOL_ICON_PROPS}><polyline points="20 6 9 17 4 12" /></svg>
-                <span>Saved</span>
-              </>
-            ) : (
-              <span>Save Changes</span>
-            )}
+          {saving ? (
+            <>
+              <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <span>Saving...</span>
+            </>
+          ) : saveOk ? (
+            <>
+              <svg {...TOOL_ICON_PROPS}><polyline points="20 6 9 17 4 12" /></svg>
+              <span>Saved</span>
+            </>
+          ) : (
+            <span>Save Changes</span>
+          )}
 
-            {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
-          </div>
+          {saveError && <span className="ml-1 text-[11px] leading-[1.4] opacity-80">(Error)</span>}
         </button>
 
         {/* Export / Import JSON */}
