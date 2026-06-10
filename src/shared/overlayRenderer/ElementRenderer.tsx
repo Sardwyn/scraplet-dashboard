@@ -1104,6 +1104,7 @@ function renderFillDefs(
             const imageX = (fit === "tile" ? 0 : (width - scaledWidth) / 2) + (fill.offsetX ?? 0);
             const imageY = (fit === "tile" ? 0 : (height - scaledHeight) / 2) + (fill.offsetY ?? 0);
             const rotate = fill.rotationDeg ?? 0;
+            const absoluteFillSrc = fill.src && fill.src.startsWith("/") ? `${window.location.origin}${fill.src}` : fill.src;
             return (
                 <pattern
                     key={`${scopeId}-pattern-${index}`}
@@ -1114,7 +1115,7 @@ function renderFillDefs(
                     patternTransform={rotate ? `rotate(${rotate} ${width / 2} ${height / 2})` : undefined}
                 >
                     <image
-                        href={fill.src}
+                        href={absoluteFillSrc}
                         x={imageX}
                         y={imageY}
                         width={fit === "tile" ? tileWidth : fit === "stretch" ? width : scaledWidth}

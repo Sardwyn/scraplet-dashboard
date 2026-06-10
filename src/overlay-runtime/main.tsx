@@ -779,7 +779,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
   }, []);
 
   // OBS detection — disable debug HUD when running inside OBS CEF
-  const isOBS = navigator.userAgent.includes("OBS");
+  const isOBS = navigator.userAgent.toUpperCase().includes("OBS");
 
   // Unified overlay state — owns all SSE connections and widget state derivation
   // Side-effect: dispatch scraplet:overlay:event so BotLayerRoot and other

@@ -112,10 +112,15 @@ export function KeyedMedia({
   const localSourceCtxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const hasKeying = (keying?.mode ?? "none") !== "none";
+
+  const absoluteSrc = useMemo(() => {
+    if (!src) return "";
+    return src.startsWith("/") ? `${window.location.origin}${src}` : src;
+  }, [src]);
   
   // Debug logging
   if (kind === "video" && Math.random() < 0.01) {
-    console.log(`[KeyedMedia] kind=${kind} isPerformanceMode=${isPerformanceMode} src=${src.substring(src.lastIndexOf('/'))}`);
+    console.log(`[KeyedMedia] kind=${kind} isPerformanceMode=${isPerformanceMode} src=${absoluteSrc.substring(absoluteSrc.lastIndexOf('/'))}`);
   }
   const mediaStyle = useMemo<React.CSSProperties>(() => ({
     width: "100%",
@@ -230,7 +235,7 @@ export function KeyedMedia({
       if (kind === "video" && videoRef.current) {
         // Create cache key based on current render size
         const [normWidth, normHeight] = normalizeSize(width, height);
-        const cacheKey = `${src}:${normWidth}x${normHeight}`;
+        const cacheKey = `${absoluteSrc}:${normWidth}x${normHeight}`;
         
         // Update cache key if it changed (due to resize)
         if (cacheKeyRef.current && cacheKeyRef.current !== cacheKey) {
@@ -373,13 +378,13 @@ export function KeyedMedia({
       const image = new Image();
       image.crossOrigin = "anonymous";
       image.onload = () => renderFrame();
-      image.src = src;
+      image.src = absoluteSrc;
       imageRef.current = image;
     } else {
       // For videos, we'll create the cache entry on first render when we know the actual size
       const video = document.createElement("video");
       video.crossOrigin = "anonymous";
-      video.src = src;
+      video.src = absoluteSrc;
       video.poster = poster || "";
       video.autoplay = !!autoplay;
       video.muted = muted !== false;
@@ -440,7 +445,7 @@ export function KeyedMedia({
       localSourceCanvasRef.current = null;
       localSourceCtxRef.current = null;
     };
-  }, [autoplay, controls, fit, hasKeying, keying, kind, loop, muted, poster, src, isPerformanceMode]);
+  }, [autoplay, controls, fit, hasKeying, keying, kind, loop, muted, poster, absoluteSrc, isPerformanceMode]);
 
   // Show placeholder in performance mode for videos
   if (isPerformanceMode && kind === "video") {
@@ -462,11 +467,11 @@ export function KeyedMedia({
 
   if (!hasKeying) {
     if (kind === "image") {
-      return <img src={src} alt="" style={{ ...mediaStyle, objectFit: fit as any }} />;
+      return <img src={absoluteSrc} alt="" style={{ ...mediaStyle, objectFit: fit as any }} />;
     }
     return (
       <video
-        src={src}
+        src={absoluteSrc}
         poster={poster || undefined}
         autoPlay={!!autoplay}
         muted={muted !== false}
