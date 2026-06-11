@@ -8443,7 +8443,7 @@ function ColorSwatch({ value, onChange, className, showAlpha }: { value: string;
       {hasAlpha && (
         <input
           type="range" min="0" max="1" step="0.05"
-          className="flex-1 h-1 accent-indigo-500"
+          className="flex-1 min-w-0 h-1 accent-indigo-500"
           value={alpha}
           title={`Opacity: ${Math.round(alpha * 100)}%`}
           onChange={(e) => onChange(hexAlphaToRgba(hex, parseFloat(e.target.value)))}
@@ -9098,32 +9098,44 @@ function PatternFillControls({
         </select>
       </div>
 
-      <div className="flex items-center gap-2">
-        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
-        <div className="w-20 relative">
-          <NumberField
-            label=""
-            value={Math.round(nextPattern.scale ?? 100)}
-            onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
-            noLabel
-          />
-          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <input
+              type="range"
+              min="10"
+              max="300"
+              step="5"
+              className="flex-1 min-w-0 h-1 accent-indigo-500"
+              value={nextPattern.scale ?? 100}
+              onChange={(e) => onChange({ ...nextPattern, scale: parseInt(e.target.value) })}
+            />
+            <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
+              {nextPattern.scale ?? 100}%
+            </span>
+          </div>
         </div>
-        <div className="flex-1 text-[11px] leading-[1.4] text-slate-600">
+        <div className="pl-[72px] text-[10px] leading-[1.3] text-slate-500">
           Scale now applies to tile, cover, and contain.
         </div>
       </div>
 
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Opacity</label>
-        <div className="w-20 relative">
-          <NumberField
-            label=""
-            value={Math.round((nextPattern.opacity ?? 1) * 100)}
-            onChange={(v) => onChange({ ...nextPattern, opacity: Math.max(0, Math.min(1, v / 100)) })}
-            noLabel
+        <div className="flex-1 flex items-center gap-3 min-w-0">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
+            value={nextPattern.opacity ?? 1}
+            onChange={(e) => onChange({ ...nextPattern, opacity: parseFloat(e.target.value) })}
           />
-          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
+            {Math.round((nextPattern.opacity ?? 1) * 100)}%
+          </span>
         </div>
       </div>
 
@@ -9145,7 +9157,7 @@ function PatternFillControls({
       {/* Rotation */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <AngleDial
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })}
@@ -9156,7 +9168,7 @@ function PatternFillControls({
             min="0"
             max="360"
             step="1"
-            className="flex-1 h-1 accent-indigo-500"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
           />
@@ -9265,13 +9277,13 @@ function HeroPatternFillControls({
       {/* Foreground Opacity */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>FG Opacity</label>
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <input
             type="range"
             min="0"
             max="1"
             step="0.05"
-            className="flex-1 h-1 accent-indigo-500"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
             value={hero.foregroundOpacity}
             onChange={(e) => {
               const nextHero = { ...hero, foregroundOpacity: parseFloat(e.target.value) };
@@ -9343,13 +9355,13 @@ function HeroPatternFillControls({
       {/* Background Opacity */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>BG Opacity</label>
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <input
             type="range"
             min="0"
             max="1"
             step="0.05"
-            className="flex-1 h-1 accent-indigo-500"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
             value={hero.backgroundOpacity}
             onChange={(e) => {
               const nextHero = { ...hero, backgroundOpacity: parseFloat(e.target.value) };
@@ -9376,13 +9388,13 @@ function HeroPatternFillControls({
       {/* Scale */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <input
             type="range"
             min="10"
             max="300"
             step="5"
-            className="flex-1 h-1 accent-indigo-500"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
             value={nextPattern.scale ?? 100}
             onChange={(e) => onChange({ ...nextPattern, scale: parseInt(e.target.value) })}
           />
@@ -9410,7 +9422,7 @@ function HeroPatternFillControls({
       {/* Rotation */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
-        <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-3 min-w-0">
           <AngleDial
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })}
@@ -9421,7 +9433,7 @@ function HeroPatternFillControls({
             min="0"
             max="360"
             step="1"
-            className="flex-1 h-1 accent-indigo-500"
+            className="flex-1 min-w-0 h-1 accent-indigo-500"
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
           />
@@ -10233,21 +10245,21 @@ function EffectsStackControls({
             onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("effect_opacity") : undefined}
           />
         </label>
-        <div className="flex-1 flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 min-w-0">
           <input
             type="range" min="0" max="1" step="0.01"
-            className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+            className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
             value={typeof (element as any).effect_opacity === "number" ? (element as any).effect_opacity : 1}
             onChange={(e) => onChange({ effect_opacity: clamp(Number(e.target.value), 0, 1) } as any)}
           />
-          <div className="w-12 relative">
+          <div className="w-14 flex-none relative">
             <input
               type="number"
-              className={`w-full pr-3 text-right ${fieldClass}`}
+              className={`w-full pr-4 text-right ${fieldClass}`}
               value={Math.round((typeof (element as any).effect_opacity === "number" ? (element as any).effect_opacity : 1) * 100)}
               onChange={(e) => onChange({ effect_opacity: clamp(Number(e.target.value) / 100, 0, 1) } as any)}
             />
-            <span className="absolute right-1 top-[5px] text-[9px] text-slate-500">%</span>
+            <span className="absolute right-1.5 top-[6px] text-[10px] text-slate-500">%</span>
           </div>
         </div>
       </div>
@@ -11579,11 +11591,11 @@ function InspectorPanel({
               />
               <input
                 type="range" min="-180" max="180"
-                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={(element as any).rotationDeg ?? 0}
                 onChange={(e) => onChange({ rotationDeg: snapRotationValue(Number(e.target.value), altDown) } as any)}
               />
-              <div className="w-12">
+              <div className="w-12 flex-none">
                 <NumberField label="" value={(element as any).rotationDeg ?? 0} onChange={(v) => onChange({ rotationDeg: snapRotationValue(v, altDown) } as any)} noLabel />
               </div>
             </div>
@@ -11610,11 +11622,11 @@ function InspectorPanel({
                   </label>
                   <input
                     type="range" min={min} max={max} step={1}
-                    className="flex-1 h-1 accent-indigo-500"
+                    className="flex-1 min-w-0 h-1 accent-indigo-500"
                     value={val}
                     onChange={(e) => onChange({ [key]: Number(e.target.value) } as any)}
                   />
-                  <span className="w-8 text-right text-[11px] text-slate-400">{val}°</span>
+                  <span className="w-10 flex-none text-right text-[11px] text-slate-400">{val}°</span>
                 </div>
               );
             })}
@@ -11628,11 +11640,11 @@ function InspectorPanel({
               </label>
               <input
                 type="range" min={200} max={2000} step={50}
-                className="flex-1 h-1 accent-indigo-500"
+                className="flex-1 min-w-0 h-1 accent-indigo-500"
                 value={(element as any).perspective ?? 800}
                 onChange={(e) => onChange({ perspective: Number(e.target.value) } as any)}
               />
-              <span className="w-12 text-right text-[11px] text-slate-400">{(element as any).perspective ?? 800}px</span>
+              <span className="w-14 flex-none text-right text-[11px] text-slate-400">{(element as any).perspective ?? 800}px</span>
             </div>
           </div>
         </div>
@@ -11672,17 +11684,17 @@ function InspectorPanel({
           {/* Opacity (Global) */}
           <div className="flex items-center gap-2">
             <label className={`${fieldLabelClass} w-20 flex-none`}><TimelineFieldLabel label="Opacity" timelineState={timelineState?.properties.opacity} onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("opacity") : undefined} /></label>
-            <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
               <input
                 type="range" min="0" max="1" step="0.01"
-                className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                 value={typeof element.opacity === "number" ? element.opacity : 1}
                 onChange={(e) => onChange({ opacity: clamp(Number(e.target.value), 0, 1) })}
               />
-              <div className="w-12 relative">
+              <div className="w-14 flex-none relative">
                 <input
                   type="number"
-                  className={`w-full pr-3 text-right ${fieldClass}`}
+                  className={`w-full pr-4 text-right ${fieldClass}`}
                   value={Math.round((typeof element.opacity === "number" ? element.opacity : 1) * 100)}
                   onChange={(e) => onChange({ opacity: clamp(Number(e.target.value) / 100, 0, 1) })}
                 />
@@ -11885,9 +11897,9 @@ function InspectorPanel({
                                           {SOUND_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                         </select>
                                       </div>
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Vol</label>
-                                        <input type="range" min="0" max="1" step="0.1" className="flex-1 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
+                                        <input type="range" min="0" max="1" step="0.1" className="flex-1 min-w-0 h-1 accent-indigo-500" value={ec.soundVol ?? 0.8} onChange={e => updateEvent(evKey, { soundVol: parseFloat(e.target.value) })} />
                                       </div>
                                     </div>
                                     {ec.sound === 'custom' && (
@@ -12260,11 +12272,11 @@ function InspectorPanel({
                   </select>
                 </div>
                 {(element as any).layout?.mode === "split" && (
-                  <div className="flex items-center gap-2">
-                    <label className={`${fieldLabelClass} w-12`}>Ratio</label>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <label className={`${fieldLabelClass} w-12 flex-none`}>Ratio</label>
                     <input
                       type="range" min="0.2" max="0.8" step="0.05"
-                      className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                      className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                       value={(element as any).layout?.splitRatio ?? 0.6}
                       onChange={(e) => onChange({ layout: { ...(element as any).layout, splitRatio: parseFloat(e.target.value) } } as any)}
                     />
@@ -12524,14 +12536,14 @@ function InspectorPanel({
                 </div>
                 {/* Background */}
                 <div className="flex items-center gap-2">
-                  <label className={`${fieldLabelClass} w-12`}>Bg</label>
-                  <div className="flex-1 flex gap-2 items-center">
+                  <label className={`${fieldLabelClass} w-12 flex-none`}>Bg</label>
+                  <div className="flex-1 flex gap-2 items-center min-w-0">
                     <ColorSwatch value={(element as any).style?.bgColor} onChange={(v) => onChange({ style: { ...(element as any).style, bgColor: v } } as any)} />
                     <ColorSwatch value={(element as any).style?.accentColor} onChange={(v) => onChange({ style: { ...(element as any).style, accentColor: v } } as any)} />
                     <input
                       type="range" min="0" max="1" step="0.05"
                       title={`Opacity: ${Math.round(((element as any).style?.bgOpacity ?? 0.75) * 100)}%`}
-                      className="flex-1 h-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                      className="flex-1 min-w-0 h-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                       value={(element as any).style?.bgOpacity ?? 0.75}
                       onChange={(e) => onChange({ style: { ...(element as any).style, bgOpacity: parseFloat(e.target.value) } } as any)}
                     />
@@ -12916,7 +12928,7 @@ function InspectorPanel({
                   </div>
                   <div className="flex items-center gap-2">
                     <label className={`${fieldLabelClass} w-12 flex-none`}>Inner</label>
-                    <div className="w-16 relative">
+                    <div className="w-16 flex-none relative">
                       <NumberField
                         label=""
                         value={Math.round(((element as any).star?.innerRatio ?? 0.5) * 100)}
@@ -12946,7 +12958,7 @@ function InspectorPanel({
                   </div>
                   <div className="flex items-center gap-2">
                     <label className={`${fieldLabelClass} w-12 flex-none`}>Shaft</label>
-                    <div className="w-16 relative">
+                    <div className="w-16 flex-none relative">
                       <NumberField
                         label=""
                         value={Math.round(((element as any).arrow?.shaftRatio ?? 0.42) * 100)}
@@ -13265,13 +13277,13 @@ function InspectorPanel({
                       </select>
                     </div>
                     {(element as any).textOnPathId && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <label className={`${fieldLabelClass} w-12 flex-none`}>Offset</label>
                         <input type="range" min="0" max="100" step="1"
-                          className="flex-1 h-1 accent-indigo-500"
+                          className="flex-1 min-w-0 h-1 accent-indigo-500"
                           value={(element as any).textOnPathOffset ?? 0}
                           onChange={(e) => onChange({ textOnPathOffset: Number(e.target.value) } as any)} />
-                        <span className="w-8 text-right text-[11px] text-slate-400">{(element as any).textOnPathOffset ?? 0}%</span>
+                        <span className="w-10 flex-none text-right text-[11px] text-slate-400">{(element as any).textOnPathOffset ?? 0}%</span>
                       </div>
                     )}
                   </div>
@@ -13327,21 +13339,21 @@ function InspectorPanel({
                     onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("strokeOpacity") : undefined}
                   />
                 </label>
-                <div className="flex-1 flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 min-w-0">
                   <input
                     type="range" min="0" max="1" step="0.01"
-                    className="h-1 flex-1 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+                    className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
                     value={typeof (element as any).strokeOpacity === "number" ? (element as any).strokeOpacity : 1}
                     onChange={(e) => onChange({ strokeOpacity: clamp(Number(e.target.value), 0, 1) } as any)}
                   />
-                  <div className="w-12 relative">
+                  <div className="w-14 flex-none relative">
                     <input
                       type="number"
-                      className={`w-full pr-3 text-right ${fieldClass}`}
+                      className={`w-full pr-4 text-right ${fieldClass}`}
                       value={Math.round((typeof (element as any).strokeOpacity === "number" ? (element as any).strokeOpacity : 1) * 100)}
                       onChange={(e) => onChange({ strokeOpacity: clamp(Number(e.target.value) / 100, 0, 1) } as any)}
                     />
-                    <span className="absolute right-1 top-[5px] text-[9px] text-slate-500">%</span>
+                    <span className="absolute right-1.5 top-[6px] text-[10px] text-slate-500">%</span>
                   </div>
                 </div>
               </div>
@@ -13378,7 +13390,7 @@ function InspectorPanel({
                       <>
                         {(keying.mode === "alphaBlack" || keying.mode === "alphaWhite") && (
                           <>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <label className={`${fieldLabelClass} w-16 flex-none`}>Threshold</label>
                               <input
                                 type="range"
@@ -13386,11 +13398,11 @@ function InspectorPanel({
                                 max={100}
                                 value={Math.round(keying.threshold * 100)}
                                 onChange={(e) => onChange({ keying: { ...keying, threshold: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
-                                className="flex-1 accent-indigo-500"
+                                className="flex-1 min-w-0 h-1 accent-indigo-500"
                               />
-                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.threshold * 100)}</span>
+                              <span className="w-10 flex-none text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.threshold * 100)}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
                               <input
                                 type="range"
@@ -13398,9 +13410,9 @@ function InspectorPanel({
                                 max={100}
                                 value={Math.round(keying.softness * 100)}
                                 onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
-                                className="flex-1 accent-indigo-500"
+                                className="flex-1 min-w-0 h-1 accent-indigo-500"
                               />
-                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                              <span className="w-10 flex-none text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
                             </div>
                           </>
                         )}
@@ -13416,7 +13428,7 @@ function InspectorPanel({
                                 onChange={(e) => onChange({ keying: { ...keying, keyColor: e.target.value } } as any)}
                               />
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <label className={`${fieldLabelClass} w-16 flex-none`}>Tolerance</label>
                               <input
                                 type="range"
@@ -13424,11 +13436,11 @@ function InspectorPanel({
                                 max={100}
                                 value={Math.round(keying.tolerance * 100)}
                                 onChange={(e) => onChange({ keying: { ...keying, tolerance: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
-                                className="flex-1 accent-indigo-500"
+                                className="flex-1 min-w-0 h-1 accent-indigo-500"
                               />
-                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.tolerance * 100)}</span>
+                              <span className="w-10 flex-none text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.tolerance * 100)}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <label className={`${fieldLabelClass} w-16 flex-none`}>Softness</label>
                               <input
                                 type="range"
@@ -13436,11 +13448,11 @@ function InspectorPanel({
                                 max={100}
                                 value={Math.round(keying.softness * 100)}
                                 onChange={(e) => onChange({ keying: { ...keying, softness: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
-                                className="flex-1 accent-indigo-500"
+                                className="flex-1 min-w-0 h-1 accent-indigo-500"
                               />
-                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
+                              <span className="w-10 flex-none text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.softness * 100)}</span>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <label className={`${fieldLabelClass} w-16 flex-none`}>Spill</label>
                               <input
                                 type="range"
@@ -13448,9 +13460,9 @@ function InspectorPanel({
                                 max={100}
                                 value={Math.round(keying.spillReduction * 100)}
                                 onChange={(e) => onChange({ keying: { ...keying, spillReduction: clamp(Number(e.target.value) / 100, 0, 1) } } as any)}
-                                className="flex-1 accent-indigo-500"
+                                className="flex-1 min-w-0 h-1 accent-indigo-500"
                               />
-                              <span className="w-10 text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.spillReduction * 100)}</span>
+                              <span className="w-10 flex-none text-right text-[11px] leading-[1.4] tracking-[-0.02em] text-slate-400">{Math.round(keying.spillReduction * 100)}</span>
                             </div>
                           </>
                         )}
