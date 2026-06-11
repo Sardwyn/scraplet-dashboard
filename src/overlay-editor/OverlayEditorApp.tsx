@@ -9146,6 +9146,11 @@ function PatternFillControls({
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
         <div className="flex-1 flex items-center gap-3">
+          <AngleDial
+            value={Math.round(nextPattern.rotationDeg ?? 0)}
+            onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })}
+            size={24}
+          />
           <input
             type="range"
             min="0"
@@ -9155,7 +9160,7 @@ function PatternFillControls({
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
           />
-          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
             {Math.round(nextPattern.rotationDeg ?? 0)}°
           </span>
         </div>
@@ -9284,7 +9289,7 @@ function HeroPatternFillControls({
               });
             }}
           />
-          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
             {Math.round(hero.foregroundOpacity * 100)}%
           </span>
         </div>
@@ -9362,7 +9367,7 @@ function HeroPatternFillControls({
               });
             }}
           />
-          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
             {Math.round(hero.backgroundOpacity * 100)}%
           </span>
         </div>
@@ -9381,7 +9386,7 @@ function HeroPatternFillControls({
             value={nextPattern.scale ?? 100}
             onChange={(e) => onChange({ ...nextPattern, scale: parseInt(e.target.value) })}
           />
-          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
             {nextPattern.scale ?? 100}%
           </span>
         </div>
@@ -9406,6 +9411,11 @@ function HeroPatternFillControls({
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
         <div className="flex-1 flex items-center gap-3">
+          <AngleDial
+            value={Math.round(nextPattern.rotationDeg ?? 0)}
+            onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })}
+            size={24}
+          />
           <input
             type="range"
             min="0"
@@ -9415,7 +9425,7 @@ function HeroPatternFillControls({
             value={Math.round(nextPattern.rotationDeg ?? 0)}
             onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
           />
-          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+          <span className="text-[11px] font-mono text-slate-400 w-10 flex-none text-right">
             {Math.round(nextPattern.rotationDeg ?? 0)}°
           </span>
         </div>
