@@ -129,7 +129,7 @@ export function KeyedMedia({
     willChange: "transform",
     transform: "translate3d(0,0,0)",
     backfaceVisibility: "hidden" as any,
-    contain: "strict" as any,
+    contain: "paint" as any,
   }), []);
 
   // Pause/hide videos in performance mode

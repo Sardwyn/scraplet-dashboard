@@ -7121,7 +7121,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
             }}
           >
             <div
-              className="relative bg-[#0f1012]"
+              className="relative"
               style={{
                 width: baseResolution.width,
                 height: baseResolution.height,
@@ -7129,9 +7129,15 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 transformOrigin: "top left",
                 transformStyle: "preserve-3d",
                 transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
-                backgroundImage: obsPreviewUrl ? `url(${obsPreviewUrl})` : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
+                backgroundColor: "#0f1012",
+                backgroundImage: obsPreviewUrl 
+                  ? `url(${obsPreviewUrl})` 
+                  : `linear-gradient(45deg, #141519 25%, transparent 25%), 
+                     linear-gradient(-45deg, #141519 25%, transparent 25%), 
+                     linear-gradient(45deg, transparent 75%, #141519 75%), 
+                     linear-gradient(-45deg, transparent 75%, #141519 75%)`,
+                backgroundSize: obsPreviewUrl ? "cover" : "20px 20px",
+                backgroundPosition: obsPreviewUrl ? "center" : "0 0, 0 10px, 10px -10px, -10px 0px",
                 cursor: activeCreationTool === "pen" ? "crosshair" : undefined,
               }}
               onMouseDown={(e) => {
@@ -11022,7 +11028,7 @@ const CanvasElement = React.memo(function CanvasElement({
           width: w,
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : "auto",
-          zIndex: 30 + (elementIndex ?? 0),
+          zIndex: isPrimary ? 1000 : isSelected ? 500 : 30 + (elementIndex ?? 0),
           transformStyle: "preserve-3d",
           background: "rgba(0,0,0,0)",
         }}
@@ -11115,7 +11121,7 @@ const CanvasElement = React.memo(function CanvasElement({
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
         pointerEvents: suppressPointerEvents ? "none" : "auto",
-        zIndex: 30 + (elementIndex ?? 0),
+        zIndex: isPrimary ? 1000 : isSelected ? 500 : 30 + (elementIndex ?? 0),
         transformStyle: "preserve-3d",
       }}
     >
@@ -13512,6 +13518,13 @@ function InspectorPanel({
                   <option value="normal">Normal</option>
                   <option value="screen">Screen</option>
                   <option value="multiply">Multiply</option>
+                  <option value="overlay">Overlay</option>
+                  <option value="hard-light">Hard Light</option>
+                  <option value="soft-light">Soft Light</option>
+                  <option value="color-dodge">Color Dodge</option>
+                  <option value="color-burn">Color Burn</option>
+                  <option value="difference">Difference</option>
+                  <option value="exclusion">Exclusion</option>
                 </select>
               </div>
               {((element as any).blendMode ?? "normal") !== "normal" && (

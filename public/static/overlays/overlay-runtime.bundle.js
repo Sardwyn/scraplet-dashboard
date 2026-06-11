@@ -25399,7 +25399,7 @@ void main() {
       willChange: "transform",
       transform: "translate3d(0,0,0)",
       backfaceVisibility: "hidden",
-      contain: "strict"
+      contain: "paint"
     }), []);
     reactExports.useEffect(() => {
       if (kind !== "video" || !videoRef.current) return;
