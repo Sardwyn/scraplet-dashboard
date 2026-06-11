@@ -9055,9 +9055,9 @@ function PatternFillControls({
   }, [nextPattern.src]);
 
   return (
-    <div className="ml-14 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+    <div className="ml-4 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
       <div className="flex items-center gap-2">
-        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Image</label>
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Image</label>
         <input
           type="text"
           className={`flex-1 font-mono ${uiClasses.field}`}
@@ -9084,7 +9084,7 @@ function PatternFillControls({
       )}
 
       <div className="flex items-center gap-2">
-        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fit</label>
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Fit</label>
         <select
           className={`flex-1 ${uiClasses.field}`}
           value={nextPattern.fit}
@@ -9099,7 +9099,7 @@ function PatternFillControls({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Scale</label>
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
         <div className="w-20 relative">
           <NumberField
             label=""
@@ -9115,7 +9115,7 @@ function PatternFillControls({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Opacity</label>
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Opacity</label>
         <div className="w-20 relative">
           <NumberField
             label=""
@@ -9127,18 +9127,37 @@ function PatternFillControls({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off X</label>
-          <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+      {/* Position Offset */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Offset</label>
+        <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-mono text-slate-500 w-3 flex-none text-right">X</span>
+            <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+          </div>
+          <div className="flex-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-mono text-slate-500 w-3 flex-none text-right">Y</span>
+            <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off Y</label>
-          <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Rot</label>
-          <NumberField label="" value={Math.round(nextPattern.rotationDeg ?? 0)} onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })} noLabel className="flex-1" />
+      </div>
+
+      {/* Rotation */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
+        <div className="flex-1 flex items-center gap-3">
+          <input
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            className="flex-1 h-1 accent-indigo-500"
+            value={Math.round(nextPattern.rotationDeg ?? 0)}
+            onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
+          />
+          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+            {Math.round(nextPattern.rotationDeg ?? 0)}°
+          </span>
         </div>
       </div>
     </div>
@@ -9368,19 +9387,37 @@ function HeroPatternFillControls({
         </div>
       </div>
 
-      {/* Position Offset/Rotation Transformations */}
-      <div className="grid grid-cols-3 gap-2 pt-1">
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off X</label>
-          <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+      {/* Position Offset */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Offset</label>
+        <div className="flex-1 flex gap-2">
+          <div className="flex-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-mono text-slate-500 w-3 flex-none text-right">X</span>
+            <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+          </div>
+          <div className="flex-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-mono text-slate-500 w-3 flex-none text-right">Y</span>
+            <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off Y</label>
-          <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Rot</label>
-          <NumberField label="" value={Math.round(nextPattern.rotationDeg ?? 0)} onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })} noLabel className="flex-1" />
+      </div>
+
+      {/* Rotation */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Rotation</label>
+        <div className="flex-1 flex items-center gap-3">
+          <input
+            type="range"
+            min="0"
+            max="360"
+            step="1"
+            className="flex-1 h-1 accent-indigo-500"
+            value={Math.round(nextPattern.rotationDeg ?? 0)}
+            onChange={(e) => onChange({ ...nextPattern, rotationDeg: parseInt(e.target.value) })}
+          />
+          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+            {Math.round(nextPattern.rotationDeg ?? 0)}°
+          </span>
         </div>
       </div>
     </div>
