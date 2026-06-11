@@ -7384,6 +7384,70 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                   <CanvasElement
                     key={el.id}
                     el={el}
+                    mode="visual"
+                    elementIndex={previewElements.indexOf(raw) + 1}
+                    canvasInitialized={canvasInitialized}
+                    draftRect={draftRects[el.id]}
+                    draftRotationDeg={draftRotationDegs[el.id]}
+                    draftRadius={draftRadiusValues[el.id]}
+                    draftPatch={draftElementPatches[el.id]}
+                    isSelected={selectedIds.includes(el.id)}
+                    isPrimary={primarySelectedId === el.id}
+                    isLocked={el.locked === true}
+                    isPanning={isPanning}
+                    marqueeActive={marquee.active}
+                    suppressPointerEvents={activeCreationTool === "pen"}
+                    scale={scale}
+                    animationPhase={animationPhase}
+                    animationPhases={previewAnimationPhases}
+                    previewElementsById={previewElementsById}
+                    overlayComponents={overlayComponents}
+                    renderData={renderData}
+                    overlayPublicId={initialOverlay.public_id}
+                    selectedPathAnchor={selectedPathAnchor}
+                    allChildIds={allChildIds}
+                    onSelect={onSelectElement}
+                    onCycleSelect={cycleSelectAtPoint}
+                    onDragStart={onCanvasElementDragStart}
+                    onDragLive={handleDragLive}
+                    onDragStop={handleDragStop}
+                    onResizeStart={onCanvasElementResizeStart}
+                    onRotateStart={onCanvasElementRotateStart}
+                    onRadiusStart={onCanvasElementRadiusStart}
+                    onPathAnchorDown={onCanvasElementPathAnchorDown}
+                    onPathAnchorClick={onCanvasElementPathAnchorClick}
+                    onPathHandleDown={onCanvasElementPathHandleDown}
+                    clientToStage={clientToStage}
+                    spaceDown={spaceDown}
+                    rndRefs={rndRefs}
+                    dragDuplicateRef={dragDuplicateRef}
+                    dragStartRef={dragStartRef}
+                    createDragDuplicate={createDragDuplicate}
+                    setSelectedIds={setSelectedIds}
+                    onInlineEdit={(id) => {
+                      const el = previewElementsById[id];
+                      if (!el || el.type !== "text") return;
+                      setInlineEditingId(id);
+                      setInlineDraft((el as any).text ?? "");
+                      setTimeout(() => inlineEditRef.current?.focus(), 30);
+                    }}
+                    forceDomRender={domRenderMap[el.id]}
+                  />
+                );
+              })}
+
+              {/* Active Selection Overlay Layer */}
+              {previewElements.map((raw) => {
+                const el = raw as AnyEl;
+                if (!selectedIds.includes(el.id)) return null;
+                if (allChildIds.has(el.id) && !selectedIds.includes(el.id)) return null;
+                const animationPhase = previewAnimationPhases[el.id]?.phase;
+                if (animationPhase === "hidden" && !selectedIds.includes(el.id)) return null;
+                return (
+                  <CanvasElement
+                    key={`${el.id}_overlay`}
+                    el={el}
+                    mode="overlay"
                     elementIndex={previewElements.indexOf(raw) + 1}
                     canvasInitialized={canvasInitialized}
                     draftRect={draftRects[el.id]}
@@ -10738,6 +10802,7 @@ interface CanvasElementProps {
   onInlineEdit?: (id: string) => void;
   forceDomRender?: boolean;
   elementIndex?: number;
+  mode?: "visual" | "overlay";
 }
 
 const CanvasElement = React.memo(function CanvasElement({
@@ -10782,6 +10847,7 @@ const CanvasElement = React.memo(function CanvasElement({
   onInlineEdit,
   forceDomRender,
   elementIndex,
+  mode = "visual",
 }: CanvasElementProps) {
   const x = draftRect?.x ?? el.x;
   const y = draftRect?.y ?? el.y;
@@ -10807,7 +10873,7 @@ const CanvasElement = React.memo(function CanvasElement({
     Math.min(Math.max(1, w ?? 1), Math.max(1, h ?? 1)) / 2
   );
 
-  const showTransformOverlay = isPrimary && !isLocked && !isPanning && !marqueeActive;
+  const showTransformOverlay = mode === "overlay" && isPrimary && !isLocked && !isPanning && !marqueeActive;
   const forcePlainWrapper =
     (renderedEl.type === "image" || renderedEl.type === "video") &&
     ((renderedEl as any).blendMode ?? "normal") !== "normal";
@@ -10843,7 +10909,7 @@ const CanvasElement = React.memo(function CanvasElement({
     <div
       className={
         "absolute inset-0 overflow-visible " +
-        (!isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
+        (mode === "visual" && !isSelected && !isLocked ? "hover:ring-1 hover:ring-slate-500/50 " : "")
       }
       style={{
         transform: fullTransform !== 'none' ? fullTransform : undefined,
@@ -10853,26 +10919,30 @@ const CanvasElement = React.memo(function CanvasElement({
         background: "rgba(0,0,0,0)",
         opacity: isPhantom ? 0.35 : undefined,
         outline: isPhantom ? `2px dashed ${ACCENT_TINT}` : undefined,
-        ...(isSelected ? selectionStyle : {}),
+        ...(mode === "overlay" && isSelected && !isPrimary ? selectionStyle : {}),
       }}
     >
-      <ElementRenderer
-        element={renderedElNoTransform as any}
-        layout="fill"
-        elementsById={previewElementsById}
-        overlayComponents={overlayComponents}
-        animationPhase={animationPhase}
-        animationPhases={animationPhases}
-        data={renderData}
-        visited={new Set()}
-        overlayPublicId={overlayPublicId}
-        canvasInitialized={canvasInitialized}
-        isCanvasDrawn={canvasInitialized}
-        forceDomRender={forceDomRender}
-        elementIndex={elementIndex}
-      />
+      {mode === "visual" ? (
+        <ElementRenderer
+          element={renderedElNoTransform as any}
+          layout="fill"
+          elementsById={previewElementsById}
+          overlayComponents={overlayComponents}
+          animationPhase={animationPhase}
+          animationPhases={animationPhases}
+          data={renderData}
+          visited={new Set()}
+          overlayPublicId={overlayPublicId}
+          canvasInitialized={canvasInitialized}
+          isCanvasDrawn={canvasInitialized}
+          forceDomRender={forceDomRender}
+          elementIndex={elementIndex}
+        />
+      ) : (
+        <div className="w-full h-full bg-transparent pointer-events-none" />
+      )}
 
-      {isPrimary && (
+      {isPrimary && mode === "overlay" && (
         <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
           {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
           {isLocked ? " (Locked)" : ""}
@@ -11017,6 +11087,47 @@ const CanvasElement = React.memo(function CanvasElement({
     </div>
   );
 
+  if (mode === "visual") {
+    return (
+      <div
+        key={el.id}
+        className={(isLocked ? "cursor-not-allowed " : "cursor-pointer ") + "absolute"}
+        style={{
+          left: x,
+          top: y,
+          width: w,
+          height: h,
+          pointerEvents: suppressPointerEvents ? "none" : "auto",
+          zIndex: 30 + (elementIndex ?? 0),
+          transformStyle: "preserve-3d",
+          background: "rgba(0,0,0,0)",
+        }}
+        onDoubleClick={(e) => {
+          if (el.type === "text" && onInlineEdit && !isLocked) {
+            e.preventDefault();
+            e.stopPropagation();
+            onInlineEdit(el.id);
+          }
+        }}
+        onMouseDown={(e) => {
+          if (spaceDown || (e as any).button === 1) return;
+          if (marqueeActive) return;
+          if ((e as any).ctrlKey || (e as any).metaKey) {
+            onCycleSelect((e as any).clientX, (e as any).clientY, true, true);
+            return;
+          }
+          if ((e as any).shiftKey === true) {
+            onSelect(el.id, true);
+            return;
+          }
+          onCycleSelect((e as any).clientX, (e as any).clientY, false);
+        }}
+      >
+        {contentNode}
+      </div>
+    );
+  }
+
   if (showTransformOverlay || forcePlainWrapper) {
     return (
       <div
@@ -11028,7 +11139,7 @@ const CanvasElement = React.memo(function CanvasElement({
           width: w,
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : "auto",
-          zIndex: isPrimary ? 1000 : isSelected ? 500 : 30 + (elementIndex ?? 0),
+          zIndex: 10000,
           transformStyle: "preserve-3d",
           background: "rgba(0,0,0,0)",
         }}
@@ -11121,7 +11232,7 @@ const CanvasElement = React.memo(function CanvasElement({
       className={isLocked ? "cursor-not-allowed" : "cursor-move"}
       style={{
         pointerEvents: suppressPointerEvents ? "none" : "auto",
-        zIndex: isPrimary ? 1000 : isSelected ? 500 : 30 + (elementIndex ?? 0),
+        zIndex: 10000,
         transformStyle: "preserve-3d",
       }}
     >
