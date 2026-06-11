@@ -264,6 +264,13 @@ export interface OverlayPatternFill extends OverlayFillBase {
   offsetX?: number;
   offsetY?: number;
   rotationDeg?: number;
+  heroPattern?: {
+    name: string;
+    foregroundColor: string;
+    foregroundOpacity: number;
+    backgroundColor: string;
+    backgroundOpacity: number;
+  };
 }
 
 export interface OverlayTextureFill extends OverlayFillBase {

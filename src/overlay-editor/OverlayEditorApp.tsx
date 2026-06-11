@@ -44,6 +44,11 @@ import {
   OverlayMotionPreset
 } from "../shared/overlayTypes";
 import { ElementRenderer, isNativelyDom } from "../shared/overlayRenderer";
+import {
+  generateHeroPatternSrc,
+  HERO_PATTERNS,
+  HERO_PATTERNS_LIST,
+} from "../shared/overlayRenderer/heroPatternLib";
 import { resolveElementTransform } from "../shared/overlayRenderer/renderResolver";
 import { PixiMediaCore } from "../overlay-runtime/PixiMediaCore";
 import { LeaferGraphicCore } from "../overlay-runtime/LeaferGraphicCore";
@@ -8682,6 +8687,7 @@ function ensurePatternFill(pattern?: OverlayPatternFill): OverlayPatternFill {
     offsetX: pattern?.offsetX ?? 0,
     offsetY: pattern?.offsetY ?? 0,
     rotationDeg: pattern?.rotationDeg ?? 0,
+    heroPattern: pattern?.heroPattern,
   };
 }
 
@@ -9139,6 +9145,246 @@ function PatternFillControls({
   );
 }
 
+function HeroPatternFillControls({
+  pattern,
+  onChange,
+}: {
+  pattern: OverlayPatternFill;
+  onChange: (pattern: OverlayPatternFill) => void;
+}) {
+  const nextPattern = ensurePatternFill(pattern);
+  const hero = nextPattern.heroPattern ?? {
+    name: "topography",
+    foregroundColor: "#7c3aed",
+    foregroundOpacity: 0.4,
+    backgroundColor: "#111113",
+    backgroundOpacity: 1.0,
+  };
+
+  return (
+    <div className="ml-14 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+      {/* Pattern Select */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Pattern</label>
+        <select
+          className={`flex-1 ${uiClasses.field}`}
+          value={hero.name}
+          onChange={(e) => {
+            const nextHero = { ...hero, name: e.target.value };
+            const nextSrc = generateHeroPatternSrc(
+              nextHero.name,
+              nextHero.foregroundColor,
+              nextHero.foregroundOpacity,
+              nextHero.backgroundColor,
+              nextHero.backgroundOpacity
+            );
+            onChange({
+              ...nextPattern,
+              src: nextSrc,
+              heroPattern: nextHero,
+            });
+          }}
+        >
+          {HERO_PATTERNS_LIST.map((p) => (
+            <option key={p.name} value={p.name}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Foreground Color */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Foreground</label>
+        <div className="flex-1 flex gap-2">
+          <ColorSwatch
+            value={hero.foregroundColor}
+            onChange={(v) => {
+              const nextHero = { ...hero, foregroundColor: v };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+          <input
+            type="text"
+            className={`flex-1 font-mono ${uiClasses.field}`}
+            value={hero.foregroundColor}
+            onChange={(e) => {
+              const nextHero = { ...hero, foregroundColor: e.target.value };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Foreground Opacity */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>FG Opacity</label>
+        <div className="flex-1 flex items-center gap-3">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            className="flex-1 h-1 accent-indigo-500"
+            value={hero.foregroundOpacity}
+            onChange={(e) => {
+              const nextHero = { ...hero, foregroundOpacity: parseFloat(e.target.value) };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+            {Math.round(hero.foregroundOpacity * 100)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Background Color */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Background</label>
+        <div className="flex-1 flex gap-2">
+          <ColorSwatch
+            value={hero.backgroundColor}
+            onChange={(v) => {
+              const nextHero = { ...hero, backgroundColor: v };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+          <input
+            type="text"
+            className={`flex-1 font-mono ${uiClasses.field}`}
+            value={hero.backgroundColor}
+            onChange={(e) => {
+              const nextHero = { ...hero, backgroundColor: e.target.value };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Background Opacity */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>BG Opacity</label>
+        <div className="flex-1 flex items-center gap-3">
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            className="flex-1 h-1 accent-indigo-500"
+            value={hero.backgroundOpacity}
+            onChange={(e) => {
+              const nextHero = { ...hero, backgroundOpacity: parseFloat(e.target.value) };
+              const nextSrc = generateHeroPatternSrc(
+                nextHero.name,
+                nextHero.foregroundColor,
+                nextHero.foregroundOpacity,
+                nextHero.backgroundColor,
+                nextHero.backgroundOpacity
+              );
+              onChange({
+                ...nextPattern,
+                src: nextSrc,
+                heroPattern: nextHero,
+              });
+            }}
+          />
+          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+            {Math.round(hero.backgroundOpacity * 100)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Scale */}
+      <div className="flex items-center gap-2">
+        <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
+        <div className="w-24 relative">
+          <NumberField
+            label=""
+            value={Math.round(nextPattern.scale ?? 100)}
+            onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
+            noLabel
+          />
+          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
+        </div>
+        <div className="flex-1 text-[11px] leading-[1.4] text-slate-600">
+          Scales tile vector size.
+        </div>
+      </div>
+
+      {/* Position Offset/Rotation Transformations */}
+      <div className="grid grid-cols-3 gap-2 pt-1">
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off X</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetX ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetX: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Off Y</label>
+          <NumberField label="" value={Math.round(nextPattern.offsetY ?? 0)} onChange={(v) => onChange({ ...nextPattern, offsetY: v })} noLabel className="flex-1" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`${uiClasses.fieldLabel} w-10 flex-none`}>Rot</label>
+          <NumberField label="" value={Math.round(nextPattern.rotationDeg ?? 0)} onChange={(v) => onChange({ ...nextPattern, rotationDeg: v })} noLabel className="flex-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * GradientEditor - Visual gradient editor with draggable color stops
  */
@@ -9466,14 +9712,42 @@ function FillStackControls({
               <label className={`${uiClasses.fieldLabel} w-12 flex-none`}>Fill</label>
               <select
                 className={`flex-1 ${uiClasses.field}`}
-                value={nextFill.type}
+                value={nextFill.type === "pattern" ? (nextFill.heroPattern ? "pattern-hero" : "pattern-image") : nextFill.type}
                 onChange={(e) => {
-                  const replacement =
-                    e.target.value === "solid"
-                      ? ({ type: "solid", color: "#ffffff", opacity: 1 } as OverlayFill)
-                      : e.target.value === "pattern"
-                        ? (ensurePatternFill() as OverlayFill)
-                        : ({ type: e.target.value as any, opacity: 1, angleDeg: 0, stops: defaultGradientStops() } as OverlayFill);
+                  let replacement: OverlayFill;
+                  if (e.target.value === "solid") {
+                    replacement = { type: "solid", color: "#ffffff", opacity: 1 } as OverlayFill;
+                  } else if (e.target.value === "pattern-image") {
+                    replacement = { type: "pattern", src: "", fit: "tile", scale: 100, opacity: 1 } as OverlayPatternFill;
+                  } else if (e.target.value === "pattern-hero") {
+                    const initialHero = {
+                      name: "topography",
+                      foregroundColor: "#7c3aed",
+                      foregroundOpacity: 0.4,
+                      backgroundColor: "#111113",
+                      backgroundOpacity: 1.0,
+                    };
+                    const initialSrc = generateHeroPatternSrc(
+                      initialHero.name,
+                      initialHero.foregroundColor,
+                      initialHero.foregroundOpacity,
+                      initialHero.backgroundColor,
+                      initialHero.backgroundOpacity
+                    );
+                    replacement = {
+                      type: "pattern",
+                      src: initialSrc,
+                      fit: "tile",
+                      scale: 100,
+                      opacity: 1,
+                      offsetX: 0,
+                      offsetY: 0,
+                      rotationDeg: 0,
+                      heroPattern: initialHero,
+                    } as OverlayPatternFill;
+                  } else {
+                    replacement = { type: e.target.value as any, opacity: 1, angleDeg: 0, stops: defaultGradientStops() } as OverlayFill;
+                  }
                   setFills(fills.map((candidate, candidateIndex) => (candidateIndex === index ? replacement : candidate)));
                 }}
               >
@@ -9481,7 +9755,8 @@ function FillStackControls({
                 <option value="linear">Linear</option>
                 <option value="radial">Radial</option>
                 <option value="conic">Conic</option>
-                <option value="pattern">Pattern</option>
+                <option value="pattern-image">Pattern (Image)</option>
+                <option value="pattern-hero">Hero Pattern (SVG)</option>
               </select>
               <button type="button" className={uiClasses.iconButton} onClick={() => setFills(fills.filter((_, candidateIndex) => candidateIndex !== index))}>
                 <TrashIcon />
@@ -9518,11 +9793,18 @@ function FillStackControls({
             )}
 
             {nextFill.type === "pattern" && (
-              <PatternFillControls
-                pattern={nextFill}
-                onChange={(pattern) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? pattern : candidate))}
-                onPickImage={onPickPatternImage}
-              />
+              nextFill.heroPattern ? (
+                <HeroPatternFillControls
+                  pattern={nextFill}
+                  onChange={(pattern) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? pattern : candidate))}
+                />
+              ) : (
+                <PatternFillControls
+                  pattern={nextFill}
+                  onChange={(pattern) => setFills(fills.map((candidate, candidateIndex) => candidateIndex === index ? pattern : candidate))}
+                  onPickImage={onPickPatternImage}
+                />
+              )
             )}
           </div>
         );
