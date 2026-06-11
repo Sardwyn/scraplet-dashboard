@@ -10797,6 +10797,13 @@ const CanvasElement = React.memo(function CanvasElement({
   forceDomRender,
   elementIndex,
 }: CanvasElementProps) {
+  const computedElementIndex = isPrimary
+    ? 2000 + (elementIndex ?? 0)
+    : isSelected
+      ? 1000 + (elementIndex ?? 0)
+      : (elementIndex ?? 0);
+  const computedZDepth = computedElementIndex * 10;
+
   const x = draftRect?.x ?? el.x;
   const y = draftRect?.y ?? el.y;
   const w = draftRect?.width ?? el.width;
@@ -10883,24 +10890,31 @@ const CanvasElement = React.memo(function CanvasElement({
         canvasInitialized={canvasInitialized}
         isCanvasDrawn={canvasInitialized}
         forceDomRender={forceDomRender}
-        elementIndex={
-          isPrimary
-            ? 2000 + (elementIndex ?? 0)
-            : isSelected
-              ? 1000 + (elementIndex ?? 0)
-              : elementIndex
-        }
+        elementIndex={computedElementIndex}
       />
 
       {isPrimary && (
-        <div className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20" style={{ borderColor: ACCENT_TINT_SOFT, color: "#e0e7ff" }}>
+        <div
+          className="absolute -top-6 left-0 rounded-md border bg-[#161618] px-2 py-1 text-[11px] leading-[1.4] tracking-[-0.02em] font-medium shadow-sm shadow-black/20"
+          style={{
+            borderColor: ACCENT_TINT_SOFT,
+            color: "#e0e7ff",
+            transform: `translate3d(0, 0, ${computedZDepth + 5}px)`,
+          }}
+        >
           {el.type === "mask" ? "Mask Group" : el.name || defaultElementLabel(el)}
           {isLocked ? " (Locked)" : ""}
         </div>
       )}
 
       {showTransformOverlay && (
-        <div className="absolute inset-0 overflow-visible pointer-events-none">
+        <div
+          className="absolute inset-0 overflow-visible pointer-events-none"
+          style={{
+            transform: `translate3d(0, 0, ${computedZDepth + 5}px)`,
+            transformStyle: "preserve-3d",
+          }}
+        >
           {/* Border */}
           <div
             className="absolute inset-0 rounded-[2px] border shadow-[0_0_0_1px_rgba(255,255,255,0.18)]"
