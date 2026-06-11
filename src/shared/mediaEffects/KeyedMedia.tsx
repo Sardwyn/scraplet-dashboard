@@ -165,8 +165,6 @@ export function KeyedMedia({
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
         needsResize = true;
       }
       

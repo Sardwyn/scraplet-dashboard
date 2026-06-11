@@ -28969,8 +28969,6 @@ function KeyedMedia({
       if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
-        canvas.style.width = rect.width + "px";
-        canvas.style.height = rect.height + "px";
         needsResize = true;
       }
       lastWidth = width;
@@ -29198,7 +29196,7 @@ function KeyedMedia({
       fontFamily: "system-ui, sans-serif"
     }, children: "Video paused (Performance Mode)" }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/mediaEffects/KeyedMedia.tsx",
-      lineNumber: 453,
+      lineNumber: 451,
       columnNumber: 7
     }, this);
   }
@@ -29206,7 +29204,7 @@ function KeyedMedia({
     if (kind === "image") {
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("img", { src: absoluteSrc, alt: "", style: { ...mediaStyle, objectFit: fit } }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/mediaEffects/KeyedMedia.tsx",
-        lineNumber: 470,
+        lineNumber: 468,
         columnNumber: 14
       }, this);
     }
@@ -29226,7 +29224,7 @@ function KeyedMedia({
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/mediaEffects/KeyedMedia.tsx",
-        lineNumber: 473,
+        lineNumber: 471,
         columnNumber: 7
       },
       this
@@ -29234,11 +29232,11 @@ function KeyedMedia({
   }
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { ref: hostRef, style: { width: "100%", height: "100%", willChange: "transform", transform: "translate3d(0,0,0)" }, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("canvas", { ref: canvasRef, style: mediaStyle }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/mediaEffects/KeyedMedia.tsx",
-    lineNumber: 488,
+    lineNumber: 486,
     columnNumber: 7
   }, this) }, void 0, false, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/mediaEffects/KeyedMedia.tsx",
-    lineNumber: 487,
+    lineNumber: 485,
     columnNumber: 5
   }, this);
 }
