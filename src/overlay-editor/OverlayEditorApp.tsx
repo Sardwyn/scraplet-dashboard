@@ -10883,7 +10883,13 @@ const CanvasElement = React.memo(function CanvasElement({
         canvasInitialized={canvasInitialized}
         isCanvasDrawn={canvasInitialized}
         forceDomRender={forceDomRender}
-        elementIndex={elementIndex}
+        elementIndex={
+          isPrimary
+            ? 2000 + (elementIndex ?? 0)
+            : isSelected
+              ? 1000 + (elementIndex ?? 0)
+              : elementIndex
+        }
       />
 
       {isPrimary && (
