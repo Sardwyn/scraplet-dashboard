@@ -9162,7 +9162,7 @@ function HeroPatternFillControls({
   };
 
   return (
-    <div className="ml-14 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
+    <div className="ml-4 space-y-3 rounded-md border border-[rgba(255,255,255,0.06)] bg-[#161618] p-3">
       {/* Pattern Select */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Pattern</label>
@@ -9217,7 +9217,7 @@ function HeroPatternFillControls({
           />
           <input
             type="text"
-            className={`flex-1 font-mono ${uiClasses.field}`}
+            className={`w-20 flex-none font-mono ${uiClasses.field}`}
             value={hero.foregroundColor}
             onChange={(e) => {
               const nextHero = { ...hero, foregroundColor: e.target.value };
@@ -9295,7 +9295,7 @@ function HeroPatternFillControls({
           />
           <input
             type="text"
-            className={`flex-1 font-mono ${uiClasses.field}`}
+            className={`w-20 flex-none font-mono ${uiClasses.field}`}
             value={hero.backgroundColor}
             onChange={(e) => {
               const nextHero = { ...hero, backgroundColor: e.target.value };
@@ -9352,17 +9352,19 @@ function HeroPatternFillControls({
       {/* Scale */}
       <div className="flex items-center gap-2">
         <label className={`${uiClasses.fieldLabel} w-16 flex-none`}>Scale</label>
-        <div className="w-24 relative">
-          <NumberField
-            label=""
-            value={Math.round(nextPattern.scale ?? 100)}
-            onChange={(v) => onChange({ ...nextPattern, scale: Math.max(1, v) })}
-            noLabel
+        <div className="flex-1 flex items-center gap-3">
+          <input
+            type="range"
+            min="10"
+            max="300"
+            step="5"
+            className="flex-1 h-1 accent-indigo-500"
+            value={nextPattern.scale ?? 100}
+            onChange={(e) => onChange({ ...nextPattern, scale: parseInt(e.target.value) })}
           />
-          <span className="absolute right-4 top-[7px] text-[11px] leading-[1.4] text-slate-500">%</span>
-        </div>
-        <div className="flex-1 text-[11px] leading-[1.4] text-slate-600">
-          Scales tile vector size.
+          <span className="text-[11px] font-mono text-slate-400 w-8 text-right">
+            {nextPattern.scale ?? 100}%
+          </span>
         </div>
       </div>
 
