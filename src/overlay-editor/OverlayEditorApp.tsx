@@ -6349,19 +6349,33 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
       return null;
     }
 
+    // Sort hits to prioritize selected elements (promoted visually on canvas)
+    // so selection is not hijacked when clicking inside their elevated bounding boxes.
+    const sortedHits = [...hits].sort((a, b) => {
+      const aPrimary = a === primarySelectedId ? 1 : 0;
+      const bPrimary = b === primarySelectedId ? 1 : 0;
+      if (aPrimary !== bPrimary) return bPrimary - aPrimary;
+
+      const aSelected = selectedIds.includes(a) ? 1 : 0;
+      const bSelected = selectedIds.includes(b) ? 1 : 0;
+      if (aSelected !== bSelected) return bSelected - aSelected;
+
+      return 0; // maintain relative natural stacking order
+    });
+
     const prev = clickCycleRef.current;
     const samePoint =
       prev &&
       Math.abs(prev.x - stagePoint.x) < 4 &&
       Math.abs(prev.y - stagePoint.y) < 4 &&
-      prev.ids.join(",") === hits.join(",");
+      prev.ids.join(",") === sortedHits.join(",");
 
-    const index = samePoint ? (prev.index + 1) % hits.length : 0;
-    clickCycleRef.current = { x: stagePoint.x, y: stagePoint.y, ids: hits, index };
-    const nextId = hits[index];
+    const index = samePoint ? (prev.index + 1) % sortedHits.length : 0;
+    clickCycleRef.current = { x: stagePoint.x, y: stagePoint.y, ids: sortedHits, index };
+    const nextId = sortedHits[index];
     onSelectElement(nextId, additive);
     return nextId;
-  }, [allChildIds, clientToStage, config.elements, onSelectElement]);
+  }, [allChildIds, clientToStage, config.elements, onSelectElement, selectedIds, primarySelectedId]);
 
   const openPicker = useCallback((kind: AssetKind, onPick: (url: string) => void) => {
     setAssetPicker({
