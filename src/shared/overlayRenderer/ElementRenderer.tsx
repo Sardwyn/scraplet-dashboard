@@ -2241,12 +2241,8 @@ export function ElementRenderer({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
 
-    if (hasBlend || hasEffects || hasOpacity || isMedia) {
-        if (hasBlend || hasEffects || hasOpacity) {
-            (baseStyle as any).willChange = "transform";
-        } else {
-            (baseStyle as any).willChange = "transform";
-        }
+    if (elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) {
+        (baseStyle as any).willChange = "transform";
 
         if (!currentTransform || currentTransform === "none") {
             (baseStyle as any).transform = `translate3d(0, 0, ${zDepth}px)`;
