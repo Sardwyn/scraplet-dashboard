@@ -13525,9 +13525,18 @@ function InspectorPanel({
                 </select>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className={`${fieldLabelClass} w-12`}>Radius</label>
-                <NumberField label="" value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0} onChange={(v) => onChange({ borderRadius: v, borderRadiusPx: v } as any)} noLabel className="flex-1" />
+              <div className="flex items-center gap-2 min-w-0">
+                <label className={`${fieldLabelClass} w-12 flex-none`}>Radius</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  className="flex-1 min-w-0 h-1 accent-indigo-500"
+                  value={(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0}
+                  onChange={(e) => onChange({ borderRadius: Number(e.target.value), borderRadiusPx: Number(e.target.value) } as any)}
+                />
+                <span className="w-10 flex-none text-right text-[11px] text-slate-400">{(element as any).borderRadius ?? (element as any).borderRadiusPx ?? 0}px</span>
               </div>
 
               {element.type === "video" && (

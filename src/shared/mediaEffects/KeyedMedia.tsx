@@ -49,6 +49,7 @@ type Props = {
   muted?: boolean;
   loop?: boolean;
   controls?: boolean;
+  borderRadius?: number;
 };
 
 function drawWithFit(
@@ -97,6 +98,7 @@ export function KeyedMedia({
   muted,
   loop,
   controls,
+  borderRadius,
 }: Props) {
   const { isPerformanceMode } = usePerformanceMode();
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -465,7 +467,7 @@ export function KeyedMedia({
 
   if (!hasKeying) {
     if (kind === "image") {
-      return <img src={absoluteSrc} alt="" style={{ ...mediaStyle, objectFit: fit as any }} />;
+      return <img src={absoluteSrc} alt="" style={{ ...mediaStyle, objectFit: fit as any, borderRadius: borderRadius ? `${borderRadius}px` : undefined }} />;
     }
     return (
       <video
@@ -476,14 +478,14 @@ export function KeyedMedia({
         loop={!!loop}
         controls={!!controls}
         playsInline
-        style={{ ...mediaStyle, objectFit: fit as any }}
+        style={{ ...mediaStyle, objectFit: fit as any, borderRadius: borderRadius ? `${borderRadius}px` : undefined }}
       />
     );
   }
 
   return (
-    <div ref={hostRef} style={{ width: "100%", height: "100%", willChange: "transform", transform: "translate3d(0,0,0)" }}>
-      <canvas ref={canvasRef} style={mediaStyle} />
+    <div ref={hostRef} style={{ width: "100%", height: "100%", willChange: "transform", transform: "translate3d(0,0,0)", borderRadius: borderRadius ? `${borderRadius}px` : undefined, overflow: "hidden" }}>
+      <canvas ref={canvasRef} style={{ ...mediaStyle, borderRadius: borderRadius ? `${borderRadius}px` : undefined }} />
     </div>
   );
 }

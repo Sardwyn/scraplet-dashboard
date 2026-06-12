@@ -3031,7 +3031,7 @@ export function ElementRenderer({
             <div data-element-id={el.id} style={imageStyle}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: mergedFilter || undefined }}>
                     {!hideInnerContent && src && (
-                        <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} />
+                        <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} borderRadius={effectiveBr} />
                     )}
                 </div>
                 <ParametricEffectOverlay
@@ -3075,6 +3075,7 @@ export function ElementRenderer({
                             muted={vid.muted !== false}
                             loop={!!vid.loop}
                             controls={!!vid.controls}
+                            borderRadius={effectiveBr}
                         />
                     )}
                 </div>
