@@ -107,6 +107,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "intensity", label: "Intensity", type: "number", default: 1, min: 0, max: 3, step: 0.1, animatable: true },
       { key: "frequency", label: "Frequency", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
       { key: "chromaticAberration", label: "Chromatic Aberration", type: "number", default: 4, min: 0, max: 20, step: 0.5, animatable: true },
+      { key: "caAngle", label: "CA Angle", type: "number", default: 0, min: 0, max: 360, step: 5, animatable: true },
       { key: "shearAmount", label: "Shear Amount", type: "number", default: 15, min: 0, max: 100, step: 1, animatable: true },
       { key: "shearHeight", label: "Shear Height (Y)", type: "number", default: 50, min: 0, max: 100, step: 1, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
@@ -1170,8 +1171,14 @@ export function renderParametricEffectCSS(
       const caJitter = heavy ? (rng(seed + 5) - 0.5) * 8 * intensity : 0;
       const finalCA = Math.max(0, baseCA + caJitter);
       
+      const caAngle = Number(p.caAngle ?? 0);
+      const angleJitter = heavy ? (rng(seed + 4) - 0.5) * 60 : 0; // +/- 30 degrees of dynamic rotation shake
+      const rad = ((caAngle + angleJitter) * Math.PI) / 180;
+      const dx = Math.cos(rad) * finalCA;
+      const dy = Math.sin(rad) * finalCA;
+
       const colorFilter = finalCA > 0
-        ? `drop-shadow(${finalCA.toFixed(1)}px 0 0 rgba(255,0,80,0.75)) drop-shadow(${-finalCA.toFixed(1)}px 0 0 rgba(0,200,255,0.75))`
+        ? `drop-shadow(${dx.toFixed(1)}px ${dy.toFixed(1)}px 0 rgba(255,0,80,0.75)) drop-shadow(${-dx.toFixed(1)}px ${-dy.toFixed(1)}px 0 rgba(0,200,255,0.75))`
         : undefined;
 
       // If no glitch is active, return the steady-state chromatic aberration filter!
