@@ -669,6 +669,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "intensity", label: "Intensity", type: "number", default: 30, min: 0, max: 80, step: 1 },
       { key: "spread", label: "Spread", type: "number", default: 15, min: 0, max: 50, step: 1 },
       { key: "brightness", label: "Brightness Boost", type: "number", default: 1.3, min: 1, max: 2.5, step: 0.05 },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01 },
     ],
   },
   neonGlowAnimated: {
@@ -683,6 +684,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "intensity", label: "Intensity", type: "number", default: 30, min: 0, max: 80, step: 1, animatable: true },
       { key: "spread", label: "Spread", type: "number", default: 15, min: 0, max: 50, step: 1, animatable: true },
       { key: "brightness", label: "Brightness Boost", type: "number", default: 1.3, min: 1, max: 2.5, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
   desaturate: {
@@ -1137,7 +1139,7 @@ export function renderParametricEffectCSS(
       const intensity = Number(p.intensity ?? 1) * pulse;
       const size = Number(p.size ?? 20);
       const color = String(p.color ?? "#00ffff");
-      const opacity = Number(p.opacity ?? 1);
+      const opacity = Number(p.opacity ?? 1) * Number(p._overallOpacity ?? 1);
 
       // Parse hex color to RGB
       const hex = color.replace('#', '');
@@ -1436,13 +1438,23 @@ export function renderParametricEffectCSS(
       const intensity = Number(p.intensity ?? 30);
       const spread = Number(p.spread ?? 15);
       const brightness = Number(p.brightness ?? 1.3);
+      const opacity = Number(p.opacity ?? 1) * Number(p._overallOpacity ?? 1);
+
+      // Parse hex color to RGB
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) || 168;
+      const g = parseInt(hex.substring(2, 4), 16) || 85;
+      const b = parseInt(hex.substring(4, 6), 16) || 247;
+
+      const glowColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
       // Create multiple drop-shadow layers for intense glow - more layers = stronger effect
       const shadows = [
-        `drop-shadow(0 0 ${intensity}px ${color})`,
-        `drop-shadow(0 0 ${intensity * 0.8}px ${color})`,
-        `drop-shadow(0 0 ${intensity * 0.6}px ${color})`,
-        `drop-shadow(0 0 ${spread}px ${color})`,
-        `drop-shadow(0 0 ${spread * 0.7}px ${color})`,
+        `drop-shadow(0 0 ${intensity}px ${glowColor})`,
+        `drop-shadow(0 0 ${intensity * 0.8}px ${glowColor})`,
+        `drop-shadow(0 0 ${intensity * 0.6}px ${glowColor})`,
+        `drop-shadow(0 0 ${spread}px ${glowColor})`,
+        `drop-shadow(0 0 ${spread * 0.7}px ${glowColor})`,
       ].join(' ');
       return { 
         filter: `${shadows} brightness(${brightness.toFixed(2)})` 
@@ -1454,12 +1466,22 @@ export function renderParametricEffectCSS(
       const intensity = Number(p.intensity ?? 30);
       const spread = Number(p.spread ?? 15);
       const brightness = Number(p.brightness ?? 1.3);
+      const opacity = Number(p.opacity ?? 1) * Number(p._overallOpacity ?? 1);
+
+      // Parse hex color to RGB
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) || 168;
+      const g = parseInt(hex.substring(2, 4), 16) || 85;
+      const b = parseInt(hex.substring(4, 6), 16) || 247;
+
+      const glowColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
       const shadows = [
-        `drop-shadow(0 0 ${intensity}px ${color})`,
-        `drop-shadow(0 0 ${intensity * 0.8}px ${color})`,
-        `drop-shadow(0 0 ${intensity * 0.6}px ${color})`,
-        `drop-shadow(0 0 ${spread}px ${color})`,
-        `drop-shadow(0 0 ${spread * 0.7}px ${color})`,
+        `drop-shadow(0 0 ${intensity}px ${glowColor})`,
+        `drop-shadow(0 0 ${intensity * 0.8}px ${glowColor})`,
+        `drop-shadow(0 0 ${intensity * 0.6}px ${glowColor})`,
+        `drop-shadow(0 0 ${spread}px ${glowColor})`,
+        `drop-shadow(0 0 ${spread * 0.7}px ${glowColor})`,
       ].join(' ');
       return { 
         filter: `${shadows} brightness(${brightness.toFixed(2)})` 

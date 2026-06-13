@@ -373,9 +373,14 @@ function buildParametricCssStyle(effects: OverlayEffect[], t: number): React.CSS
         const pe = effect as any;
         const preset = EFFECT_PRESETS[pe.preset];
         if (!preset?.produces.includes("css")) continue;
-        const params = pe.keyframes?.length
+        const baseParams = pe.keyframes?.length
             ? interpolateParams(pe.params, pe.keyframes, t, pe.duration ?? 1000)
             : pe.params;
+        const overallOpacity = typeof pe.effect_opacity === "number" ? pe.effect_opacity : 1;
+        const params = {
+            ...baseParams,
+            _overallOpacity: overallOpacity
+        };
         const css = renderParametricEffectCSS(pe.preset, params, t);
         if (css.filter) filterParts.push(css.filter as string);
         const { filter: _f, ...rest } = css;
@@ -1334,10 +1339,14 @@ function useParametricCss(effects: OverlayEffect[], data?: Record<string, any>):
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
             for (const e of active) {
-                const params = resolveEffectParams(e, t, dataRef.current);
-                const css = renderParametricEffectCSS(e.preset, params, t);
                 const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
-                const _effOpacity = Number(params.opacity ?? 1) * overallOpacity;
+                const params = {
+                    ...resolveEffectParams(e, t, dataRef.current),
+                    _overallOpacity: overallOpacity
+                };
+                const css = renderParametricEffectCSS(e.preset, params, t);
+                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated";
+                const _effOpacity = handlesInternal ? 1 : (Number(params.opacity ?? 1) * overallOpacity);
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;
                 if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
@@ -1594,10 +1603,14 @@ function ParametricEffectOverlay({
             let filterParts: string[] = [];
             let combined: React.CSSProperties = {};
             for (const e of cssEffectsRef.current) {
-                const params = resolveEffectParams(e, t, dataRef.current);
-                const css = renderParametricEffectCSS(e.preset, params, t);
                 const overallOpacity = typeof (e as any).effect_opacity === "number" ? (e as any).effect_opacity : 1;
-                const _effOpacity = Number(params.opacity ?? 1) * overallOpacity;
+                const params = {
+                    ...resolveEffectParams(e, t, dataRef.current),
+                    _overallOpacity: overallOpacity
+                };
+                const css = renderParametricEffectCSS(e.preset, params, t);
+                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated";
+                const _effOpacity = handlesInternal ? 1 : (Number(params.opacity ?? 1) * overallOpacity);
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;
                 if (_effOpacity < 1) (rest as any).opacity = (_op !== undefined ? Number(_op) : 1) * _effOpacity;
