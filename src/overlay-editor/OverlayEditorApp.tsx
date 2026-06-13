@@ -337,17 +337,21 @@ function getElementRadiusValue(el: AnyEl) {
     if (corners) return Math.max(corners.topLeft ?? 0, corners.topRight ?? 0, corners.bottomRight ?? 0, corners.bottomLeft ?? 0);
     return Number((el as any).cornerRadiusPx ?? (el as any).cornerRadius ?? 0);
   }
+  if (el.type === "image" || el.type === "video") {
+    return Number((el as any).borderRadiusPx ?? (el as any).borderRadius ?? 0);
+  }
   return 0;
 }
 
 function supportsRadiusHandle(el: AnyEl) {
-  return el.type === "box" || (el.type === "shape" && (el as any).shape === "rect");
+  return el.type === "box" || (el.type === "shape" && (el as any).shape === "rect") || el.type === "image" || el.type === "video";
 }
 
 function getRadiusPatch(el: AnyEl, radius: number): Partial<AnyEl> {
   const cornerRadii: OverlayCornerRadii = { topLeft: radius, topRight: radius, bottomRight: radius, bottomLeft: radius };
   if (el.type === "box") return { borderRadius: radius, borderRadiusPx: radius, cornerRadii } as any;
   if (el.type === "shape" && (el as any).shape === "rect") return { cornerRadius: radius, cornerRadiusPx: radius, cornerRadii } as any;
+  if (el.type === "image" || el.type === "video") return { borderRadius: radius, borderRadiusPx: radius } as any;
   return {};
 }
 
