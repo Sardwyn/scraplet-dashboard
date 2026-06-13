@@ -25358,8 +25358,7 @@ const EFFECT_PRESETS = {
       { key: "strokeWidth", label: "Width", type: "number", default: 2, min: 1, max: 10, step: 0.5, animatable: true },
       { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
       { key: "trailLength", label: "Trail", type: "number", default: 0.3, min: 0.05, max: 1, step: 0.05, animatable: true },
-      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space"] }
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
     ]
   },
   glitchFlicker: {
@@ -90216,6 +90215,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
   const [durInput, setDurInput] = reactExports.useState(effect.duration ? String(effect.duration) : "");
   const [dragging, setDragging] = reactExports.useState(null);
   const svgRef = reactExports.useRef(null);
+  const [isSaved, setIsSaved] = reactExports.useState(false);
   const GW = 420, GH = 200;
   const PL = 32, PR = 12, PT = 12, PB = 24;
   const IW = GW - PL - PR, IH = GH - PT - PB;
@@ -90298,7 +90298,16 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
     const d2 = isNaN(ms2) || ms2 <= 0 ? 0 : ms2;
     setDuration(d2);
     onUpdate({ ...effect, duration: d2 || void 0 });
+    setIsSaved(true);
   };
+  reactExports.useEffect(() => {
+    if (isSaved) {
+      const timer = setTimeout(() => {
+        setIsSaved(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSaved]);
   const PW = GW + 32;
   return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: {
     width: PW,
@@ -90315,23 +90324,23 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 12, fontWeight: 700, color: "#e2e8f0", letterSpacing: "-0.01em" }, children: presetDef.label }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 155,
+          lineNumber: 166,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 10, color: "#6366f1", background: "rgba(99,102,241,0.12)", padding: "1px 6px", borderRadius: 4 }, children: "✦ Curve Editor" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 156,
+          lineNumber: 167,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 154,
+        lineNumber: 165,
         columnNumber: 9
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 10, color: "#475569" }, children: "Duration (ms)" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 159,
+          lineNumber: 170,
           columnNumber: 11
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -90348,29 +90357,55 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 160,
+            lineNumber: 171,
             columnNumber: 11
           },
           this
         ),
-        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: saveDuration, style: { fontSize: 10, padding: "3px 10px", borderRadius: 4, background: "#6366f1", color: "#fff", border: "none", cursor: "pointer", fontWeight: 600 }, children: "Save" }, void 0, false, {
-          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 166,
-          columnNumber: 11
-        }, this),
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+          "button",
+          {
+            onClick: saveDuration,
+            style: {
+              fontSize: 10,
+              padding: "3px 10px",
+              borderRadius: 4,
+              background: isSaved ? "#10b981" : "#6366f1",
+              color: "#fff",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 600,
+              transition: "background-color 0.25s ease, transform 0.1s ease",
+              transform: isSaved ? "scale(1.05)" : "scale(1)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 54
+            },
+            children: isSaved ? "Saved ✓" : "Save"
+          },
+          void 0,
+          false,
+          {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
+            lineNumber: 177,
+            columnNumber: 11
+          },
+          this
+        ),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("button", { onClick: onClose, style: { fontSize: 14, color: "#475569", background: "none", border: "none", cursor: "pointer", lineHeight: 1, padding: "0 2px" }, children: "✕" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 167,
+          lineNumber: 198,
           columnNumber: 11
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 158,
+        lineNumber: 169,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-      lineNumber: 153,
+      lineNumber: 164,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, padding: "7px 14px", background: "#0d0d18", borderBottom: "1px solid rgba(255,255,255,0.05)" }, children: animatable.map((param, idx) => {
@@ -90393,23 +90428,23 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
       }, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { width: 7, height: 7, borderRadius: "50%", background: color, opacity: nodeCount > 0 ? 1 : 0.35, flexShrink: 0 } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 185,
+          lineNumber: 216,
           columnNumber: 15
         }, this),
         param.label,
         nodeCount > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 9, opacity: 0.55, marginLeft: 1 }, children: nodeCount }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 187,
+          lineNumber: 218,
           columnNumber: 33
         }, this)
       ] }, param.key, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 178,
+        lineNumber: 209,
         columnNumber: 13
       }, this);
     }) }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-      lineNumber: 172,
+      lineNumber: 203,
       columnNumber: 7
     }, this),
     /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { padding: "10px 14px 4px" }, children: [
@@ -90425,17 +90460,17 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
             [0, 0.25, 0.5, 0.75, 1].map((f2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: toX(f2 * effDur), y1: PT, x2: toX(f2 * effDur), y2: PT + IH, stroke: "rgba(255,255,255,0.05)", strokeWidth: 1 }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                lineNumber: 204,
+                lineNumber: 235,
                 columnNumber: 15
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("line", { x1: PL, y1: PT + f2 * IH, x2: PL + IW, y2: PT + f2 * IH, stroke: "rgba(255,255,255,0.05)", strokeWidth: 1 }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                lineNumber: 205,
+                lineNumber: 236,
                 columnNumber: 15
               }, this)
             ] }, f2, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 203,
+              lineNumber: 234,
               columnNumber: 13
             }, this)),
             animatable.map((param, idx) => {
@@ -90448,7 +90483,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { children: [
                 sel && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: d2, fill: "none", stroke: color, strokeWidth: 6, strokeOpacity: 0.08 }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                  lineNumber: 219,
+                  lineNumber: 250,
                   columnNumber: 25
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -90465,7 +90500,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                    lineNumber: 220,
+                    lineNumber: 251,
                     columnNumber: 17
                   },
                   this
@@ -90489,7 +90524,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                        lineNumber: 231,
+                        lineNumber: 262,
                         columnNumber: 23
                       },
                       this
@@ -90509,7 +90544,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                        lineNumber: 237,
+                        lineNumber: 268,
                         columnNumber: 23
                       },
                       this
@@ -90527,7 +90562,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                        lineNumber: 242,
+                        lineNumber: 273,
                         columnNumber: 23
                       },
                       this
@@ -90549,36 +90584,36 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                        lineNumber: 247,
+                        lineNumber: 278,
                         columnNumber: 23
                       },
                       this
                     ),
                     (active || sel) && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: x2 + 10, y: y2 - 8, fontSize: 9, fill: color, fontWeight: 600, children: node.value.toFixed(param.step && param.step < 1 ? 2 : 0) }, void 0, false, {
                       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                      lineNumber: 253,
+                      lineNumber: 284,
                       columnNumber: 25
                     }, this)
                   ] }, node.originalIndex, true, {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                    lineNumber: 229,
+                    lineNumber: 260,
                     columnNumber: 21
                   }, this);
                 })
               ] }, param.key, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                lineNumber: 217,
+                lineNumber: 248,
                 columnNumber: 15
               }, this);
             }),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: PL, y: GH - 6, fontSize: 9, fill: "rgba(255,255,255,0.2)", children: "0" }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 265,
+              lineNumber: 296,
               columnNumber: 11
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: PL + IW, y: GH - 6, fontSize: 9, fill: "rgba(255,255,255,0.2)", textAnchor: "end", children: duration > 0 ? `${duration}ms` : `${effDur}ms (∞)` }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 266,
+              lineNumber: 297,
               columnNumber: 11
             }, this),
             (() => {
@@ -90588,17 +90623,17 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
               return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: PL - 4, y: PT + 4, fontSize: 9, fill: color, textAnchor: "end", opacity: 0.7, children: param.max }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                  lineNumber: 275,
+                  lineNumber: 306,
                   columnNumber: 15
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("text", { x: PL - 4, y: PT + IH + 2, fontSize: 9, fill: color, textAnchor: "end", opacity: 0.7, children: param.min }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                  lineNumber: 276,
+                  lineNumber: 307,
                   columnNumber: 15
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                lineNumber: 274,
+                lineNumber: 305,
                 columnNumber: 20
               }, this);
             })()
@@ -90608,25 +90643,25 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 195,
+          lineNumber: 226,
           columnNumber: 9
         },
         this
       ),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { fontSize: 9, color: "rgba(255,255,255,0.18)", marginTop: 5, letterSpacing: "0.02em" }, children: "Right-click to add node · Double-click to remove · Drag to adjust" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 280,
+        lineNumber: 311,
         columnNumber: 9
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-      lineNumber: 194,
+      lineNumber: 225,
       columnNumber: 7
     }, this),
     statics.length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { padding: "8px 14px 12px", borderTop: "1px solid rgba(255,255,255,0.05)", marginTop: 4 }, children: [
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { fontSize: 9, color: "#334155", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }, children: "Static Params" }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-        lineNumber: 288,
+        lineNumber: 319,
         columnNumber: 11
       }, this),
       statics.map((param) => {
@@ -90634,7 +90669,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }, children: [
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("label", { style: { fontSize: 11, color: "#64748b", width: 72, flexShrink: 0 }, children: param.label }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 291,
+            lineNumber: 322,
             columnNumber: 15
           }, this),
           param.type === "color" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -90649,7 +90684,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 293,
+              lineNumber: 324,
               columnNumber: 17
             },
             this
@@ -90665,7 +90700,7 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 298,
+              lineNumber: 329,
               columnNumber: 17
             },
             this
@@ -90685,35 +90720,35 @@ function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }) {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-                lineNumber: 304,
+                lineNumber: 335,
                 columnNumber: 19
               },
               this
             ),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { fontSize: 11, color: "#94a3b8", width: 36, textAlign: "right", fontVariantNumeric: "tabular-nums" }, children: Number((_g = effectParams[param.key]) != null ? _g : param.default).toFixed(param.step && param.step < 1 ? 1 : 0) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-              lineNumber: 309,
+              lineNumber: 340,
               columnNumber: 19
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-            lineNumber: 303,
+            lineNumber: 334,
             columnNumber: 17
           }, this)
         ] }, param.key, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-          lineNumber: 290,
+          lineNumber: 321,
           columnNumber: 13
         }, this);
       })
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-      lineNumber: 287,
+      lineNumber: 318,
       columnNumber: 9
     }, this)
   ] }, void 0, true, {
     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/components/ParametricCurvePanel.tsx",
-    lineNumber: 141,
+    lineNumber: 152,
     columnNumber: 5
   }, this);
 }

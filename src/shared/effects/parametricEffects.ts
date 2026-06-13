@@ -94,7 +94,6 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
       { key: "trailLength", label: "Trail", type: "number", default: 0.3, min: 0.05, max: 1, step: 0.05, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space"] },
     ],
   },
   glitchFlicker: {

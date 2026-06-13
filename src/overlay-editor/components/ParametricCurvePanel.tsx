@@ -55,6 +55,7 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
   const [durInput, setDurInput] = useState(effect.duration ? String(effect.duration) : '');
   const [dragging, setDragging] = useState<{ key: string; originalIndex: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Graph dimensions
   const GW = 420, GH = 200;
@@ -132,7 +133,17 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
     const d = isNaN(ms) || ms <= 0 ? 0 : ms;
     setDuration(d);
     onUpdate({ ...effect, duration: d || undefined });
+    setIsSaved(true);
   };
+
+  useEffect(() => {
+    if (isSaved) {
+      const timer = setTimeout(() => {
+        setIsSaved(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isSaved]);
 
   // Panel width = graph + padding
   const PW = GW + 32;
@@ -163,7 +174,27 @@ export function ParametricCurvePanel({ effect, presetDef, onUpdate, onClose }: P
             onKeyDown={e => e.key === 'Enter' && saveDuration()}
             style={{ width: 72, fontSize: 11, background: '#161622', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, color: '#e2e8f0', padding: '2px 6px', textAlign: 'right' }}
           />
-          <button onClick={saveDuration} style={{ fontSize: 10, padding: '3px 10px', borderRadius: 4, background: '#6366f1', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Save</button>
+          <button
+            onClick={saveDuration}
+            style={{
+              fontSize: 10,
+              padding: '3px 10px',
+              borderRadius: 4,
+              background: isSaved ? '#10b981' : '#6366f1',
+              color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              transition: 'background-color 0.25s ease, transform 0.1s ease',
+              transform: isSaved ? 'scale(1.05)' : 'scale(1)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: 54,
+            }}
+          >
+            {isSaved ? 'Saved ✓' : 'Save'}
+          </button>
           <button onClick={onClose} style={{ fontSize: 14, color: '#475569', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>✕</button>
         </div>
       </div>
