@@ -1345,7 +1345,7 @@ function useParametricCss(effects: OverlayEffect[], data?: Record<string, any>):
                     _overallOpacity: overallOpacity
                 };
                 const css = renderParametricEffectCSS(e.preset, params, t);
-                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated";
+                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated" || e.preset === "hologramFlicker";
                 const _effOpacity = handlesInternal ? 1 : (Number(params.opacity ?? 1) * overallOpacity);
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;
@@ -1609,7 +1609,7 @@ function ParametricEffectOverlay({
                     _overallOpacity: overallOpacity
                 };
                 const css = renderParametricEffectCSS(e.preset, params, t);
-                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated";
+                const handlesInternal = e.preset === "neonPulse" || e.preset === "neonGlow" || e.preset === "neonGlowAnimated" || e.preset === "hologramFlicker";
                 const _effOpacity = handlesInternal ? 1 : (Number(params.opacity ?? 1) * overallOpacity);
                 if (css.filter) filterParts.push(css.filter as string);
                 const { filter: _f, opacity: _op, ...rest } = css as any;

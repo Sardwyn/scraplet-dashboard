@@ -67,7 +67,9 @@ export function renderHologramScanlinesSVG(
   t: number
 ): string {
   const color = String(params.color ?? "#00ffff");
-  const scanlineOpacity = Number(params.scanlineOpacity ?? 0.15);
+  const op = Number(params.opacity ?? 1);
+  const vibrancy = Number(params.vibrancy ?? 0.5);
+  const scanlineOpacity = Number(params.scanlineOpacity ?? 0.15) * op;
   const lineSpacing = 4;
   const lines = Math.ceil(height / lineSpacing);
 
@@ -77,7 +79,14 @@ export function renderHologramScanlinesSVG(
   let linesStr = "";
   for (let i = 0; i < lines + 1; i++) {
     const y = i * lineSpacing - scrollOffset;
-    linesStr += `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${color}" stroke-width="1" opacity="${scanlineOpacity}"/>`;
+    if (vibrancy > 0 && scanlineOpacity > 0) {
+      const glowWidth = 1 + vibrancy * 3;
+      const glowOpacity = scanlineOpacity * vibrancy * 0.6;
+      const glowBlur = 0.5 + vibrancy * 1.5;
+      linesStr += `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${color}" stroke-width="${glowWidth.toFixed(1)}" opacity="${glowOpacity.toFixed(3)}" style="filter: blur(${glowBlur.toFixed(1)}px);"/>`;
+    }
+    const coreWidth = 1 + vibrancy * 0.5;
+    linesStr += `<line x1="0" y1="${y}" x2="${width}" y2="${y}" stroke="${color}" stroke-width="${coreWidth.toFixed(1)}" opacity="${scanlineOpacity.toFixed(3)}"/>`;
   }
 
   return linesStr;

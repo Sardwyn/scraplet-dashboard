@@ -149,9 +149,9 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "color", label: "Color", type: "color", default: "#00ffff", animatable: true },
       { key: "flickerRate", label: "Flicker Rate", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
       { key: "scanlineOpacity", label: "Scanlines", type: "number", default: 0.15, min: 0, max: 0.5, step: 0.01, animatable: true },
+      { key: "vibrancy", label: "Vibrancy", type: "number", default: 0.5, min: 0, max: 2, step: 0.05, animatable: true },
       { key: "glitchAmount", label: "Glitch", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space"] },
     ],
   },
   typewriter: {
@@ -1236,12 +1236,25 @@ export function renderParametricEffectCSS(
       const rng = (s: number) => ((Math.sin(s * 127.1) * 43758.5453) % 1 + 1) % 1;
       const flicker = rng(seed);
       const glitch = Number(p.glitchAmount ?? 0.3);
-      const tx = flicker > (1 - glitch) ? (rng(seed + 1) - 0.5) * 10 : 0;
+      const op = Number(p.opacity ?? 1) * Number(p._overallOpacity ?? 1);
+      const tx = flicker > (1 - glitch) ? (rng(seed + 1) - 0.5) * 10 * op : 0;
       const color = String(p.color ?? "#00ffff");
+      
+      // Parse color to RGB
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 255;
+      const b = parseInt(hex.substring(4, 6), 16) || 255;
+      
+      const finalOpacity = 1 - (0.3 * (1 - flicker) * op);
+      const glowColor = `rgba(${r}, ${g}, ${b}, ${op})`;
+      const dropShadow = op > 0 ? `drop-shadow(0 0 4px ${glowColor})` : '';
+      const sat = (1.0 + 0.5 * op).toFixed(2);
+
       return {
-        opacity: 0.7 + flicker * 0.3,
+        opacity: finalOpacity,
         transform: tx ? `translateX(${tx}px)` : undefined,
-        filter: `drop-shadow(0 0 4px ${color}) saturate(1.5)`,
+        filter: dropShadow ? `${dropShadow} saturate(${sat})` : `saturate(${sat})`,
       };
     }
     case "textReveal": {

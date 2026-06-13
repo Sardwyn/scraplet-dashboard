@@ -25414,9 +25414,9 @@ const EFFECT_PRESETS = {
       { key: "color", label: "Color", type: "color", default: "#00ffff", animatable: true },
       { key: "flickerRate", label: "Flicker Rate", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
       { key: "scanlineOpacity", label: "Scanlines", type: "number", default: 0.15, min: 0, max: 0.5, step: 0.01, animatable: true },
+      { key: "vibrancy", label: "Vibrancy", type: "number", default: 0.5, min: 0, max: 2, step: 0.05, animatable: true },
       { key: "glitchAmount", label: "Glitch", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
-      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space"] }
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
     ]
   },
   typewriter: {
@@ -26343,7 +26343,7 @@ function resolveEffectParams(effect, t2, liveData) {
   return resolved;
 }
 function renderParametricEffectCSS(preset, params, t2) {
-  var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t3, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia;
+  var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t3, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia, _Ja, _Ka;
   const p2 = params;
   const sin = Math.sin;
   const cos = Math.cos;
@@ -26430,17 +26430,26 @@ function renderParametricEffectCSS(preset, params, t2) {
       const rng = (s2) => (Math.sin(s2 * 127.1) * 43758.5453 % 1 + 1) % 1;
       const flicker = rng(seed);
       const glitch = Number((_r2 = p2.glitchAmount) != null ? _r2 : 0.3);
-      const tx = flicker > 1 - glitch ? (rng(seed + 1) - 0.5) * 10 : 0;
-      const color = String((_s2 = p2.color) != null ? _s2 : "#00ffff");
+      const op = Number((_s2 = p2.opacity) != null ? _s2 : 1) * Number((_t3 = p2._overallOpacity) != null ? _t3 : 1);
+      const tx = flicker > 1 - glitch ? (rng(seed + 1) - 0.5) * 10 * op : 0;
+      const color = String((_u = p2.color) != null ? _u : "#00ffff");
+      const hex = color.replace("#", "");
+      const r2 = parseInt(hex.substring(0, 2), 16) || 0;
+      const g2 = parseInt(hex.substring(2, 4), 16) || 255;
+      const b2 = parseInt(hex.substring(4, 6), 16) || 255;
+      const finalOpacity = 1 - 0.3 * (1 - flicker) * op;
+      const glowColor = `rgba(${r2}, ${g2}, ${b2}, ${op})`;
+      const dropShadow = op > 0 ? `drop-shadow(0 0 4px ${glowColor})` : "";
+      const sat = (1 + 0.5 * op).toFixed(2);
       return {
-        opacity: 0.7 + flicker * 0.3,
+        opacity: finalOpacity,
         transform: tx ? `translateX(${tx}px)` : void 0,
-        filter: `drop-shadow(0 0 4px ${color}) saturate(1.5)`
+        filter: dropShadow ? `${dropShadow} saturate(${sat})` : `saturate(${sat})`
       };
     }
     case "textReveal": {
-      const progress = Number((_t3 = p2.progress) != null ? _t3 : 1);
-      const dir = String((_u = p2.direction) != null ? _u : "left");
+      const progress = Number((_v = p2.progress) != null ? _v : 1);
+      const dir = String((_w = p2.direction) != null ? _w : "left");
       const autoProgress = t2 % 2e3 < 1e3 ? t2 % 1e3 / 1e3 : 1 - t2 % 1e3 / 1e3;
       const effectiveProgress = progress === 1 ? autoProgress : progress;
       const effectivePct = Math.round(effectiveProgress * 100);
@@ -26451,27 +26460,27 @@ function renderParametricEffectCSS(preset, params, t2) {
         down: `inset(${100 - effectivePct}% 0 0 0)`,
         center: `inset(0 ${(100 - effectivePct) / 2}% 0 ${(100 - effectivePct) / 2}%)`
       };
-      return { clipPath: (_v = effectiveClip[dir]) != null ? _v : effectiveClip.left };
+      return { clipPath: (_x = effectiveClip[dir]) != null ? _x : effectiveClip.left };
     }
     case "breathe": {
-      const speed = Number((_w = p2.speed) != null ? _w : 1);
-      const minS = Number((_x = p2.minScale) != null ? _x : 0.95);
-      const maxS = Number((_y = p2.maxScale) != null ? _y : 1.05);
+      const speed = Number((_y = p2.speed) != null ? _y : 1);
+      const minS = Number((_z = p2.minScale) != null ? _z : 0.95);
+      const maxS = Number((_A = p2.maxScale) != null ? _A : 1.05);
       const pulse = 0.5 + 0.5 * sin(t2 / 1e3 * Math.PI * 2 * speed);
       const scale = minS + (maxS - minS) * pulse;
       return { transform: `scale(${scale})`, transformOrigin: "center center" };
     }
     case "colorCycle": {
-      const speed = Number((_z = p2.speed) != null ? _z : 1);
-      const sat = Number((_A = p2.saturation) != null ? _A : 1);
-      const bri = Number((_B = p2.brightness) != null ? _B : 1);
+      const speed = Number((_B = p2.speed) != null ? _B : 1);
+      const sat = Number((_C = p2.saturation) != null ? _C : 1);
+      const bri = Number((_D = p2.brightness) != null ? _D : 1);
       const hue = t2 / 1e3 * 360 * speed % 360;
       return { filter: `hue-rotate(${hue}deg) saturate(${sat}) brightness(${bri})` };
     }
     case "scanlineStatic": {
-      const spacing = Math.max(2, Number((_C = p2.lineSpacing) != null ? _C : 4));
-      const lineOp = Number((_D = p2.lineOpacity) != null ? _D : 0.2);
-      const scroll = Number((_E = p2.scrollSpeed) != null ? _E : 0);
+      const spacing = Math.max(2, Number((_E = p2.lineSpacing) != null ? _E : 4));
+      const lineOp = Number((_F = p2.lineOpacity) != null ? _F : 0.2);
+      const scroll = Number((_G = p2.scrollSpeed) != null ? _G : 0);
       const offset = (t2 / 1e3 * scroll * 60 % spacing + spacing) % spacing;
       return {
         backgroundImage: `repeating-linear-gradient(to bottom, transparent 0px, transparent ${spacing - 1}px, rgba(0,0,0,${lineOp}) ${spacing - 1}px, rgba(0,0,0,${lineOp}) ${spacing}px)`,
@@ -26480,9 +26489,9 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "vignette": {
-      const size = Number((_F = p2.size) != null ? _F : 0.6);
-      const softness = Number((_G = p2.softness) != null ? _G : 0.4);
-      const color = String((_H = p2.color) != null ? _H : "#000000");
+      const size = Number((_H = p2.size) != null ? _H : 0.6);
+      const softness = Number((_I = p2.softness) != null ? _I : 0.4);
+      const color = String((_J = p2.color) != null ? _J : "#000000");
       const inner = Math.max(0, size - softness) * 100;
       const outer = Math.min(100, size * 100);
       return {
@@ -26490,14 +26499,14 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "strobe": {
-      const rate = Number((_I = p2.rate) != null ? _I : 4);
-      const minOp = Number((_J = p2.minOpacity) != null ? _J : 0);
+      const rate = Number((_K = p2.rate) != null ? _K : 4);
+      const minOp = Number((_L = p2.minOpacity) != null ? _L : 0);
       const on2 = Math.sin(t2 * rate * Math.PI / 500) > 0;
       return { opacity: on2 ? 1 : minOp };
     }
     case "typewriter": {
-      const speed = Number((_K = p2.speed) != null ? _K : 1);
-      const progress = Number((_L = p2.progress) != null ? _L : 1);
+      const speed = Number((_M = p2.speed) != null ? _M : 1);
+      const progress = Number((_N = p2.progress) != null ? _N : 1);
       const showCursor = p2.cursor !== false;
       const autoP = progress === 1 ? Math.min(1, t2 / 1e3 * speed % 2 < 1 ? t2 / 1e3 * speed % 1 : 1) : progress;
       const cursorBlink = showCursor && Math.floor(t2 / 500) % 2 === 0;
@@ -26507,11 +26516,11 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "gradientSweep": {
-      const speed = Number((_M = p2.speed) != null ? _M : 1);
-      const width = Number((_N = p2.width) != null ? _N : 0.3);
-      const angle = Number((_O = p2.angle) != null ? _O : 45);
-      const color = String((_P = p2.color) != null ? _P : "#ffffff");
-      const opacity = Number((_Q = p2.opacity) != null ? _Q : 0.6);
+      const speed = Number((_O = p2.speed) != null ? _O : 1);
+      const width = Number((_P = p2.width) != null ? _P : 0.3);
+      const angle = Number((_Q = p2.angle) != null ? _Q : 45);
+      const color = String((_R = p2.color) != null ? _R : "#ffffff");
+      const opacity = Number((_S = p2.opacity) != null ? _S : 0.6);
       const repeat = p2.repeat !== false;
       const cycle = t2 / 1e3 * speed;
       const pos = repeat ? cycle % 1 : Math.min(1, cycle);
@@ -26532,11 +26541,11 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "vhsTracking": {
-      const lines = Math.round(Number((_R = p2.trackingLines) != null ? _R : 3));
-      const lh2 = Number((_S = p2.lineHeight) != null ? _S : 4);
-      const bleed = Number((_T = p2.colorBleed) != null ? _T : 0.5);
-      const speed = Number((_U = p2.speed) != null ? _U : 1);
-      const opacity = Number((_V = p2.opacity) != null ? _V : 0.8);
+      const lines = Math.round(Number((_T = p2.trackingLines) != null ? _T : 3));
+      const lh2 = Number((_U = p2.lineHeight) != null ? _U : 4);
+      const bleed = Number((_V = p2.colorBleed) != null ? _V : 0.5);
+      const speed = Number((_W = p2.speed) != null ? _W : 1);
+      const opacity = Number((_X = p2.opacity) != null ? _X : 0.8);
       const rng = (s2) => (Math.sin(s2 * 127.1 + t2 * 1e-3 * speed) * 43758.5453 % 1 + 1) % 1;
       const stops = [];
       for (let i2 = 0; i2 < lines; i2++) {
@@ -26557,12 +26566,12 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "crtInterlace": {
-      const spacing = Math.max(2, Number((_W = p2.lineSpacing) != null ? _W : 3));
-      const lineOp = Number((_X = p2.lineOpacity) != null ? _X : 0.35);
-      const flicker = Number((_Y = p2.flicker) != null ? _Y : 0.04);
-      const phosphor = Number((_Z = p2.phosphorGlow) != null ? _Z : 0.15);
-      const speed = Number((__ = p2.speed) != null ? __ : 1);
-      const curvature = Number((_$ = p2.curvature) != null ? _$ : 0);
+      const spacing = Math.max(2, Number((_Y = p2.lineSpacing) != null ? _Y : 3));
+      const lineOp = Number((_Z = p2.lineOpacity) != null ? _Z : 0.35);
+      const flicker = Number((__ = p2.flicker) != null ? __ : 0.04);
+      const phosphor = Number((_$ = p2.phosphorGlow) != null ? _$ : 0.15);
+      const speed = Number((_aa = p2.speed) != null ? _aa : 1);
+      const curvature = Number((_ba = p2.curvature) != null ? _ba : 0);
       const flickerVal = 1 - flicker * (0.5 + 0.5 * Math.sin(t2 * speed * 0.03));
       const phosphorFilter = phosphor > 0 ? `brightness(${flickerVal}) sepia(${phosphor * 0.3}) saturate(${1 + phosphor})` : `brightness(${flickerVal})`;
       const borderRadius = curvature > 0 ? `${curvature * 8}%` : void 0;
@@ -26575,60 +26584,60 @@ function renderParametricEffectCSS(preset, params, t2) {
     }
     // ── CSS Filter Effects ────────────────────────────────────────────────────
     case "hueShift": {
-      const rotation = Number((_aa = p2.rotation) != null ? _aa : 0);
+      const rotation = Number((_ca = p2.rotation) != null ? _ca : 0);
       const animate = p2.animate === true;
-      const speed = Number((_ba = p2.speed) != null ? _ba : 1);
+      const speed = Number((_da = p2.speed) != null ? _da : 1);
       const hue = animate ? t2 / 1e3 * 360 * speed % 360 : rotation;
       return { filter: `hue-rotate(${hue.toFixed(1)}deg)` };
     }
     case "colorGrade": {
-      const brightness = Number((_ca = p2.brightness) != null ? _ca : 1);
-      const contrast = Number((_da = p2.contrast) != null ? _da : 1);
-      const saturation = Number((_ea = p2.saturation) != null ? _ea : 1);
+      const brightness = Number((_ea = p2.brightness) != null ? _ea : 1);
+      const contrast = Number((_fa = p2.contrast) != null ? _fa : 1);
+      const saturation = Number((_ga = p2.saturation) != null ? _ga : 1);
       return {
         filter: `brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)}) saturate(${saturation.toFixed(2)})`
       };
     }
     case "tint": {
-      const hue = Number((_fa = p2.hue) != null ? _fa : 270);
-      const saturation = Number((_ga = p2.saturation) != null ? _ga : 1.5);
-      const brightness = Number((_ha = p2.brightness) != null ? _ha : 1);
+      const hue = Number((_ha = p2.hue) != null ? _ha : 270);
+      const saturation = Number((_ia = p2.saturation) != null ? _ia : 1.5);
+      const brightness = Number((_ja = p2.brightness) != null ? _ja : 1);
       return {
         filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})`
       };
     }
     case "staticTint": {
-      const hue = Number((_ia = p2.hue) != null ? _ia : 270);
-      const saturation = Number((_ja = p2.saturation) != null ? _ja : 2);
-      const brightness = Number((_ka = p2.brightness) != null ? _ka : 1);
+      const hue = Number((_ka = p2.hue) != null ? _ka : 270);
+      const saturation = Number((_la = p2.saturation) != null ? _la : 2);
+      const brightness = Number((_ma = p2.brightness) != null ? _ma : 1);
       return {
         filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})`
       };
     }
     case "colorize": {
-      const hue = Number((_la = p2.hue) != null ? _la : 270);
-      const intensity = Number((_ma = p2.intensity) != null ? _ma : 1);
-      const brightness = Number((_na = p2.brightness) != null ? _na : 1);
+      const hue = Number((_na = p2.hue) != null ? _na : 270);
+      const intensity = Number((_oa = p2.intensity) != null ? _oa : 1);
+      const brightness = Number((_pa = p2.brightness) != null ? _pa : 1);
       const rotation = hue - 40;
       return {
         filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})`
       };
     }
     case "colorizeAnimated": {
-      const hue = Number((_oa = p2.hue) != null ? _oa : 270);
-      const intensity = Number((_pa = p2.intensity) != null ? _pa : 1);
-      const brightness = Number((_qa = p2.brightness) != null ? _qa : 1);
+      const hue = Number((_qa = p2.hue) != null ? _qa : 270);
+      const intensity = Number((_ra = p2.intensity) != null ? _ra : 1);
+      const brightness = Number((_sa = p2.brightness) != null ? _sa : 1);
       const rotation = hue - 40;
       return {
         filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})`
       };
     }
     case "neonGlow": {
-      const color = String((_ra = p2.color) != null ? _ra : "#a855f7");
-      const intensity = Number((_sa = p2.intensity) != null ? _sa : 30);
-      const spread = Number((_ta = p2.spread) != null ? _ta : 15);
-      const brightness = Number((_ua = p2.brightness) != null ? _ua : 1.3);
-      const opacity = Number((_va = p2.opacity) != null ? _va : 1) * Number((_wa = p2._overallOpacity) != null ? _wa : 1);
+      const color = String((_ta = p2.color) != null ? _ta : "#a855f7");
+      const intensity = Number((_ua = p2.intensity) != null ? _ua : 30);
+      const spread = Number((_va = p2.spread) != null ? _va : 15);
+      const brightness = Number((_wa = p2.brightness) != null ? _wa : 1.3);
+      const opacity = Number((_xa = p2.opacity) != null ? _xa : 1) * Number((_ya = p2._overallOpacity) != null ? _ya : 1);
       const hex = color.replace("#", "");
       const r2 = parseInt(hex.substring(0, 2), 16) || 168;
       const g2 = parseInt(hex.substring(2, 4), 16) || 85;
@@ -26646,11 +26655,11 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "neonGlowAnimated": {
-      const color = String((_xa = p2.color) != null ? _xa : "#a855f7");
-      const intensity = Number((_ya = p2.intensity) != null ? _ya : 30);
-      const spread = Number((_za = p2.spread) != null ? _za : 15);
-      const brightness = Number((_Aa = p2.brightness) != null ? _Aa : 1.3);
-      const opacity = Number((_Ba = p2.opacity) != null ? _Ba : 1) * Number((_Ca = p2._overallOpacity) != null ? _Ca : 1);
+      const color = String((_za = p2.color) != null ? _za : "#a855f7");
+      const intensity = Number((_Aa = p2.intensity) != null ? _Aa : 30);
+      const spread = Number((_Ba = p2.spread) != null ? _Ba : 15);
+      const brightness = Number((_Ca = p2.brightness) != null ? _Ca : 1.3);
+      const opacity = Number((_Da = p2.opacity) != null ? _Da : 1) * Number((_Ea = p2._overallOpacity) != null ? _Ea : 1);
       const hex = color.replace("#", "");
       const r2 = parseInt(hex.substring(0, 2), 16) || 168;
       const g2 = parseInt(hex.substring(2, 4), 16) || 85;
@@ -26668,19 +26677,19 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "desaturate": {
-      const amount = Number((_Da = p2.amount) != null ? _Da : 1);
+      const amount = Number((_Fa = p2.amount) != null ? _Fa : 1);
       return { filter: `grayscale(${amount.toFixed(2)})` };
     }
     case "sepiaTone": {
-      const amount = Number((_Ea = p2.amount) != null ? _Ea : 1);
+      const amount = Number((_Ga = p2.amount) != null ? _Ga : 1);
       return { filter: `sepia(${amount.toFixed(2)})` };
     }
     case "invert": {
-      const amount = Number((_Fa = p2.amount) != null ? _Fa : 1);
+      const amount = Number((_Ha = p2.amount) != null ? _Ha : 1);
       return { filter: `invert(${amount.toFixed(2)})` };
     }
     case "exposure": {
-      const exposure = Number((_Ga = p2.exposure) != null ? _Ga : 0);
+      const exposure = Number((_Ia = p2.exposure) != null ? _Ia : 0);
       const brightness = 1 + exposure * 0.5;
       const contrast = 1 + exposure * 0.3;
       return {
@@ -26688,8 +26697,8 @@ function renderParametricEffectCSS(preset, params, t2) {
       };
     }
     case "vibrance": {
-      const amount = Number((_Ha = p2.amount) != null ? _Ha : 1.3);
-      const contrast = Number((_Ia = p2.contrast) != null ? _Ia : 1.1);
+      const amount = Number((_Ja = p2.amount) != null ? _Ja : 1.3);
+      const contrast = Number((_Ka = p2.contrast) != null ? _Ka : 1.1);
       return {
         filter: `saturate(${amount.toFixed(2)}) contrast(${contrast.toFixed(2)})`
       };
@@ -27107,16 +27116,25 @@ function renderLightsaberBorderSVG(width, height, params, t2, borderRadius = 0, 
   return { svgContent, filterId };
 }
 function renderHologramScanlinesSVG(width, height, params, t2) {
-  var _a3, _b;
+  var _a3, _b, _c, _d;
   const color = String((_a3 = params.color) != null ? _a3 : "#00ffff");
-  const scanlineOpacity = Number((_b = params.scanlineOpacity) != null ? _b : 0.15);
+  const op = Number((_b = params.opacity) != null ? _b : 1);
+  const vibrancy = Number((_c = params.vibrancy) != null ? _c : 0.5);
+  const scanlineOpacity = Number((_d = params.scanlineOpacity) != null ? _d : 0.15) * op;
   const lineSpacing = 4;
   const lines = Math.ceil(height / lineSpacing);
   const scrollOffset = t2 / 20 % lineSpacing;
   let linesStr = "";
   for (let i2 = 0; i2 < lines + 1; i2++) {
     const y2 = i2 * lineSpacing - scrollOffset;
-    linesStr += `<line x1="0" y1="${y2}" x2="${width}" y2="${y2}" stroke="${color}" stroke-width="1" opacity="${scanlineOpacity}"/>`;
+    if (vibrancy > 0 && scanlineOpacity > 0) {
+      const glowWidth = 1 + vibrancy * 3;
+      const glowOpacity = scanlineOpacity * vibrancy * 0.6;
+      const glowBlur = 0.5 + vibrancy * 1.5;
+      linesStr += `<line x1="0" y1="${y2}" x2="${width}" y2="${y2}" stroke="${color}" stroke-width="${glowWidth.toFixed(1)}" opacity="${glowOpacity.toFixed(3)}" style="filter: blur(${glowBlur.toFixed(1)}px);"/>`;
+    }
+    const coreWidth = 1 + vibrancy * 0.5;
+    linesStr += `<line x1="0" y1="${y2}" x2="${width}" y2="${y2}" stroke="${color}" stroke-width="${coreWidth.toFixed(1)}" opacity="${scanlineOpacity.toFixed(3)}"/>`;
   }
   return linesStr;
 }
@@ -38298,7 +38316,7 @@ function useParametricCss(effects, data) {
           _overallOpacity: overallOpacity
         };
         const css = renderParametricEffectCSS(e2.preset, params, t2);
-        const handlesInternal = e2.preset === "neonPulse" || e2.preset === "neonGlow" || e2.preset === "neonGlowAnimated";
+        const handlesInternal = e2.preset === "neonPulse" || e2.preset === "neonGlow" || e2.preset === "neonGlowAnimated" || e2.preset === "hologramFlicker";
         const _effOpacity = handlesInternal ? 1 : Number((_a3 = params.opacity) != null ? _a3 : 1) * overallOpacity;
         if (css.filter) filterParts.push(css.filter);
         const { filter: _f, opacity: _op, ...rest } = css;
@@ -38556,7 +38574,7 @@ function ParametricEffectOverlay({
           _overallOpacity: overallOpacity
         };
         const css = renderParametricEffectCSS(e2.preset, params, t2);
-        const handlesInternal = e2.preset === "neonPulse" || e2.preset === "neonGlow" || e2.preset === "neonGlowAnimated";
+        const handlesInternal = e2.preset === "neonPulse" || e2.preset === "neonGlow" || e2.preset === "neonGlowAnimated" || e2.preset === "hologramFlicker";
         const _effOpacity = handlesInternal ? 1 : Number((_a3 = params.opacity) != null ? _a3 : 1) * overallOpacity;
         if (css.filter) filterParts.push(css.filter);
         const { filter: _f, opacity: _op, ...rest } = css;
