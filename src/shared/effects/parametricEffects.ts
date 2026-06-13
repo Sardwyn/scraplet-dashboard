@@ -106,7 +106,9 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     params: [
       { key: "intensity", label: "Intensity", type: "number", default: 1, min: 0, max: 3, step: 0.1, animatable: true },
       { key: "frequency", label: "Frequency", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
-      { key: "colorShift", label: "Color Shift", type: "boolean", default: true },
+      { key: "chromaticAberration", label: "Chromatic Aberration", type: "number", default: 4, min: 0, max: 20, step: 0.5, animatable: true },
+      { key: "shearAmount", label: "Shear Amount", type: "number", default: 15, min: 0, max: 100, step: 1, animatable: true },
+      { key: "shearHeight", label: "Shear Height (Y)", type: "number", default: 50, min: 0, max: 100, step: 1, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
@@ -1159,28 +1161,46 @@ export function renderParametricEffectCSS(
       const seed = Math.floor(t * freq / 100);
       const rng = (s: number) => ((Math.sin(s * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1;
       const glitchChance = rng(seed);
-      // Three tiers: subtle (always), medium (50%), heavy (15%)
+      
       const heavy = glitchChance > 0.85;
       const medium = glitchChance > 0.5;
-      if (!medium) return {};
-      // Horizontal slice displacement — the signature glitch look
-      const sliceCount = Math.floor(2 + rng(seed + 10) * 4 * intensity);
-      const sliceOffset = (rng(seed + 11) - 0.5) * 30 * intensity;
-      // Main body transform
-      const tx = heavy ? (rng(seed + 1) - 0.5) * 24 * intensity : (rng(seed + 1) - 0.5) * 6 * intensity;
+
+      // --- Chromatic Aberration ---
+      const baseCA = Number(p.chromaticAberration ?? 0);
+      const caJitter = heavy ? (rng(seed + 5) - 0.5) * 8 * intensity : 0;
+      const finalCA = Math.max(0, baseCA + caJitter);
+      
+      const colorFilter = finalCA > 0
+        ? `drop-shadow(${finalCA.toFixed(1)}px 0 0 rgba(255,0,80,0.75)) drop-shadow(${-finalCA.toFixed(1)}px 0 0 rgba(0,200,255,0.75))`
+        : undefined;
+
+      // If no glitch is active, return the steady-state chromatic aberration filter!
+      if (!medium) {
+        return {
+          ...(colorFilter ? { filter: colorFilter } : {}),
+        } as any;
+      }
+
+      // --- Glitch Motion / Shear ---
+      const sAmount = Number(p.shearAmount ?? 15);
+      const sHeight = Number(p.shearHeight ?? 50);
+
+      // Horizontal displacement based on shearAmount and intensity
+      const tx = heavy ? (rng(seed + 1) - 0.5) * sAmount * 1.5 * intensity : (rng(seed + 1) - 0.5) * sAmount * 0.5 * intensity;
       const ty = heavy ? (rng(seed + 2) - 0.5) * 6 * intensity : 0;
       const skewX = heavy ? (rng(seed + 3) - 0.5) * 8 * intensity : (rng(seed + 3) - 0.5) * 2 * intensity;
-      const scaleX = medium ? 1 + (rng(seed + 8) - 0.5) * 0.04 * intensity : 1;
-      // CA-style color fringe on heavy glitch
-      const colorFilter = (p.colorShift && heavy)
-        ? `drop-shadow(${(rng(seed+5)-0.5)*6*intensity}px 0 0 rgba(255,0,80,0.7)) drop-shadow(${(rng(seed+7)-0.5)*6*intensity}px 0 0 rgba(0,200,255,0.7))`
-        : undefined;
-      // Scanline-style clip on heavy glitch (cuts a horizontal band)
-      const clipY = heavy ? Math.floor(rng(seed + 9) * 100) : null;
-      const clipH = heavy ? Math.floor(5 + rng(seed + 12) * 20 * intensity) : null;
-      const clipPath = clipY !== null ? `inset(${clipY}% 0 ${Math.max(0, 100 - clipY - clipH!)}% 0)` : undefined;
+      const scaleX = 1 + (rng(seed + 8) - 0.5) * 0.04 * intensity;
+
+      // Sliced band centered around parametric shearHeight (heavy glitch frames only)
+      let clipPath = undefined;
+      if (heavy) {
+        const clipH = 15; // slice thickness (15% height)
+        const clipY = Math.max(0, Math.min(100 - clipH, sHeight - clipH / 2));
+        clipPath = `inset(${clipY.toFixed(1)}% 0 ${(100 - clipY - clipH).toFixed(1)}% 0)`;
+      }
+
       return {
-        transform: `translate(${tx}px, ${ty}px) skewX(${skewX}deg) scaleX(${scaleX})`,
+        transform: `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) skewX(${skewX.toFixed(1)}deg) scaleX(${scaleX.toFixed(3)})`,
         transformOrigin: 'center center',
         opacity: heavy ? 0.6 + rng(seed + 6) * 0.4 : 0.85 + rng(seed + 6) * 0.15,
         ...(colorFilter ? { filter: colorFilter } : {}),

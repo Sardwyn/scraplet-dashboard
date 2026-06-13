@@ -21859,7 +21859,9 @@
       params: [
         { key: "intensity", label: "Intensity", type: "number", default: 1, min: 0, max: 3, step: 0.1, animatable: true },
         { key: "frequency", label: "Frequency", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
-        { key: "colorShift", label: "Color Shift", type: "boolean", default: true },
+        { key: "chromaticAberration", label: "Chromatic Aberration", type: "number", default: 4, min: 0, max: 20, step: 0.5, animatable: true },
+        { key: "shearAmount", label: "Shear Amount", type: "number", default: 15, min: 0, max: 100, step: 1, animatable: true },
+        { key: "shearHeight", label: "Shear Height (Y)", type: "number", default: 50, min: 0, max: 100, step: 1, animatable: true },
         { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
       ]
     },
@@ -22830,7 +22832,7 @@
     return resolved;
   }
   function renderParametricEffectCSS(preset, params, t2) {
-    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea;
+    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha;
     const p2 = params;
     const sin = Math.sin;
     const cos = Math.cos;
@@ -22859,17 +22861,29 @@
         const glitchChance = rng(seed);
         const heavy = glitchChance > 0.85;
         const medium = glitchChance > 0.5;
-        if (!medium) return {};
-        const tx = heavy ? (rng(seed + 1) - 0.5) * 24 * intensity : (rng(seed + 1) - 0.5) * 6 * intensity;
+        const baseCA = Number((_i2 = p2.chromaticAberration) != null ? _i2 : 0);
+        const caJitter = heavy ? (rng(seed + 5) - 0.5) * 8 * intensity : 0;
+        const finalCA = Math.max(0, baseCA + caJitter);
+        const colorFilter = finalCA > 0 ? `drop-shadow(${finalCA.toFixed(1)}px 0 0 rgba(255,0,80,0.75)) drop-shadow(${-finalCA.toFixed(1)}px 0 0 rgba(0,200,255,0.75))` : void 0;
+        if (!medium) {
+          return {
+            ...colorFilter ? { filter: colorFilter } : {}
+          };
+        }
+        const sAmount = Number((_j = p2.shearAmount) != null ? _j : 15);
+        const sHeight = Number((_k = p2.shearHeight) != null ? _k : 50);
+        const tx = heavy ? (rng(seed + 1) - 0.5) * sAmount * 1.5 * intensity : (rng(seed + 1) - 0.5) * sAmount * 0.5 * intensity;
         const ty = heavy ? (rng(seed + 2) - 0.5) * 6 * intensity : 0;
         const skewX = heavy ? (rng(seed + 3) - 0.5) * 8 * intensity : (rng(seed + 3) - 0.5) * 2 * intensity;
-        const scaleX = medium ? 1 + (rng(seed + 8) - 0.5) * 0.04 * intensity : 1;
-        const colorFilter = p2.colorShift && heavy ? `drop-shadow(${(rng(seed + 5) - 0.5) * 6 * intensity}px 0 0 rgba(255,0,80,0.7)) drop-shadow(${(rng(seed + 7) - 0.5) * 6 * intensity}px 0 0 rgba(0,200,255,0.7))` : void 0;
-        const clipY = heavy ? Math.floor(rng(seed + 9) * 100) : null;
-        const clipH = heavy ? Math.floor(5 + rng(seed + 12) * 20 * intensity) : null;
-        const clipPath = clipY !== null ? `inset(${clipY}% 0 ${Math.max(0, 100 - clipY - clipH)}% 0)` : void 0;
+        const scaleX = 1 + (rng(seed + 8) - 0.5) * 0.04 * intensity;
+        let clipPath = void 0;
+        if (heavy) {
+          const clipH = 15;
+          const clipY = Math.max(0, Math.min(100 - clipH, sHeight - clipH / 2));
+          clipPath = `inset(${clipY.toFixed(1)}% 0 ${(100 - clipY - clipH).toFixed(1)}% 0)`;
+        }
         return {
-          transform: `translate(${tx}px, ${ty}px) skewX(${skewX}deg) scaleX(${scaleX})`,
+          transform: `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px) skewX(${skewX.toFixed(1)}deg) scaleX(${scaleX.toFixed(3)})`,
           transformOrigin: "center center",
           opacity: heavy ? 0.6 + rng(seed + 6) * 0.4 : 0.85 + rng(seed + 6) * 0.15,
           ...colorFilter ? { filter: colorFilter } : {},
@@ -22877,8 +22891,8 @@
         };
       }
       case "cameraShake": {
-        const freq = Number((_i2 = p2.frequency) != null ? _i2 : 2);
-        const intensity = Number((_j = p2.intensity) != null ? _j : 5);
+        const freq = Number((_l = p2.frequency) != null ? _l : 2);
+        const intensity = Number((_m = p2.intensity) != null ? _m : 5);
         const tx = sin(t2 * freq * 0.01) * intensity + sin(t2 * freq * 0.017) * intensity * 0.5;
         const ty = cos(t2 * freq * 0.013) * intensity * 0.7;
         const rot = p2.rotational ? sin(t2 * freq * 8e-3) * intensity * 0.3 : 0;
@@ -22888,20 +22902,20 @@
         };
       }
       case "blurPulse": {
-        const speed = Number((_k = p2.speed) != null ? _k : 1);
-        const maxBlur = Number((_l = p2.maxBlur) != null ? _l : 12);
+        const speed = Number((_n2 = p2.speed) != null ? _n2 : 1);
+        const maxBlur = Number((_o2 = p2.maxBlur) != null ? _o2 : 12);
         const pulse = 0.5 + 0.5 * sin(t2 / 1e3 * Math.PI * 2 * speed);
         const blurVal = (maxBlur * pulse).toFixed(1);
         return { filter: `blur(${blurVal}px)` };
       }
       case "hologramFlicker": {
-        const rate = Number((_m = p2.flickerRate) != null ? _m : 1);
+        const rate = Number((_p = p2.flickerRate) != null ? _p : 1);
         const seed = Math.floor(t2 * rate / 80);
         const rng = (s2) => (Math.sin(s2 * 127.1) * 43758.5453 % 1 + 1) % 1;
         const flicker = rng(seed);
-        const glitch = Number((_n2 = p2.glitchAmount) != null ? _n2 : 0.3);
+        const glitch = Number((_q = p2.glitchAmount) != null ? _q : 0.3);
         const tx = flicker > 1 - glitch ? (rng(seed + 1) - 0.5) * 10 : 0;
-        const color = String((_o2 = p2.color) != null ? _o2 : "#00ffff");
+        const color = String((_r2 = p2.color) != null ? _r2 : "#00ffff");
         return {
           opacity: 0.7 + flicker * 0.3,
           transform: tx ? `translateX(${tx}px)` : void 0,
@@ -22909,8 +22923,8 @@
         };
       }
       case "textReveal": {
-        const progress = Number((_p = p2.progress) != null ? _p : 1);
-        const dir = String((_q = p2.direction) != null ? _q : "left");
+        const progress = Number((_s2 = p2.progress) != null ? _s2 : 1);
+        const dir = String((_t2 = p2.direction) != null ? _t2 : "left");
         const autoProgress = t2 % 2e3 < 1e3 ? t2 % 1e3 / 1e3 : 1 - t2 % 1e3 / 1e3;
         const effectiveProgress = progress === 1 ? autoProgress : progress;
         const effectivePct = Math.round(effectiveProgress * 100);
@@ -22921,27 +22935,27 @@
           down: `inset(${100 - effectivePct}% 0 0 0)`,
           center: `inset(0 ${(100 - effectivePct) / 2}% 0 ${(100 - effectivePct) / 2}%)`
         };
-        return { clipPath: (_r2 = effectiveClip[dir]) != null ? _r2 : effectiveClip.left };
+        return { clipPath: (_u = effectiveClip[dir]) != null ? _u : effectiveClip.left };
       }
       case "breathe": {
-        const speed = Number((_s2 = p2.speed) != null ? _s2 : 1);
-        const minS = Number((_t2 = p2.minScale) != null ? _t2 : 0.95);
-        const maxS = Number((_u = p2.maxScale) != null ? _u : 1.05);
+        const speed = Number((_v = p2.speed) != null ? _v : 1);
+        const minS = Number((_w = p2.minScale) != null ? _w : 0.95);
+        const maxS = Number((_x = p2.maxScale) != null ? _x : 1.05);
         const pulse = 0.5 + 0.5 * sin(t2 / 1e3 * Math.PI * 2 * speed);
         const scale = minS + (maxS - minS) * pulse;
         return { transform: `scale(${scale})`, transformOrigin: "center center" };
       }
       case "colorCycle": {
-        const speed = Number((_v = p2.speed) != null ? _v : 1);
-        const sat = Number((_w = p2.saturation) != null ? _w : 1);
-        const bri = Number((_x = p2.brightness) != null ? _x : 1);
+        const speed = Number((_y = p2.speed) != null ? _y : 1);
+        const sat = Number((_z = p2.saturation) != null ? _z : 1);
+        const bri = Number((_A = p2.brightness) != null ? _A : 1);
         const hue = t2 / 1e3 * 360 * speed % 360;
         return { filter: `hue-rotate(${hue}deg) saturate(${sat}) brightness(${bri})` };
       }
       case "scanlineStatic": {
-        const spacing = Math.max(2, Number((_y = p2.lineSpacing) != null ? _y : 4));
-        const lineOp = Number((_z = p2.lineOpacity) != null ? _z : 0.2);
-        const scroll = Number((_A = p2.scrollSpeed) != null ? _A : 0);
+        const spacing = Math.max(2, Number((_B = p2.lineSpacing) != null ? _B : 4));
+        const lineOp = Number((_C = p2.lineOpacity) != null ? _C : 0.2);
+        const scroll = Number((_D = p2.scrollSpeed) != null ? _D : 0);
         const offset = (t2 / 1e3 * scroll * 60 % spacing + spacing) % spacing;
         return {
           backgroundImage: `repeating-linear-gradient(to bottom, transparent 0px, transparent ${spacing - 1}px, rgba(0,0,0,${lineOp}) ${spacing - 1}px, rgba(0,0,0,${lineOp}) ${spacing}px)`,
@@ -22950,9 +22964,9 @@
         };
       }
       case "vignette": {
-        const size = Number((_B = p2.size) != null ? _B : 0.6);
-        const softness = Number((_C = p2.softness) != null ? _C : 0.4);
-        const color = String((_D = p2.color) != null ? _D : "#000000");
+        const size = Number((_E = p2.size) != null ? _E : 0.6);
+        const softness = Number((_F = p2.softness) != null ? _F : 0.4);
+        const color = String((_G = p2.color) != null ? _G : "#000000");
         const inner = Math.max(0, size - softness) * 100;
         const outer = Math.min(100, size * 100);
         return {
@@ -22960,14 +22974,14 @@
         };
       }
       case "strobe": {
-        const rate = Number((_E = p2.rate) != null ? _E : 4);
-        const minOp = Number((_F = p2.minOpacity) != null ? _F : 0);
+        const rate = Number((_H = p2.rate) != null ? _H : 4);
+        const minOp = Number((_I = p2.minOpacity) != null ? _I : 0);
         const on2 = Math.sin(t2 * rate * Math.PI / 500) > 0;
         return { opacity: on2 ? 1 : minOp };
       }
       case "typewriter": {
-        const speed = Number((_G = p2.speed) != null ? _G : 1);
-        const progress = Number((_H = p2.progress) != null ? _H : 1);
+        const speed = Number((_J = p2.speed) != null ? _J : 1);
+        const progress = Number((_K = p2.progress) != null ? _K : 1);
         const showCursor = p2.cursor !== false;
         const autoP = progress === 1 ? Math.min(1, t2 / 1e3 * speed % 2 < 1 ? t2 / 1e3 * speed % 1 : 1) : progress;
         const cursorBlink = showCursor && Math.floor(t2 / 500) % 2 === 0;
@@ -22977,11 +22991,11 @@
         };
       }
       case "gradientSweep": {
-        const speed = Number((_I = p2.speed) != null ? _I : 1);
-        const width = Number((_J = p2.width) != null ? _J : 0.3);
-        const angle = Number((_K = p2.angle) != null ? _K : 45);
-        const color = String((_L = p2.color) != null ? _L : "#ffffff");
-        const opacity = Number((_M = p2.opacity) != null ? _M : 0.6);
+        const speed = Number((_L = p2.speed) != null ? _L : 1);
+        const width = Number((_M = p2.width) != null ? _M : 0.3);
+        const angle = Number((_N = p2.angle) != null ? _N : 45);
+        const color = String((_O = p2.color) != null ? _O : "#ffffff");
+        const opacity = Number((_P = p2.opacity) != null ? _P : 0.6);
         const repeat = p2.repeat !== false;
         const cycle = t2 / 1e3 * speed;
         const pos = repeat ? cycle % 1 : Math.min(1, cycle);
@@ -23002,11 +23016,11 @@
         };
       }
       case "vhsTracking": {
-        const lines = Math.round(Number((_N = p2.trackingLines) != null ? _N : 3));
-        const lh2 = Number((_O = p2.lineHeight) != null ? _O : 4);
-        const bleed = Number((_P = p2.colorBleed) != null ? _P : 0.5);
-        const speed = Number((_Q = p2.speed) != null ? _Q : 1);
-        const opacity = Number((_R = p2.opacity) != null ? _R : 0.8);
+        const lines = Math.round(Number((_Q = p2.trackingLines) != null ? _Q : 3));
+        const lh2 = Number((_R = p2.lineHeight) != null ? _R : 4);
+        const bleed = Number((_S = p2.colorBleed) != null ? _S : 0.5);
+        const speed = Number((_T = p2.speed) != null ? _T : 1);
+        const opacity = Number((_U = p2.opacity) != null ? _U : 0.8);
         const rng = (s2) => (Math.sin(s2 * 127.1 + t2 * 1e-3 * speed) * 43758.5453 % 1 + 1) % 1;
         const stops = [];
         for (let i2 = 0; i2 < lines; i2++) {
@@ -23027,12 +23041,12 @@
         };
       }
       case "crtInterlace": {
-        const spacing = Math.max(2, Number((_S = p2.lineSpacing) != null ? _S : 3));
-        const lineOp = Number((_T = p2.lineOpacity) != null ? _T : 0.35);
-        const flicker = Number((_U = p2.flicker) != null ? _U : 0.04);
-        const phosphor = Number((_V = p2.phosphorGlow) != null ? _V : 0.15);
-        const speed = Number((_W = p2.speed) != null ? _W : 1);
-        const curvature = Number((_X = p2.curvature) != null ? _X : 0);
+        const spacing = Math.max(2, Number((_V = p2.lineSpacing) != null ? _V : 3));
+        const lineOp = Number((_W = p2.lineOpacity) != null ? _W : 0.35);
+        const flicker = Number((_X = p2.flicker) != null ? _X : 0.04);
+        const phosphor = Number((_Y = p2.phosphorGlow) != null ? _Y : 0.15);
+        const speed = Number((_Z = p2.speed) != null ? _Z : 1);
+        const curvature = Number((__ = p2.curvature) != null ? __ : 0);
         const flickerVal = 1 - flicker * (0.5 + 0.5 * Math.sin(t2 * speed * 0.03));
         const phosphorFilter = phosphor > 0 ? `brightness(${flickerVal}) sepia(${phosphor * 0.3}) saturate(${1 + phosphor})` : `brightness(${flickerVal})`;
         const borderRadius = curvature > 0 ? `${curvature * 8}%` : void 0;
@@ -23045,46 +23059,37 @@
       }
       // ── CSS Filter Effects ────────────────────────────────────────────────────
       case "hueShift": {
-        const rotation = Number((_Y = p2.rotation) != null ? _Y : 0);
+        const rotation = Number((_$ = p2.rotation) != null ? _$ : 0);
         const animate = p2.animate === true;
-        const speed = Number((_Z = p2.speed) != null ? _Z : 1);
+        const speed = Number((_aa = p2.speed) != null ? _aa : 1);
         const hue = animate ? t2 / 1e3 * 360 * speed % 360 : rotation;
         return { filter: `hue-rotate(${hue.toFixed(1)}deg)` };
       }
       case "colorGrade": {
-        const brightness = Number((__ = p2.brightness) != null ? __ : 1);
-        const contrast = Number((_$ = p2.contrast) != null ? _$ : 1);
-        const saturation = Number((_aa = p2.saturation) != null ? _aa : 1);
+        const brightness = Number((_ba = p2.brightness) != null ? _ba : 1);
+        const contrast = Number((_ca = p2.contrast) != null ? _ca : 1);
+        const saturation = Number((_da = p2.saturation) != null ? _da : 1);
         return {
           filter: `brightness(${brightness.toFixed(2)}) contrast(${contrast.toFixed(2)}) saturate(${saturation.toFixed(2)})`
         };
       }
       case "tint": {
-        const hue = Number((_ba = p2.hue) != null ? _ba : 270);
-        const saturation = Number((_ca = p2.saturation) != null ? _ca : 1.5);
-        const brightness = Number((_da = p2.brightness) != null ? _da : 1);
-        return {
-          filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})`
-        };
-      }
-      case "staticTint": {
         const hue = Number((_ea = p2.hue) != null ? _ea : 270);
-        const saturation = Number((_fa = p2.saturation) != null ? _fa : 2);
+        const saturation = Number((_fa = p2.saturation) != null ? _fa : 1.5);
         const brightness = Number((_ga = p2.brightness) != null ? _ga : 1);
         return {
           filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})`
         };
       }
-      case "colorize": {
+      case "staticTint": {
         const hue = Number((_ha = p2.hue) != null ? _ha : 270);
-        const intensity = Number((_ia = p2.intensity) != null ? _ia : 1);
+        const saturation = Number((_ia = p2.saturation) != null ? _ia : 2);
         const brightness = Number((_ja = p2.brightness) != null ? _ja : 1);
-        const rotation = hue - 40;
         return {
-          filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})`
+          filter: `hue-rotate(${hue.toFixed(1)}deg) saturate(${saturation.toFixed(2)}) brightness(${brightness.toFixed(2)})`
         };
       }
-      case "colorizeAnimated": {
+      case "colorize": {
         const hue = Number((_ka = p2.hue) != null ? _ka : 270);
         const intensity = Number((_la = p2.intensity) != null ? _la : 1);
         const brightness = Number((_ma = p2.brightness) != null ? _ma : 1);
@@ -23093,12 +23098,21 @@
           filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})`
         };
       }
+      case "colorizeAnimated": {
+        const hue = Number((_na = p2.hue) != null ? _na : 270);
+        const intensity = Number((_oa = p2.intensity) != null ? _oa : 1);
+        const brightness = Number((_pa = p2.brightness) != null ? _pa : 1);
+        const rotation = hue - 40;
+        return {
+          filter: `sepia(1) hue-rotate(${rotation.toFixed(1)}deg) saturate(${intensity.toFixed(2)}) brightness(${brightness.toFixed(2)})`
+        };
+      }
       case "neonGlow": {
-        const color = String((_na = p2.color) != null ? _na : "#a855f7");
-        const intensity = Number((_oa = p2.intensity) != null ? _oa : 30);
-        const spread = Number((_pa = p2.spread) != null ? _pa : 15);
-        const brightness = Number((_qa = p2.brightness) != null ? _qa : 1.3);
-        const opacity = Number((_ra = p2.opacity) != null ? _ra : 1) * Number((_sa = p2._overallOpacity) != null ? _sa : 1);
+        const color = String((_qa = p2.color) != null ? _qa : "#a855f7");
+        const intensity = Number((_ra = p2.intensity) != null ? _ra : 30);
+        const spread = Number((_sa = p2.spread) != null ? _sa : 15);
+        const brightness = Number((_ta = p2.brightness) != null ? _ta : 1.3);
+        const opacity = Number((_ua = p2.opacity) != null ? _ua : 1) * Number((_va = p2._overallOpacity) != null ? _va : 1);
         const hex = color.replace("#", "");
         const r2 = parseInt(hex.substring(0, 2), 16) || 168;
         const g2 = parseInt(hex.substring(2, 4), 16) || 85;
@@ -23116,11 +23130,11 @@
         };
       }
       case "neonGlowAnimated": {
-        const color = String((_ta = p2.color) != null ? _ta : "#a855f7");
-        const intensity = Number((_ua = p2.intensity) != null ? _ua : 30);
-        const spread = Number((_va = p2.spread) != null ? _va : 15);
-        const brightness = Number((_wa = p2.brightness) != null ? _wa : 1.3);
-        const opacity = Number((_xa = p2.opacity) != null ? _xa : 1) * Number((_ya = p2._overallOpacity) != null ? _ya : 1);
+        const color = String((_wa = p2.color) != null ? _wa : "#a855f7");
+        const intensity = Number((_xa = p2.intensity) != null ? _xa : 30);
+        const spread = Number((_ya = p2.spread) != null ? _ya : 15);
+        const brightness = Number((_za = p2.brightness) != null ? _za : 1.3);
+        const opacity = Number((_Aa = p2.opacity) != null ? _Aa : 1) * Number((_Ba = p2._overallOpacity) != null ? _Ba : 1);
         const hex = color.replace("#", "");
         const r2 = parseInt(hex.substring(0, 2), 16) || 168;
         const g2 = parseInt(hex.substring(2, 4), 16) || 85;
@@ -23138,19 +23152,19 @@
         };
       }
       case "desaturate": {
-        const amount = Number((_za = p2.amount) != null ? _za : 1);
+        const amount = Number((_Ca = p2.amount) != null ? _Ca : 1);
         return { filter: `grayscale(${amount.toFixed(2)})` };
       }
       case "sepiaTone": {
-        const amount = Number((_Aa = p2.amount) != null ? _Aa : 1);
+        const amount = Number((_Da = p2.amount) != null ? _Da : 1);
         return { filter: `sepia(${amount.toFixed(2)})` };
       }
       case "invert": {
-        const amount = Number((_Ba = p2.amount) != null ? _Ba : 1);
+        const amount = Number((_Ea = p2.amount) != null ? _Ea : 1);
         return { filter: `invert(${amount.toFixed(2)})` };
       }
       case "exposure": {
-        const exposure = Number((_Ca = p2.exposure) != null ? _Ca : 0);
+        const exposure = Number((_Fa = p2.exposure) != null ? _Fa : 0);
         const brightness = 1 + exposure * 0.5;
         const contrast = 1 + exposure * 0.3;
         return {
@@ -23158,8 +23172,8 @@
         };
       }
       case "vibrance": {
-        const amount = Number((_Da = p2.amount) != null ? _Da : 1.3);
-        const contrast = Number((_Ea = p2.contrast) != null ? _Ea : 1.1);
+        const amount = Number((_Ga = p2.amount) != null ? _Ga : 1.3);
+        const contrast = Number((_Ha = p2.contrast) != null ? _Ha : 1.1);
         return {
           filter: `saturate(${amount.toFixed(2)}) contrast(${contrast.toFixed(2)})`
         };
