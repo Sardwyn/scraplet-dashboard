@@ -1137,11 +1137,19 @@ export function renderParametricEffectCSS(
       const intensity = Number(p.intensity ?? 1) * pulse;
       const size = Number(p.size ?? 20);
       const color = String(p.color ?? "#00ffff");
-      // Use drop-shadow filter so glow follows the shape's actual pixels, not the bounding box
+      const opacity = Number(p.opacity ?? 1);
+
+      // Parse hex color to RGB
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 255;
+      const b = parseInt(hex.substring(4, 6), 16) || 255;
+
       const s = size * intensity;
+      const glowColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+
       return {
-        filter: `drop-shadow(0 0 ${s * 0.4}px ${color}) drop-shadow(0 0 ${s * 0.8}px ${color}) drop-shadow(0 0 ${s * 1.4}px ${color})`,
-        opacity: 0.8 + 0.2 * pulse,
+        filter: `drop-shadow(0 0 ${s * 0.4}px ${glowColor}) drop-shadow(0 0 ${s * 0.8}px ${glowColor}) drop-shadow(0 0 ${s * 1.4}px ${glowColor})`,
       } as any;
     }
     case "glitchFlicker": {
