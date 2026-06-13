@@ -21862,8 +21862,7 @@
         { key: "chromaticAberration", label: "Chromatic Aberration", type: "number", default: 4, min: 0, max: 20, step: 0.5, animatable: true },
         { key: "caAngle", label: "CA Angle", type: "number", default: 0, min: 0, max: 360, step: 5, animatable: true },
         { key: "shearAmount", label: "Shear Amount", type: "number", default: 15, min: 0, max: 100, step: 1, animatable: true },
-        { key: "shearHeight", label: "Shear Height (Y)", type: "number", default: 50, min: 0, max: 100, step: 1, animatable: true },
-        { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
+        { key: "shearHeight", label: "Shear Height (Y)", type: "number", default: 50, min: 0, max: 100, step: 1, animatable: true }
       ]
     },
     cameraShake: {
@@ -22753,7 +22752,7 @@
       produces: ["webgl"],
       params: [
         { key: "desaturation", label: "Desaturation", type: "number", default: 0.8, min: 0, max: 1, step: 0.05, animatable: true },
-        { key: "shakeIntensity", label: "Camera Shake", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "shakeIntensity", label: "Shake", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
         { key: "flickerRate", label: "Gate Flicker", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
         { key: "scratchDensity", label: "Hair & Scratches", type: "number", default: 0.3, min: 0, max: 1, step: 0.05, animatable: true },
         { key: "vignetteStrength", label: "Shadow Vignette", type: "number", default: 0.7, min: 0, max: 1, step: 0.05, animatable: true },
