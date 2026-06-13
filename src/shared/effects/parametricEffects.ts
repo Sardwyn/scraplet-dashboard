@@ -115,7 +115,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
   },
   cameraShake: {
     id: "cameraShake",
-    label: "Camera Shake",
+    label: "Shake",
     description: "Sinusoidal translate on X/Y",
     category: "motion",
     defaultDuration: 500,
@@ -124,7 +124,6 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "intensity", label: "Intensity", type: "number", default: 5, min: 0, max: 50, step: 1, animatable: true },
       { key: "frequency", label: "Frequency", type: "number", default: 2, min: 0.1, max: 20, step: 0.1 },
       { key: "rotational", label: "Rotational", type: "boolean", default: false },
-      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
   blurPulse: {
