@@ -1753,24 +1753,28 @@ export function renderParametricEffectSVGFilter(
     case "rgbSplit": {
       const amount = Number(p.amount ?? p.intensity ?? 4);
       const angle = Number(p.angle ?? 0);
+      const opacity = Number(p.opacity ?? 1);
       const rad = angle * Math.PI / 180;
       const dx = Math.cos(rad) * amount;
       const dy = Math.sin(rad) * amount;
       const filterDef = `
-        <filter id="${filterId}" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-          <feOffset in="SourceGraphic" dx="${dx.toFixed(2)}" dy="${dy.toFixed(2)}" result="shifted"/>
-          <feColorMatrix type="matrix" in="shifted"
+        <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+          <feOffset in="SourceGraphic" dx="${dx.toFixed(2)}" dy="${dy.toFixed(2)}" result="shiftedRed"/>
+          <feColorMatrix type="matrix" in="shiftedRed"
             values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="redCh"/>
+          
           <feColorMatrix type="matrix" in="SourceGraphic"
             values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="greenCh"/>
-          <feOffset in="SourceGraphic" dx="${(-dx).toFixed(2)}" dy="${(-dy).toFixed(2)}" result="shifted2"/>
-          <feColorMatrix type="matrix" in="shifted2"
+          
+          <feOffset in="SourceGraphic" dx="${(-dx).toFixed(2)}" dy="${(-dy).toFixed(2)}" result="shiftedBlue"/>
+          <feColorMatrix type="matrix" in="shiftedBlue"
             values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blueCh"/>
-          <feMerge>
-            <feMergeNode in="redCh"/>
-            <feMergeNode in="greenCh"/>
-            <feMergeNode in="blueCh"/>
-          </feMerge>
+          
+          <feBlend in="redCh" in2="greenCh" mode="screen" result="rg"/>
+          <feBlend in="rg" in2="blueCh" mode="screen" result="ca"/>
+          <feComponentTransfer in="ca">
+            <feFuncA type="linear" slope="${opacity}"/>
+          </feComponentTransfer>
         </filter>`;
       return { filterDef, filterRef: `url(#${filterId})` };
     }
@@ -1780,6 +1784,7 @@ export function renderParametricEffectSVGFilter(
       const angle = Number(p.angle ?? 0);
       const speed = Number(p.speed ?? 1);
       const ew = Number(p.edgeWidth ?? 2);
+      const opacity = Number(p.opacity ?? 1);
       
       const pulse = 0.5 + 0.5 * Math.sin((t / 1000) * Math.PI * 2 * speed);
       const offset = amount * pulse;
@@ -1790,10 +1795,9 @@ export function renderParametricEffectSVGFilter(
       
       const filterDef = `
         <filter id="${filterId}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
-          <!-- Build edge mask -->
-          <feMorphology in="SourceAlpha" operator="dilate" radius="${ew}" result="dilate"/>
-          <feMorphology in="SourceAlpha" operator="erode" radius="${Math.max(0, ew - 1)}" result="erode"/>
-          <feComposite in="dilate" in2="erode" operator="out" result="edge-mask"/>
+          <!-- Erode the source alpha to isolate the sharp interior -->
+          <feMorphology in="SourceAlpha" operator="erode" radius="${ew}" result="interior-mask"/>
+          <feComposite in="SourceGraphic" in2="interior-mask" operator="in" result="interior"/>
           
           <!-- Isolate channels -->
           <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="src-r"/>
@@ -1808,15 +1812,13 @@ export function renderParametricEffectSVGFilter(
           <feBlend in="r" in2="src-g" mode="screen" result="rg"/>
           <feBlend in="rg" in2="b" mode="screen" result="ca"/>
           
-          <!-- Apply CA only at edges -->
-          <feComposite in="ca" in2="edge-mask" operator="in" result="edge-ca"/>
-          
-          <!-- Keep interior unchanged -->
-          <feComposite in="SourceGraphic" in2="edge-mask" operator="out" result="interior"/>
-          
-          <!-- Merge -->
-          <feBlend in="interior" in2="edge-ca" mode="normal" result="merged"/>
-          <feComposite in="merged" in2="SourceAlpha" operator="in"/>
+          <!-- Layer the sharp interior on top of the chromatic aberration -->
+          <feBlend in="interior" in2="ca" mode="normal" result="final"/>
+
+          <!-- Apply overall opacity -->
+          <feComponentTransfer in="final">
+            <feFuncA type="linear" slope="${opacity}"/>
+          </feComponentTransfer>
         </filter>`;
       return { filterDef, filterRef: `url(#${filterId})` };
     }
