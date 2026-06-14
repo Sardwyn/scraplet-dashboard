@@ -8265,9 +8265,10 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
       {/* Parametric Curve Editor Flyout - draggable */}
       {curveEditorEffect !== null && (() => {
-        const editingEffectIdx = parseInt(curveEditorEffect);
+        const isMograph = curveEditorEffect.startsWith("mograph-");
+        const editingEffectIdx = parseInt(isMograph ? curveEditorEffect.slice(8) : curveEditorEffect);
         const editingEl = selectedIds[0] ? (previewElementsById[selectedIds[0]] ?? elementsById[selectedIds[0]]) as any : null;
-        const peList = editingEl?.parametricEffects;
+        const peList = isMograph ? editingEl?.motionGraphics : editingEl?.parametricEffects;
         if (!Array.isArray(peList) || editingEffectIdx >= peList.length) return null;
         const editingEffect = peList[editingEffectIdx];
         if (!editingEffect) return null;
@@ -8280,7 +8281,11 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
               presetDef={editingPreset}
               onUpdate={(updated: any) => {
                 const next = peList.map((ef: any, i: number) => i === editingEffectIdx ? updated : ef);
-                updateElement(selectedIds[0], { parametricEffects: next } as any);
+                if (isMograph) {
+                  updateElement(selectedIds[0], { motionGraphics: next } as any);
+                } else {
+                  updateElement(selectedIds[0], { parametricEffects: next } as any);
+                }
               }}
               onClose={() => setCurveEditorEffect(null)}
             />
@@ -10331,7 +10336,7 @@ function EffectsStackControls({
                   onChange({ parametricEffects: next } as any);
                 }}
               >
-                {Object.values(EFFECT_PRESETS).map((p: any) => (
+                {Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph || p.id === pe.preset).map((p: any) => (
                   <option key={p.id} value={p.id}>{p.label}</option>
                 ))}
               </select>
@@ -10690,7 +10695,8 @@ function EffectsStackControls({
         type="button"
         className={`${uiClasses.buttonGhost} h-8 w-full`}
         onClick={() => {
-          const firstPreset = Object.keys(EFFECT_PRESETS)[0];
+          const nonMographPresets = Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph);
+          const firstPreset = nonMographPresets[0]?.id || Object.keys(EFFECT_PRESETS)[0];
           const def = EFFECT_PRESETS[firstPreset];
           const defaultParams: Record<string, any> = {};
           if (def) def.params.forEach((p: any) => { defaultParams[p.key] = p.default; });
@@ -10699,6 +10705,478 @@ function EffectsStackControls({
         }}
       >
         Add Filter / Effect
+      </button>
+    </div>
+  );
+}
+
+function MotionGraphicsControls({
+  element,
+  onChange,
+  onOpenCurveEditor,
+  timelineState,
+  onToggleTimelineKeyframe,
+}: {
+  element: AnyEl;
+  onChange: (patch: Partial<AnyEl>) => void;
+  onOpenCurveEditor?: (index: string) => void;
+  timelineState?: any;
+  onToggleTimelineKeyframe?: (property: string) => void;
+}) {
+  const fieldClass = uiClasses.field;
+  const fieldLabelClass = uiClasses.fieldLabel;
+  const miniW = 276, miniH = 72;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <label className={`${fieldLabelClass} w-20 flex-none`}>
+          <TimelineFieldLabel
+            label="Mograph On"
+            timelineState={timelineState?.properties.mograph_enabled}
+            onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("mograph_enabled") : undefined}
+          />
+        </label>
+        <input
+          type="checkbox"
+          className="rounded border-[rgba(255,255,255,0.15)] bg-[#161618] text-indigo-500 focus:ring-indigo-500 focus:ring-offset-[#1e1e24]"
+          checked={(element as any).mograph_enabled !== false}
+          onChange={(e) => onChange({ mograph_enabled: e.target.checked } as any)}
+        />
+        <span className="text-[11px] text-slate-400">Enable motion graphics</span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <label className={`${fieldLabelClass} w-20 flex-none`}>
+          <TimelineFieldLabel
+            label="Mograph Op"
+            timelineState={timelineState?.properties.mograph_opacity}
+            onToggleKeyframe={onToggleTimelineKeyframe ? () => onToggleTimelineKeyframe("mograph_opacity") : undefined}
+          />
+        </label>
+        <div className="flex-1 flex items-center gap-2 min-w-0">
+          <input
+            type="range" min="0" max="1" step="0.01"
+            className="h-1 flex-1 min-w-0 appearance-none rounded-full bg-[#161618] [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-slate-400"
+            value={typeof (element as any).mograph_opacity === "number" ? (element as any).mograph_opacity : 1}
+            onChange={(e) => onChange({ mograph_opacity: clamp(Number(e.target.value), 0, 1) } as any)}
+          />
+          <div className="w-14 flex-none relative">
+            <input
+              type="number"
+              className={`w-full pr-4 text-right ${fieldClass}`}
+              value={Math.round((typeof (element as any).mograph_opacity === "number" ? (element as any).mograph_opacity : 1) * 100)}
+              onChange={(e) => onChange({ mograph_opacity: clamp(Number(e.target.value) / 100, 0, 1) } as any)}
+            />
+            <span className="absolute right-1.5 top-[6px] text-[10px] text-slate-500">%</span>
+          </div>
+        </div>
+      </div>
+
+      {(element as any).motionGraphics?.map((pe: any, index: number) => {
+        const presetDef = EFFECT_PRESETS[pe.preset];
+        const peParams = pe.params || {};
+        const animatableParams = (presetDef?.params ?? []).filter((p: any) => p.animatable && p.type === 'number');
+        const staticParams = (presetDef?.params ?? []).filter((p: any) => !p.animatable || p.type !== 'number');
+        const MINI_COLORS = ['#818cf8','#34d399','#fbbf24','#f87171','#c084fc','#22d3ee'];
+        const mPL = 6, mPR = 6, mPT = 6, mPB = 14;
+        const mIW = miniW - mPL - mPR, mIH = miniH - mPT - mPB;
+        const effDur = pe.duration > 0 ? pe.duration : 4000;
+        const mToX = (t: number) => mPL + (t / effDur) * mIW;
+        const mToY = (v: number, p: any) => mPT + mIH - ((v - (p.min ?? 0)) / ((p.max ?? 1) - (p.min ?? 0))) * mIH;
+        const getNodes = (key: string) => (pe.keyframes ?? [])
+          .filter((kf: any) => kf.params && key in kf.params)
+          .map((kf: any) => ({ t: kf.t, value: kf.params[key] as number }))
+          .sort((a: any, b: any) => a.t - b.t);
+        const buildMiniPath = (nodes: any[], fallback: number, toX: (t:number)=>number, toY: (v:number)=>number) => {
+          const pts = nodes.length > 0 ? nodes : [{ t: 0, value: fallback }, { t: effDur, value: fallback }];
+          const sorted = [...pts].sort((a: any, b: any) => a.t - b.t);
+          const full: any[] = [];
+          if (sorted[0].t > 0) full.push({ t: 0, value: sorted[0].value });
+          full.push(...sorted);
+          if (sorted[sorted.length-1].t < effDur) full.push({ t: effDur, value: sorted[sorted.length-1].value });
+          return full.map((n, i) => `${i===0?'M':'L'} ${toX(n.t).toFixed(1)} ${toY(n.value).toFixed(1)}`).join(' ');
+        };
+
+        return (
+          <div key={index} className="rounded-md border border-[rgba(255,255,255,0.06)] bg-[#111113] p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <select
+                className={`flex-1 ${uiClasses.field} text-[11px]`}
+                value={pe.preset}
+                onChange={(e) => {
+                  const newPreset = e.target.value;
+                  const def = EFFECT_PRESETS[newPreset];
+                  const defaultParams: Record<string, any> = {};
+                  if (def) def.params.forEach((p: any) => { defaultParams[p.key] = p.default; });
+                  const next = (element as any).motionGraphics.map((ef: any, i: number) =>
+                    i === index ? { ...ef, preset: newPreset, params: defaultParams } : ef
+                  );
+                  onChange({ motionGraphics: next } as any);
+                }}
+              >
+                {Object.values(EFFECT_PRESETS).filter((p: any) => p.isMograph || p.id === pe.preset).map((p: any) => (
+                  <option key={p.id} value={p.id}>{p.label}</option>
+                ))}
+              </select>
+              <button type="button" className={uiClasses.iconButton}
+                onClick={() => {
+                  const next = (element as any).motionGraphics.filter((_: any, i: number) => i !== index);
+                  onChange({ motionGraphics: next } as any);
+                }}>✕</button>
+            </div>
+
+            {presetDef ? (
+              <div className="text-[10px] text-slate-500 italic">{presetDef.description}</div>
+            ) : (
+              <div className="text-[11px] text-rose-400 bg-rose-950/20 border border-rose-900/30 rounded p-2 italic">
+                Warning: Preset "{pe.preset}" is not defined in this build.
+              </div>
+            )}
+
+            {animatableParams.length > 0 && (
+              <div
+                onClick={() => onOpenCurveEditor?.(String(index))}
+                title="Click to open curve editor"
+                style={{ cursor: 'pointer', borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}
+              >
+                <svg width={miniW} height={miniH} style={{ display: 'block', background: '#07070f', width: '100%' }}>
+                  {[0.25, 0.5, 0.75].map((f: number) => (
+                    <line key={f} x1={mToX(f*effDur)} y1={mPT} x2={mToX(f*effDur)} y2={mPT+mIH}
+                      stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                  ))}
+                  <line x1={mPL} y1={mPT+mIH*0.5} x2={mPL+mIW} y2={mPT+mIH*0.5}
+                    stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+                  {animatableParams.map((param: any, idx: number) => {
+                    const color = MINI_COLORS[idx % MINI_COLORS.length];
+                    const nodes = getNodes(param.key);
+                    const fallback = Number(peParams[param.key] ?? param.default);
+                    const d = buildMiniPath(nodes, fallback, mToX, (v) => mToY(v, param));
+                    const areaD = d + ` L ${mToX(effDur)} ${mPT+mIH} L ${mPL} ${mPT+mIH} Z`;
+                    return (
+                      <g key={param.key}>
+                        <path d={areaD} fill={color} fillOpacity={0.06} />
+                        <path d={d} fill="none" stroke={color} strokeWidth={2}
+                          strokeDasharray={nodes.length === 0 ? '4 3' : undefined} />
+                        {nodes.map((n: any, ni: number) => (
+                          <g key={ni}>
+                            <circle cx={mToX(n.t)} cy={mToY(n.value, param)} r={4.5}
+                              fill={`${color}30`} stroke={color} strokeWidth={1.5} />
+                            <circle cx={mToX(n.t)} cy={mToY(n.value, param)} r={2}
+                              fill={color} />
+                          </g>
+                        ))}
+                      </g>
+                    );
+                  })}
+                  {animatableParams.map((param: any, idx: number) => (
+                    <g key={param.key}>
+                      <circle cx={mPL + idx * 36 + 4} cy={miniH - 5} r={2.5} fill={MINI_COLORS[idx % MINI_COLORS.length]} />
+                      <text x={mPL + idx * 36 + 10} y={miniH - 2} fontSize={7.5}
+                        fill={MINI_COLORS[idx % MINI_COLORS.length]} fillOpacity={0.7}>{param.label}</text>
+                    </g>
+                  ))}
+                  <text x={miniW - 5} y={miniH - 2} fontSize={7.5} fill="rgba(255,255,255,0.25)" textAnchor="end">↗ edit</text>
+                </svg>
+              </div>
+            )}
+
+            {staticParams.map((param: any) => (
+              <div key={param.key} className="flex items-center gap-2">
+                <label className={`${uiClasses.fieldLabel} w-16 flex-none truncate`}>{param.label}</label>
+                {param.type === 'color' ? (
+                  <input type="color" value={String(peParams[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).motionGraphics.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.value}} : ef
+                      );
+                      onChange({ motionGraphics: next } as any);
+                    }}
+                    className="w-8 h-6 rounded cursor-pointer border border-[rgba(255,255,255,0.08)] bg-transparent" />
+                ) : param.type === 'boolean' ? (
+                  <input type="checkbox" checked={Boolean(peParams[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).motionGraphics.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.checked}} : ef
+                      );
+                      onChange({ motionGraphics: next } as any);
+                    }}
+                    className="accent-indigo-500" />
+                ) : param.type === 'select' ? (
+                  <select className={`flex-1 ${uiClasses.field} text-[11px]`}
+                    value={String(peParams[param.key] ?? param.default)}
+                    onChange={e => {
+                      const next = (element as any).motionGraphics.map((ef: any, i: number) =>
+                        i === index ? {...ef, params: {...(ef.params || {}), [param.key]: e.target.value}} : ef
+                      );
+                      onChange({ motionGraphics: next } as any);
+                    }}>
+                    {(param.options ?? []).map((o: string) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                ) : (
+                  <>
+                    <input type="range"
+                      min={param.min ?? 0} max={param.max ?? 10} step={param.step ?? 0.1}
+                      value={Number(peParams[param.key] ?? param.default)}
+                      onChange={e => {
+                        const next = (element as any).motionGraphics.map((ef: any, i: number) =>
+                          i === index ? {...ef, params: {...(ef.params || {}), [param.key]: Number(e.target.value)}} : ef
+                        );
+                        onChange({ motionGraphics: next } as any);
+                      }}
+                      className="flex-1 accent-indigo-500" />
+                    <span className={`${uiClasses.fieldLabel} w-8 text-right tabular-nums`}>
+                      {Number(peParams[param.key] ?? param.default).toFixed(
+                        param.step && param.step < 1 ? 1 : 0
+                      )}
+                    </span>
+                  </>
+                )}
+              </div>
+            ))}
+
+            {presetDef && (
+              <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dynamic Bindings</span>
+                  <span className="text-[9px] text-slate-500">Bind params to live telemetry</span>
+                </div>
+                
+                {presetDef.params.filter((p: any) => p.type === 'number').map((param: any) => {
+                  const binding = pe.bindings?.[param.key];
+                  const isBound = !!binding;
+                  
+                  return (
+                    <div key={param.key} className="bg-slate-900/40 rounded border border-[rgba(255,255,255,0.04)] p-2 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] font-semibold ${isBound ? 'text-indigo-400' : 'text-slate-400'}`}>
+                            {param.label}
+                          </span>
+                          {isBound && <span className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1 rounded font-mono uppercase tracking-tighter">Live</span>}
+                        </div>
+                        
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                              if (i === index) {
+                                const bindings = { ...(ef.bindings || {}) };
+                                if (isBound) {
+                                  delete bindings[param.key];
+                                } else {
+                                  bindings[param.key] = {
+                                    sourceId: 'room_intel',
+                                    fieldId: 'mpm',
+                                    inputMin: 0,
+                                    inputMax: 100,
+                                    targetMin: param.min ?? 0,
+                                    targetMax: param.max ?? 10
+                                  };
+                                }
+                                return { ...ef, bindings };
+                              }
+                              return ef;
+                            });
+                            onChange({ motionGraphics: next } as any);
+                          }}
+                          className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded transition-colors flex items-center gap-1 ${
+                            isBound 
+                              ? 'text-rose-400 bg-rose-500/10 hover:bg-rose-500/20' 
+                              : 'text-slate-400 bg-slate-800 hover:bg-slate-700 hover:text-indigo-300'
+                          }`}
+                        >
+                          <span>{isBound ? 'Unbind' : 'Bind'}</span>
+                        </button>
+                      </div>
+                      
+                      {isBound && (
+                        <div className="space-y-2 pt-1 border-t border-[rgba(255,255,255,0.03)] text-[10px]">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Source</label>
+                              <select
+                                value={binding.sourceId}
+                                onChange={(e) => {
+                                  const sourceId = e.target.value;
+                                  const src = SourceCatalog.find(s => s.id === sourceId);
+                                  const firstFieldId = src?.fields.filter(f => f.type === 'number')[0]?.id || '';
+                                  const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        sourceId,
+                                        fieldId: firstFieldId
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ motionGraphics: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5`}
+                              >
+                                {SourceCatalog.filter(s => s.id !== 'custom_variables').map(s => (
+                                  <option key={s.id} value={s.id}>{s.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <label className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Field</label>
+                              <select
+                                value={binding.fieldId}
+                                onChange={(e) => {
+                                  const fieldId = e.target.value;
+                                  const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                    if (i === index) {
+                                      const bindings = { ...(ef.bindings || {}) };
+                                      bindings[param.key] = {
+                                        ...bindings[param.key],
+                                        fieldId
+                                      };
+                                      return { ...ef, bindings };
+                                    }
+                                    return ef;
+                                  });
+                                  onChange({ motionGraphics: next } as any);
+                                }}
+                                className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5`}
+                              >
+                                {(SourceCatalog.find(s => s.id === binding.sourceId)?.fields.filter(f => f.type === 'number') || []).map(f => (
+                                  <option key={f.id} value={f.id}>{f.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div className="space-y-1">
+                              <div className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Input Telemetry Range</div>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  placeholder="Min"
+                                  value={binding.inputMin}
+                                  onChange={(e) => {
+                                    const inputMin = Number(e.target.value);
+                                    const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                      if (i === index) {
+                                        const bindings = { ...(ef.bindings || {}) };
+                                        bindings[param.key] = {
+                                          ...bindings[param.key],
+                                          inputMin
+                                        };
+                                        return { ...ef, bindings };
+                                      }
+                                      return ef;
+                                    });
+                                    onChange({ motionGraphics: next } as any);
+                                  }}
+                                  className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                                />
+                                <span className="text-slate-600">to</span>
+                                <input
+                                  type="number"
+                                  placeholder="Max"
+                                  value={binding.inputMax}
+                                  onChange={(e) => {
+                                    const inputMax = Number(e.target.value);
+                                    const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                      if (i === index) {
+                                        const bindings = { ...(ef.bindings || {}) };
+                                        bindings[param.key] = {
+                                          ...bindings[param.key],
+                                          inputMax
+                                        };
+                                        return { ...ef, bindings };
+                                      }
+                                      return ef;
+                                    });
+                                    onChange({ motionGraphics: next } as any);
+                                  }}
+                                  className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <div className="text-[8px] text-slate-500 uppercase font-bold tracking-wider">Target Value Range</div>
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  step={param.step ?? 0.1}
+                                  placeholder="Min"
+                                  value={binding.targetMin}
+                                  onChange={(e) => {
+                                    const targetMin = Number(e.target.value);
+                                    const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                      if (i === index) {
+                                        const bindings = { ...(ef.bindings || {}) };
+                                        bindings[param.key] = {
+                                          ...bindings[param.key],
+                                          targetMin
+                                        };
+                                        return { ...ef, bindings };
+                                      }
+                                      return ef;
+                                    });
+                                    onChange({ motionGraphics: next } as any);
+                                  }}
+                                  className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                                />
+                                <span className="text-slate-600">to</span>
+                                <input
+                                  type="number"
+                                  step={param.step ?? 0.1}
+                                  placeholder="Max"
+                                  value={binding.targetMax}
+                                  onChange={(e) => {
+                                    const targetMax = Number(e.target.value);
+                                    const next = (element as any).motionGraphics.map((ef: any, i: number) => {
+                                      if (i === index) {
+                                        const bindings = { ...(ef.bindings || {}) };
+                                        bindings[param.key] = {
+                                          ...bindings[param.key],
+                                          targetMax
+                                        };
+                                        return { ...ef, bindings };
+                                      }
+                                      return ef;
+                                    });
+                                    onChange({ motionGraphics: next } as any);
+                                  }}
+                                  className={`w-full ${uiClasses.field} text-[10px] px-1 py-0.5 font-mono`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        className={`${uiClasses.buttonGhost} h-8 w-full`}
+        onClick={() => {
+          const mographPresets = Object.values(EFFECT_PRESETS).filter((p: any) => p.isMograph);
+          const firstPreset = mographPresets[0]?.id || Object.keys(EFFECT_PRESETS)[0];
+          const def = EFFECT_PRESETS[firstPreset];
+          const defaultParams: Record<string, any> = {};
+          if (def) def.params.forEach((p: any) => { defaultParams[p.key] = p.default; });
+          const existing = (element as any).motionGraphics ?? [];
+          onChange({ motionGraphics: [...existing, { preset: firstPreset, params: defaultParams, enabled: true, id: `mg-${Date.now()}` }] } as any);
+        }}
+      >
+        Add Motion Graphic
       </button>
     </div>
   );
@@ -13938,7 +14416,6 @@ function InspectorPanel({
       )}
 
       {/* Effects Section (Collapsed by default) */}
-      {/* Effects Section (Collapsed by default) */}
       <AccordionSection title="Effects" defaultOpen={false}>
         <div className="space-y-4">
           <EffectsStackControls
@@ -13972,6 +14449,19 @@ function InspectorPanel({
               </div>
             )}
           </div>
+        </div>
+      </AccordionSection>
+
+      {/* Motion Graphics Section (Collapsed by default) */}
+      <AccordionSection title="Motion Graphics" defaultOpen={false}>
+        <div className="space-y-4">
+          <MotionGraphicsControls
+              element={element}
+              onChange={onChange}
+              onOpenCurveEditor={(idx) => window.dispatchEvent(new CustomEvent('scraplet:open-curve-editor', { detail: "mograph-" + idx }))}
+              timelineState={timelineState}
+              onToggleTimelineKeyframe={onToggleTimelineKeyframe}
+            />
         </div>
       </AccordionSection>
 

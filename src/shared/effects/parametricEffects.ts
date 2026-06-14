@@ -61,6 +61,7 @@ export interface PresetDefinition {
   defaultDuration: number; // ms for one loop cycle
   // What the effect produces
   produces: ("css" | "svgFilter" | "canvas" | "svgOverlay" | "webgl")[];
+  isMograph?: boolean;
 }
 
 // ── Preset registry ───────────────────────────────────────────────────────────
@@ -189,6 +190,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "particle",
     defaultDuration: 3000,
     produces: ["canvas"],
+    isMograph: true,
     params: [
       { key: "color", label: "Start Color", type: "color", default: "#ffffff", animatable: true },
       { key: "colorEnd", label: "End Color", type: "color", default: "#ffffff", animatable: true },
@@ -361,6 +363,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "motion",
     defaultDuration: 1500,
     produces: ["svgOverlay"],
+    isMograph: true,
     params: [
       { key: "color", label: "Color", type: "color", default: "#00ffff", animatable: true },
       { key: "rings", label: "Rings", type: "number", default: 3, min: 1, max: 6, step: 1 },
@@ -394,6 +397,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "particle",
     defaultDuration: 4000,
     produces: ["canvas"],
+    isMograph: true,
     params: [
       { key: "color", label: "Color", type: "color", default: "#ffffff", animatable: true },
       { key: "count", label: "Count", type: "number", default: 40, min: 1, max: 200, step: 1 },
@@ -411,6 +415,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "particle",
     defaultDuration: 1000,
     produces: ["canvas"],
+    isMograph: true,
     params: [
       { key: "color", label: "Color", type: "color", default: "#88aaff", animatable: true },
       { key: "count", label: "Count", type: "number", default: 60, min: 1, max: 300, step: 1 },
@@ -428,6 +433,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "particle",
     defaultDuration: 2000,
     produces: ["canvas"],
+    isMograph: true,
     params: [
       { key: "color", label: "Base Color", type: "color", default: "#ff4400", animatable: true },
       { key: "intensity", label: "Intensity", type: "number", default: 1, min: 0, max: 3, step: 0.1, animatable: true },
@@ -559,6 +565,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     category: "particle",
     defaultDuration: 200,
     produces: ["canvas"],
+    isMograph: true,
     params: [
       { key: "color", label: "Color", type: "color", default: "#88aaff", animatable: true },
       { key: "branches", label: "Branches", type: "number", default: 3, min: 1, max: 8, step: 1 },

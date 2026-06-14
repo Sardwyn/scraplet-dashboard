@@ -322,8 +322,13 @@ function getElementEffects(el: OverlayElement): OverlayEffect[] {
             .filter((pe: any) => pe?.enabled !== false)
             .map((pe: any) => ({ ...pe, type: 'parametric' } as any))
         : [];
-    if (legacyEffects.length || parametricEffects.length) {
-        return [...legacyEffects, ...parametricEffects];
+    const motionGraphics: OverlayEffect[] = Array.isArray((el as any).motionGraphics)
+        ? (el as any).motionGraphics
+            .filter((pe: any) => pe?.enabled !== false)
+            .map((pe: any) => ({ ...pe, type: 'parametric' } as any))
+        : [];
+    if (legacyEffects.length || parametricEffects.length || motionGraphics.length) {
+        return [...legacyEffects, ...parametricEffects, ...motionGraphics];
     }
 
     if ((el as any).shadow?.enabled) {
@@ -2025,7 +2030,9 @@ export const isNativelyDom = (el: any, elementsById: Record<string, any>, overla
   const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
   if (!canvasTypes.includes(el.type)) return true;
   const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
+  const mograph = Array.isArray((el as any).motionGraphics) ? (el as any).motionGraphics : [];
   if (parametric.some((pe: any) => pe && pe.enabled !== false)) return true;
+  if (mograph.some((pe: any) => pe && pe.enabled !== false)) return true;
   if (el.blendMode && el.blendMode !== 'normal') return true;
   if (el.type === 'image' || el.type === 'video') {
     const hasKeying = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;
@@ -2114,7 +2121,8 @@ export function ElementRenderer({
         (adj.opacity !== undefined && adj.opacity !== 1)
     );
     const hasEffectsRender = (Array.isArray(el.effects) && el.effects.length > 0) ||
-                       (Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0);
+                       (Array.isArray(el.parametricEffects) && el.parametricEffects.length > 0) ||
+                       (Array.isArray((el as any).motionGraphics) && (el as any).motionGraphics.length > 0);
     const forceDomRenderLocal = isMediaRender && (hasKeyingRender || hasBlendModeRender || hasAdjustmentsRender || hasEffectsRender);
 
     const isNativelyForced = isNativelyDom(el, elementsById || {}, overlayComponents || []);
@@ -2163,7 +2171,12 @@ export function ElementRenderer({
     const _parametricAsEffects: OverlayEffect[] = _effectsEnabled && Array.isArray((el as any).parametricEffects)
       ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _overallOpacity } as any))
       : [];
-    const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects];
+    const _mographEnabled = (el as any).mograph_enabled !== false && (el as any).mograph_enabled !== 0 && (el as any).mograph_enabled !== "false";
+    const _mographOpacity = typeof (el as any).mograph_opacity === "number" ? (el as any).mograph_opacity : 1;
+    const _mographAsEffects: OverlayEffect[] = _mographEnabled && Array.isArray((el as any).motionGraphics)
+      ? (el as any).motionGraphics.map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _mographOpacity } as any))
+      : [];
+    const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects, ..._mographAsEffects];
     const _paramCss = useParametricCss(_elEffects, data);
     useParametricRafTick(_elEffects); // drives re-renders for svgFilter/svgOverlay effects
     if (Object.keys(_paramCss).length > 0) {
