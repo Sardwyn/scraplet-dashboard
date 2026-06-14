@@ -552,6 +552,8 @@ export function renderRipple(
   t: number
 ) {
   const color = String(params.color ?? "#00ffff");
+  const waveType = String(params.waveType ?? "sine");
+  const waveDirection = String(params.waveDirection ?? "radial");
   const rings = Math.round(Number(params.rings ?? 3));
   const speed = Number(params.speed ?? 1);
   const thickness = Number(params.thickness ?? 2);
@@ -562,6 +564,14 @@ export function renderRipple(
   const dotSize = Number(params.dotSize ?? 2);
   const showGridLines = params.showGridLines !== false;
   const showWaveRing = params.showWaveRing !== false;
+
+  // Custom colors & opacities
+  const gridColor = String(params.gridColor ?? color);
+  const gridOpacity = Number(params.gridOpacity ?? 0.25);
+  const dotColor = String(params.dotColor ?? color);
+  const dotOpacity = Number(params.dotOpacity ?? 0.6);
+  const waveColor = String(params.waveColor ?? color);
+  const waveOpacity = Number(params.waveOpacity ?? 0.4);
 
   const cx = width / 2;
   const cy = height / 2;
@@ -580,13 +590,22 @@ export function renderRipple(
 
       const dx = origX - cx;
       const dy = origY - cy;
-      const d = Math.sqrt(dx * dx + dy * dy);
+
+      // Distance metric based on wave direction
+      let d = 0;
+      if (waveDirection === "radial") {
+        d = Math.sqrt(dx * dx + dy * dy);
+      } else if (waveDirection === "horizontal") {
+        d = Math.abs(origX - cx);
+      } else if (waveDirection === "vertical") {
+        d = Math.abs(origY - cy);
+      }
 
       let finalX = origX;
       let finalY = origY;
       let maxAmp = 0;
 
-      // Calculate cumulative displacement from all active rings
+      // Calculate cumulative displacement from all active rings/waves
       for (let i = 0; i < rings; i++) {
         const phase = ((t / 1000 * speed + i / rings) % 1);
         const currentRadius = maxRadius * phase;
@@ -594,20 +613,42 @@ export function renderRipple(
         const distToWave = Math.abs(d - currentRadius);
         if (distToWave < waveWidth) {
           const intensity = 1 - distToWave / waveWidth; // 1 at center of wave, 0 at edge
-          const smoothIntensity = Math.sin(intensity * Math.PI * 0.5); // beautiful sine curve
-          const ringAmp = smoothIntensity * (1 - phase); // fade out as it reaches the edge
+          let waveShape = 0;
+          if (waveType === "sine") {
+            waveShape = Math.sin(intensity * Math.PI * 0.5);
+          } else if (waveType === "triangle") {
+            waveShape = intensity;
+          } else if (waveType === "sawtooth") {
+            waveShape = intensity * intensity;
+          } else if (waveType === "square") {
+            waveShape = intensity > 0.4 ? 1 : 0;
+          } else {
+            waveShape = Math.sin(intensity * Math.PI * 0.5);
+          }
+
+          const ringAmp = waveShape * (1 - phase); // fade out as it reaches the edge
           if (ringAmp > maxAmp) {
             maxAmp = ringAmp;
           }
         }
       }
 
-      if (maxAmp > 0 && d > 0) {
-        // Displace radially outward
-        const pX = dx / d;
-        const pY = dy / d;
-        finalX += pX * displacement * maxAmp;
-        finalY += pY * displacement * maxAmp;
+      if (maxAmp > 0) {
+        // Displace based on wave direction and location
+        if (waveDirection === "radial") {
+          if (d > 0) {
+            const pX = dx / d;
+            const pY = dy / d;
+            finalX += pX * displacement * maxAmp;
+            finalY += pY * displacement * maxAmp;
+          }
+        } else if (waveDirection === "horizontal") {
+          const pX = dx >= 0 ? 1 : -1;
+          finalX += pX * displacement * maxAmp;
+        } else if (waveDirection === "vertical") {
+          const pY = dy >= 0 ? 1 : -1;
+          finalY += pY * displacement * maxAmp;
+        }
       }
 
       grid[c][r] = { x: finalX, y: finalY, amp: maxAmp };
@@ -619,14 +660,14 @@ export function renderRipple(
 
   // Draw grid lines
   if (showGridLines && gridSpacing > 0) {
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = gridColor;
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
         const node = grid[c][r];
         // Line to right
         if (c < cols - 1) {
           const rightNode = grid[c + 1][r];
-          const lineAlpha = 0.08 + (node.amp + rightNode.amp) * 0.25;
+          const lineAlpha = (0.08 + (node.amp + rightNode.amp) * 0.25) * gridOpacity;
           ctx.globalAlpha = opacity * lineAlpha;
           ctx.lineWidth = 1 + (node.amp + rightNode.amp) * 0.5;
           ctx.beginPath();
@@ -637,7 +678,7 @@ export function renderRipple(
         // Line to down
         if (r < rows - 1) {
           const downNode = grid[c][r + 1];
-          const lineAlpha = 0.08 + (node.amp + downNode.amp) * 0.25;
+          const lineAlpha = (0.08 + (node.amp + downNode.amp) * 0.25) * gridOpacity;
           ctx.globalAlpha = opacity * lineAlpha;
           ctx.lineWidth = 1 + (node.amp + downNode.amp) * 0.5;
           ctx.beginPath();
@@ -651,12 +692,12 @@ export function renderRipple(
 
   // Draw dots
   if (dotSize > 0) {
-    ctx.fillStyle = color;
+    ctx.fillStyle = dotColor;
     for (let c = 0; c < cols; c++) {
       for (let r = 0; r < rows; r++) {
         const node = grid[c][r];
         const currentSize = dotSize + dotSize * 1.5 * node.amp;
-        const dotAlpha = 0.15 + node.amp * 0.8;
+        const dotAlpha = (0.15 + node.amp * 0.8) * dotOpacity;
         ctx.globalAlpha = opacity * dotAlpha;
         
         ctx.beginPath();
@@ -666,19 +707,36 @@ export function renderRipple(
     }
   }
 
-  // Draw the actual expanding ring waves as soft glows
+  // Draw the actual expanding wave as soft glows
   if (showWaveRing) {
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = waveColor;
     for (let i = 0; i < rings; i++) {
       const phase = ((t / 1000 * speed + i / rings) % 1);
       const currentRadius = maxRadius * phase;
-      const ringAlpha = (1 - phase) * 0.4;
+      const ringAlpha = (1 - phase) * waveOpacity;
       if (ringAlpha > 0) {
         ctx.globalAlpha = opacity * ringAlpha;
         ctx.lineWidth = thickness;
-        ctx.beginPath();
-        ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
-        ctx.stroke();
+        
+        if (waveDirection === "radial") {
+          ctx.beginPath();
+          ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (waveDirection === "horizontal") {
+          ctx.beginPath();
+          ctx.moveTo(cx - currentRadius, 0);
+          ctx.lineTo(cx - currentRadius, height);
+          ctx.moveTo(cx + currentRadius, 0);
+          ctx.lineTo(cx + currentRadius, height);
+          ctx.stroke();
+        } else if (waveDirection === "vertical") {
+          ctx.beginPath();
+          ctx.moveTo(0, cy - currentRadius);
+          ctx.lineTo(width, cy - currentRadius);
+          ctx.moveTo(0, cy + currentRadius);
+          ctx.lineTo(width, cy + currentRadius);
+          ctx.stroke();
+        }
       }
     }
   }

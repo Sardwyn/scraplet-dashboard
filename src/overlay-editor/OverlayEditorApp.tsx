@@ -10336,7 +10336,7 @@ function EffectsStackControls({
                   onChange({ parametricEffects: next } as any);
                 }}
               >
-                {Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph || p.id === pe.preset).map((p: any) => (
+                {Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph || p.id === pe.preset || p.id === "ripple").map((p: any) => (
                   <option key={p.id} value={p.id}>{p.label}</option>
                 ))}
               </select>
@@ -10695,7 +10695,7 @@ function EffectsStackControls({
         type="button"
         className={`${uiClasses.buttonGhost} h-8 w-full`}
         onClick={() => {
-          const nonMographPresets = Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph);
+          const nonMographPresets = Object.values(EFFECT_PRESETS).filter((p: any) => !p.isMograph || p.id === "ripple");
           const firstPreset = nonMographPresets[0]?.id || Object.keys(EFFECT_PRESETS)[0];
           const def = EFFECT_PRESETS[firstPreset];
           const defaultParams: Record<string, any> = {};

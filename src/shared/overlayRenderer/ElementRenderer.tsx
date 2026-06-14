@@ -876,6 +876,75 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
                 </React.Fragment>
             );
             currentResult = `${pid}-merged`;
+        } else if (e.preset === "ripple") {
+            const disp = Number(params.displacement ?? 15) * overallOpacity;
+            const speed = Number(params.speed ?? 1);
+            const waveType = params.waveType ?? "sine";
+            const phase = ((now2 / 1000 * speed) % 1);
+
+            let pulse = 0;
+            if (waveType === "sine") {
+                pulse = Math.sin(phase * Math.PI);
+            } else if (waveType === "triangle") {
+                pulse = 1 - Math.abs(2 * phase - 1);
+            } else if (waveType === "sawtooth") {
+                pulse = phase;
+            } else if (waveType === "square") {
+                pulse = phase < 0.5 ? 1 : 0;
+            } else {
+                pulse = Math.sin(phase * Math.PI);
+            }
+
+            const freqVal = 0.015 + 0.02 * pulse;
+            const seed = Math.floor(now2 / 200) % 100;
+
+            const direction = params.waveDirection ?? "radial";
+            let freqX = freqVal;
+            let freqY = freqVal;
+            if (direction === "horizontal") {
+                freqY = 0.00001; // extremely small but non-zero to avoid SVG rendering issues in some browsers
+            } else if (direction === "vertical") {
+                freqX = 0.00001;
+            }
+
+            const noiseType = (waveType === "sine") ? "fractalNoise" : "turbulence";
+            const numOctaves = (waveType === "sawtooth") ? 3 : 1;
+
+            nodes.push(
+                <React.Fragment key={`ripple-displace-${pi}`}>
+                    <feTurbulence
+                        key={`${pid}-raw-turb`}
+                        type={noiseType}
+                        baseFrequency={`${freqX} ${freqY}`}
+                        numOctaves={numOctaves}
+                        seed={seed}
+                        result={`${pid}-raw-turb`}
+                    />
+                    {waveType === "square" ? (
+                        <feComponentTransfer key={`${pid}-discretize`} in={`${pid}-raw-turb`} result={`${pid}-turb`}>
+                            <feFuncR type="discrete" tableValues="0 0.5 1" />
+                            <feFuncG type="discrete" tableValues="0 0.5 1" />
+                        </feComponentTransfer>
+                    ) : (
+                        <feColorMatrix
+                            key={`${pid}-bypass-turb`}
+                            type="matrix"
+                            in={`${pid}-raw-turb`}
+                            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0"
+                            result={`${pid}-turb`}
+                        />
+                    )}
+                    <feDisplacementMap
+                        in={currentResult}
+                        in2={`${pid}-turb`}
+                        scale={disp * pulse}
+                        xChannelSelector="R"
+                        yChannelSelector="G"
+                        result={`${pid}-displaced`}
+                    />
+                </React.Fragment>
+            );
+            currentResult = `${pid}-displaced`;
         }
     });
 
@@ -2050,23 +2119,7 @@ export const isNativelyDom = (el: any, elementsById: Record<string, any>, overla
   return false;
 };
 
-export function ElementRenderer({
-    element,
-    elementsById,
-    overlayComponents,
-    animationPhase,
-    animationPhases,
-    data,
-    yOffset = 0,
-    layout = "absolute",
-    visited,
-    overlayPublicId,
-    elementIndex,
-    widgetStates,
-    canvasInitialized,
-    isCanvasDrawn,
-    forceDomRender,
-}: {
+export function ElementRenderer(props: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
     overlayComponents?: OverlayComponentDef[];
@@ -2084,6 +2137,73 @@ export function ElementRenderer({
     forceDomRender?: boolean;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
+    const el = props.element as any;
+    const _elEffects = getElementEffects(el);
+
+    const hasBackdropRefraction = _elEffects.some(e => {
+        if (e.preset === "ripple") {
+            const resolvedParams = resolveEffectParams(e, performance.now(), props.data);
+            return resolvedParams.affectBeneath === true;
+        }
+        return false;
+    });
+
+    const inner = <ElementRendererInner {...props} patternScopeId={patternScopeId} />;
+
+    if (hasBackdropRefraction) {
+        const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+        const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
+        return (
+            <>
+                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none', visibility: 'hidden' }}>
+                    <defs>
+                        {renderSvgEffectFilter(_elEffects, effectFilterId, performance.now(), props.data)}
+                    </defs>
+                </svg>
+                {inner}
+            </>
+        );
+    }
+
+    return inner;
+}
+
+function ElementRendererInner({
+    element,
+    elementsById,
+    overlayComponents,
+    animationPhase,
+    animationPhases,
+    data,
+    yOffset = 0,
+    layout = "absolute",
+    visited,
+    overlayPublicId,
+    elementIndex,
+    widgetStates,
+    canvasInitialized,
+    isCanvasDrawn,
+    forceDomRender,
+    patternScopeId: passedPatternScopeId,
+}: {
+    element: OverlayElement;
+    elementsById?: Record<string, OverlayElement>;
+    overlayComponents?: OverlayComponentDef[];
+    animationPhase?: OverlayAnimationPhase;
+    animationPhases?: ElementAnimationPhaseMap;
+    data?: Record<string, any>;
+    yOffset?: number;
+    layout?: "absolute" | "fill";
+    visited?: Set<string>;
+    overlayPublicId?: string;
+    elementIndex?: number;
+    widgetStates?: Record<string, any>;
+    canvasInitialized?: boolean;
+    isCanvasDrawn?: boolean;
+    forceDomRender?: boolean;
+    patternScopeId?: string;
+}) {
+    const patternScopeId = passedPatternScopeId || sanitizeSvgId(useId());
     let el = element as any;
 
     if (el.bindings && data) {
@@ -2221,6 +2341,22 @@ export function ElementRenderer({
             (baseStyle as any).backgroundPosition = (_paramCss as any).backgroundPosition;
             (baseStyle as any).backgroundSize = (_paramCss as any).backgroundSize;
         }
+    }
+
+    const hasBackdropRefraction = _elEffects.some(e => {
+        if (e.preset === "ripple") {
+            const resolvedParams = resolveEffectParams(e, performance.now(), data);
+            return resolvedParams.affectBeneath === true;
+        }
+        return false;
+    });
+    if (hasBackdropRefraction) {
+        const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+        const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
+        (baseStyle as any).backdropFilter = `url(#${effectFilterId})`;
+        (baseStyle as any).WebkitBackdropFilter = `url(#${effectFilterId})`;
+        // Force browser layout compositing layer trigger
+        (baseStyle as any).backgroundColor = (baseStyle as any).backgroundColor || "rgba(0, 0, 0, 0.01)";
     }
 
     // Use canonical transform resolver for 1:1 parity with runtime

@@ -22114,10 +22114,12 @@
       description: "Expanding mograph wave and grid effector",
       category: "motion",
       defaultDuration: 1500,
-      produces: ["canvas"],
+      produces: ["canvas", "svgFilter"],
       isMograph: true,
       params: [
         { key: "color", label: "Color", type: "color", default: "#00ffff", animatable: true },
+        { key: "waveType", label: "Wave Shape", type: "select", default: "sine", options: ["sine", "triangle", "sawtooth", "square"] },
+        { key: "waveDirection", label: "Direction", type: "select", default: "radial", options: ["radial", "horizontal", "vertical"] },
         { key: "rings", label: "Rings", type: "number", default: 3, min: 1, max: 6, step: 1 },
         { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
         { key: "thickness", label: "Thickness", type: "number", default: 2, min: 0.5, max: 8, step: 0.5, animatable: true },
@@ -22128,6 +22130,13 @@
         { key: "dotSize", label: "Dot Size", type: "number", default: 2, min: 0, max: 8, step: 0.5, animatable: true },
         { key: "showGridLines", label: "Grid Lines", type: "boolean", default: true },
         { key: "showWaveRing", label: "Wave Ring", type: "boolean", default: true },
+        { key: "gridColor", label: "Grid Color", type: "color", default: "#00ffff", animatable: true },
+        { key: "gridOpacity", label: "Grid Opacity", type: "number", default: 0.25, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "dotColor", label: "Dot Color", type: "color", default: "#00ffff", animatable: true },
+        { key: "dotOpacity", label: "Dot Opacity", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "waveColor", label: "Wave Color", type: "color", default: "#00ffff", animatable: true },
+        { key: "waveOpacity", label: "Wave Opacity", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+        { key: "affectBeneath", label: "Affect Beneath", type: "boolean", default: false },
         { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space", "none"] }
       ]
     },
@@ -23619,18 +23628,26 @@
     ctx.restore();
   }
   function renderRipple(ctx, width, height, params, t2) {
-    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2;
+    var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q;
     const color = String((_a3 = params.color) != null ? _a3 : "#00ffff");
-    const rings = Math.round(Number((_b = params.rings) != null ? _b : 3));
-    const speed = Number((_c = params.speed) != null ? _c : 1);
-    const thickness = Number((_d = params.thickness) != null ? _d : 2);
-    const maxScale = Number((_e2 = params.maxScale) != null ? _e2 : 2);
-    const opacity = Number((_f = params.opacity) != null ? _f : 1);
-    const gridSpacing = Math.max(10, Math.round(Number((_g = params.gridSpacing) != null ? _g : 20)));
-    const displacement = Number((_h2 = params.displacement) != null ? _h2 : 15);
-    const dotSize = Number((_i2 = params.dotSize) != null ? _i2 : 2);
+    const waveType = String((_b = params.waveType) != null ? _b : "sine");
+    const waveDirection = String((_c = params.waveDirection) != null ? _c : "radial");
+    const rings = Math.round(Number((_d = params.rings) != null ? _d : 3));
+    const speed = Number((_e2 = params.speed) != null ? _e2 : 1);
+    const thickness = Number((_f = params.thickness) != null ? _f : 2);
+    const maxScale = Number((_g = params.maxScale) != null ? _g : 2);
+    const opacity = Number((_h2 = params.opacity) != null ? _h2 : 1);
+    const gridSpacing = Math.max(10, Math.round(Number((_i2 = params.gridSpacing) != null ? _i2 : 20)));
+    const displacement = Number((_j = params.displacement) != null ? _j : 15);
+    const dotSize = Number((_k = params.dotSize) != null ? _k : 2);
     const showGridLines = params.showGridLines !== false;
     const showWaveRing = params.showWaveRing !== false;
+    const gridColor = String((_l = params.gridColor) != null ? _l : color);
+    const gridOpacity = Number((_m = params.gridOpacity) != null ? _m : 0.25);
+    const dotColor = String((_n2 = params.dotColor) != null ? _n2 : color);
+    const dotOpacity = Number((_o2 = params.dotOpacity) != null ? _o2 : 0.6);
+    const waveColor = String((_p = params.waveColor) != null ? _p : color);
+    const waveOpacity = Number((_q = params.waveOpacity) != null ? _q : 0.4);
     const cx = width / 2;
     const cy = height / 2;
     const maxRadius = Math.max(width, height) * 0.5 * maxScale;
@@ -23645,7 +23662,14 @@
         const origY = r2 * gridSpacing;
         const dx = origX - cx;
         const dy = origY - cy;
-        const d2 = Math.sqrt(dx * dx + dy * dy);
+        let d2 = 0;
+        if (waveDirection === "radial") {
+          d2 = Math.sqrt(dx * dx + dy * dy);
+        } else if (waveDirection === "horizontal") {
+          d2 = Math.abs(origX - cx);
+        } else if (waveDirection === "vertical") {
+          d2 = Math.abs(origY - cy);
+        }
         let finalX = origX;
         let finalY = origY;
         let maxAmp = 0;
@@ -23655,18 +23679,39 @@
           const distToWave = Math.abs(d2 - currentRadius);
           if (distToWave < waveWidth) {
             const intensity = 1 - distToWave / waveWidth;
-            const smoothIntensity = Math.sin(intensity * Math.PI * 0.5);
-            const ringAmp = smoothIntensity * (1 - phase);
+            let waveShape = 0;
+            if (waveType === "sine") {
+              waveShape = Math.sin(intensity * Math.PI * 0.5);
+            } else if (waveType === "triangle") {
+              waveShape = intensity;
+            } else if (waveType === "sawtooth") {
+              waveShape = intensity * intensity;
+            } else if (waveType === "square") {
+              waveShape = intensity > 0.4 ? 1 : 0;
+            } else {
+              waveShape = Math.sin(intensity * Math.PI * 0.5);
+            }
+            const ringAmp = waveShape * (1 - phase);
             if (ringAmp > maxAmp) {
               maxAmp = ringAmp;
             }
           }
         }
-        if (maxAmp > 0 && d2 > 0) {
-          const pX = dx / d2;
-          const pY = dy / d2;
-          finalX += pX * displacement * maxAmp;
-          finalY += pY * displacement * maxAmp;
+        if (maxAmp > 0) {
+          if (waveDirection === "radial") {
+            if (d2 > 0) {
+              const pX = dx / d2;
+              const pY = dy / d2;
+              finalX += pX * displacement * maxAmp;
+              finalY += pY * displacement * maxAmp;
+            }
+          } else if (waveDirection === "horizontal") {
+            const pX = dx >= 0 ? 1 : -1;
+            finalX += pX * displacement * maxAmp;
+          } else if (waveDirection === "vertical") {
+            const pY = dy >= 0 ? 1 : -1;
+            finalY += pY * displacement * maxAmp;
+          }
         }
         grid[c2][r2] = { x: finalX, y: finalY, amp: maxAmp };
       }
@@ -23674,13 +23719,13 @@
     ctx.save();
     ctx.globalAlpha = opacity;
     if (showGridLines && gridSpacing > 0) {
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = gridColor;
       for (let c2 = 0; c2 < cols; c2++) {
         for (let r2 = 0; r2 < rows; r2++) {
           const node = grid[c2][r2];
           if (c2 < cols - 1) {
             const rightNode = grid[c2 + 1][r2];
-            const lineAlpha = 0.08 + (node.amp + rightNode.amp) * 0.25;
+            const lineAlpha = (0.08 + (node.amp + rightNode.amp) * 0.25) * gridOpacity;
             ctx.globalAlpha = opacity * lineAlpha;
             ctx.lineWidth = 1 + (node.amp + rightNode.amp) * 0.5;
             ctx.beginPath();
@@ -23690,7 +23735,7 @@
           }
           if (r2 < rows - 1) {
             const downNode = grid[c2][r2 + 1];
-            const lineAlpha = 0.08 + (node.amp + downNode.amp) * 0.25;
+            const lineAlpha = (0.08 + (node.amp + downNode.amp) * 0.25) * gridOpacity;
             ctx.globalAlpha = opacity * lineAlpha;
             ctx.lineWidth = 1 + (node.amp + downNode.amp) * 0.5;
             ctx.beginPath();
@@ -23702,12 +23747,12 @@
       }
     }
     if (dotSize > 0) {
-      ctx.fillStyle = color;
+      ctx.fillStyle = dotColor;
       for (let c2 = 0; c2 < cols; c2++) {
         for (let r2 = 0; r2 < rows; r2++) {
           const node = grid[c2][r2];
           const currentSize = dotSize + dotSize * 1.5 * node.amp;
-          const dotAlpha = 0.15 + node.amp * 0.8;
+          const dotAlpha = (0.15 + node.amp * 0.8) * dotOpacity;
           ctx.globalAlpha = opacity * dotAlpha;
           ctx.beginPath();
           ctx.arc(node.x, node.y, currentSize, 0, Math.PI * 2);
@@ -23716,17 +23761,33 @@
       }
     }
     if (showWaveRing) {
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = waveColor;
       for (let i2 = 0; i2 < rings; i2++) {
         const phase = (t2 / 1e3 * speed + i2 / rings) % 1;
         const currentRadius = maxRadius * phase;
-        const ringAlpha = (1 - phase) * 0.4;
+        const ringAlpha = (1 - phase) * waveOpacity;
         if (ringAlpha > 0) {
           ctx.globalAlpha = opacity * ringAlpha;
           ctx.lineWidth = thickness;
-          ctx.beginPath();
-          ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
-          ctx.stroke();
+          if (waveDirection === "radial") {
+            ctx.beginPath();
+            ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
+            ctx.stroke();
+          } else if (waveDirection === "horizontal") {
+            ctx.beginPath();
+            ctx.moveTo(cx - currentRadius, 0);
+            ctx.lineTo(cx - currentRadius, height);
+            ctx.moveTo(cx + currentRadius, 0);
+            ctx.lineTo(cx + currentRadius, height);
+            ctx.stroke();
+          } else if (waveDirection === "vertical") {
+            ctx.beginPath();
+            ctx.moveTo(0, cy - currentRadius);
+            ctx.lineTo(width, cy - currentRadius);
+            ctx.moveTo(0, cy + currentRadius);
+            ctx.lineTo(width, cy + currentRadius);
+            ctx.stroke();
+          }
         }
       }
     }
@@ -33536,7 +33597,7 @@ void main() {
     });
     const now2 = t2 != null ? t2 : performance.now();
     svgFilterParametric.forEach((e2, pi2) => {
-      var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B;
+      var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F;
       const params = resolveEffectParams(e2, now2, data);
       const overallOpacity = typeof e2.effect_opacity === "number" ? e2.effect_opacity : 1;
       if (typeof params.opacity === "number") {
@@ -34259,11 +34320,118 @@ void main() {
           }, this)
         );
         currentResult = `${pid}-merged`;
+      } else if (e2.preset === "ripple") {
+        const disp = Number((_C = params.displacement) != null ? _C : 15) * overallOpacity;
+        const speed2 = Number((_D = params.speed) != null ? _D : 1);
+        const waveType = (_E = params.waveType) != null ? _E : "sine";
+        const phase = now2 / 1e3 * speed2 % 1;
+        let pulse2 = 0;
+        if (waveType === "sine") {
+          pulse2 = Math.sin(phase * Math.PI);
+        } else if (waveType === "triangle") {
+          pulse2 = 1 - Math.abs(2 * phase - 1);
+        } else if (waveType === "sawtooth") {
+          pulse2 = phase;
+        } else if (waveType === "square") {
+          pulse2 = phase < 0.5 ? 1 : 0;
+        } else {
+          pulse2 = Math.sin(phase * Math.PI);
+        }
+        const freqVal = 0.015 + 0.02 * pulse2;
+        const seed = Math.floor(now2 / 200) % 100;
+        const direction = (_F = params.waveDirection) != null ? _F : "radial";
+        let freqX = freqVal;
+        let freqY = freqVal;
+        if (direction === "horizontal") {
+          freqY = 1e-5;
+        } else if (direction === "vertical") {
+          freqX = 1e-5;
+        }
+        const noiseType = waveType === "sine" ? "fractalNoise" : "turbulence";
+        const numOctaves = waveType === "sawtooth" ? 3 : 1;
+        nodes.push(
+          /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: [
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "feTurbulence",
+              {
+                type: noiseType,
+                baseFrequency: `${freqX} ${freqY}`,
+                numOctaves,
+                seed,
+                result: `${pid}-raw-turb`
+              },
+              `${pid}-raw-turb`,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+                lineNumber: 915,
+                columnNumber: 21
+              },
+              this
+            ),
+            waveType === "square" ? /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("feComponentTransfer", { in: `${pid}-raw-turb`, result: `${pid}-turb`, children: [
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("feFuncR", { type: "discrete", tableValues: "0 0.5 1" }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+                lineNumber: 925,
+                columnNumber: 29
+              }, this),
+              /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("feFuncG", { type: "discrete", tableValues: "0 0.5 1" }, void 0, false, {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+                lineNumber: 926,
+                columnNumber: 29
+              }, this)
+            ] }, `${pid}-discretize`, true, {
+              fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+              lineNumber: 924,
+              columnNumber: 25
+            }, this) : /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "feColorMatrix",
+              {
+                type: "matrix",
+                in: `${pid}-raw-turb`,
+                values: "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0",
+                result: `${pid}-turb`
+              },
+              `${pid}-bypass-turb`,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+                lineNumber: 929,
+                columnNumber: 25
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
+              "feDisplacementMap",
+              {
+                in: currentResult,
+                in2: `${pid}-turb`,
+                scale: disp * pulse2,
+                xChannelSelector: "R",
+                yChannelSelector: "G",
+                result: `${pid}-displaced`
+              },
+              void 0,
+              false,
+              {
+                fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+                lineNumber: 937,
+                columnNumber: 21
+              },
+              this
+            )
+          ] }, `ripple-displace-${pi2}`, true, {
+            fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+            lineNumber: 914,
+            columnNumber: 17
+          }, this)
+        );
+        currentResult = `${pid}-displaced`;
       }
     });
     return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("filter", { id: filterId, x: "-80%", y: "-80%", width: "260%", height: "260%", colorInterpolationFilters: "sRGB", children: nodes }, void 0, false, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-      lineNumber: 883,
+      lineNumber: 952,
       columnNumber: 9
     }, this);
   }
@@ -34308,17 +34476,17 @@ void main() {
         ...animStyle
       }, children: repeated }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 927,
+        lineNumber: 996,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("style", { children: `@keyframes scraplet-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}` }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 933,
+        lineNumber: 1002,
         columnNumber: 13
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-      lineNumber: 921,
+      lineNumber: 990,
       columnNumber: 9
     }, this);
   }
@@ -34350,7 +34518,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1009,
+        lineNumber: 1078,
         columnNumber: 9
       },
       this
@@ -34374,7 +34542,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1032,
+        lineNumber: 1101,
         columnNumber: 9
       },
       this
@@ -34418,21 +34586,21 @@ void main() {
         const y2 = 50 + Math.sin(angle) * 50;
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("linearGradient", { id: `${scopeId}-linear-${index}`, x1: `${x1}%`, y1: `${y1}%`, x2: `${x2}%`, y2: `${y2}%`, children: fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex)) }, `${scopeId}-linear-${index}`, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1084,
+          lineNumber: 1153,
           columnNumber: 17
         }, this);
       }
       if (fill.type === "radial") {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("radialGradient", { id: `${scopeId}-radial-${index}`, cx: "50%", cy: "50%", r: "70%", children: fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex)) }, `${scopeId}-radial-${index}`, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1092,
+          lineNumber: 1161,
           columnNumber: 17
         }, this);
       }
       if (fill.type === "conic") {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("radialGradient", { id: `${scopeId}-conic-${index}`, cx: "50%", cy: "50%", r: "70%", children: fill.stops.map((stop, stopIndex) => stopColor(fill, stop, stopIndex)) }, `${scopeId}-conic-${index}`, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1100,
+          lineNumber: 1169,
           columnNumber: 17
         }, this);
       }
@@ -34471,7 +34639,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 1127,
+                lineNumber: 1196,
                 columnNumber: 21
               },
               this
@@ -34481,7 +34649,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 1119,
+            lineNumber: 1188,
             columnNumber: 17
           },
           this
@@ -34499,35 +34667,35 @@ void main() {
           fillOpacity: fillOpacityValue(fill)
         }) }, key, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1156,
+          lineNumber: 1225,
           columnNumber: 20
         }, this);
       }
       if (fill.type === "linear") {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: renderPathSvg(pathD, { fill: `url(#${scopeId}-linear-${index})` }) }, key, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1162,
+          lineNumber: 1231,
           columnNumber: 20
         }, this);
       }
       if (fill.type === "radial") {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: renderPathSvg(pathD, { fill: `url(#${scopeId}-radial-${index})` }) }, key, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1165,
+          lineNumber: 1234,
           columnNumber: 20
         }, this);
       }
       if (fill.type === "conic") {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: renderPathSvg(pathD, { fill: `url(#${scopeId}-conic-${index})` }) }, key, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1168,
+          lineNumber: 1237,
           columnNumber: 20
         }, this);
       }
       if (fill.type === "pattern" && hasPatternSource(fill)) {
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(React.Fragment, { children: renderPathSvg(pathD, { fill: `url(#${scopeId}-pattern-${index})` }) }, key, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1171,
+          lineNumber: 1240,
           columnNumber: 20
         }, this);
       }
@@ -34572,7 +34740,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1231,
+        lineNumber: 1300,
         columnNumber: 9
       },
       this
@@ -34590,15 +34758,15 @@ void main() {
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("clipPath", { id: `${pathId}-inside-clip`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: pathD }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1272,
+          lineNumber: 1341,
           columnNumber: 25
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1271,
+          lineNumber: 1340,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1270,
+          lineNumber: 1339,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -34618,14 +34786,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 1275,
+            lineNumber: 1344,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1269,
+        lineNumber: 1338,
         columnNumber: 13
       }, this);
     }
@@ -34633,21 +34801,21 @@ void main() {
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("mask", { id: `${pathId}-outside-mask`, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "-100%", y: "-100%", width: "300%", height: "300%", fill: "white" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1294,
+          lineNumber: 1363,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: pathD, fill: "black" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1295,
+          lineNumber: 1364,
           columnNumber: 21
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1293,
+        lineNumber: 1362,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1292,
+        lineNumber: 1361,
         columnNumber: 13
       }, this),
       /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -34667,14 +34835,14 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1298,
+          lineNumber: 1367,
           columnNumber: 13
         },
         this
       )
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-      lineNumber: 1291,
+      lineNumber: 1360,
       columnNumber: 9
     }, this);
   }
@@ -35140,7 +35308,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 1776,
+            lineNumber: 1845,
             columnNumber: 21
           },
           this
@@ -35158,11 +35326,11 @@ void main() {
               shapePath && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("clipPath", { id: `peo-clip-${elementId}`, clipPathUnits: "userSpaceOnUse", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: shapePath, clipRule: "evenodd", fillRule: "evenodd" }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1795,
+                  lineNumber: 1864,
                   columnNumber: 37
                 }, this) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1794,
+                  lineNumber: 1863,
                   columnNumber: 33
                 }, this),
                 /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("clipPath", { id: `peo-space-${elementId}`, clipPathUnits: "userSpaceOnUse", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35176,32 +35344,32 @@ void main() {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                    lineNumber: 1799,
+                    lineNumber: 1868,
                     columnNumber: 37
                   },
                   this
                 ) }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1798,
+                  lineNumber: 1867,
                   columnNumber: 33
                 }, this)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 1792,
+                lineNumber: 1861,
                 columnNumber: 29
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("clipPath", { id: `peo-bbox-${elementId}`, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "0", y: "0", width, height }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 1806,
+                lineNumber: 1875,
                 columnNumber: 64
               }, this) }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 1806,
+                lineNumber: 1875,
                 columnNumber: 25
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 1790,
+              lineNumber: 1859,
               columnNumber: 21
             }, this),
             svgEffects.map((e2, i2) => {
@@ -35214,42 +35382,42 @@ void main() {
                 const { svgContent } = renderLightsaberBorderSVG(width, height, params, now, borderRadius, shapePath || void 0);
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${svgContent}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1822,
+                  lineNumber: 1891,
                   columnNumber: 36
                 }, this);
               }
               if (e2.preset === "hologramFlicker") {
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${renderHologramScanlinesSVG(width, height, params, now)}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1825,
+                  lineNumber: 1894,
                   columnNumber: 36
                 }, this);
               }
               if (e2.preset === "electricBorder") {
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${renderElectricBorderSVG(width, height, params, now, shapePath || void 0)}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1828,
+                  lineNumber: 1897,
                   columnNumber: 36
                 }, this);
               }
               if (e2.preset === "lensFlare") {
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${renderLensFlareSVG(width, height, params, now)}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1831,
+                  lineNumber: 1900,
                   columnNumber: 36
                 }, this);
               }
               if (e2.preset === "strokePulse") {
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${renderStrokePulseSVG(width, height, params, now, shapePath || void 0)}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1834,
+                  lineNumber: 1903,
                   columnNumber: 36
                 }, this);
               }
               if (e2.preset === "cornerBrackets") {
                 return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { dangerouslySetInnerHTML: { __html: `<g ${clipAttr}>${renderCornerBracketsSVG(width, height, params, now)}</g>` } }, i2, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 1837,
+                  lineNumber: 1906,
                   columnNumber: 36
                 }, this);
               }
@@ -35261,7 +35429,7 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1788,
+          lineNumber: 1857,
           columnNumber: 17
         },
         this
@@ -35296,7 +35464,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 1849,
+            lineNumber: 1918,
             columnNumber: 21
           },
           this
@@ -35304,12 +35472,12 @@ void main() {
       })(),
       Object.keys(overlayOnlyStyle).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", inset: 0, ...overlayOnlyStyle } }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1869,
+        lineNumber: 1938,
         columnNumber: 17
       }, this)
     ] }, void 0, true, {
       fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-      lineNumber: 1767,
+      lineNumber: 1836,
       columnNumber: 9
     }, this);
   }
@@ -35349,7 +35517,7 @@ void main() {
         "data-widget-id": widgetId,
         children: Renderer && Object.keys(state).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(Renderer, { state, config: { instanceId }, width: w2, height: h2 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 1966,
+          lineNumber: 2035,
           columnNumber: 17
         }, this)
       },
@@ -35357,7 +35525,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1960,
+        lineNumber: 2029,
         columnNumber: 9
       },
       this
@@ -35386,7 +35554,7 @@ void main() {
         "data-widget-instance-id": instanceId,
         children: Object.keys(widgetState).length > 0 && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(Renderer, { state: widgetState, config: { instanceId }, width: w2, height: h2 }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2e3,
+          lineNumber: 2069,
           columnNumber: 17
         }, this)
       },
@@ -35394,7 +35562,7 @@ void main() {
       false,
       {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 1996,
+        lineNumber: 2065,
         columnNumber: 9
       },
       this
@@ -35439,7 +35607,45 @@ void main() {
     }
     return false;
   };
-  function ElementRenderer({
+  function ElementRenderer(props) {
+    const patternScopeId = sanitizeSvgId(reactExports.useId());
+    const el = props.element;
+    const _elEffects = getElementEffects(el);
+    const hasBackdropRefraction = _elEffects.some((e2) => {
+      if (e2.preset === "ripple") {
+        const resolvedParams = resolveEffectParams(e2, performance.now(), props.data);
+        return resolvedParams.affectBeneath === true;
+      }
+      return false;
+    });
+    const inner = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(ElementRendererInner, { ...props, patternScopeId }, void 0, false, {
+      fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+      lineNumber: 2151,
+      columnNumber: 19
+    }, this);
+    if (hasBackdropRefraction) {
+      const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+      const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
+      return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: { position: "absolute", width: 0, height: 0, pointerEvents: "none", visibility: "hidden" }, children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: renderSvgEffectFilter(_elEffects, effectFilterId, performance.now(), props.data) }, void 0, false, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+          lineNumber: 2159,
+          columnNumber: 21
+        }, this) }, `backdrop-filter-svg-${el.id}`, false, {
+          fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+          lineNumber: 2158,
+          columnNumber: 17
+        }, this),
+        inner
+      ] }, void 0, true, {
+        fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
+        lineNumber: 2157,
+        columnNumber: 13
+      }, this);
+    }
+    return inner;
+  }
+  function ElementRendererInner({
     element,
     elementsById,
     overlayComponents,
@@ -35454,10 +35660,11 @@ void main() {
     widgetStates,
     canvasInitialized,
     isCanvasDrawn,
-    forceDomRender
+    forceDomRender,
+    patternScopeId: passedPatternScopeId
   }) {
     var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t2, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra, _sa, _ta, _ua, _va, _wa, _xa, _ya, _za, _Aa, _Ba, _Ca, _Da, _Ea, _Fa, _Ga, _Ha, _Ia, _Ja, _Ka, _La, _Ma, _Na, _Oa, _Pa, _Qa, _Ra, _Sa, _Ta, _Ua, _Va, _Wa, _Xa, _Ya, _Za, __a, _$a, _ab, _bb, _cb, _db, _eb, _fb, _gb, _hb, _ib, _jb, _kb, _lb, _mb, _nb, _ob, _pb, _qb, _rb, _sb, _tb;
-    const patternScopeId = sanitizeSvgId(reactExports.useId());
+    const patternScopeId = passedPatternScopeId || sanitizeSvgId(reactExports.useId());
     let el = element;
     if (el.bindings && data) {
       const overrides = {};
@@ -35551,6 +35758,20 @@ void main() {
         baseStyle.backgroundPosition = _paramCss.backgroundPosition;
         baseStyle.backgroundSize = _paramCss.backgroundSize;
       }
+    }
+    const hasBackdropRefraction = _elEffects.some((e2) => {
+      if (e2.preset === "ripple") {
+        const resolvedParams = resolveEffectParams(e2, performance.now(), data);
+        return resolvedParams.affectBeneath === true;
+      }
+      return false;
+    });
+    if (hasBackdropRefraction) {
+      const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+      const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
+      baseStyle.backdropFilter = `url(#${effectFilterId})`;
+      baseStyle.WebkitBackdropFilter = `url(#${effectFilterId})`;
+      baseStyle.backgroundColor = baseStyle.backgroundColor || "rgba(0, 0, 0, 0.01)";
     }
     const _tiltX = (_b = el.tiltX) != null ? _b : 0;
     const _tiltY = (_c = el.tiltY) != null ? _c : 0;
@@ -35661,13 +35882,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2345,
+            lineNumber: 2481,
             columnNumber: 21
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2344,
+          lineNumber: 2480,
           columnNumber: 17
         }, this);
       }
@@ -35706,18 +35927,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2387,
+            lineNumber: 2523,
             columnNumber: 29
           },
           this
         );
       }) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2384,
+        lineNumber: 2520,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2383,
+        lineNumber: 2519,
         columnNumber: 13
       }, this);
     }
@@ -35778,21 +35999,21 @@ void main() {
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("mask", { id: svgMaskId, maskUnits: "userSpaceOnUse", children: [
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("rect", { x: "0", y: "0", width: groupW, height: groupH, fill: invert ? "white" : "black" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2479,
+                lineNumber: 2615,
                 columnNumber: 33
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: localMaskD, fill: invert ? "black" : "white" }, void 0, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2480,
+                lineNumber: 2616,
                 columnNumber: 33
               }, this)
             ] }, void 0, true, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2478,
+              lineNumber: 2614,
               columnNumber: 29
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2477,
+              lineNumber: 2613,
               columnNumber: 25
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -35843,7 +36064,7 @@ void main() {
                           false,
                           {
                             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                            lineNumber: 2508,
+                            lineNumber: 2644,
                             columnNumber: 37
                           },
                           this
@@ -35853,7 +36074,7 @@ void main() {
                       false,
                       {
                         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                        lineNumber: 2499,
+                        lineNumber: 2635,
                         columnNumber: 33
                       },
                       this
@@ -35863,7 +36084,7 @@ void main() {
                   false,
                   {
                     fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                    lineNumber: 2491,
+                    lineNumber: 2627,
                     columnNumber: 29
                   },
                   this
@@ -35873,7 +36094,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2484,
+                lineNumber: 2620,
                 columnNumber: 25
               },
               this
@@ -35884,17 +36105,17 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2470,
+          lineNumber: 2606,
           columnNumber: 21
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2469,
+        lineNumber: 2605,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2468,
+        lineNumber: 2604,
         columnNumber: 13
       }, this);
     }
@@ -35949,18 +36170,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2575,
+            lineNumber: 2711,
             columnNumber: 29
           },
           this
         );
       }) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2560,
+        lineNumber: 2696,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2559,
+        lineNumber: 2695,
         columnNumber: 13
       }, this);
     }
@@ -35999,13 +36220,13 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2628,
+          lineNumber: 2764,
           columnNumber: 17
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2627,
+        lineNumber: 2763,
         columnNumber: 13
       }, this);
     }
@@ -36028,7 +36249,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2661,
+            lineNumber: 2797,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36061,16 +36282,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2665,
+            lineNumber: 2801,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2660,
+          lineNumber: 2796,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2659,
+          lineNumber: 2795,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36089,18 +36310,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2695,
+            lineNumber: 2831,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2658,
+        lineNumber: 2794,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2657,
+        lineNumber: 2793,
         columnNumber: 13
       }, this);
     }
@@ -36120,7 +36341,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2727,
+            lineNumber: 2863,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36144,16 +36365,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2731,
+            lineNumber: 2867,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2726,
+          lineNumber: 2862,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2725,
+          lineNumber: 2861,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36170,18 +36391,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2751,
+            lineNumber: 2887,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2723,
+        lineNumber: 2859,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2722,
+        lineNumber: 2858,
         columnNumber: 13
       }, this);
     }
@@ -36204,11 +36425,11 @@ void main() {
           return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: baseStyle, children: !hideInnerContent && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { width: "100%", height: "100%", overflow: "visible", style: { position: "absolute", inset: 0 }, children: [
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("defs", { children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { id: pathId, d: pathD }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2789,
+              lineNumber: 2925,
               columnNumber: 33
             }, this) }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 2788,
+              lineNumber: 2924,
               columnNumber: 29
             }, this),
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36221,7 +36442,7 @@ void main() {
                 fill: (_aa = textEl.color) != null ? _aa : "#ffffff",
                 children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("textPath", { href: `#${pathId}`, startOffset: `${offset}%`, children: content }, void 0, false, {
                   fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                  lineNumber: 2798,
+                  lineNumber: 2934,
                   columnNumber: 33
                 }, this)
               },
@@ -36229,18 +36450,18 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2791,
+                lineNumber: 2927,
                 columnNumber: 29
               },
               this
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2787,
+            lineNumber: 2923,
             columnNumber: 25
           }, this) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2785,
+            lineNumber: 2921,
             columnNumber: 21
           }, this);
         }
@@ -36298,7 +36519,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2827,
+            lineNumber: 2963,
             columnNumber: 17
           },
           this
@@ -36317,14 +36538,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2857,
+            lineNumber: 2993,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2825,
+        lineNumber: 2961,
         columnNumber: 13
       }, this);
     }
@@ -36345,7 +36566,7 @@ void main() {
             renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2885,
+            lineNumber: 3021,
             columnNumber: 25
           }, this),
           /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36369,16 +36590,16 @@ void main() {
             )
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2889,
+            lineNumber: 3025,
             columnNumber: 25
           }, this)
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2884,
+          lineNumber: 3020,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2883,
+          lineNumber: 3019,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36395,18 +36616,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2908,
+            lineNumber: 3044,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2882,
+        lineNumber: 3018,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2881,
+        lineNumber: 3017,
         columnNumber: 13
       }, this);
     }
@@ -36448,7 +36669,7 @@ void main() {
                 renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2969,
+                lineNumber: 3105,
                 columnNumber: 25
               }, this),
               /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("g", { filter: effects.filter((e2) => {
@@ -36481,7 +36702,7 @@ void main() {
                 )
               ] }, void 0, true, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 2973,
+                lineNumber: 3109,
                 columnNumber: 25
               }, this)
             ]
@@ -36490,13 +36711,13 @@ void main() {
           true,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 2962,
+            lineNumber: 3098,
             columnNumber: 48
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 2961,
+          lineNumber: 3097,
           columnNumber: 21
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36515,18 +36736,18 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3005,
+            lineNumber: 3141,
             columnNumber: 21
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2959,
+        lineNumber: 3095,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 2958,
+        lineNumber: 3094,
         columnNumber: 13
       }, this);
     }
@@ -36554,11 +36775,11 @@ void main() {
       return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { "data-element-id": el.id, style: imageStyle, children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? void 0 : "hidden", filter: mergedFilter || void 0 }, children: !hideInnerContent && src && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(KeyedMedia, { kind: "image", src, fit: img.fit, keying: img.keying, borderRadius: effectiveBr }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3056,
+          lineNumber: 3192,
           columnNumber: 25
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3054,
+          lineNumber: 3190,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36576,14 +36797,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3059,
+            lineNumber: 3195,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3053,
+        lineNumber: 3189,
         columnNumber: 13
       }, this);
     }
@@ -36614,13 +36835,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3090,
+            lineNumber: 3226,
             columnNumber: 25
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3088,
+          lineNumber: 3224,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -36638,14 +36859,14 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3104,
+            lineNumber: 3240,
             columnNumber: 17
           },
           this
         )
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3087,
+        lineNumber: 3223,
         columnNumber: 13
       }, this);
     }
@@ -36677,7 +36898,7 @@ void main() {
           },
           children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: progressStyle }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3148,
+            lineNumber: 3284,
             columnNumber: 21
           }, this)
         },
@@ -36685,13 +36906,13 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3140,
+          lineNumber: 3276,
           columnNumber: 17
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3139,
+        lineNumber: 3275,
         columnNumber: 13
       }, this);
     }
@@ -36729,7 +36950,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3177,
+                lineNumber: 3313,
                 columnNumber: 25
               },
               this
@@ -36751,7 +36972,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3185,
+                lineNumber: 3321,
                 columnNumber: 25
               },
               this
@@ -36762,17 +36983,17 @@ void main() {
         true,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3171,
+          lineNumber: 3307,
           columnNumber: 21
         },
         this
       ) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3170,
+        lineNumber: 3306,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3169,
+        lineNumber: 3305,
         columnNumber: 13
       }, this);
     }
@@ -36854,38 +37075,38 @@ void main() {
         };
         const twitchIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3305,
+          lineNumber: 3441,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3304,
+          lineNumber: 3440,
           columnNumber: 17
         }, this);
         const twitterXIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M18.244 2.25h3.308l-7.227 7.56 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.085L1.254 2.25h6.7l4.757 6.286zm-1.161 17.52h1.833L7.084 4.126H5.117z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3311,
+          lineNumber: 3447,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3310,
+          lineNumber: 3446,
           columnNumber: 17
         }, this);
         const youtubeIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.517 3.545 12 3.545 12 3.545s-7.517 0-9.388.507a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.871.507 9.388.507 9.388.507s7.517 0 9.388-.507a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3317,
+          lineNumber: 3453,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3316,
+          lineNumber: 3452,
           columnNumber: 17
         }, this);
         const discordIcon = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("svg", { style: svgStyles, viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("path", { d: "M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.03c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.03A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.01-.09-.024-.111a13.994 13.994 0 0 1-1.875-.894.083.083 0 0 1-.008-.136c.126-.093.252-.19.372-.287a.075.075 0 0 1 .077-.011c3.92 1.793 8.18 1.793 12.061 0a.073.075 0 0 1 .078.009c.12.099.246.195.373.289a.083.083 0 0 1-.006.134 14.113 14.113 0 0 1-1.875.89.08.08 0 0 0-.025.11c.361.7.772 1.365 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.156 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.156-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.156 2.418z" }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3323,
+          lineNumber: 3459,
           columnNumber: 21
         }, this) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3322,
+          lineNumber: 3458,
           columnNumber: 17
         }, this);
         const twitchRegex = /^(?:twitch(?:\.tv)?(?:\s*:\s*|\s+)?|@twitch\s*)/i;
@@ -36926,18 +37147,18 @@ void main() {
             social.icon,
             /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { children: social.cleanText }, void 0, false, {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3370,
+              lineNumber: 3506,
               columnNumber: 25
             }, this)
           ] }, void 0, true, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3368,
+            lineNumber: 3504,
             columnNumber: 21
           }, this);
         }
         return /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("span", { style: { color: defaultColor, fontSize: defaultSize, fontWeight: weight }, children: text }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3375,
+          lineNumber: 3511,
           columnNumber: 17
         }, this);
       };
@@ -36947,7 +37168,7 @@ void main() {
       if (layoutMode === "single") {
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", width: "100%", height: "100%" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3388,
+          lineNumber: 3524,
           columnNumber: 17
         }, this);
       } else if (layoutMode === "split") {
@@ -36975,7 +37196,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3401,
+              lineNumber: 3537,
               columnNumber: 21
             },
             this
@@ -36995,14 +37216,14 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3414,
+              lineNumber: 3550,
               columnNumber: 21
             },
             this
           )
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3400,
+          lineNumber: 3536,
           columnNumber: 17
         }, this);
       } else {
@@ -37010,12 +37231,12 @@ void main() {
         contentNode = /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", flexDirection: "column", justifyContent: "center" }, children: [
           titleText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center" }, children: renderSocialText(titleText, titleColor, titleSize, titleWeight) }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3432,
+            lineNumber: 3568,
             columnNumber: 25
           }, this),
           subText && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { display: "flex", alignItems: "center", marginTop: 4 }, children: renderSocialText(subText, subtitleColor, subSize, "normal") }, void 0, false, {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3437,
+            lineNumber: 3573,
             columnNumber: 25
           }, this),
           extraLines.map((line, i2) => {
@@ -37037,7 +37258,7 @@ void main() {
               false,
               {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-                lineNumber: 3446,
+                lineNumber: 3582,
                 columnNumber: 29
               },
               this
@@ -37045,7 +37266,7 @@ void main() {
           })
         ] }, void 0, true, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3430,
+          lineNumber: 3566,
           columnNumber: 17
         }, this);
       }
@@ -37084,27 +37305,27 @@ void main() {
       const renderBrackets = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(jsxDevRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, left: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3500,
+          lineNumber: 3636,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", top: bracketOffset, right: bracketOffset, width: 10, height: 10, borderTop: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3501,
+          lineNumber: 3637,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, left: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderLeft: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3502,
+          lineNumber: 3638,
           columnNumber: 17
         }, this),
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "absolute", bottom: bracketOffset, right: bracketOffset, width: 10, height: 10, borderBottom: `2px solid ${accent}`, borderRight: `2px solid ${accent}`, opacity: 0.7, pointerEvents: "none" } }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3503,
+          lineNumber: 3639,
           columnNumber: 17
         }, this)
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3499,
+        lineNumber: 3635,
         columnNumber: 13
       }, this);
       const renderGrid = variant !== "minimal" && /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV(
@@ -37126,7 +37347,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3509,
+          lineNumber: 3645,
           columnNumber: 13
         },
         this
@@ -37136,7 +37357,7 @@ void main() {
         renderBrackets,
         /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("div", { style: { position: "relative", zIndex: 1, display: "flex", flexDirection: "column", justifyContent: "center", width: "100%", height: "100%" }, children: contentNode }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3531,
+          lineNumber: 3667,
           columnNumber: 29
         }, this),
         ((_tb = lt2.ticker) == null ? void 0 : _tb.enabled) && (() => {
@@ -37169,7 +37390,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3550,
+              lineNumber: 3686,
               columnNumber: 37
             },
             this
@@ -37177,19 +37398,19 @@ void main() {
         })()
       ] }, void 0, true, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3528,
+        lineNumber: 3664,
         columnNumber: 25
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3527,
+        lineNumber: 3663,
         columnNumber: 21
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3526,
+        lineNumber: 3662,
         columnNumber: 17
       }, this) }, void 0, false, {
         fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-        lineNumber: 3525,
+        lineNumber: 3661,
         columnNumber: 13
       }, this);
     }
@@ -37255,7 +37476,7 @@ void main() {
             false,
             {
               fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-              lineNumber: 3622,
+              lineNumber: 3758,
               columnNumber: 21
             },
             this
@@ -37273,13 +37494,13 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3634,
+            lineNumber: 3770,
             columnNumber: 21
           },
           this
         ) }, void 0, false, {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3633,
+          lineNumber: 3769,
           columnNumber: 17
         }, this);
       }
@@ -37301,7 +37522,7 @@ void main() {
           false,
           {
             fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-            lineNumber: 3650,
+            lineNumber: 3786,
             columnNumber: 17
           },
           this
@@ -37321,7 +37542,7 @@ void main() {
         false,
         {
           fileName: "/home/sardwyn/repos/scraplet-dashboard/src/shared/overlayRenderer/ElementRenderer.tsx",
-          lineNumber: 3667,
+          lineNumber: 3803,
           columnNumber: 13
         },
         this
