@@ -438,7 +438,7 @@ For post-template adjustments, you possess advanced powers to spawn live stream 
 You can add high-performance visual effects (like pulsing glows, flickering holograms, neon borders, rain, or fire) to elements and link their visual properties directly to stream telemetry in real-time.
 
 1. **Preset Styles**:
-   - Camera Frames / Borders: \`lightsaberBorder\`, \`electricBorder\`, \`strokePulse\`, \`cornerBrackets\`, \`motionTrail\`.
+   - Camera Frames / Borders: \`lightsaberBorder\`, \`electricBorder\`, \`strokePulse\`, \`cornerBrackets\`.
    - Backdrops / Canvas: \`snowfall\`, \`rain\`, \`particleEmitter\`, \`fireEmitter\`, \`lightningArc\`.
    - Distortions / Retro: \`hologramFlicker\`, \`ripple\`, \`lensFlare\`, \`filmGrain\`, \`tapeNoise\`.
 

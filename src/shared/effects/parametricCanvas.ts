@@ -410,42 +410,7 @@ export function renderFireEmitter(
 
 export function cleanupFireState(id: string) { fireState.delete(id); }
 
-// ── Motion Trail ─────────────────────────────────────────────────────────────
-// Stores snapshots of the canvas content and replays them with fading opacity
-const trailState = new Map<string, { frames: ImageData[]; lastCapture: number }>();
 
-export function renderMotionTrail(
-  ctx: CanvasRenderingContext2D, width: number, height: number,
-  params: import("./parametricEffects").EffectParams, t: number, elementId: string
-) {
-  const length = Math.round(Number(params.length ?? 8));
-  const decay = Number(params.decay ?? 0.7);
-  const opacity = Number(params.opacity ?? 1);
-
-  let state = trailState.get(elementId);
-  if (!state) { state = { frames: [], lastCapture: 0 }; trailState.set(elementId, state); }
-
-  // Capture current frame every ~33ms (30fps)
-  if (t - state.lastCapture > 33) {
-    try {
-      const frame = ctx.getImageData(0, 0, width, height);
-      state.frames.unshift(frame);
-      if (state.frames.length > length) state.frames.length = length;
-      state.lastCapture = t;
-    } catch (e) { /* cross-origin canvas */ }
-  }
-
-  // Draw trail frames back-to-front with decaying opacity
-  for (let i = state.frames.length - 1; i >= 0; i--) {
-    const alpha = opacity * Math.pow(decay, i + 1) * (1 - i / length);
-    if (alpha < 0.01) continue;
-    ctx.globalAlpha = alpha;
-    ctx.putImageData(state.frames[i], 0, 0);
-  }
-  ctx.globalAlpha = 1;
-}
-
-export function cleanupTrailState(id: string) { trailState.delete(id); }
 
 export function cleanupParticleState(elementId: string) {
   particleState.delete(elementId);

@@ -352,21 +352,6 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "maxWidth", label: "Max Width", type: "number", default: 6, min: 0.5, max: 30, step: 0.5, animatable: true },
       { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "none", options: ["none", "surface", "space"] },
-    ],
-  },
-  motionTrail: {
-    id: "motionTrail",
-    label: "Motion Trail",
-    description: "Canvas echo trail of previous frames",
-    category: "motion",
-    defaultDuration: 1000,
-    produces: ["canvas"],
-    params: [
-      { key: "length", label: "Trail Length", type: "number", default: 8, min: 2, max: 20, step: 1 },
-      { key: "decay", label: "Decay", type: "number", default: 0.7, min: 0.1, max: 0.99, step: 0.01, animatable: true },
-      { key: "color", label: "Tint", type: "color", default: "#ffffff", animatable: true },
-      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
   ripple: {

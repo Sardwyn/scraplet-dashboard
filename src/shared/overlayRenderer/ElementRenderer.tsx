@@ -1,7 +1,7 @@
 import React, { useId, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getWidgetRenderer } from './widgetContract';
 import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS, resolveEffectParams } from "../effects/parametricEffects";
-import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderMotionTrail, cleanupTrailState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
+import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
 import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
 import { initWebGLRenderer, renderWebGLFrame, cleanupWebGLRenderer } from "../effects/parametricWebGL";
 import { globalEffectCoordinator } from "./globalEffectCoordinator";
@@ -1668,7 +1668,6 @@ function ParametricEffectOverlay({
                 else if (e.preset === "snowfall") renderSnowfall(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "rain") renderRain(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "fireEmitter") renderFireEmitter(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
-                else if (e.preset === "motionTrail") renderMotionTrail(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "filmGrain") renderFilmGrain(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "tapeNoise") renderTapeNoise(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 ctx.restore();
@@ -1682,7 +1681,6 @@ function ParametricEffectOverlay({
             cleanupSnowState(elementId);
             cleanupRainState(elementId);
             cleanupFireState(elementId);
-            cleanupTrailState(elementId);
             cleanupGrainState(elementId);
         };
     }, [canvasEffects.map((e: any) => e.id ?? e.preset).join(","), width, height, elementId, isPerformanceMode]);
