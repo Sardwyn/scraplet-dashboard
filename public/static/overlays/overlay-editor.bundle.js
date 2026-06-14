@@ -25450,18 +25450,28 @@ const EFFECT_PRESETS = {
   particleEmitter: {
     id: "particleEmitter",
     label: "Particle Emitter",
-    description: "Canvas-based particle system",
+    description: "Fully featured, high-performance customizable particle engine",
     category: "particle",
     defaultDuration: 3e3,
     produces: ["canvas"],
     params: [
-      { key: "color", label: "Color", type: "color", default: "#ffffff", animatable: true },
-      { key: "count", label: "Count", type: "number", default: 30, min: 1, max: 200, step: 1 },
-      { key: "size", label: "Size", type: "number", default: 3, min: 0.5, max: 20, step: 0.5, animatable: true },
-      { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 5, step: 0.1 },
-      { key: "spread", label: "Spread", type: "number", default: 1, min: 0, max: 3, step: 0.1 },
-      { key: "gravity", label: "Gravity", type: "number", default: 0.1, min: -1, max: 1, step: 0.05, animatable: true },
-      { key: "fade", label: "Fade", type: "boolean", default: true },
+      { key: "color", label: "Start Color", type: "color", default: "#ffffff", animatable: true },
+      { key: "colorEnd", label: "End Color", type: "color", default: "#ffffff", animatable: true },
+      { key: "count", label: "Count", type: "number", default: 30, min: 1, max: 500, step: 1 },
+      { key: "size", label: "Start Size", type: "number", default: 3, min: 0.5, max: 50, step: 0.5, animatable: true },
+      { key: "sizeEnd", label: "End Size", type: "number", default: 0, min: 0, max: 50, step: 0.5, animatable: true },
+      { key: "speed", label: "Speed", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
+      { key: "speedSpread", label: "Speed Spread", type: "number", default: 0.5, min: 0, max: 1, step: 0.05 },
+      { key: "angle", label: "Angle (deg)", type: "number", default: 270, min: 0, max: 360, step: 1, animatable: true },
+      { key: "angleSpread", label: "Angle Spread (deg)", type: "number", default: 45, min: 0, max: 360, step: 5 },
+      { key: "gravity", label: "Gravity (Y)", type: "number", default: 0.1, min: -2, max: 2, step: 0.05, animatable: true },
+      { key: "wind", label: "Wind (X)", type: "number", default: 0, min: -2, max: 2, step: 0.05, animatable: true },
+      { key: "lifetime", label: "Lifetime (s)", type: "number", default: 1, min: 0.1, max: 10, step: 0.1 },
+      { key: "emitterX", label: "Emitter X (%)", type: "number", default: 50, min: 0, max: 100, step: 1 },
+      { key: "emitterY", label: "Emitter Y (%)", type: "number", default: 50, min: 0, max: 100, step: 1 },
+      { key: "emitterWidth", label: "Emitter Width (%)", type: "number", default: 30, min: 0, max: 100, step: 1 },
+      { key: "emitterHeight", label: "Emitter Height (%)", type: "number", default: 30, min: 0, max: 100, step: 1 },
+      { key: "fade", label: "Fade Out", type: "boolean", default: true },
       { key: "shape", label: "Shape", type: "select", default: "circle", options: ["circle", "star", "spark", "square"] },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
       { key: "clipMode", label: "Clip Mode", type: "select", default: "none", options: ["none", "surface", "space"] }
@@ -26708,16 +26718,75 @@ function renderParametricEffectCSS(preset, params, t2) {
   }
 }
 const particleState = /* @__PURE__ */ new Map();
+function parseColor(color) {
+  const trimmed = color.trim().toLowerCase();
+  if (trimmed.startsWith("#")) {
+    const hex = trimmed.substring(1);
+    if (hex.length === 3) {
+      const r2 = parseInt(hex[0] + hex[0], 16) || 0;
+      const g2 = parseInt(hex[1] + hex[1], 16) || 0;
+      const b2 = parseInt(hex[2] + hex[2], 16) || 0;
+      return [r2, g2, b2, 1];
+    }
+    if (hex.length === 6) {
+      const r2 = parseInt(hex.substring(0, 2), 16) || 0;
+      const g2 = parseInt(hex.substring(2, 4), 16) || 0;
+      const b2 = parseInt(hex.substring(4, 6), 16) || 0;
+      return [r2, g2, b2, 1];
+    }
+    if (hex.length === 8) {
+      const r2 = parseInt(hex.substring(0, 2), 16) || 0;
+      const g2 = parseInt(hex.substring(2, 4), 16) || 0;
+      const b2 = parseInt(hex.substring(4, 6), 16) || 0;
+      const a2 = (parseInt(hex.substring(6, 8), 16) || 0) / 255;
+      return [r2, g2, b2, a2];
+    }
+  }
+  if (trimmed.startsWith("rgb")) {
+    const match = trimmed.match(/[\d.]+/g);
+    if (match && match.length >= 3) {
+      const r2 = parseFloat(match[0]) || 0;
+      const g2 = parseFloat(match[1]) || 0;
+      const b2 = parseFloat(match[2]) || 0;
+      const a2 = match.length >= 4 ? parseFloat(match[3]) : 1;
+      return [r2, g2, b2, a2];
+    }
+  }
+  if (trimmed === "transparent") return [0, 0, 0, 0];
+  if (trimmed === "black") return [0, 0, 0, 1];
+  if (trimmed === "red") return [255, 0, 0, 1];
+  if (trimmed === "green") return [0, 255, 0, 1];
+  if (trimmed === "blue") return [0, 0, 255, 1];
+  if (trimmed === "yellow") return [255, 255, 0, 1];
+  return [255, 255, 255, 1];
+}
+function interpolateColor$1(c1, c2, ratio) {
+  const r2 = Math.round(c1[0] + (c2[0] - c1[0]) * ratio);
+  const g2 = Math.round(c1[1] + (c2[1] - c1[1]) * ratio);
+  const b2 = Math.round(c1[2] + (c2[2] - c1[2]) * ratio);
+  const a2 = c1[3] + (c2[3] - c1[3]) * ratio;
+  return `rgba(${r2}, ${g2}, ${b2}, ${a2})`;
+}
 function renderParticleEmitter(ctx, width, height, params, t2, elementId) {
-  var _a3, _b, _c, _d, _e2, _f, _g;
-  const count2 = Number((_a3 = params.count) != null ? _a3 : 30);
-  const speed = Number((_b = params.speed) != null ? _b : 1);
-  const spread = Number((_c = params.spread) != null ? _c : 1);
-  const gravity = Number((_d = params.gravity) != null ? _d : 0.1);
-  const size = Number((_e2 = params.size) != null ? _e2 : 3);
-  const color = String((_f = params.color) != null ? _f : "#ffffff");
+  var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q;
+  const color = String((_a3 = params.color) != null ? _a3 : "#ffffff");
+  const colorEnd = String((_b = params.colorEnd) != null ? _b : color);
+  const count2 = Number((_c = params.count) != null ? _c : 30);
+  const size = Number((_d = params.size) != null ? _d : 3);
+  const sizeEnd = Number((_e2 = params.sizeEnd) != null ? _e2 : 0);
+  const speed = Number((_f = params.speed) != null ? _f : 1);
+  const speedSpread = Number((_g = params.speedSpread) != null ? _g : 0.5);
+  const angle = Number((_h2 = params.angle) != null ? _h2 : 270);
+  const angleSpread = Number((_i2 = params.angleSpread) != null ? _i2 : 45);
+  const gravity = Number((_j = params.gravity) != null ? _j : 0.1);
+  const wind = Number((_k = params.wind) != null ? _k : 0);
+  const lifetime = Number((_l = params.lifetime) != null ? _l : 1);
+  const emitterX = Number((_m = params.emitterX) != null ? _m : 50);
+  const emitterY = Number((_n2 = params.emitterY) != null ? _n2 : 50);
+  const emitterWidth = Number((_o2 = params.emitterWidth) != null ? _o2 : 30);
+  const emitterHeight = Number((_p = params.emitterHeight) != null ? _p : 30);
   const fade = params.fade !== false;
-  const shape = String((_g = params.shape) != null ? _g : "circle");
+  const shape = String((_q = params.shape) != null ? _q : "circle");
   let state = particleState.get(elementId);
   if (!state) {
     state = { particles: [], lastT: t2 };
@@ -26726,45 +26795,65 @@ function renderParticleEmitter(ctx, width, height, params, t2, elementId) {
   const dt3 = Math.min(50, t2 - state.lastT) / 16.67;
   state.lastT = t2;
   const emitRate = count2 / 60 * speed * dt3;
+  const parsedColorStart = parseColor(color);
+  const parsedColorEnd = parseColor(colorEnd);
   for (let i2 = 0; i2 < emitRate; i2++) {
-    const angle = (Math.random() - 0.5) * Math.PI * 2 * spread;
-    const spd = (0.5 + Math.random() * 0.5) * speed * 2;
+    const eX = emitterX / 100 * width;
+    const eY = emitterY / 100 * height;
+    const eW = emitterWidth / 100 * width;
+    const eH = emitterHeight / 100 * height;
+    const spawnX = eX + (Math.random() - 0.5) * eW;
+    const spawnY = eY + (Math.random() - 0.5) * eH;
+    const angleRad = angle * Math.PI / 180;
+    const spreadRad = angleSpread * Math.PI / 180;
+    const pAngle = angleRad + (Math.random() - 0.5) * spreadRad;
+    const pSpeed = speed * 2 * (1 - Math.random() * speedSpread);
+    const vx2 = Math.cos(pAngle) * pSpeed;
+    const vy2 = Math.sin(pAngle) * pSpeed;
+    const pMaxLife = lifetime * (0.8 + Math.random() * 0.4);
     state.particles.push({
-      x: width / 2 + (Math.random() - 0.5) * width * 0.3,
-      y: height / 2 + (Math.random() - 0.5) * height * 0.3,
-      vx: Math.cos(angle) * spd,
-      vy: Math.sin(angle) * spd - speed,
+      x: spawnX,
+      y: spawnY,
+      vx: vx2,
+      vy: vy2,
       life: 1,
-      maxLife: 0.5 + Math.random() * 0.5,
-      size: size * (0.5 + Math.random() * 0.5),
-      color,
+      maxLife: pMaxLife,
+      sizeStart: size * (0.5 + Math.random() * 0.5),
+      sizeEnd: sizeEnd * (0.5 + Math.random() * 0.5),
+      colorStart: parsedColorStart,
+      colorEnd: parsedColorEnd,
       shape
     });
   }
   state.particles = state.particles.filter((p2) => p2.life > 0);
   for (const p2 of state.particles) {
+    p2.vx += wind * dt3;
+    p2.vy += gravity * dt3;
     p2.x += p2.vx * dt3;
     p2.y += p2.vy * dt3;
-    p2.vy += gravity * dt3;
     p2.life -= dt3 / (p2.maxLife * 60);
+    const ratio = Math.min(1, Math.max(0, 1 - p2.life));
+    const drawSize = Math.max(0, p2.sizeStart + (p2.sizeEnd - p2.sizeStart) * ratio);
+    if (drawSize <= 0) continue;
     const alpha = fade ? Math.max(0, p2.life) : 1;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = p2.color;
+    const colorRGB = interpolateColor$1(p2.colorStart, p2.colorEnd, ratio);
+    ctx.fillStyle = colorRGB;
+    ctx.strokeStyle = colorRGB;
     if (p2.shape === "circle") {
       ctx.beginPath();
-      ctx.arc(p2.x, p2.y, p2.size, 0, Math.PI * 2);
+      ctx.arc(p2.x, p2.y, drawSize, 0, Math.PI * 2);
       ctx.fill();
     } else if (p2.shape === "square") {
-      ctx.fillRect(p2.x - p2.size / 2, p2.y - p2.size / 2, p2.size, p2.size);
+      ctx.fillRect(p2.x - drawSize / 2, p2.y - drawSize / 2, drawSize, drawSize);
     } else if (p2.shape === "spark") {
       ctx.beginPath();
       ctx.moveTo(p2.x, p2.y);
       ctx.lineTo(p2.x - p2.vx * 3, p2.y - p2.vy * 3);
-      ctx.strokeStyle = p2.color;
-      ctx.lineWidth = p2.size * 0.5;
+      ctx.lineWidth = drawSize * 0.5;
       ctx.stroke();
     } else if (p2.shape === "star") {
-      drawStar(ctx, p2.x, p2.y, p2.size, 5);
+      drawStar(ctx, p2.x, p2.y, drawSize, 5);
       ctx.fill();
     }
   }
@@ -101410,7 +101499,7 @@ function interpolateGradientColor(stops, position) {
   const beforePos = (_c = before.position) != null ? _c : 0;
   const afterPos = (_d = after.position) != null ? _d : 100;
   const t2 = afterPos === beforePos ? 0 : (position - beforePos) / (afterPos - beforePos);
-  const parseColor = (hex) => {
+  const parseColor2 = (hex) => {
     const clean = hex.replace("#", "");
     return {
       r: parseInt(clean.slice(0, 2), 16),
@@ -101418,8 +101507,8 @@ function interpolateGradientColor(stops, position) {
       b: parseInt(clean.slice(4, 6), 16)
     };
   };
-  const c1 = parseColor(before.color);
-  const c2 = parseColor(after.color);
+  const c1 = parseColor2(before.color);
+  const c2 = parseColor2(after.color);
   const r2 = Math.round(c1.r + (c2.r - c1.r) * t2);
   const g2 = Math.round(c1.g + (c2.g - c1.g) * t2);
   const b2 = Math.round(c1.b + (c2.b - c1.b) * t2);

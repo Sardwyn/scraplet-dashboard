@@ -6,14 +6,67 @@ import type { EffectParams } from "./parametricEffects";
 interface Particle {
   x: number; y: number;
   vx: number; vy: number;
-  life: number; maxLife: number;
-  size: number;
-  color: string;
+  life: number; maxLife: number; // life goes from 1.0 down to 0
+  sizeStart: number;
+  sizeEnd: number;
+  colorStart: [number, number, number, number];
+  colorEnd: [number, number, number, number];
   shape: string;
 }
 
 // Per-element particle state (keyed by element id)
 const particleState = new Map<string, { particles: Particle[]; lastT: number }>();
+
+function parseColor(color: string): [number, number, number, number] {
+  const trimmed = color.trim().toLowerCase();
+  if (trimmed.startsWith("#")) {
+    const hex = trimmed.substring(1);
+    if (hex.length === 3) {
+      const r = parseInt(hex[0] + hex[0], 16) || 0;
+      const g = parseInt(hex[1] + hex[1], 16) || 0;
+      const b = parseInt(hex[2] + hex[2], 16) || 0;
+      return [r, g, b, 1];
+    }
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 0;
+      const b = parseInt(hex.substring(4, 6), 16) || 0;
+      return [r, g, b, 1];
+    }
+    if (hex.length === 8) {
+      const r = parseInt(hex.substring(0, 2), 16) || 0;
+      const g = parseInt(hex.substring(2, 4), 16) || 0;
+      const b = parseInt(hex.substring(4, 6), 16) || 0;
+      const a = (parseInt(hex.substring(6, 8), 16) || 0) / 255;
+      return [r, g, b, a];
+    }
+  }
+  if (trimmed.startsWith("rgb")) {
+    const match = trimmed.match(/[\d.]+/g);
+    if (match && match.length >= 3) {
+      const r = parseFloat(match[0]) || 0;
+      const g = parseFloat(match[1]) || 0;
+      const b = parseFloat(match[2]) || 0;
+      const a = match.length >= 4 ? parseFloat(match[3]) : 1;
+      return [r, g, b, a];
+    }
+  }
+  if (trimmed === "transparent") return [0, 0, 0, 0];
+  if (trimmed === "black") return [0, 0, 0, 1];
+  if (trimmed === "red") return [255, 0, 0, 1];
+  if (trimmed === "green") return [0, 255, 0, 1];
+  if (trimmed === "blue") return [0, 0, 255, 1];
+  if (trimmed === "yellow") return [255, 255, 0, 1];
+  return [255, 255, 255, 1]; // fallback white
+}
+
+function interpolateColor(c1: [number, number, number, number], c2: [number, number, number, number], ratio: number): string {
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * ratio);
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * ratio);
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * ratio);
+  const a = c1[3] + (c2[3] - c1[3]) * ratio;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
 
 export function renderParticleEmitter(
   ctx: CanvasRenderingContext2D,
@@ -23,12 +76,22 @@ export function renderParticleEmitter(
   t: number,
   elementId: string
 ) {
-  const count = Number(params.count ?? 30);
-  const speed = Number(params.speed ?? 1);
-  const spread = Number(params.spread ?? 1);
-  const gravity = Number(params.gravity ?? 0.1);
-  const size = Number(params.size ?? 3);
   const color = String(params.color ?? "#ffffff");
+  const colorEnd = String(params.colorEnd ?? color);
+  const count = Number(params.count ?? 30);
+  const size = Number(params.size ?? 3);
+  const sizeEnd = Number(params.sizeEnd ?? 0);
+  const speed = Number(params.speed ?? 1);
+  const speedSpread = Number(params.speedSpread ?? 0.5);
+  const angle = Number(params.angle ?? 270);
+  const angleSpread = Number(params.angleSpread ?? 45);
+  const gravity = Number(params.gravity ?? 0.1);
+  const wind = Number(params.wind ?? 0);
+  const lifetime = Number(params.lifetime ?? 1.0);
+  const emitterX = Number(params.emitterX ?? 50);
+  const emitterY = Number(params.emitterY ?? 50);
+  const emitterWidth = Number(params.emitterWidth ?? 30);
+  const emitterHeight = Number(params.emitterHeight ?? 30);
   const fade = params.fade !== false;
   const shape = String(params.shape ?? "circle");
 
@@ -42,52 +105,88 @@ export function renderParticleEmitter(
   state.lastT = t;
 
   // Emit new particles
-  const emitRate = count / 60 * speed * dt;
+  const emitRate = (count / 60) * speed * dt;
+  const parsedColorStart = parseColor(color);
+  const parsedColorEnd = parseColor(colorEnd);
+
   for (let i = 0; i < emitRate; i++) {
-    const angle = (Math.random() - 0.5) * Math.PI * 2 * spread;
-    const spd = (0.5 + Math.random() * 0.5) * speed * 2;
+    // Positioning
+    const eX = (emitterX / 100) * width;
+    const eY = (emitterY / 100) * height;
+    const eW = (emitterWidth / 100) * width;
+    const eH = (emitterHeight / 100) * height;
+
+    const spawnX = eX + (Math.random() - 0.5) * eW;
+    const spawnY = eY + (Math.random() - 0.5) * eH;
+
+    // Angle and direction
+    const angleRad = (angle * Math.PI) / 180;
+    const spreadRad = (angleSpread * Math.PI) / 180;
+    const pAngle = angleRad + (Math.random() - 0.5) * spreadRad;
+
+    // Speed and velocity dispersion
+    const pSpeed = speed * 2 * (1 - Math.random() * speedSpread);
+    const vx = Math.cos(pAngle) * pSpeed;
+    const vy = Math.sin(pAngle) * pSpeed;
+
+    // Lifetime randomization around the target lifetime (80% to 120%)
+    const pMaxLife = lifetime * (0.8 + Math.random() * 0.4);
+
     state.particles.push({
-      x: width / 2 + (Math.random() - 0.5) * width * 0.3,
-      y: height / 2 + (Math.random() - 0.5) * height * 0.3,
-      vx: Math.cos(angle) * spd,
-      vy: Math.sin(angle) * spd - speed,
+      x: spawnX,
+      y: spawnY,
+      vx,
+      vy,
       life: 1,
-      maxLife: 0.5 + Math.random() * 0.5,
-      size: size * (0.5 + Math.random() * 0.5),
-      color,
+      maxLife: pMaxLife,
+      sizeStart: size * (0.5 + Math.random() * 0.5),
+      sizeEnd: sizeEnd * (0.5 + Math.random() * 0.5),
+      colorStart: parsedColorStart,
+      colorEnd: parsedColorEnd,
       shape,
     });
   }
 
   // Update and draw
-  // clearRect handled by caller before clip is applied
   state.particles = state.particles.filter(p => p.life > 0);
 
   for (const p of state.particles) {
+    // Apply forces
+    p.vx += wind * dt;
+    p.vy += gravity * dt;
+
     p.x += p.vx * dt;
     p.y += p.vy * dt;
-    p.vy += gravity * dt;
+
+    // Progress lifetime
     p.life -= dt / (p.maxLife * 60);
+
+    const ratio = Math.min(1, Math.max(0, 1 - p.life));
+    const drawSize = Math.max(0, p.sizeStart + (p.sizeEnd - p.sizeStart) * ratio);
+
+    if (drawSize <= 0) continue;
 
     const alpha = fade ? Math.max(0, p.life) : 1;
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = p.color;
+
+    const colorRGB = interpolateColor(p.colorStart, p.colorEnd, ratio);
+    ctx.fillStyle = colorRGB;
+    ctx.strokeStyle = colorRGB;
 
     if (p.shape === "circle") {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, drawSize, 0, Math.PI * 2);
       ctx.fill();
     } else if (p.shape === "square") {
-      ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      ctx.fillRect(p.x - drawSize / 2, p.y - drawSize / 2, drawSize, drawSize);
     } else if (p.shape === "spark") {
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
       ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3);
-      ctx.strokeStyle = p.color;
-      ctx.lineWidth = p.size * 0.5;
+      ctx.lineWidth = drawSize * 0.5;
       ctx.stroke();
     } else if (p.shape === "star") {
-      drawStar(ctx, p.x, p.y, p.size, 5);
+      drawStar(ctx, p.x, p.y, drawSize, 5);
       ctx.fill();
     }
   }
