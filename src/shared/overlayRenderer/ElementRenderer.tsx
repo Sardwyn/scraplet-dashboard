@@ -949,7 +949,7 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
     });
 
     return (
-        <filter id={filterId} x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
+        <filter id={filterId} filterUnits="userSpaceOnUse" x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
             {nodes}
         </filter>
     );
@@ -2140,6 +2140,8 @@ export function ElementRenderer(props: {
     const el = props.element as any;
     const _elEffects = getElementEffects(el);
 
+    useParametricRafTick(_elEffects);
+
     const hasBackdropRefraction = _elEffects.some(e => {
         if (e.preset === "ripple") {
             const resolvedParams = resolveEffectParams(e, performance.now(), props.data);
@@ -2155,7 +2157,7 @@ export function ElementRenderer(props: {
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         return (
             <>
-                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none', visibility: 'hidden' }}>
+                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}>
                     <defs>
                         {renderSvgEffectFilter(_elEffects, effectFilterId, performance.now(), props.data)}
                     </defs>
