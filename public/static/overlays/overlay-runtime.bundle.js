@@ -21960,9 +21960,7 @@
         { key: "emitterWidth", label: "Emitter Width (%)", type: "number", default: 30, min: 0, max: 100, step: 1 },
         { key: "emitterHeight", label: "Emitter Height (%)", type: "number", default: 30, min: 0, max: 100, step: 1 },
         { key: "fade", label: "Fade Out", type: "boolean", default: true },
-        { key: "shape", label: "Shape", type: "select", default: "circle", options: ["circle", "star", "spark", "square"] },
-        { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-        { key: "clipMode", label: "Clip Mode", type: "select", default: "none", options: ["none", "surface", "space"] }
+        { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
       ]
     },
     breathe: {
