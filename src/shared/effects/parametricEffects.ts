@@ -154,10 +154,10 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
     ],
   },
-  typewriter: {
-    id: "typewriter",
-    label: "Typewriter",
-    description: "Character-by-character text reveal",
+  wipe: {
+    id: "wipe",
+    label: "Wipe",
+    description: "Left-to-right clip-path reveal",
     category: "reveal",
     defaultDuration: 2000,
     produces: ["css"],
@@ -1323,7 +1323,7 @@ export function renderParametricEffectCSS(
       const on = Math.sin(t * rate * Math.PI / 500) > 0;
       return { opacity: on ? 1 : minOp } as any;
     }
-            case "typewriter": {
+            case "wipe": {
       const speed = Number(p.speed ?? 1);
       const progress = Number(p.progress ?? 1);
       const showCursor = p.cursor !== false;

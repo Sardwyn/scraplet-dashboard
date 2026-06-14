@@ -1156,7 +1156,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
       const type = el.type;
       const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
-      const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
+      const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "wipe" || pe.preset === "textReveal"));
 
       const isMedia = el.type === 'image' || el.type === 'video';
       const hasKeying = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;

@@ -2100,7 +2100,7 @@ export function ElementRenderer({
 
     const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
     const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
-    const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "typewriter" || pe.preset === "textReveal"));
+    const hasRevealEffect = parametric.some((pe: any) => pe && pe.enabled !== false && (pe.preset === "wipe" || pe.preset === "textReveal"));
 
     const isMediaRender = el.type === 'image' || el.type === 'video';
     const hasKeyingRender = el.keying && el.keying.mode !== 'none' && el.keying.enabled !== false;

@@ -25419,10 +25419,10 @@ const EFFECT_PRESETS = {
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
     ]
   },
-  typewriter: {
-    id: "typewriter",
-    label: "Typewriter",
-    description: "Character-by-character text reveal",
+  wipe: {
+    id: "wipe",
+    label: "Wipe",
+    description: "Left-to-right clip-path reveal",
     category: "reveal",
     defaultDuration: 2e3,
     produces: ["css"],
@@ -26504,7 +26504,7 @@ function renderParametricEffectCSS(preset, params, t2) {
       const on2 = Math.sin(t2 * rate * Math.PI / 500) > 0;
       return { opacity: on2 ? 1 : minOp };
     }
-    case "typewriter": {
+    case "wipe": {
       const speed = Number((_M = p2.speed) != null ? _M : 1);
       const progress = Number((_N = p2.progress) != null ? _N : 1);
       const showCursor = p2.cursor !== false;
@@ -39079,7 +39079,7 @@ function ElementRenderer({
   }
   const canvasTypes = ["shape", "rect", "ellipse", "circle", "path", "text", "video", "image"];
   const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
-  const hasRevealEffect = parametric.some((pe2) => pe2 && pe2.enabled !== false && (pe2.preset === "typewriter" || pe2.preset === "textReveal"));
+  const hasRevealEffect = parametric.some((pe2) => pe2 && pe2.enabled !== false && (pe2.preset === "wipe" || pe2.preset === "textReveal"));
   const isMediaRender = el.type === "image" || el.type === "video";
   const hasKeyingRender = el.keying && el.keying.mode !== "none" && el.keying.enabled !== false;
   const hasBlendModeRender = el.blendMode && el.blendMode !== "normal";
@@ -91990,7 +91990,7 @@ function OverlayEditorApp({ initialOverlay }) {
       if (el.visible === false) return;
       const type = el.type;
       const parametric = Array.isArray(el.parametricEffects) ? el.parametricEffects : [];
-      const hasRevealEffect = parametric.some((pe2) => pe2 && pe2.enabled !== false && (pe2.preset === "typewriter" || pe2.preset === "textReveal"));
+      const hasRevealEffect = parametric.some((pe2) => pe2 && pe2.enabled !== false && (pe2.preset === "wipe" || pe2.preset === "textReveal"));
       const isMedia = el.type === "image" || el.type === "video";
       const hasKeying = el.keying && el.keying.mode !== "none" && el.keying.enabled !== false;
       const hasBlendMode = el.blendMode && el.blendMode !== "normal";
