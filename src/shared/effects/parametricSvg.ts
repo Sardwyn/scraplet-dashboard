@@ -92,29 +92,7 @@ export function renderHologramScanlinesSVG(
   return linesStr;
 }
 
-export function renderRippleSVG(
-  width: number, height: number,
-  params: import("./parametricEffects").EffectParams, t: number
-): string {
-  const color = String(params.color ?? "#00ffff");
-  const rings = Math.round(Number(params.rings ?? 3));
-  const speed = Number(params.speed ?? 1);
-  const thickness = Number(params.thickness ?? 2);
-  const maxScale = Number(params.maxScale ?? 2);
-  const opacity = Number(params.opacity ?? 1);
-  const cx = width / 2;
-  const cy = height / 2;
-  const baseRx = width / 2;
-  const baseRy = height / 2;
-  let out = "";
-  for (let i = 0; i < rings; i++) {
-    const phase = ((t / 1000 * speed + i / rings) % 1);
-    const scale = 1 + (maxScale - 1) * phase;
-    const alpha = (1 - phase) * opacity;
-    out += `<ellipse cx="${cx}" cy="${cy}" rx="${baseRx * scale}" ry="${baseRy * scale}" fill="none" stroke="${color}" stroke-width="${thickness}" opacity="${alpha.toFixed(3)}"/>`;
-  }
-  return out;
-}
+
 
 export function renderElectricBorderSVG(
   width: number, height: number,

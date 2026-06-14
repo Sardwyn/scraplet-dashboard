@@ -1,8 +1,8 @@
 import React, { useId, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getWidgetRenderer } from './widgetContract';
 import { renderParametricEffectCSS, interpolateParams, EFFECT_PRESETS, resolveEffectParams } from "../effects/parametricEffects";
-import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderFilmGrain, renderTapeNoise, cleanupGrainState } from "../effects/parametricCanvas";
-import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderRippleSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
+import { renderParticleEmitter, renderLightningArc, cleanupParticleState, renderSnowfall, cleanupSnowState, renderRain, cleanupRainState, renderFireEmitter, cleanupFireState, renderFilmGrain, renderTapeNoise, cleanupGrainState, renderRipple } from "../effects/parametricCanvas";
+import { renderLightsaberBorderSVG, renderHologramScanlinesSVG, renderElectricBorderSVG, renderLensFlareSVG, renderStrokePulseSVG, renderCornerBracketsSVG } from "../effects/parametricSvg";
 import { initWebGLRenderer, renderWebGLFrame, cleanupWebGLRenderer } from "../effects/parametricWebGL";
 import { globalEffectCoordinator } from "./globalEffectCoordinator";
 import { usePerformanceMode } from "./PerformanceModeContext";
@@ -1675,6 +1675,7 @@ function ParametricEffectOverlay({
                 else if (e.preset === "fireEmitter") renderFireEmitter(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "filmGrain") renderFilmGrain(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
                 else if (e.preset === "tapeNoise") renderTapeNoise(ctx, width, height, params, t, elementId + (e.id ?? e.preset));
+                else if (e.preset === "ripple") renderRipple(ctx, width, height, params, t);
                 ctx.restore();
             }
         };
@@ -1822,9 +1823,6 @@ function ParametricEffectOverlay({
                         }
                         if (e.preset === "hologramFlicker") {
                             return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderHologramScanlinesSVG(width, height, params, now)}</g>` }} />;
-                        }
-                        if (e.preset === "ripple") {
-                            return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderRippleSVG(width, height, params, now)}</g>` }} />;
                         }
                         if (e.preset === "electricBorder") {
                             return <g key={i} dangerouslySetInnerHTML={{ __html: `<g ${clipAttr}>${renderElectricBorderSVG(width, height, params, now, shapePath || undefined)}</g>` }} />;

@@ -359,10 +359,10 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
   ripple: {
     id: "ripple",
     label: "Ripple",
-    description: "Expanding ring pulses from centre",
+    description: "Expanding mograph wave and grid effector",
     category: "motion",
     defaultDuration: 1500,
-    produces: ["svgOverlay"],
+    produces: ["canvas"],
     isMograph: true,
     params: [
       { key: "color", label: "Color", type: "color", default: "#00ffff", animatable: true },
@@ -371,7 +371,12 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
       { key: "thickness", label: "Thickness", type: "number", default: 2, min: 0.5, max: 8, step: 0.5, animatable: true },
       { key: "maxScale", label: "Max Scale", type: "number", default: 2, min: 1.1, max: 4, step: 0.1, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
-      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space"] },
+      { key: "gridSpacing", label: "Grid Spacing", type: "number", default: 20, min: 10, max: 80, step: 5 },
+      { key: "displacement", label: "Displacement", type: "number", default: 15, min: 0, max: 80, step: 1, animatable: true },
+      { key: "dotSize", label: "Dot Size", type: "number", default: 2, min: 0, max: 8, step: 0.5, animatable: true },
+      { key: "showGridLines", label: "Grid Lines", type: "boolean", default: true },
+      { key: "showWaveRing", label: "Wave Ring", type: "boolean", default: true },
+      { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space", "none"] },
     ],
   },
   electricBorder: {

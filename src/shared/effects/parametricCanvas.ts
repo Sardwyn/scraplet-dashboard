@@ -542,3 +542,147 @@ export function renderTapeNoise(
   }
   ctx.restore();
 }
+
+// ── Ripple Effector ───────────────────────────────────────────────────────────
+export function renderRipple(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  params: EffectParams,
+  t: number
+) {
+  const color = String(params.color ?? "#00ffff");
+  const rings = Math.round(Number(params.rings ?? 3));
+  const speed = Number(params.speed ?? 1);
+  const thickness = Number(params.thickness ?? 2);
+  const maxScale = Number(params.maxScale ?? 2);
+  const opacity = Number(params.opacity ?? 1);
+  const gridSpacing = Math.max(10, Math.round(Number(params.gridSpacing ?? 20)));
+  const displacement = Number(params.displacement ?? 15);
+  const dotSize = Number(params.dotSize ?? 2);
+  const showGridLines = params.showGridLines !== false;
+  const showWaveRing = params.showWaveRing !== false;
+
+  const cx = width / 2;
+  const cy = height / 2;
+  const maxRadius = Math.max(width, height) * 0.5 * maxScale;
+  const waveWidth = thickness * 15; // wide enough to feel smooth
+
+  const cols = Math.ceil(width / gridSpacing) + 1;
+  const rows = Math.ceil(height / gridSpacing) + 1;
+
+  const grid: { x: number; y: number; amp: number }[][] = [];
+  for (let c = 0; c < cols; c++) {
+    grid[c] = [];
+    for (let r = 0; r < rows; r++) {
+      const origX = c * gridSpacing;
+      const origY = r * gridSpacing;
+
+      const dx = origX - cx;
+      const dy = origY - cy;
+      const d = Math.sqrt(dx * dx + dy * dy);
+
+      let finalX = origX;
+      let finalY = origY;
+      let maxAmp = 0;
+
+      // Calculate cumulative displacement from all active rings
+      for (let i = 0; i < rings; i++) {
+        const phase = ((t / 1000 * speed + i / rings) % 1);
+        const currentRadius = maxRadius * phase;
+        
+        const distToWave = Math.abs(d - currentRadius);
+        if (distToWave < waveWidth) {
+          const intensity = 1 - distToWave / waveWidth; // 1 at center of wave, 0 at edge
+          const smoothIntensity = Math.sin(intensity * Math.PI * 0.5); // beautiful sine curve
+          const ringAmp = smoothIntensity * (1 - phase); // fade out as it reaches the edge
+          if (ringAmp > maxAmp) {
+            maxAmp = ringAmp;
+          }
+        }
+      }
+
+      if (maxAmp > 0 && d > 0) {
+        // Displace radially outward
+        const pX = dx / d;
+        const pY = dy / d;
+        finalX += pX * displacement * maxAmp;
+        finalY += pY * displacement * maxAmp;
+      }
+
+      grid[c][r] = { x: finalX, y: finalY, amp: maxAmp };
+    }
+  }
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+
+  // Draw grid lines
+  if (showGridLines && gridSpacing > 0) {
+    ctx.strokeStyle = color;
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const node = grid[c][r];
+        // Line to right
+        if (c < cols - 1) {
+          const rightNode = grid[c + 1][r];
+          const lineAlpha = 0.08 + (node.amp + rightNode.amp) * 0.25;
+          ctx.globalAlpha = opacity * lineAlpha;
+          ctx.lineWidth = 1 + (node.amp + rightNode.amp) * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(rightNode.x, rightNode.y);
+          ctx.stroke();
+        }
+        // Line to down
+        if (r < rows - 1) {
+          const downNode = grid[c][r + 1];
+          const lineAlpha = 0.08 + (node.amp + downNode.amp) * 0.25;
+          ctx.globalAlpha = opacity * lineAlpha;
+          ctx.lineWidth = 1 + (node.amp + downNode.amp) * 0.5;
+          ctx.beginPath();
+          ctx.moveTo(node.x, node.y);
+          ctx.lineTo(downNode.x, downNode.y);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  // Draw dots
+  if (dotSize > 0) {
+    ctx.fillStyle = color;
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        const node = grid[c][r];
+        const currentSize = dotSize + dotSize * 1.5 * node.amp;
+        const dotAlpha = 0.15 + node.amp * 0.8;
+        ctx.globalAlpha = opacity * dotAlpha;
+        
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, currentSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Draw the actual expanding ring waves as soft glows
+  if (showWaveRing) {
+    ctx.strokeStyle = color;
+    for (let i = 0; i < rings; i++) {
+      const phase = ((t / 1000 * speed + i / rings) % 1);
+      const currentRadius = maxRadius * phase;
+      const ringAlpha = (1 - phase) * 0.4;
+      if (ringAlpha > 0) {
+        ctx.globalAlpha = opacity * ringAlpha;
+        ctx.lineWidth = thickness;
+        ctx.beginPath();
+        ctx.arc(cx, cy, currentRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  }
+
+  ctx.restore();
+}
+
