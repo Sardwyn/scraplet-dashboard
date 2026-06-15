@@ -6,7 +6,7 @@ import {
   OverlayTimelineProperty,
   OverlayVariable,
 } from "../shared/overlayTypes";
-import { ElementRenderer } from "../shared/overlayRenderer";
+import { ElementRenderer, hasBackdropRefraction } from "../shared/overlayRenderer";
 import { FontLoader, getGoogleFontsUrl } from "../shared/FontManager";
 import { useElementAnimationPhases } from "./useElementAnimationPhases";
 import { evaluateTimeline } from "../shared/timeline/evaluateTimeline";
@@ -1801,7 +1801,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                 right: 0,
                 zIndex: 30,
                 pointerEvents: "none",
-                transformStyle: "preserve-3d",
+                transformStyle: pinnedElementsToRender.some((el: any) => hasBackdropRefraction(el)) ? undefined : "preserve-3d",
               }}
             >
               {pinnedElementsToRender.map((el: any) => (
@@ -1831,7 +1831,7 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
                zIndex on each element (from elementIndex = config order) handles stacking.
                No separate layer containers — they caused z-order bugs in OBS CEF. */}
           {overlay && normalElementsToRender.length > 0 && (
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: 'preserve-3d', zIndex: 30 }}>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', transformStyle: normalElementsToRender.some((el: any) => hasBackdropRefraction(el, eventData)) ? undefined : 'preserve-3d', zIndex: 30 }}>
               {normalElementsToRender.map((el: any) => (
                 <ElementRenderer
                   key={el.id}

@@ -350,6 +350,19 @@ function getElementEffects(el: OverlayElement): OverlayEffect[] {
     return [];
 }
 
+export function hasBackdropRefraction(el: any, data?: any): boolean {
+    if (!el) return false;
+    const effects = getElementEffects(el);
+    return effects.some(e => {
+        if (e.preset === "ripple") {
+            const resolvedParams = resolveEffectParams(e, performance.now(), data);
+            return resolvedParams.affectBeneath === true;
+        }
+        return false;
+    });
+}
+
+
 function buildCssEffectStyle(effects: OverlayEffect[]): React.CSSProperties {
     const active = effects.filter((effect) => effect.enabled !== false);
     if (!active.length) return {};
@@ -2142,17 +2155,11 @@ export function ElementRenderer(props: {
 
     const tick = useParametricRafTick(_elEffects);
 
-    const hasBackdropRefraction = _elEffects.some(e => {
-        if (e.preset === "ripple") {
-            const resolvedParams = resolveEffectParams(e, performance.now(), props.data);
-            return resolvedParams.affectBeneath === true;
-        }
-        return false;
-    });
+    const isRefractive = hasBackdropRefraction(el, props.data);
 
     const inner = <ElementRendererInner {...props} patternScopeId={patternScopeId} />;
 
-    if (hasBackdropRefraction) {
+    if (isRefractive) {
         const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         return (
@@ -2349,14 +2356,8 @@ function ElementRendererInner({
         }
     }
 
-    const hasBackdropRefraction = _elEffects.some(e => {
-        if (e.preset === "ripple") {
-            const resolvedParams = resolveEffectParams(e, performance.now(), data);
-            return resolvedParams.affectBeneath === true;
-        }
-        return false;
-    });
-    if (hasBackdropRefraction) {
+    const isRefractive = hasBackdropRefraction(el, data);
+    if (isRefractive) {
         const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         (baseStyle as any).backdropFilter = `url(#${effectFilterId})`;
@@ -2407,7 +2408,7 @@ function ElementRendererInner({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
 
-    if ((elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) && !hasBackdropRefraction) {
+    if ((elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
         (baseStyle as any).willChange = "transform";
 
         if (!currentTransform || currentTransform === "none") {

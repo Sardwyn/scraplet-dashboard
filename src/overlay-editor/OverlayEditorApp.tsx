@@ -43,7 +43,7 @@ import {
   OverlayComponentDef,
   OverlayMotionPreset
 } from "../shared/overlayTypes";
-import { ElementRenderer, isNativelyDom } from "../shared/overlayRenderer";
+import { ElementRenderer, isNativelyDom, hasBackdropRefraction } from "../shared/overlayRenderer";
 import {
   generateHeroPatternSrc,
   HERO_PATTERNS,
@@ -7145,7 +7145,7 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
                 height: baseResolution.height,
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
-                transformStyle: "preserve-3d",
+                transformStyle: previewElements.some((el: any) => hasBackdropRefraction(el)) ? undefined : "preserve-3d",
                 transition: zoomAnimating ? "transform 160ms ease-out" : undefined,
                 backgroundColor: "#0f1012",
                 backgroundImage: obsPreviewUrl 
@@ -11351,7 +11351,7 @@ const CanvasElement = React.memo(function CanvasElement({
       style={{
         transform: fullTransform !== 'none' ? fullTransform : undefined,
         transformOrigin: "center center",
-        transformStyle: "preserve-3d",
+        transformStyle: hasBackdropRefraction(renderedEl, renderData) ? undefined : "preserve-3d",
         pointerEvents: suppressPointerEvents ? "none" : "auto",
         background: "rgba(0,0,0,0)",
         opacity: isPhantom ? 0.35 : undefined,
@@ -11544,7 +11544,7 @@ const CanvasElement = React.memo(function CanvasElement({
           height: h,
           pointerEvents: suppressPointerEvents ? "none" : "auto",
           zIndex: isPrimary ? 10000 : isSelected ? 5000 : 30 + (elementIndex ?? 0),
-          transformStyle: "preserve-3d",
+          transformStyle: hasBackdropRefraction(el, renderData) ? undefined : "preserve-3d",
           background: "rgba(0,0,0,0)",
         }}
         onDoubleClick={(e) => {
@@ -11637,7 +11637,7 @@ const CanvasElement = React.memo(function CanvasElement({
       style={{
         pointerEvents: suppressPointerEvents ? "none" : "auto",
         zIndex: isPrimary ? 10000 : isSelected ? 5000 : 30 + (elementIndex ?? 0),
-        transformStyle: "preserve-3d",
+        transformStyle: hasBackdropRefraction(el, renderData) ? undefined : "preserve-3d",
       }}
     >
       {contentNode}
