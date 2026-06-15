@@ -2140,7 +2140,7 @@ export function ElementRenderer(props: {
     const el = props.element as any;
     const _elEffects = getElementEffects(el);
 
-    useParametricRafTick(_elEffects);
+    const tick = useParametricRafTick(_elEffects);
 
     const hasBackdropRefraction = _elEffects.some(e => {
         if (e.preset === "ripple") {
@@ -2157,7 +2157,7 @@ export function ElementRenderer(props: {
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         return (
             <>
-                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '1px', height: '1px', left: '-9999px', top: '-9999px', pointerEvents: 'none', overflow: 'hidden' }}>
                     <defs>
                         {renderSvgEffectFilter(_elEffects, effectFilterId, performance.now(), props.data)}
                     </defs>
@@ -2289,16 +2289,20 @@ function ElementRendererInner({
     const _effectsEnabled = (el as any).effect_enabled !== false && (el as any).effect_enabled !== 0 && (el as any).effect_enabled !== "false";
     const _overallOpacity = typeof (el as any).effect_opacity === "number" ? (el as any).effect_opacity : 1;
     const _parametricAsEffects: OverlayEffect[] = _effectsEnabled && Array.isArray((el as any).parametricEffects)
-      ? (el as any).parametricEffects.map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _overallOpacity } as any))
+      ? (el as any).parametricEffects
+          .filter((pe: any) => pe && pe.enabled !== false)
+          .map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _overallOpacity } as any))
       : [];
     const _mographEnabled = (el as any).mograph_enabled !== false && (el as any).mograph_enabled !== 0 && (el as any).mograph_enabled !== "false";
     const _mographOpacity = typeof (el as any).mograph_opacity === "number" ? (el as any).mograph_opacity : 1;
     const _mographAsEffects: OverlayEffect[] = _mographEnabled && Array.isArray((el as any).motionGraphics)
-      ? (el as any).motionGraphics.map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _mographOpacity } as any))
+      ? (el as any).motionGraphics
+          .filter((pe: any) => pe && pe.enabled !== false)
+          .map((pe: any) => ({ ...pe, type: 'parametric', effect_opacity: _mographOpacity } as any))
       : [];
     const _elEffects: OverlayEffect[] = [..._legacyEffects, ..._parametricAsEffects, ..._mographAsEffects];
     const _paramCss = useParametricCss(_elEffects, data);
-    useParametricRafTick(_elEffects); // drives re-renders for svgFilter/svgOverlay effects
+    const tick = useParametricRafTick(_elEffects); // drives re-renders for svgFilter/svgOverlay effects
     if (Object.keys(_paramCss).length > 0) {
         // Only apply safe properties that won't break layout
         // transform: combine additively (never override with "none")
@@ -2357,8 +2361,10 @@ function ElementRendererInner({
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         (baseStyle as any).backdropFilter = `url(#${effectFilterId})`;
         (baseStyle as any).WebkitBackdropFilter = `url(#${effectFilterId})`;
-        // Force browser layout compositing layer trigger
+        // Force browser layout compositing layer trigger and force repaint on tick
         (baseStyle as any).backgroundColor = (baseStyle as any).backgroundColor || "rgba(0, 0, 0, 0.01)";
+        // Avoid 3D translate3d as it forces a 3D context that isolates and breaks backdrop-filter in Chromium. Use 2D translate instead.
+        (baseStyle as any).transform = ((baseStyle as any).transform || "") + ` translate(${(tick % 2) * 0.001}px, ${(tick % 2) * 0.001}px)`;
     }
 
     // Use canonical transform resolver for 1:1 parity with runtime
@@ -2401,7 +2407,7 @@ function ElementRendererInner({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
 
-    if (elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) {
+    if ((elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) && !hasBackdropRefraction) {
         (baseStyle as any).willChange = "transform";
 
         if (!currentTransform || currentTransform === "none") {
