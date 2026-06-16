@@ -2165,6 +2165,7 @@ export function ElementRenderer(props: {
     canvasInitialized?: boolean;
     isCanvasDrawn?: boolean;
     forceDomRender?: boolean;
+    hasAnyRefraction?: boolean;
 }) {
     const patternScopeId = sanitizeSvgId(useId());
     const el = props.element as any;
@@ -2172,9 +2173,10 @@ export function ElementRenderer(props: {
 
     const tick = useParametricRafTick(_elEffects);
 
+    const hasAnyRefraction = props.hasAnyRefraction ?? (props.elementsById ? Object.values(props.elementsById).some((e: any) => hasBackdropRefraction(e, props.data)) : false);
     const isRefractive = hasBackdropRefraction(el, props.data);
 
-    const inner = <ElementRendererInner {...props} patternScopeId={patternScopeId} />;
+    const inner = <ElementRendererInner {...props} hasAnyRefraction={hasAnyRefraction} patternScopeId={patternScopeId} />;
 
     if (isRefractive) {
         const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
@@ -2211,6 +2213,7 @@ function ElementRendererInner({
     isCanvasDrawn,
     forceDomRender,
     patternScopeId: passedPatternScopeId,
+    hasAnyRefraction,
 }: {
     element: OverlayElement;
     elementsById?: Record<string, OverlayElement>;
@@ -2228,6 +2231,7 @@ function ElementRendererInner({
     isCanvasDrawn?: boolean;
     forceDomRender?: boolean;
     patternScopeId?: string;
+    hasAnyRefraction?: boolean;
 }) {
     const patternScopeId = passedPatternScopeId || sanitizeSvgId(useId());
     let el = element as any;
@@ -2425,7 +2429,7 @@ function ElementRendererInner({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
 
-    if ((elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
+    if ((elementIndex !== undefined || hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive && !hasAnyRefraction) {
         (baseStyle as any).willChange = "transform";
 
         if (!currentTransform || currentTransform === "none") {
@@ -2560,6 +2564,7 @@ function ElementRendererInner({
                                 widgetStates={widgetStates}
                                 overlayPublicId={overlayPublicId}
                                 forceDomRender={isForcedDom}
+                                hasAnyRefraction={hasAnyRefraction}
                             />
                         );
                     })}
@@ -2681,6 +2686,7 @@ function ElementRendererInner({
                                         widgetStates={widgetStates}
                                         overlayPublicId={overlayPublicId}
                                         forceDomRender={isForcedDom}
+                                        hasAnyRefraction={hasAnyRefraction}
                                     />
                                 </div>
                             </div>
@@ -2751,6 +2757,7 @@ function ElementRendererInner({
                                 widgetStates={widgetStates}
                                 overlayPublicId={overlayPublicId}
                                 forceDomRender={isForcedDom}
+                                hasAnyRefraction={hasAnyRefraction}
                             />
                         );
                     })}
