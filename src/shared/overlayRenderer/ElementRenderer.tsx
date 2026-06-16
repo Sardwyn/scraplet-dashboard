@@ -2178,12 +2178,20 @@ export function ElementRenderer(props: {
 
     const inner = <ElementRendererInner {...props} hasAnyRefraction={hasAnyRefraction} patternScopeId={patternScopeId} />;
 
+    const isVectorType = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape";
     if (isRefractive) {
-        const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+        const prefix = isVectorType ? el.type : "element";
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
+        
+        // Vector elements already render their own inline SVG with <defs> and the same filterId inside ElementRendererInner.
+        // Rendering a separate hidden SVG here would create duplicate IDs in the DOM, breaking filter resolution in Chromium.
+        if (isVectorType) {
+            return inner;
+        }
+
         return (
             <>
-                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '1px', height: '1px', left: '-9999px', top: '-9999px', pointerEvents: 'none', overflow: 'hidden' }}>
+                <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, pointerEvents: 'none', opacity: 0, overflow: 'visible' }}>
                     <defs>
                         {renderSvgEffectFilter(_elEffects, effectFilterId, performance.now(), props.data)}
                     </defs>
