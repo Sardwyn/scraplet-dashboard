@@ -1624,14 +1624,15 @@ function OverlayRuntimeRoot({ publicId }: { publicId: string }) {
 
   const domRenderMap = useMemo(() => {
     const map: Record<string, boolean> = {};
+    const hasAnyRefraction = finalElements.some((el) => hasBackdropRefraction(el, eventData));
     let hasSeenDomElement = false;
     finalElements.forEach((el) => {
       const nativelyDom = isNativelyDom(el, elementsById, (overlay as any)?.components || []);
       if (nativelyDom) hasSeenDomElement = true;
-      map[el.id] = nativelyDom || hasSeenDomElement;
+      map[el.id] = nativelyDom || hasSeenDomElement || hasAnyRefraction;
     });
     return map;
-  }, [finalElements, elementsById, overlay]);
+  }, [finalElements, elementsById, overlay, eventData]);
 
   // Calculate used fonts
   const usedFonts = React.useMemo(() => {

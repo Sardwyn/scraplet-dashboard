@@ -362,6 +362,23 @@ export function hasBackdropRefraction(el: any, data?: any): boolean {
     });
 }
 
+export function hasDescendantRefraction(groupEl: any, elementsById: Record<string, any>, data?: any, visited = new Set<string>()): boolean {
+    if (!groupEl || !groupEl.childIds || !elementsById) return false;
+    if (visited.has(groupEl.id)) return false;
+    visited.add(groupEl.id);
+    
+    for (const childId of groupEl.childIds) {
+        const child = elementsById[childId];
+        if (!child) continue;
+        if (hasBackdropRefraction(child, data)) return true;
+        if ((child.type === "group" || child.type === "frame") && hasDescendantRefraction(child, elementsById, data, visited)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
 
 function buildCssEffectStyle(effects: OverlayEffect[]): React.CSSProperties {
     const active = effects.filter((effect) => effect.enabled !== false);
@@ -2682,6 +2699,8 @@ function ElementRendererInner({
         const nextVisited = new Set(visited);
         nextVisited.add(el.id);
 
+        const hasRefraction = hasBackdropRefraction(el, data) || hasDescendantRefraction(el, elementsById || {}, data);
+
         const groupStyle: React.CSSProperties = {
             ...innerStyle,
             backgroundColor: group.backgroundColor,
@@ -2692,12 +2711,12 @@ function ElementRendererInner({
             position: "relative",
             overflow: el.type === "frame" && (group as OverlayFrameElement).clipContent !== false && !has3D ? "hidden" : undefined,
             mixBlendMode: (group as any).blendMode && (group as any).blendMode !== "normal" ? (group as any).blendMode as any : undefined,
-            transformStyle: "preserve-3d",
+            transformStyle: hasRefraction ? undefined : "preserve-3d",
         };
 
         const extendedBaseStyle: React.CSSProperties = {
             ...baseStyle,
-            transformStyle: "preserve-3d",
+            transformStyle: hasRefraction ? undefined : "preserve-3d",
         };
 
         return (

@@ -1627,11 +1627,12 @@ export function OverlayEditorApp({ initialOverlay }: Props) {
 
   const domRenderMap = useMemo(() => {
     const map: Record<string, boolean> = {};
+    const hasAnyRefraction = previewElements.some((el) => hasBackdropRefraction(el));
     let hasSeenDomElement = false;
     previewElements.forEach((el) => {
       const nativelyDom = isNativelyDom(el, previewElementsById, overlayComponents || []);
       if (nativelyDom) hasSeenDomElement = true;
-      map[el.id] = nativelyDom || hasSeenDomElement;
+      map[el.id] = nativelyDom || hasSeenDomElement || hasAnyRefraction;
     });
     return map;
   }, [previewElements, previewElementsById, overlayComponents]);
