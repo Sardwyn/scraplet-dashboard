@@ -2183,12 +2183,6 @@ export function ElementRenderer(props: {
         const prefix = isVectorType ? el.type : "element";
         const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
         
-        // Vector elements already render their own inline SVG with <defs> and the same filterId inside ElementRendererInner.
-        // Rendering a separate hidden SVG here would create duplicate IDs in the DOM, breaking filter resolution in Chromium.
-        if (isVectorType) {
-            return inner;
-        }
-
         return (
             <>
                 <svg key={`backdrop-filter-svg-${el.id}`} style={{ position: 'absolute', width: '100%', height: '100%', left: 0, top: 0, pointerEvents: 'none', opacity: 0, overflow: 'visible' }}>
@@ -2839,9 +2833,9 @@ function ElementRendererInner({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
+                            {!isRefractive && renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
-                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={!isRefractive && effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
                             {box.strokeSides && strokeWidth > 0 && Object.values(box.strokeSides).some(v => v === false)
                                 ? renderRectPerSideStroke(
@@ -2905,9 +2899,9 @@ function ElementRendererInner({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
+                            {!isRefractive && renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
-                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={!isRefractive && effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
                             {renderAlignedPathStroke(
                                 pathD,
@@ -3063,9 +3057,9 @@ function ElementRendererInner({
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
+                            {!isRefractive && renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
-                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={!isRefractive && effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
                             {renderFillLayers(pathD, fills, fillScopeId)}
                             {renderAlignedPathStroke(
                                 pathD,
@@ -3147,9 +3141,9 @@ function ElementRendererInner({
                     >
                         <defs>
                             {renderFillDefs(fills, fillScopeId, w, h)}
-                            {renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
+                            {!isRefractive && renderSvgEffectFilter(effects, effectFilterId, performance.now(), data)}
                         </defs>
-                        <g filter={effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length ? `url(#${effectFilterId})` : undefined}>
+                        <g filter={!isRefractive && Math.max(0, effects.filter(e => (e as any).type !== "parametric" || EFFECT_PRESETS[(e as any).preset]?.produces.includes("svgFilter")).length) ? `url(#${effectFilterId})` : undefined}>
                             {pathD && renderFillLayers(pathD, fills, fillScopeId)}
 
                             {s.shape === "rect" && s.strokeSides && strokeWidth > 0 && Object.values(s.strokeSides).some(v => v === false)
