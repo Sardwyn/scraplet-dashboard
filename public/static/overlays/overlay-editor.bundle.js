@@ -25643,11 +25643,11 @@ const EFFECT_PRESETS = {
       { key: "showGridLines", label: "Grid Lines", type: "boolean", default: true },
       { key: "showWaveRing", label: "Wave Ring", type: "boolean", default: true },
       { key: "gridColor", label: "Grid Color", type: "color", default: "#00ffff", animatable: true },
-      { key: "gridOpacity", label: "Grid Opacity", type: "number", default: 0.25, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "gridOpacity", label: "Grid Opacity", type: "number", default: 0.25, min: 0, max: 1, step: 0.05 },
       { key: "dotColor", label: "Dot Color", type: "color", default: "#00ffff", animatable: true },
-      { key: "dotOpacity", label: "Dot Opacity", type: "number", default: 0.6, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "dotOpacity", label: "Dot Opacity", type: "number", default: 0.6, min: 0, max: 1, step: 0.05 },
       { key: "waveColor", label: "Wave Color", type: "color", default: "#00ffff", animatable: true },
-      { key: "waveOpacity", label: "Wave Opacity", type: "number", default: 0.4, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "waveOpacity", label: "Wave Opacity", type: "number", default: 0.4, min: 0, max: 1, step: 0.05 },
       { key: "affectBeneath", label: "Affect Beneath", type: "boolean", default: false },
       { key: "clipMode", label: "Clip Mode", type: "select", default: "surface", options: ["surface", "space", "none"] }
     ]
