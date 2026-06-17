@@ -35822,7 +35822,7 @@ void main() {
     const hasBlend = elBlendMode && elBlendMode !== "normal";
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
-    if ((elementIndex !== void 0 || hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
+    if ((hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
       baseStyle.willChange = "transform";
       if (!currentTransform || currentTransform === "none") {
         baseStyle.transform = `translate3d(0, 0, ${zDepth}px)`;
