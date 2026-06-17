@@ -1675,6 +1675,7 @@ function ParametricEffectOverlay({
     const rafRef = useRef<number | null>(null);
     const [tick, setTick] = useState(0);
     const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
+    const [contextKey, setContextKey] = useState(0);
     const widthRef = useRef(width);
     widthRef.current = width;
     const heightRef = useRef(height);
@@ -1804,6 +1805,7 @@ function ParametricEffectOverlay({
         const renderFn = () => {
             const t = performance.now() - startTimeRef.current;
             const gl = renderer.gl;
+            if (gl.isContextLost()) return;
             gl.clearColor(0.0, 0.0, 0.0, 0.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
             
@@ -1817,14 +1819,29 @@ function ParametricEffectOverlay({
                 renderWebGLFrame(renderer, e.preset, finalParams, t, widthRef.current, heightRef.current);
             }
         };
+
+        const handleContextLost = (e: Event) => {
+            e.preventDefault();
+            console.warn('[ParametricEffectOverlay] WebGL Context lost on canvas:', canvas);
+        };
+
+        const handleContextRestored = () => {
+            console.log('[ParametricEffectOverlay] WebGL Context restored. Re-initializing WebGL renderer.');
+            setContextKey(prev => prev + 1);
+        };
+
+        canvas.addEventListener('webglcontextlost', handleContextLost, false);
+        canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
         
         const unregister = globalEffectCoordinator.register(renderFn);
         return () => {
+            canvas.removeEventListener('webglcontextlost', handleContextLost);
+            canvas.removeEventListener('webglcontextrestored', handleContextRestored);
             unregister();
             cleanupWebGLRenderer(renderer);
             webglManagerRef.current = null;
         };
-    }, [webglEffects.map((e: any) => e.id ?? e.preset).join(","), elementId, isPerformanceMode]);
+    }, [webglEffects.map((e: any) => e.id ?? e.preset).join(","), elementId, isPerformanceMode, contextKey]);
 
 
     useEffect(() => {
