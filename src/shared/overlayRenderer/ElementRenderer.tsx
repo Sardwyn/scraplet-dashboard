@@ -1095,7 +1095,7 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
     });
 
     return (
-        <filter id={filterId} filterUnits="userSpaceOnUse" x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
+        <filter id={filterId} filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
             {nodes}
         </filter>
     );
@@ -2368,8 +2368,14 @@ function ElementContainer({ el, style, isRefractive, effectFilterId, tick, child
     const isMirroredX = (el.scaleX ?? 1) < 0;
     const isMirroredY = (el.scaleY ?? 1) < 0;
     
-    // Invert parent scale flips locally so the cumulative screen-space scale is always positive (1)
-    const childTransform = `scaleX(${isMirroredX ? -1 : 1}) scaleY(${isMirroredY ? -1 : 1}) translate(${(tick % 2) * 0.001}px, ${(tick % 2) * 0.001}px)`;
+    const needsTransform = isMirroredX || isMirroredY;
+    const childTransform = needsTransform
+        ? `scaleX(${isMirroredX ? -1 : 1}) scaleY(${isMirroredY ? -1 : 1})`
+        : undefined;
+
+    // Toggle background color slightly to force Chromium to re-evaluate the backdrop filter
+    // on every frame without applying a CSS transform (which distorts sampling under workspace zoom).
+    const backgroundColor = (tick % 2 === 0) ? 'rgba(0, 0, 0, 0.01)' : 'rgba(0, 0, 0, 0.0101)';
 
     return (
         <div {...props} style={style}>
@@ -2382,11 +2388,10 @@ function ElementContainer({ el, style, isRefractive, effectFilterId, tick, child
                         pointerEvents: 'none',
                         zIndex: -1,
                         borderRadius: style?.borderRadius ?? 'inherit',
-                        backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                        backgroundColor,
                         backdropFilter: `url(#${effectFilterId})`,
                         WebkitBackdropFilter: `url(#${effectFilterId})`,
-                        transform: childTransform,
-                        transformOrigin: 'center center'
+                        ...(childTransform ? { transform: childTransform, transformOrigin: 'center center' } : {})
                     }}
                 />
             )}
