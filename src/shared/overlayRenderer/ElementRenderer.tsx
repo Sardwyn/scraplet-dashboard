@@ -999,6 +999,8 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
                         in={`${pid}-flood`}
                         in2={`${pid}-flood`}
                         operator="in"
+                        x={0}
+                        y={0}
                         width={roundedPixelSize}
                         height={roundedPixelSize}
                         result={`${pid}-tile-base`}
@@ -1094,8 +1096,30 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
         }
     });
 
+    const isRefractiveFilter = effects.some(e => {
+        if (e.preset === "ripple" || e.preset === "pixelator") {
+            const resolvedParams = resolveEffectParams(e, t ?? performance.now(), data);
+            return resolvedParams.affectBeneath === true;
+        }
+        return false;
+    });
+
+    const fx = isRefractiveFilter ? "0%" : "-80%";
+    const fy = isRefractiveFilter ? "0%" : "-80%";
+    const fwidth = isRefractiveFilter ? "100%" : "260%";
+    const fheight = isRefractiveFilter ? "100%" : "260%";
+
     return (
-        <filter id={filterId} filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" x="-80%" y="-80%" width="260%" height="260%" colorInterpolationFilters="sRGB">
+        <filter
+            id={filterId}
+            filterUnits="userSpaceOnUse"
+            primitiveUnits="userSpaceOnUse"
+            x={fx}
+            y={fy}
+            width={fwidth}
+            height={fheight}
+            colorInterpolationFilters="sRGB"
+        >
             {nodes}
         </filter>
     );
