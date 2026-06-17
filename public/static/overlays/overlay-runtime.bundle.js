@@ -35818,11 +35818,11 @@ void main() {
     }
     const zDepth = (elementIndex != null ? elementIndex : 0) * 10;
     const currentTransform = baseStyle.transform;
-    const hasEffects = _elEffects.length > 0;
+    _elEffects.length > 0;
     const hasBlend = elBlendMode && elBlendMode !== "normal";
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
-    if ((hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
+    if ((hasBlend || hasOpacity || isMedia) && !isRefractive) {
       baseStyle.willChange = "transform";
       if (!currentTransform || currentTransform === "none") {
         baseStyle.transform = `translate3d(0, 0, ${zDepth}px)`;

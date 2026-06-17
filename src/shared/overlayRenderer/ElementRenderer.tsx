@@ -2431,7 +2431,7 @@ function ElementRendererInner({
     const hasOpacity = typeof el.opacity === "number" && el.opacity < 1;
     const isMedia = el.type === "image" || el.type === "video";
 
-    if ((hasBlend || hasEffects || hasOpacity || isMedia) && !isRefractive) {
+    if ((hasBlend || hasOpacity || isMedia) && !isRefractive) {
         (baseStyle as any).willChange = "transform";
 
         if (!currentTransform || currentTransform === "none") {
