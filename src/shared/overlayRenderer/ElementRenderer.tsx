@@ -1676,6 +1676,7 @@ function ParametricEffectOverlay({
     const [tick, setTick] = useState(0);
     const [cssOverlayStyle, setCssOverlayStyle] = useState<React.CSSProperties>({});
     const [contextKey, setContextKey] = useState(0);
+    const [webglFailed, setWebGLFailed] = useState(false);
     const widthRef = useRef(width);
     widthRef.current = width;
     const heightRef = useRef(height);
@@ -1798,7 +1799,11 @@ function ParametricEffectOverlay({
         
         const activePresets = webglEffects.map((e: any) => e.preset);
         const renderer = initWebGLRenderer(canvas, activePresets);
-        if (!renderer) return;
+        if (!renderer) {
+            setWebGLFailed(true);
+            return;
+        }
+        setWebGLFailed(false);
         webglManagerRef.current = renderer;
         
         const startTimeRef = { current: performance.now() };
@@ -1823,6 +1828,7 @@ function ParametricEffectOverlay({
         const handleContextLost = (e: Event) => {
             e.preventDefault();
             console.warn('[ParametricEffectOverlay] WebGL Context lost on canvas:', canvas);
+            setWebGLFailed(true);
         };
 
         const handleContextRestored = () => {
@@ -1976,6 +1982,7 @@ function ParametricEffectOverlay({
                             overflow: borderRadius ? "hidden" : undefined,
                             transform: "translateZ(0)",
                             willChange: "transform",
+                            display: webglFailed ? "none" : "block",
                             ...(webglClipPath ? { clipPath: webglClipPath } : {}),
                         }}
                     />
