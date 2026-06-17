@@ -1045,6 +1045,82 @@ void main() {
     fragColor = vec4(finalRGB, alpha);
 }
 `,
+
+  pixelator: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float pixelSize;
+uniform int palette;
+uniform float ditherIntensity;
+uniform float opacity;
+
+float getBayerValue(int x, int y) {
+    float bayer[16] = float[](
+        0.0, 0.5, 0.125, 0.625,
+        0.75, 0.25, 0.875, 0.375,
+        0.1875, 0.6875, 0.0625, 0.5625,
+        0.9375, 0.4375, 0.8125, 0.3125
+    );
+    return bayer[(y % 4) * 4 + (x % 4)];
+}
+
+void main() {
+    vec2 pSize = vec2(pixelSize) / uResolution;
+    vec2 uv = floor(vUv / pSize) * pSize + (pSize * 0.5);
+    
+    float t = uTime * 0.45;
+    float w1 = sin(uv.x * 3.5 + t) * 0.5 + 0.5;
+    float w2 = cos(uv.y * 4.5 - t * 0.8) * 0.5 + 0.5;
+    float w3 = sin(distance(uv, vec2(0.5, 0.5)) * 6.0 - t * 1.3) * 0.5 + 0.5;
+    float lum = (w1 * 0.35 + w2 * 0.35 + w3 * 0.30);
+    
+    ivec2 pxCoord = ivec2(uv * uResolution / pixelSize);
+    float dither = getBayerValue(pxCoord.x, pxCoord.y) - 0.5;
+    lum = clamp(lum + dither * ditherIntensity, 0.0, 1.0);
+    
+    vec3 col;
+    float finalAlpha = opacity;
+    
+    if (palette == 1) {
+        if (lum < 0.25)      col = vec3(0.058, 0.219, 0.058);
+        else if (lum < 0.50) col = vec3(0.188, 0.384, 0.188);
+        else if (lum < 0.75) col = vec3(0.545, 0.674, 0.058);
+        else                 col = vec3(0.607, 0.737, 0.058);
+    } 
+    else if (palette == 2) {
+        if (lum < 0.12)      col = vec3(0.0, 0.0, 0.0);
+        else if (lum < 0.25) col = vec3(0.0, 0.439, 0.925);
+        else if (lum < 0.38) col = vec3(0.847, 0.157, 0.0);
+        else if (lum < 0.50) col = vec3(0.0, 0.659, 0.0);
+        else if (lum < 0.63) col = vec3(0.0, 0.910, 0.847);
+        else if (lum < 0.75) col = vec3(0.973, 0.722, 0.973);
+        else if (lum < 0.88) col = vec3(0.988, 0.988, 0.0);
+        else                 col = vec3(1.0, 1.0, 1.0);
+        finalAlpha *= (0.35 + lum * 0.65);
+    } 
+    else if (palette == 3) {
+        if (lum < 0.2)      col = vec3(0.039, 0.020, 0.094);
+        else if (lum < 0.4) col = vec3(0.333, 0.0, 0.667);
+        else if (lum < 0.6) col = vec3(1.0, 0.0, 0.333);
+        else if (lum < 0.8) col = vec3(0.0, 0.941, 1.0);
+        else                 col = vec3(0.941, 0.902, 0.0);
+        finalAlpha *= (0.3 + lum * 0.7);
+    } 
+    else if (palette == 4) {
+        col = (lum < 0.5) ? vec3(0.0) : vec3(1.0);
+    } 
+    else {
+        col = mix(vec3(0.039, 0.0, 0.118), vec3(0.0, 0.941, 1.0), lum);
+        finalAlpha *= (0.2 + lum * 0.8);
+    }
+    
+    fragColor = vec4(col, finalAlpha);
+}
+`,
 };
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -1251,6 +1327,17 @@ export function renderWebGLFrame(
     gl.uniform1f(gl.getUniformLocation(program, "scratchDensity"), Number(params.scratchDensity ?? 0.3));
     gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number(params.vignetteStrength ?? 0.7));
     gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 0.95));
+  } else if (preset === "pixelator") {
+    gl.uniform1f(gl.getUniformLocation(program, "pixelSize"), Number(params.pixelSize ?? 8));
+    const paletteStr = String(params.palette ?? "none");
+    let paletteId = 0; // none
+    if (paletteStr === "gameboy") paletteId = 1;
+    else if (paletteStr === "nes") paletteId = 2;
+    else if (paletteStr === "cyberpunk") paletteId = 3;
+    else if (paletteStr === "monochrome") paletteId = 4;
+    gl.uniform1i(gl.getUniformLocation(program, "palette"), paletteId);
+    gl.uniform1f(gl.getUniformLocation(program, "ditherIntensity"), Number(params.ditherIntensity ?? 0.20));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number(params.opacity ?? 1.0));
   }
 
 

@@ -26091,6 +26091,21 @@ const EFFECT_PRESETS = {
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
     ]
   },
+  pixelator: {
+    id: "pixelator",
+    label: "Pixelator",
+    description: "Retro downsampling pixelation shader with emulated color palettes and Bayer dithering",
+    category: "distortion",
+    isMograph: true,
+    defaultDuration: 1e3,
+    produces: ["webgl"],
+    params: [
+      { key: "pixelSize", label: "Pixel Size", type: "number", default: 8, min: 1, max: 64, step: 1, animatable: true },
+      { key: "palette", label: "Palette", type: "select", default: "none", options: ["none", "gameboy", "nes", "cyberpunk", "monochrome"] },
+      { key: "ditherIntensity", label: "Dither Strength", type: "number", default: 0.2, min: 0, max: 1, step: 0.05, animatable: true },
+      { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true }
+    ]
+  },
   crtEmulator: {
     id: "crtEmulator",
     label: "CRT Emulator",
@@ -28541,6 +28556,81 @@ void main() {
     float alpha = clamp(alphaAccum, 0.0, 1.0) * opacity;
     fragColor = vec4(finalRGB, alpha);
 }
+`,
+  pixelator: `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform float pixelSize;
+uniform int palette;
+uniform float ditherIntensity;
+uniform float opacity;
+
+float getBayerValue(int x, int y) {
+    float bayer[16] = float[](
+        0.0, 0.5, 0.125, 0.625,
+        0.75, 0.25, 0.875, 0.375,
+        0.1875, 0.6875, 0.0625, 0.5625,
+        0.9375, 0.4375, 0.8125, 0.3125
+    );
+    return bayer[(y % 4) * 4 + (x % 4)];
+}
+
+void main() {
+    vec2 pSize = vec2(pixelSize) / uResolution;
+    vec2 uv = floor(vUv / pSize) * pSize + (pSize * 0.5);
+    
+    float t = uTime * 0.45;
+    float w1 = sin(uv.x * 3.5 + t) * 0.5 + 0.5;
+    float w2 = cos(uv.y * 4.5 - t * 0.8) * 0.5 + 0.5;
+    float w3 = sin(distance(uv, vec2(0.5, 0.5)) * 6.0 - t * 1.3) * 0.5 + 0.5;
+    float lum = (w1 * 0.35 + w2 * 0.35 + w3 * 0.30);
+    
+    ivec2 pxCoord = ivec2(uv * uResolution / pixelSize);
+    float dither = getBayerValue(pxCoord.x, pxCoord.y) - 0.5;
+    lum = clamp(lum + dither * ditherIntensity, 0.0, 1.0);
+    
+    vec3 col;
+    float finalAlpha = opacity;
+    
+    if (palette == 1) {
+        if (lum < 0.25)      col = vec3(0.058, 0.219, 0.058);
+        else if (lum < 0.50) col = vec3(0.188, 0.384, 0.188);
+        else if (lum < 0.75) col = vec3(0.545, 0.674, 0.058);
+        else                 col = vec3(0.607, 0.737, 0.058);
+    } 
+    else if (palette == 2) {
+        if (lum < 0.12)      col = vec3(0.0, 0.0, 0.0);
+        else if (lum < 0.25) col = vec3(0.0, 0.439, 0.925);
+        else if (lum < 0.38) col = vec3(0.847, 0.157, 0.0);
+        else if (lum < 0.50) col = vec3(0.0, 0.659, 0.0);
+        else if (lum < 0.63) col = vec3(0.0, 0.910, 0.847);
+        else if (lum < 0.75) col = vec3(0.973, 0.722, 0.973);
+        else if (lum < 0.88) col = vec3(0.988, 0.988, 0.0);
+        else                 col = vec3(1.0, 1.0, 1.0);
+        finalAlpha *= (0.35 + lum * 0.65);
+    } 
+    else if (palette == 3) {
+        if (lum < 0.2)      col = vec3(0.039, 0.020, 0.094);
+        else if (lum < 0.4) col = vec3(0.333, 0.0, 0.667);
+        else if (lum < 0.6) col = vec3(1.0, 0.0, 0.333);
+        else if (lum < 0.8) col = vec3(0.0, 0.941, 1.0);
+        else                 col = vec3(0.941, 0.902, 0.0);
+        finalAlpha *= (0.3 + lum * 0.7);
+    } 
+    else if (palette == 4) {
+        col = (lum < 0.5) ? vec3(0.0) : vec3(1.0);
+    } 
+    else {
+        col = mix(vec3(0.039, 0.0, 0.118), vec3(0.0, 0.941, 1.0), lum);
+        finalAlpha *= (0.2 + lum * 0.8);
+    }
+    
+    fragColor = vec4(col, finalAlpha);
+}
 `
 };
 function hexToRgb(hex) {
@@ -28623,7 +28713,7 @@ function initWebGLRenderer(canvas, activePresets) {
   };
 }
 function renderWebGLFrame(renderer, preset, params, t2, width, height) {
-  var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t3, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na;
+  var _a3, _b, _c, _d, _e2, _f, _g, _h2, _i2, _j, _k, _l, _m, _n2, _o2, _p, _q, _r2, _s2, _t3, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U, _V, _W, _X, _Y, _Z, __, _$, _aa, _ba, _ca, _da, _ea, _fa, _ga, _ha, _ia, _ja, _ka, _la, _ma, _na, _oa, _pa, _qa, _ra;
   const { gl, programs, quadBuffer } = renderer;
   const program = programs[preset];
   if (!program) return;
@@ -28725,6 +28815,17 @@ function renderWebGLFrame(renderer, preset, params, t2, width, height) {
     gl.uniform1f(gl.getUniformLocation(program, "scratchDensity"), Number((_la = params.scratchDensity) != null ? _la : 0.3));
     gl.uniform1f(gl.getUniformLocation(program, "vignetteStrength"), Number((_ma = params.vignetteStrength) != null ? _ma : 0.7));
     gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_na = params.opacity) != null ? _na : 0.95));
+  } else if (preset === "pixelator") {
+    gl.uniform1f(gl.getUniformLocation(program, "pixelSize"), Number((_oa = params.pixelSize) != null ? _oa : 8));
+    const paletteStr = String((_pa = params.palette) != null ? _pa : "none");
+    let paletteId = 0;
+    if (paletteStr === "gameboy") paletteId = 1;
+    else if (paletteStr === "nes") paletteId = 2;
+    else if (paletteStr === "cyberpunk") paletteId = 3;
+    else if (paletteStr === "monochrome") paletteId = 4;
+    gl.uniform1i(gl.getUniformLocation(program, "palette"), paletteId);
+    gl.uniform1f(gl.getUniformLocation(program, "ditherIntensity"), Number((_qa = params.ditherIntensity) != null ? _qa : 0.2));
+    gl.uniform1f(gl.getUniformLocation(program, "opacity"), Number((_ra = params.opacity) != null ? _ra : 1));
   }
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 }
@@ -102885,7 +102986,7 @@ function EffectsStackControls({
                 );
                 onChange({ parametricEffects: next });
               },
-              children: Object.values(EFFECT_PRESETS).filter((p2) => !p2.isMograph || p2.id === pe2.preset || p2.id === "ripple").map((p2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: p2.id, children: p2.label }, p2.id, false, {
+              children: Object.values(EFFECT_PRESETS).filter((p2) => !p2.isMograph || p2.id === pe2.preset || p2.id === "ripple" || p2.id === "pixelator").map((p2) => /* @__PURE__ */ jsxDevRuntimeExports.jsxDEV("option", { value: p2.id, children: p2.label }, p2.id, false, {
                 fileName: "/home/sardwyn/repos/scraplet-dashboard/src/overlay-editor/OverlayEditorApp.tsx",
                 lineNumber: 10341,
                 columnNumber: 19
@@ -103630,7 +103731,7 @@ function EffectsStackControls({
         className: `${uiClasses.buttonGhost} h-8 w-full`,
         onClick: () => {
           var _a4, _b;
-          const nonMographPresets = Object.values(EFFECT_PRESETS).filter((p2) => !p2.isMograph || p2.id === "ripple");
+          const nonMographPresets = Object.values(EFFECT_PRESETS).filter((p2) => !p2.isMograph || p2.id === "ripple" || p2.id === "pixelator");
           const firstPreset = ((_a4 = nonMographPresets[0]) == null ? void 0 : _a4.id) || Object.keys(EFFECT_PRESETS)[0];
           const def = EFFECT_PRESETS[firstPreset];
           const defaultParams = {};
