@@ -2588,8 +2588,6 @@ function ElementRendererInner({
     if (isRefractive) {
         // Force browser layout compositing layer trigger and force repaint on tick
         (baseStyle as any).backgroundColor = (baseStyle as any).backgroundColor || "rgba(0, 0, 0, 0.01)";
-        // Avoid 3D translate3d as it forces a 3D context that isolates and breaks backdrop-filter in Chromium. Use 2D translate instead.
-        (baseStyle as any).transform = ((baseStyle as any).transform || "") + ` translate(${(tick % 2) * 0.001}px, ${(tick % 2) * 0.001}px)`;
     }
 
     // Use canonical transform resolver for 1:1 parity with runtime
