@@ -977,9 +977,10 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
             currentResult = `${pid}-displaced`;
         } else if (e.preset === "pixelator") {
             const pixelSize = Math.max(1, Number(params.pixelSize ?? 8));
-            const sampleX = Math.floor(pixelSize / 2);
-            const sampleY = Math.floor(pixelSize / 2);
-            const dilateRadius = pixelSize / 2;
+            const roundedPixelSize = Math.max(1, Math.round(pixelSize));
+            const sampleX = Math.floor(roundedPixelSize / 2);
+            const sampleY = Math.floor(roundedPixelSize / 2);
+            const dilateRadius = Math.floor(roundedPixelSize / 2);
             const paletteStr = String(params.palette ?? "none");
 
             nodes.push(
@@ -998,8 +999,8 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
                         in={`${pid}-flood`}
                         in2={`${pid}-flood`}
                         operator="in"
-                        width={pixelSize}
-                        height={pixelSize}
+                        width={roundedPixelSize}
+                        height={roundedPixelSize}
                         result={`${pid}-tile-base`}
                     />
                     <feTile
@@ -2159,12 +2160,16 @@ function renderParentClipPaths(elements: OverlayElement[], elementsById: Record<
  * - Unified path: renders directly from widgetStates prop (no event listening needed)
  * - IIFE path: listens for scraplet:widget:state events, dispatches scraplet:widget:ready
  */
-function WidgetRuntimeNode({ baseStyle, w, h, has3D, widgetId, instanceId, Renderer, unifiedState }: {
+function WidgetRuntimeNode({ baseStyle, w, h, has3D, widgetId, instanceId, Renderer, unifiedState, el, isRefractive, effectFilterId, tick }: {
     baseStyle: React.CSSProperties;
     w: number; h: number; has3D: boolean;
     widgetId: string; instanceId: string;
     Renderer: any;
     unifiedState?: Record<string, any>;
+    el: any;
+    isRefractive?: boolean;
+    effectFilterId?: string;
+    tick?: number;
 }) {
     const [iifeState, setIifeState] = useState<Record<string, any>>({});
 
@@ -2203,24 +2208,32 @@ function WidgetRuntimeNode({ baseStyle, w, h, has3D, widgetId, instanceId, Rende
     const state = unifiedState && Object.keys(unifiedState).length > 0 ? unifiedState : iifeState;
 
     return (
-        <div
+        <ElementContainer
+            el={el ?? { id: instanceId }}
             style={{ ...baseStyle, width: w, height: h, overflow: has3D ? 'visible' : 'hidden', pointerEvents: 'none', position: 'absolute' }}
+            isRefractive={isRefractive}
+            effectFilterId={effectFilterId}
+            tick={tick}
             data-element-id={instanceId}
             data-widget-id={widgetId}
         >
             {Renderer && Object.keys(state).length > 0 && (
                 <Renderer state={state} config={{ instanceId }} width={w} height={h} />
             )}
-        </div>
+        </ElementContainer>
     );
 }
 
-function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initialState, Renderer }: {
+function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initialState, Renderer, el, isRefractive, effectFilterId, tick }: {
     baseStyle: React.CSSProperties;
     w: number; h: number; has3D: boolean;
     widgetId: string; instanceId: string;
     initialState: Record<string, any>;
     Renderer: any;
+    el: any;
+    isRefractive?: boolean;
+    effectFilterId?: string;
+    tick?: number;
 }) {
     const [widgetState, setWidgetState] = useState<Record<string, any>>(initialState);
 
@@ -2239,13 +2252,19 @@ function WidgetEditorNode({ baseStyle, w, h, has3D, widgetId, instanceId, initia
     }, [widgetId, instanceId]);
 
     return (
-        <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}
-             data-widget-editor-preview={widgetId}
-             data-widget-instance-id={instanceId}>
+        <ElementContainer
+            el={el ?? { id: instanceId }}
+            style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}
+            isRefractive={isRefractive}
+            effectFilterId={effectFilterId}
+            tick={tick}
+            data-widget-editor-preview={widgetId}
+            data-widget-instance-id={instanceId}
+        >
             {Object.keys(widgetState).length > 0 && (
                 <Renderer state={widgetState} config={{ instanceId }} width={w} height={h} />
             )}
-        </div>
+        </ElementContainer>
     );
 }
 
@@ -2345,6 +2364,37 @@ export function ElementRenderer(props: {
     return inner;
 }
 
+function ElementContainer({ el, style, isRefractive, effectFilterId, tick, children, ...props }: any) {
+    const isMirroredX = (el.scaleX ?? 1) < 0;
+    const isMirroredY = (el.scaleY ?? 1) < 0;
+    
+    // Invert parent scale flips locally so the cumulative screen-space scale is always positive (1)
+    const childTransform = `scaleX(${isMirroredX ? -1 : 1}) scaleY(${isMirroredY ? -1 : 1}) translate(${(tick % 2) * 0.001}px, ${(tick % 2) * 0.001}px)`;
+
+    return (
+        <div {...props} style={style}>
+            {isRefractive && (
+                <div
+                    key={`backdrop-filter-layer-${el.id}`}
+                    style={{
+                        position: 'absolute',
+                        top: 0, left: 0, width: '100%', height: '100%',
+                        pointerEvents: 'none',
+                        zIndex: -1,
+                        borderRadius: style?.borderRadius ?? 'inherit',
+                        backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                        backdropFilter: `url(#${effectFilterId})`,
+                        WebkitBackdropFilter: `url(#${effectFilterId})`,
+                        transform: childTransform,
+                        transformOrigin: 'center center'
+                    }}
+                />
+            )}
+            {children}
+        </div>
+    );
+}
+
 function ElementRendererInner({
     element,
     elementsById,
@@ -2399,6 +2449,10 @@ function ElementRendererInner({
             el = { ...el, ...overrides };
         }
     }
+
+    const isRefractive = hasBackdropRefraction(el, data);
+    const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
+    const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
 
     const canvasTypes = ['shape', 'rect', 'ellipse', 'circle', 'path', 'text', 'video', 'image'];
     const parametric = Array.isArray((el as any).parametricEffects) ? (el as any).parametricEffects : [];
@@ -2526,12 +2580,7 @@ function ElementRendererInner({
         }
     }
 
-    const isRefractive = hasBackdropRefraction(el, data);
     if (isRefractive) {
-        const prefix = el.type === "box" || el.type === "path" || el.type === "boolean" || el.type === "shape" ? el.type : "element";
-        const effectFilterId = sanitizeSvgId(`${prefix}-effect-${patternScopeId}-${el.id}`);
-        (baseStyle as any).backdropFilter = `url(#${effectFilterId})`;
-        (baseStyle as any).WebkitBackdropFilter = `url(#${effectFilterId})`;
         // Force browser layout compositing layer trigger and force repaint on tick
         (baseStyle as any).backgroundColor = (baseStyle as any).backgroundColor || "rgba(0, 0, 0, 0.01)";
         // Avoid 3D translate3d as it forces a 3D context that isolates and breaks backdrop-filter in Chromium. Use 2D translate instead.
@@ -2875,7 +2924,7 @@ function ElementRendererInner({
         };
 
         return (
-            <div data-element-id={el.id} style={extendedBaseStyle}>
+            <ElementContainer el={el} style={extendedBaseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={groupStyle}>
                     {group.childIds?.map((childId) => {
                         const child = elementsById?.[childId];
@@ -2911,7 +2960,7 @@ function ElementRendererInner({
                         );
                     })}
                 </div>
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -2974,7 +3023,7 @@ function ElementRendererInner({
         const strokeAlign = box.strokeAlign ?? "center";
 
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, opacity: undefined, position: "relative", overflow: "visible" }}>
                     <div style={{ position: 'absolute', inset: 0, opacity: typeof el.opacity === 'number' ? el.opacity : 1, overflow: 'visible' }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
@@ -3023,7 +3072,7 @@ function ElementRendererInner({
                         isRectangular={true}
                     />
                 </div>
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3039,7 +3088,7 @@ function ElementRendererInner({
         const effectFilterId = sanitizeSvgId(`path-effect-${patternScopeId}-${pathEl.id}`);
 
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, opacity: undefined, position: "relative" }}>
                     {!hideInnerContent && (
                     <div style={{ position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1 }}>
@@ -3077,7 +3126,7 @@ function ElementRendererInner({
                         data={data}
                     />
                 </div>
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3102,7 +3151,7 @@ function ElementRendererInner({
                 const pathId = `top-${el.id}`;
                 const offset = textEl.textOnPathOffset ?? 0;
                 return (
-                    <div data-element-id={el.id} style={baseStyle}>
+                    <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                     {!hideInnerContent && (
                         <svg width="100%" height="100%" overflow="visible" style={{ position: 'absolute', inset: 0 }}>
                             <defs>
@@ -3121,7 +3170,7 @@ function ElementRendererInner({
                             </text>
                         </svg>
                     )}
-                    </div>
+                    </ElementContainer>
                 );
             }
         }
@@ -3142,7 +3191,7 @@ function ElementRendererInner({
             _textW, _textH, _textAlign, _needsPath
         );
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 {!hideInnerContent && (
                 <div
                     style={{
@@ -3182,7 +3231,7 @@ function ElementRendererInner({
                     shapePath={_textShapePath || undefined}
                     data={data}
                 />
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3198,7 +3247,7 @@ function ElementRendererInner({
         const effectFilterId = sanitizeSvgId(`boolean-effect-${patternScopeId}-${booleanEl.id}`);
 
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, opacity: undefined, position: "relative" }}>
                     <div style={{ position: "absolute", inset: 0, opacity: typeof el.opacity === "number" ? el.opacity : 1 }}>
                     <svg width="100%" height="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ overflow: "visible" }}>
@@ -3234,7 +3283,7 @@ function ElementRendererInner({
                         data={data}
                     />
                 </div>
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3275,7 +3324,7 @@ function ElementRendererInner({
             && effects.filter(e => (e as any).type !== 'parametric').length === 0;
 
         return (
-            <div data-element-id={el.id} style={baseStyle}>
+            <ElementContainer el={el} style={baseStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, opacity: undefined, position: 'relative' }}>
                     {!hideInnerContent && (
                     <div style={{ position: 'absolute', inset: 0, opacity: typeof el.opacity === 'number' ? el.opacity : 1 }}>
@@ -3333,7 +3382,7 @@ function ElementRendererInner({
                         isRectangular={s.shape === "rect"}
                     />
                 </div>
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3370,7 +3419,7 @@ function ElementRendererInner({
         const mergedFilter = [cssEffectStyle.filter, adjFilter].filter(Boolean).join(" ");
         
         return (
-            <div data-element-id={el.id} style={imageStyle}>
+            <ElementContainer el={el} style={imageStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: useClipPath ? undefined : "hidden", filter: mergedFilter || undefined }}>
                     {!hideInnerContent && src && (
                         <KeyedMedia kind="image" src={src} fit={img.fit} keying={img.keying} borderRadius={effectiveBr} />
@@ -3385,7 +3434,7 @@ function ElementRendererInner({
                     borderRadius={effectiveBr}
                     isRectangular={true}
                 />
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3404,7 +3453,7 @@ function ElementRendererInner({
         const videoStyle: React.CSSProperties = { ...baseStyle, mixBlendMode };
 
         return (
-            <div data-element-id={el.id} style={videoStyle}>
+            <ElementContainer el={el} style={videoStyle} isRefractive={isRefractive} effectFilterId={effectFilterId} tick={tick} data-element-id={el.id}>
                 <div style={{ ...innerStyle, ...cssEffectStyle, borderRadius: effectiveBr, overflow: "hidden" }}>
                     {!hideInnerContent && src && (
                         <KeyedMedia
@@ -3430,7 +3479,7 @@ function ElementRendererInner({
                     borderRadius={effectiveBr}
                     isRectangular={true}
                 />
-            </div>
+            </ElementContainer>
         );
     }
 
@@ -3946,18 +3995,28 @@ function ElementRendererInner({
                         instanceId={el.id}
                         initialState={{ ...propOverrides }}
                         Renderer={EditorWidgetRenderer}
+                        el={el}
+                        isRefractive={isRefractive}
+                        effectFilterId={effectFilterId}
+                        tick={tick}
                     />
                 );
             }
             return (
-                <div style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}>
+                <ElementContainer
+                    el={el}
+                    style={{ ...baseStyle, width: w, height: h, position: 'absolute', overflow: has3D ? 'visible' : 'hidden', isolation: 'isolate', pointerEvents: 'auto' }}
+                    isRefractive={isRefractive}
+                    effectFilterId={effectFilterId}
+                    tick={tick}
+                    data-widget-editor-preview={widgetId}
+                    data-widget-instance-id={el.id}
+                >
                     <div
                         id={containerId}
                         style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', pointerEvents: 'none' }}
-                        data-widget-editor-preview={widgetId}
-                        data-widget-instance-id={el.id}
                     />
-                </div>
+                </ElementContainer>
             );
         }
 
@@ -3976,6 +4035,10 @@ function ElementRendererInner({
                     instanceId={el.id}
                     Renderer={RuntimeWidgetRenderer}
                     unifiedState={widgetStates?.[el.id]}
+                    el={el}
+                    isRefractive={isRefractive}
+                    effectFilterId={effectFilterId}
+                    tick={tick}
                 />
             );
         }
@@ -3984,8 +4047,12 @@ function ElementRendererInner({
         const rp = new URLSearchParams();
         Object.entries(propOverrides).forEach(([k, v]) => rp.set(k, String(v)));
         return (
-            <div
+            <ElementContainer
+                el={el}
                 style={{ ...baseStyle, width: w, height: h, overflow: has3D ? 'visible' : 'hidden', pointerEvents: 'none', position: 'absolute' }}
+                isRefractive={isRefractive}
+                effectFilterId={effectFilterId}
+                tick={tick}
                 data-element-id={el.id}
                 data-widget-id={widgetId}
                 data-widget-params={rp.toString()}

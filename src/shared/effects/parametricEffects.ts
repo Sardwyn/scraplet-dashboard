@@ -836,7 +836,7 @@ export const EFFECT_PRESETS: Record<string, PresetDefinition> = {
     defaultDuration: 1000,
     produces: ["webgl", "svgFilter"],
     params: [
-      { key: "pixelSize", label: "Pixel Size", type: "number", default: 3, min: 1, max: 32, step: 0.1, animatable: true },
+      { key: "pixelSize", label: "Pixel Size", type: "number", default: 3, min: 1, max: 16, step: 1, animatable: true },
       { key: "palette", label: "Palette", type: "select", default: "none", options: ["none", "gameboy", "nes", "cyberpunk", "monochrome"] },
       { key: "ditherIntensity", label: "Dither Strength", type: "number", default: 0.20, min: 0, max: 1, step: 0.05, animatable: true },
       { key: "opacity", label: "Opacity", type: "number", default: 1, min: 0, max: 1, step: 0.01, animatable: true },
