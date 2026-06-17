@@ -354,7 +354,7 @@ export function hasBackdropRefraction(el: any, data?: any): boolean {
     if (!el) return false;
     const effects = getElementEffects(el);
     return effects.some(e => {
-        if (e.preset === "ripple") {
+        if (e.preset === "ripple" || e.preset === "pixelator") {
             const resolvedParams = resolveEffectParams(e, performance.now(), data);
             return resolvedParams.affectBeneath === true;
         }
@@ -975,6 +975,121 @@ function renderSvgEffectFilter(effects: OverlayEffect[], filterId: string, t?: n
                 </React.Fragment>
             );
             currentResult = `${pid}-displaced`;
+        } else if (e.preset === "pixelator") {
+            const pixelSize = Math.max(1, Number(params.pixelSize ?? 8));
+            const sampleX = Math.floor(pixelSize / 2);
+            const sampleY = Math.floor(pixelSize / 2);
+            const dilateRadius = pixelSize / 2;
+            const paletteStr = String(params.palette ?? "none");
+
+            nodes.push(
+                <React.Fragment key={`pixelator-${pi}`}>
+                    <feFlood
+                        key={`${pid}-flood`}
+                        x={sampleX}
+                        y={sampleY}
+                        width={1}
+                        height={1}
+                        floodColor="white"
+                        result={`${pid}-flood`}
+                    />
+                    <feComposite
+                        key={`${pid}-tile-base`}
+                        in={`${pid}-flood`}
+                        in2={`${pid}-flood`}
+                        operator="in"
+                        width={pixelSize}
+                        height={pixelSize}
+                        result={`${pid}-tile-base`}
+                    />
+                    <feTile
+                        key={`${pid}-tile`}
+                        in={`${pid}-tile-base`}
+                        result={`${pid}-grid`}
+                    />
+                    <feComposite
+                        key={`${pid}-composite`}
+                        in={currentResult}
+                        in2={`${pid}-grid`}
+                        operator="in"
+                        result={`${pid}-sampled`}
+                    />
+                    <feMorphology
+                        key={`${pid}-morph`}
+                        operator="dilate"
+                        radius={dilateRadius}
+                        in={`${pid}-sampled`}
+                        result={`${pid}-pixelated`}
+                    />
+                </React.Fragment>
+            );
+            currentResult = `${pid}-pixelated`;
+
+            if (paletteStr !== "none") {
+                let rTable = "";
+                let gTable = "";
+                let bTable = "";
+
+                if (paletteStr === "gameboy") {
+                    rTable = "0.058 0.188 0.545 0.607";
+                    gTable = "0.219 0.384 0.674 0.737";
+                    bTable = "0.058 0.188 0.058 0.058";
+                } else if (paletteStr === "nes") {
+                    rTable = "0.0 0.0 0.847 0.0 0.0 0.973 0.988 1.0";
+                    gTable = "0.0 0.439 0.157 0.659 0.910 0.722 0.988 1.0";
+                    bTable = "0.0 0.925 0.0 0.0 0.847 0.973 0.0 1.0";
+                } else if (paletteStr === "cyberpunk") {
+                    rTable = "0.039 0.333 1.0 0.0 0.941";
+                    gTable = "0.020 0.0 0.0 0.941 0.902";
+                    bTable = "0.094 0.667 0.333 1.0 0.0";
+                } else if (paletteStr === "monochrome") {
+                    rTable = "0.0 1.0";
+                    gTable = "0.0 1.0";
+                    bTable = "0.0 1.0";
+                }
+
+                nodes.push(
+                    <React.Fragment key={`${pid}-colorized`}>
+                        <feColorMatrix
+                            key={`${pid}-gray`}
+                            in={`${pid}-pixelated`}
+                            type="matrix"
+                            values="0.3 0.59 0.11 0 0  0.3 0.59 0.11 0 0  0.3 0.59 0.11 0 0  0 0 0 1 0"
+                            result={`${pid}-gray`}
+                        />
+                        <feComponentTransfer
+                            key={`${pid}-palette-transfer`}
+                            in={`${pid}-gray`}
+                            result={`${pid}-colorized-raw`}
+                        >
+                            <feFuncR type="discrete" tableValues={rTable} />
+                            <feFuncG type="discrete" tableValues={gTable} />
+                            <feFuncB type="discrete" tableValues={bTable} />
+                        </feComponentTransfer>
+                    </React.Fragment>
+                );
+                currentResult = `${pid}-colorized-raw`;
+            }
+
+            const opacity = Number(params.opacity ?? 1);
+            if (opacity < 1) {
+                nodes.push(
+                    <React.Fragment key={`${pid}-opacity-wrapper`}>
+                        <feComponentTransfer
+                            key={`${pid}-opacity-transfer`}
+                            in={currentResult}
+                            result={`${pid}-with-opacity`}
+                        >
+                            <feFuncA type="linear" slope={opacity} />
+                        </feComponentTransfer>
+                        <feMerge key={`${pid}-merge-node`} result={`${pid}-blended`}>
+                            <feMergeNode in="SourceGraphic" />
+                            <feMergeNode in={`${pid}-with-opacity`} />
+                        </feMerge>
+                    </React.Fragment>
+                );
+                currentResult = `${pid}-blended`;
+            }
         }
     });
 
@@ -1686,7 +1801,15 @@ function ParametricEffectOverlay({
     const canvasEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("canvas"));
     const svgEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("svgOverlay"));
     const cssEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("css"));
-    const webglEffects = parametric.filter(e => EFFECT_PRESETS[e.preset]?.produces.includes("webgl"));
+    const webglEffects = parametric.filter(e => {
+        const preset = EFFECT_PRESETS[e.preset];
+        if (!preset || !preset.produces.includes("webgl")) return false;
+        if (e.preset === "pixelator") {
+            const resolvedParams = resolveEffectParams(e, performance.now(), data);
+            return resolvedParams.affectBeneath !== true;
+        }
+        return true;
+    });
     const svgEffectsRef = useRef(svgEffects);
     svgEffectsRef.current = svgEffects;
     const cssEffectsRef = useRef(cssEffects);
